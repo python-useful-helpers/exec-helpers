@@ -1,0 +1,5 @@
+[run]
+source =
+    exec_wrappers
+omit =
+    test/*

@@ -1,0 +1,42 @@
+sudo: false
+language: python
+os: linux
+python:
+- 2.7
+- 3.4
+- 3.5
+- &mainstream_python 3.6
+install:
+- &upgrade_python_toolset pip install --upgrade pip setuptools wheel
+- pip install tox-travis
+- pip install coveralls
+script: tox
+after_success:
+- coveralls
+
+jobs:
+  fast_finish: true
+  include:
+  - stage: Static analisys
+    python: *mainstream_python
+    services: skip
+    install:
+    - *upgrade_python_toolset
+    - pip install tox
+    script:
+    - tox -e pylint,bandit
+    after_success: skip
+
+  - stage: Code style check
+    python: *mainstream_python
+    services: skip
+    install:
+    - *upgrade_python_toolset
+    - pip install tox
+    script:
+    - tox -e pep8,pep257
+    after_success: skip
+
+cache: pip
+before_cache:
+- rm -f $HOME/.cache/pip/log/debug.log
