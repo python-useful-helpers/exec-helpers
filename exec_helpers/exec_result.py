@@ -395,6 +395,6 @@ class ExecResult(object):
         """Hash for usage as dict key and in sets."""
         return hash(
             (
-                self.__class__, self.cmd, self.stdout_str, self.stderr_str,
+                self.__class__, self.cmd, self.stdout, self.stderr,
                 self.exit_code
             ))

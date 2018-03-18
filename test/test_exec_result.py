@@ -105,8 +105,8 @@ class TestExecResult(unittest.TestCase):
                 (
                     exec_result.ExecResult,
                     cmd,
-                    '',
-                    '',
+                    (),
+                    (),
                     exec_helpers.ExitCodes.EX_INVALID
                 )
             )

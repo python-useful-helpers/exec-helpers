@@ -187,7 +187,7 @@ class TestSSHAuth(unittest.TestCase):
 
 
 # noinspection PyTypeChecker
-@mock.patch('exec_helpers.ssh_client.logger', autospec=True)
+@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
 @mock.patch(
     'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
@@ -838,7 +838,7 @@ class TestSSHClientInit(unittest.TestCase):
         policy.assert_called_once()
 
 
-@mock.patch('exec_helpers.ssh_client.logger', autospec=True)
+@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
 @mock.patch(
     'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
@@ -1457,7 +1457,7 @@ class TestExecute(unittest.TestCase):
             error_info=None, raise_on_err=raise_on_err)
 
 
-@mock.patch('exec_helpers.ssh_client.logger', autospec=True)
+@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
 @mock.patch(
     'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
@@ -1627,7 +1627,7 @@ class TestExecuteThrowHost(unittest.TestCase):
         ))
 
 
-@mock.patch('exec_helpers.ssh_client.logger', autospec=True)
+@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
 @mock.patch(
     'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
@@ -1817,13 +1817,15 @@ class TestSftp(unittest.TestCase):
         fopen.assert_called_once_with(dst, mode)
         self.assertTrue(result)
 
+    @mock.patch('exec_helpers.ssh_client.logger', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.exists')
     @mock.patch('os.path.exists', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.isdir')
     @mock.patch('os.path.isdir', autospec=True)
     def test_download(
-            self,
-            isdir, remote_isdir, exists, remote_exists, client, policy, logger
+        self,
+        isdir, remote_isdir, exists, remote_exists, logger,
+        client, policy, _logger
     ):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True

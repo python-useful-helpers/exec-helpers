@@ -51,4 +51,8 @@ for PYTHON in ${PYTHON_VERSIONS}; do
     /opt/python/${PYTHON}/bin/pip install pytest
     /opt/python/${PYTHON}/bin/py.test -vv /io/test
 done
+
 find /io/dist/ -type f -not -name "*$package_name*" -delete
+rm -rf /io/dist/build
+chmod -v a+rwx /io/dist
+chmod -v a+rw /io/dist/*

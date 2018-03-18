@@ -48,7 +48,7 @@ __all__ = (
 __version__ = '0.7.1'
 __author__ = "Alexey Stepanov"
 __author_email__ = 'penguinolog@gmail.com'
-__url__ = 'https://github.com/penguinolog/exec_helpers'
+__url__ = 'https://github.com/penguinolog/exec-helpers'
 __description__ = (
     "Execution helpers for simplified usage of subprocess and ssh."
 )
