@@ -87,7 +87,7 @@ class SSHClient(SSHClientBase):
             self.mkdir(targetdir)
 
             for entry in files:
-                local_path = os.path.join(rootdir, entry)
+                local_path = os.path.normpath(os.path.join(rootdir, entry))
                 remote_path = posixpath.join(targetdir, entry)
                 if self.exists(remote_path):
                     self._sftp.unlink(remote_path)

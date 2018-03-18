@@ -24,7 +24,7 @@ from __future__ import unicode_literals
 import base64
 import contextlib
 import logging
-from os import path
+import os
 import posixpath
 import stat
 import unittest
@@ -1843,11 +1843,11 @@ class TestSftp(unittest.TestCase):
         self.assertTrue(result)
         isdir.assert_called_once_with(target)
         exists.assert_called_once_with(posixpath.join(
-            target, path.basename(dst)))
+            target, os.path.basename(dst)))
         remote_isdir.assert_called_once_with(dst)
         remote_exists.assert_called_once_with(dst)
         _sftp.assert_has_calls((
-            mock.call.get(dst, posixpath.join(target, path.basename(dst))),
+            mock.call.get(dst, posixpath.join(target, os.path.basename(dst))),
         ))
 
         # Negative scenarios
@@ -1917,7 +1917,7 @@ class TestSftp(unittest.TestCase):
         source = '/tmp/bash'
         filename = 'bashrc'
         walk.return_value = (source, '', [filename]),
-        expected_path = posixpath.join(target, path.basename(source))
+        expected_path = posixpath.join(target, os.path.basename(source))
         expected_file = posixpath.join(expected_path, filename)
 
         # noinspection PyTypeChecker
@@ -1928,5 +1928,8 @@ class TestSftp(unittest.TestCase):
         exists.assert_called_once_with(expected_file)
         _sftp.assert_has_calls((
             mock.call.unlink(expected_file),
-            mock.call.put(posixpath.join(source, filename), expected_file),
+            mock.call.put(
+                os.path.normpath(os.path.join(source, filename)),
+                expected_file
+            ),
         ))
