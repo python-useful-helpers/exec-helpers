@@ -25,6 +25,8 @@ from __future__ import unicode_literals
 import enum
 import typing
 
+import six
+
 __all__ = (
     'SigNum',
     'ExitCodes',
@@ -77,8 +79,14 @@ class SigNum(enum.IntEnum):
         )
 
 
+if six.PY3:
+    digit_type = int
+else:
+    digit_type = long  # noqa  # pylint: disable=undefined-variable
+
+
 @enum.unique
-class ExitCodes(enum.IntEnum):
+class ExitCodes(digit_type, enum.Enum):
     """Linux & bash exit codes."""
 
     EX_OK = 0  # successful termination

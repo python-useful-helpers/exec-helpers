@@ -1,6 +1,5 @@
 #!/bin/bash
-PYTHON_VERSIONS="cp36-cp36m"
-#PYTHON_VERSIONS="cp27-cp27mu cp27-cp27m cp34-cp34m cp35-cp35m cp36-cp36m"
+PYTHON_VERSIONS="cp27-cp27mu cp34-cp34m cp35-cp35m cp36-cp36m"
 
 # Avoid creation of __pycache__/*.py[c|o]
 export PYTHONDONTWRITEBYTECODE=1
@@ -17,13 +16,6 @@ arch=`uname -m`
 echo
 echo
 echo "Compile wheels"
-
-#for PYTHON in ${PYTHON_VERSIONS}; do
-#    echo "$package_name"
-#    echo "/opt/python/${PYTHON}/bin/pip install -U pip setuptools"
-#    echo "/opt/python/${PYTHON}/bin/pip install -r /io/build_requirements.txt"
-#    echo "/opt/python/${PYTHON}/bin/pip wheel /io/ -w /io/dist/"
-#done
 
 
 for PYTHON in ${PYTHON_VERSIONS}; do
@@ -59,3 +51,4 @@ for PYTHON in ${PYTHON_VERSIONS}; do
     /opt/python/${PYTHON}/bin/pip install pytest
     /opt/python/${PYTHON}/bin/py.test -vv /io/test
 done
+find /io/dist/ -type f -not -name "*$package_name*" -delete

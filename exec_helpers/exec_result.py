@@ -23,8 +23,9 @@ import datetime
 import json
 import logging
 import threading
-
 import typing
+
+import six
 import yaml
 
 from exec_helpers import exceptions
@@ -280,7 +281,7 @@ class ExecResult(object):
         """
         if self.timestamp:
             raise RuntimeError('Exit code is already received.')
-        if not isinstance(new_val, (int, proc_enums.ExitCodes)):
+        if not isinstance(new_val, six.integer_types):
             raise TypeError('Exit code is strictly int')
         with self.lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)

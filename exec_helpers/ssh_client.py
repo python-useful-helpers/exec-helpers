@@ -49,8 +49,6 @@ logger = logging.getLogger(__name__)
 logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
 
-threaded.ThreadPooled.configure()
-
 _type_ConnectSSH = typing.Union[
     paramiko.client.SSHClient, paramiko.transport.Transport
 ]

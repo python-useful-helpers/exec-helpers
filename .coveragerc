@@ -1,5 +1,5 @@
 [run]
 source =
-    exec_wrappers
+    exec_helpers
 omit =
     test/*
