@@ -1,0 +1,33 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python27-x64"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python34"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python34-x64"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python35"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python35-x64"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python36"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python36-x64"
+      DISTUTILS_USE_SDK: "1"
+
+install:
+  - "tools/build.cmd %PYTHON%\\python.exe -m pip install -U pip setuptools wheel"
+  - "tools/build.cmd %PYTHON%\\python.exe -m pip install pytest pytest-sugar pytest-cov"
+  - "tools/build.cmd %PYTHON%\\python.exe -m pip install -r build_requirements.txt"
+
+build: false
+cache:
+  - '%LOCALAPPDATA%\pip\Cache'
+
+test_script:
+  - "tools/build.cmd %PYTHON%\\python.exe -m pytest --junitxml=unit_result.xml --cov-config .coveragerc --cov=exec_helpers test"
+
+artifacts:
+  - path: dist\*
