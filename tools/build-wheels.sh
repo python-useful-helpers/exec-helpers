@@ -53,6 +53,6 @@ for PYTHON in ${PYTHON_VERSIONS}; do
 done
 
 find /io/dist/ -type f -not -name "*$package_name*" -delete
-rm -rf /io/dist/build
+rm -rf /io/build
 chmod -v a+rwx /io/dist
 chmod -v a+rw /io/dist/*

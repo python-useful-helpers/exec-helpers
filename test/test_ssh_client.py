@@ -1321,14 +1321,17 @@ class TestExecute(unittest.TestCase):
             remotes=remotes, command=command)
 
         self.assertEqual(execute_async.call_count, len(remotes))
-        chan.assert_has_calls((
-            mock.call.status_event.wait(None),
-            mock.call.recv_exit_status(),
-            mock.call.close(),
-            mock.call.status_event.wait(None),
-            mock.call.recv_exit_status(),
-            mock.call.close()
-        ))
+        self.assertEqual(
+            sorted(chan.mock_calls),
+            sorted((
+                mock.call.status_event.wait(None),
+                mock.call.recv_exit_status(),
+                mock.call.close(),
+                mock.call.status_event.wait(None),
+                mock.call.recv_exit_status(),
+                mock.call.close()
+            ))
+        )
 
         # noinspection PyTypeChecker
         exec_helpers.SSHClient.execute_together(
