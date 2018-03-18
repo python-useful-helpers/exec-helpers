@@ -3,6 +3,9 @@ exec-helpers
 
 .. image:: https://travis-ci.org/penguinolog/exec-helpers.svg?branch=master
     :target: https://travis-ci.org/penguinolog/exec-helpers
+.. image:: https://img.shields.io/appveyor/ci/penguinolog/exec-helpers.svg
+    :alt: AppVeyor
+    :target: https://ci.appveyor.com/project/penguinolog/exec-helpers
 .. image:: https://coveralls.io/repos/github/penguinolog/exec-helpers/badge.svg?branch=master
     :target: https://coveralls.io/github/penguinolog/exec-helpers?branch=master
 .. image:: https://img.shields.io/pypi/v/exec-helpers.svg
