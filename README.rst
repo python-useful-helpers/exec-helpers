@@ -61,6 +61,109 @@ This package includes:
 
 * `ExitCodes` - enumerator for standard Linux exit codes. BASH return codes (broduced from signal codes) also available.
 
+Usage
+=====
+
+SSHClient
+---------
+
+Basic initialization of `SSHClient` can be done without construction of specific objects:
+
+.. code-block:: python
+
+    client = exec_helpers.SSHClient(host, username="username", password="password")
+
+If ssh agent is running - keys will be collected by paramiko automatically, but if keys are in specific location
+ - it should be loaded manually and providen as iterable object of `paramiko.RSAKey`.
+
+For advanced cases or re-use of credentials, `SSHAuth` object should be used.
+It can be collected from connection object via property `auth`.
+
+Creation from scratch:
+
+.. code-block:: python
+
+    auth = exec_helpers.SSHAuth(
+        username='username',  # type: typing.Optional[str]
+        password='password',  # type: typing.Optional[str]
+        key=None,  # type: typing.Optional[paramiko.RSAKey]
+        keys=None,
+    )
+
+Key is a main connection key (always tried first) and keys are alternate keys.
+If main key now correct for username - alternate keys tried, if correct key found - it became main.
+If no working key - password is used and None is set as main key.
+
+Base methods
+------------
+Main methods are `execute`, `check_call` and `check_stderr` for simple executing, executing and checking return code
+and executing, checking return code and checking for empty stderr output.
+This methods are almost the same for `SSHCleint` and `Subprocess`, except specific flags.
+
+.. code-block:: python
+
+    result = helper.execute(
+        command,  # type: str
+        verbose=False,  # type: bool
+        timeout=None,  # type: typing.Optional[int]
+        **kwargs
+    )
+
+
+.. code-block:: python
+
+    result = helper.check_call(
+        command,  # type: str
+        verbose=False,  # type: bool
+        timeout=None,  # type: typing.Optional[int]
+        error_info=None,  # type: typing.Optional[str]
+        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        raise_on_err=True,  # type: bool
+        **kwargs
+    )
+
+.. code-block:: python
+
+    result = helper.check_stderr(
+        command,  # type: str
+        verbose=False,  # type: bool
+        timeout=None,  # type: typing.Optional[int]
+        error_info=None,  # type: typing.Optional[str]
+        raise_on_err=True,  # type: bool
+    )
+
+The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.
+Implementation specific flags are always set via kwargs.
+
+ExecResult
+----------
+
+Execution result object has a set of useful properties:
+
+.. py:class:: ExecResult
+
+    .. py:attribute:: cmd
+        Command
+
+    .. py:attribute:: exit_code
+        Command return code. If possible to decode using enumerators for Linux -> it used.
+
+    .. py:attribute:: stdout -> `typing.Tuple[bytes]`
+    .. py:attribute:: stderr -> `typing.Tuple[bytes]`
+    .. py:attribute:: stdout_bin -> `bytearray`
+    .. py:attribute:: stderr_bin -> `bytearray`
+    .. py:attribute:: stdout_str -> `six.text_types`
+    .. py:attribute:: stderr_str -> `six.text_types`
+    .. py:attribute:: stdout_brief -> `six.text_types`
+        Up to 7 lines from stdout (3 first and 3 last af >7)
+    .. py:attribute:: stderr_brief -> `six.text_types`
+        Up to 7 lines from stderr (3 first and 3 last af >7)
+
+    .. py:attribute:: stdout_json
+        STDOUT decoded as JSON
+
+    .. py:attribute:: stdout_yaml
+        STDOUT decoded as YAML
 
 Testing
 =======
