@@ -19,9 +19,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import fcntl
 import logging
-import os
 import select
 import sys
 import subprocess  # nosec  # Expected usage
@@ -38,6 +36,7 @@ from exec_helpers import _log_templates
 from exec_helpers import proc_enums
 
 logger = logging.getLogger(__name__)
+
 _win = sys.platform == "win32"
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
@@ -145,7 +144,7 @@ class Subprocess(BaseSingleton):
                             verbose=verbose
                         )
 
-        @threaded.threaded(started=True)
+        @threaded.threaded(started=True, daemon=True)
         def poll_pipes(
             proc,  # type: subprocess.Popen
             result,  # type: exec_result.ExecResult
@@ -157,16 +156,6 @@ class Subprocess(BaseSingleton):
             :type result: exec_result.ExecResult
             :type stop: threading.Event
             """
-            # Get file descriptors for stdout and stderr streams
-            fd_stdout = proc.stdout.fileno()
-            fd_stderr = proc.stderr.fileno()
-            # Get flags of stdout and stderr streams
-            fl_stdout = fcntl.fcntl(fd_stdout, fcntl.F_GETFL)
-            fl_stderr = fcntl.fcntl(fd_stderr, fcntl.F_GETFL)
-            # Set nonblock mode for stdout and stderr streams
-            fcntl.fcntl(fd_stdout, fcntl.F_SETFL, fl_stdout | os.O_NONBLOCK)
-            fcntl.fcntl(fd_stderr, fcntl.F_SETFL, fl_stderr | os.O_NONBLOCK)
-
             while not stop.isSet():
                 time.sleep(0.1)
                 poll_streams(

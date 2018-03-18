@@ -51,7 +51,6 @@ class FakeFileStream(object):
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
 @mock.patch('select.select', autospec=True)
-@mock.patch('fcntl.fcntl', autospec=True)
 @mock.patch('subprocess.Popen', autospec=True, name='subprocess.Popen')
 class TestSubprocessRunner(unittest.TestCase):
     @staticmethod
@@ -84,7 +83,7 @@ class TestSubprocessRunner(unittest.TestCase):
         return (u"Command exit code '{code!s}':\n{cmd!s}\n"
                 .format(cmd=result.cmd.rstrip(), code=result.exit_code))
 
-    def test_call(self, popen, fcntl, select, logger):
+    def test_call(self, popen, select, logger):
         popen_obj, exp_result = self.prepare_close(popen)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -130,7 +129,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_call_verbose(self, popen, fcntl, select, logger):
+    def test_call_verbose(self, popen, select, logger):
         popen_obj, _ = self.prepare_close(popen)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
