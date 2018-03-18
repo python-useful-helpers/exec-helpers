@@ -94,6 +94,11 @@ Key is a main connection key (always tried first) and keys are alternate keys.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
 
+Subprocess
+==========
+
+No initialization required.
+
 Base methods
 ------------
 Main methods are `execute`, `check_call` and `check_stderr` for simple executing, executing and checking return code
@@ -140,30 +145,22 @@ ExecResult
 
 Execution result object has a set of useful properties:
 
-.. py:class:: ExecResult
+* `cmd` - Command
+* `exit_code` - Command return code. If possible to decode using enumerators for Linux -> it used.
+* `stdout` -> `typing.Tuple[bytes]`. Raw stdout output.
+* `stderr` -> `typing.Tuple[bytes]`. Raw stderr output.
+* `stdout_bin` -> `bytearray`. Binary stdout output.
+* `stderr_bin` -> `bytearray`. Binary stderr output.
+* `stdout_str` -> `six.text_types`. Text representation of output.
+* `stderr_str` -> `six.text_types`. Text representation of output.
+* `stdout_brief` -> `six.text_types`. Up to 7 lines from stdout (3 first and 3 last if >7 lines).
+* `stderr_brief` -> `six.text_types`. Up to 7 lines from stderr (3 first and 3 last if >7 lines).
 
-    .. py:attribute:: cmd
-        Command
+* `stdout_json` - STDOUT decoded as JSON.
 
-    .. py:attribute:: exit_code
-        Command return code. If possible to decode using enumerators for Linux -> it used.
+* `stdout_yaml` - STDOUT decoded as YAML
 
-    .. py:attribute:: stdout -> `typing.Tuple[bytes]`
-    .. py:attribute:: stderr -> `typing.Tuple[bytes]`
-    .. py:attribute:: stdout_bin -> `bytearray`
-    .. py:attribute:: stderr_bin -> `bytearray`
-    .. py:attribute:: stdout_str -> `six.text_types`
-    .. py:attribute:: stderr_str -> `six.text_types`
-    .. py:attribute:: stdout_brief -> `six.text_types`
-        Up to 7 lines from stdout (3 first and 3 last af >7)
-    .. py:attribute:: stderr_brief -> `six.text_types`
-        Up to 7 lines from stderr (3 first and 3 last af >7)
-
-    .. py:attribute:: stdout_json
-        STDOUT decoded as JSON
-
-    .. py:attribute:: stdout_yaml
-        STDOUT decoded as YAML
+* `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 
 Testing
 =======
