@@ -111,7 +111,7 @@ class AllowFailRepair(build_ext.build_ext):
                     shutil.copyfile(src, dst)
         except (
             distutils.errors.DistutilsPlatformError,
-            FileNotFoundError
+            globals()['__builtins__'].get('FileNotFoundError', OSError)
         ):
             raise BuildFailed()
 
