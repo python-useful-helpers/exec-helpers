@@ -4,7 +4,6 @@ exec-helpers
 .. image:: https://travis-ci.org/penguinolog/exec-helpers.svg?branch=master
     :target: https://travis-ci.org/penguinolog/exec-helpers
 .. image:: https://img.shields.io/appveyor/ci/penguinolog/exec-helpers.svg
-    :alt: AppVeyor
     :target: https://ci.appveyor.com/project/penguinolog/exec-helpers
 .. image:: https://coveralls.io/repos/github/penguinolog/exec-helpers/badge.svg?branch=master
     :target: https://coveralls.io/github/penguinolog/exec-helpers?branch=master
@@ -98,7 +97,7 @@ If main key now correct for username - alternate keys tried, if correct key foun
 If no working key - password is used and None is set as main key.
 
 Subprocess
-==========
+----------
 
 No initialization required.
 
@@ -164,6 +163,70 @@ Execution result object has a set of useful properties:
 * `stdout_yaml` - STDOUT decoded as YAML
 
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
+
+SSHClient specific
+==================
+
+SSHClient commands support get_pty flag, which enables PTY open on remote side.
+PTY width and height can be set via kwargs, dimensions in pixels are always 0x0.
+
+Possible to call commands in parallel on multiple hosts if it's not produce huge output:
+
+.. code-block:: python
+
+    results = SSHClient.execute_together(remotes, command, timeout=None, expected=None, raise_on_err=True)
+    results  # type: ttyping.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+
+Results is a dict with keys = (hostname, port) and and results in values.
+By default execute_together raises exception if unexpected return code on any remote.
+
+For execute through SSH host can be used `execute_through_host` method:
+
+.. code-block:: python
+
+    result = client.execute_through_host(
+        hostname,  # type: str
+        command,  # type: str
+        auth=None,  # type: typing.Optional[SSHAuth]
+        target_port=22,  # type: int
+        timeout=None,  # type: typing.Optional[int]
+        verbose=False,  # type: bool
+        get_pty=False,  # type: bool
+    )
+
+Where hostname is a target hostname, auth is an alternate credentials for target host.
+
+SSH client implements fast sudo support via context manager:
+Commands will be run with sudo enforced independently from client settings for normal usage:
+
+.. code-block:: python
+
+    with client.sudo(enforce=True):
+        ...
+
+
+Commands will be run *without sudo* independently from client settings for normal usage:
+
+.. code-block:: python
+
+    with client.sudo(enforce=False):
+        ...
+
+"Permanent client setting":
+
+.. code-block:: python
+
+    client.sudo_mode = mode  # where mode is True or False
+
+SSH Client supports sFTP for working with remote files:
+
+.. code-block:: python
+
+    with client.open(path, mode='r'):
+        ...
+
+For fast remote paths checks available methods: `exists`, `stat`, `isfile` and `isdir`.
+All of them receives remote path and returns single result (`stat` -> `paramiko.sftp_attr.SFTPAttributes`, others bool).
 
 Testing
 =======

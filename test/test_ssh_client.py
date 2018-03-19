@@ -1317,7 +1317,7 @@ class TestExecute(unittest.TestCase):
         remotes = [ssh, ssh2]
 
         # noinspection PyTypeChecker
-        exec_helpers.SSHClient.execute_together(
+        results = exec_helpers.SSHClient.execute_together(
             remotes=remotes, command=command)
 
         self.assertEqual(execute_async.call_count, len(remotes))
@@ -1332,6 +1332,10 @@ class TestExecute(unittest.TestCase):
                 mock.call.close()
             ))
         )
+        self.assertIn((ssh.hostname, ssh.port), results)
+        self.assertIn((ssh2.hostname, ssh2.port), results)
+        for result in results.values():  # type: exec_result.ExecResult
+            self.assertEqual(result.cmd, command)
 
         # noinspection PyTypeChecker
         exec_helpers.SSHClient.execute_together(

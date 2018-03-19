@@ -52,6 +52,9 @@ _type_ConnectSSH = typing.Union[
 ]
 _type_RSAKeys = typing.Iterable[paramiko.RSAKey]
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
+_type_multiple_results = typing.Dict[
+    typing.Tuple[str, int], exec_result.ExecResult
+]
 
 
 class SSHAuth(object):
@@ -742,7 +745,7 @@ class SSHClientBase(BaseSSHClient):
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
         **kwargs
-    ):
+    ):  # type: (...) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         """Execute command on multiple remotes in async mode.
 
         :type remotes: list
@@ -790,16 +793,16 @@ class SSHClientBase(BaseSSHClient):
             future.cancel()
 
         for (
-            remote,  # type: SSHClient
+            remote,  # type: SSHClientBase
             future,  # type: concurrent.futures.Future
         ) in futures.items():
             try:
                 result = future.result()
-                results[remote.hostname] = result
+                results[(remote.hostname, remote.port)] = result
                 if result.exit_code not in expected:
-                    errors[remote.hostname] = result
+                    errors[(remote.hostname, remote.port)] = result
             except Exception as e:
-                raised_exceptions[remote.hostname] = e
+                raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptions(

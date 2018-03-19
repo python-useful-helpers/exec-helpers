@@ -32,6 +32,7 @@ __all__ = (
 )
 
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
+_type_multiple_results = typing.Dict[typing.Tuple[str, int], typing.Any]
 
 
 class ExecWrapperError(Exception):
@@ -115,9 +116,9 @@ class ParallelCallExceptions(ExecWrapperError):
     def __init__(
         self,
         command,  # type: str
-        exceptions,  # type: typing.Dict[str, Exception]
-        errors,  # type: typing.Dict[str, exec_result.ExecResult],
-        results,  # type: typing.Dict[str, exec_result.ExecResult],
+        exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
+        errors,  # type: _type_multiple_results,
+        results,  # type: _type_multiple_results,
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
     ):
         """Exception raised during parallel call as result of exceptions."""
@@ -133,8 +134,10 @@ class ParallelCallExceptions(ExecWrapperError):
             "\t{exceptions}".format(
                 self=self,
                 exceptions="\n\t".join(
-                    "{host}: {exc} ".format(host=host, exc=exc)
-                    for host, exc in exceptions.items()
+                    "{host}:{port} - {exc} ".format(
+                        host=host, port=port, exc=exc
+                    )
+                    for (host, port), exc in exceptions.items()
                 )
             )
         )
@@ -154,8 +157,8 @@ class ParallelCallProcessError(ExecWrapperError):
     def __init__(
         self,
         command,  # type: str
-        errors,  # type: typing.Dict[str, exec_result.ExecResult],
-        results,  # type: typing.Dict[str, exec_result.ExecResult],
+        errors,  # type: _type_multiple_results,
+        results,  # type: _type_multiple_results,
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
     ):
         """Exception during parallel execution."""
@@ -172,8 +175,10 @@ class ParallelCallProcessError(ExecWrapperError):
             "\t{errors}".format(
                 self=self,
                 errors="\n\t".join(
-                    "{host}: {code} ".format(host=host, code=result.exit_code)
-                    for host, result in errors.items()
+                    "{host}:{port} - {code} ".format(
+                        host=host, port=port, code=result.exit_code
+                    )
+                    for (host, port), result in errors.items()
                 )
             )
         )
