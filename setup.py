@@ -63,8 +63,12 @@ requires_optimization = [
     _extension('exec_helpers._ssh_client_base'),
     _extension('exec_helpers.ssh_client'),
     _extension('exec_helpers.subprocess_runner'),
-    _extension('exec_helpers.__init__'),
 ]
+
+if 'win32' != sys.platform:
+    requires_optimization.append(
+        _extension('exec_helpers.__init__')
+    )
 
 ext_modules = cythonize(
     requires_optimization,
