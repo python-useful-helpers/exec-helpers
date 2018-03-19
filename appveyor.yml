@@ -1,4 +1,8 @@
 environment:
+  TWINE_USERNAME: penguinolog
+  TWINE_PASSWORD:
+    secure: TCKGf77kkVeo2Pbd+lQY5Q==
+
   matrix:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x" # currently 2.7.11
@@ -67,3 +71,7 @@ test_script:
 
 artifacts:
   - path: dist\*
+    name: Python built code
+
+on_success:
+  - if "%APPVEYOR_REPO_TAG%"=="true" ( twine upload dist/*.whl )

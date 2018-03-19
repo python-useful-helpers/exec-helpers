@@ -249,6 +249,6 @@ For code checking several CI systems is used in parallel:
 
 1. `Travis CI: <https://travis-ci.org/penguinolog/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
 
-2. `AppVeyor<https://ci.appveyor.com/project/penguinolog/exec-helpers>`_ is used for checking windows compatibility.
+2. `AppVeyor: <https://ci.appveyor.com/project/penguinolog/exec-helpers>`_ is used for checking windows compatibility.
 
 3. `coveralls: <https://coveralls.io/github/penguinolog/exec-helpers>`_ is used for coverage display.
