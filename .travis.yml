@@ -37,6 +37,31 @@ jobs:
     - tox -e pep8,pep257
     after_success: skip
 
+  - stage: deploy
+    # This prevents job from appearing in test plan unless commit is tagged:
+    if: tag IS present
+    python: *mainstream_python
+    services:
+    - docker
+    install:
+    - *upgrade_python_toolset
+    script:
+    - ./tools/run_docker.sh "exec_helpers"
+    before_deploy:
+    - pip install -r build_requirements.txt
+    deploy:
+    - provider: pypi
+      # `skip_cleanup: true` is required to preserve binary wheels, built
+      # inside of manylinux1 docker container during `script` step above.
+      skip_cleanup: true
+      user: penguinolog
+      password:
+        secure: "maml4+SU/6NtRf7JIwWhVyXkesE9Gk5Umdo3txOjcrcvt84S3NlN/hFgdNclMUpJ3b+rOFEpiZOamtDKbP67uhlA6yJ364SxW5T3ZQJ8tjFFzMHcaM38HgGbgLR8AxK8fdZKRg9gVMnGofeiusB5aNsKmn9XnvESc8dNv0Umdmi83wXxm+DfVRXL8VTFgwsH3BxQy/Kdv6upRrXyNWkyoi8Zk8PkrFFDpFoW9WK1fRBqnvCw1Wt8nEAJah7y2b7vj52eM+MfT3IL+jpocZqOJQlFPdWkTonX7mAP9nB97kk4DMbm3ZqUw2Qr9pM0nKK9HhrXhsSSUGa1w95zmw9nbXLrpfnQ61Lyk9pGcVh60WbrVKstE/x9Lq3pqGsA/YKqsIZK3OAqRfBHNG9L7lekP05hXyDNHJXGoEyGQjVA/666S2ZCjM10XaaUmZ5P1kPGocCnEjv86dKdINTkFM6L0n4oIu1nyftBhVu9jz0xQaxute4LZNJiQtE6x8NX3WuSO68UhWjDqevYdRgW55Gp1OD4ilfA/SVNPpsHJfB2baue1fi9m8Rn3bWQSJoZ8twYHoIxEOAIXyMBhYnmldvsuUY6h5p+/hk6kpJAsTXZFjUSa/FPIH84QvDkNCoZxwInSkjEN1tj9PBep2vYcLMd92+g6udtin8FbYMZItiDl1M="
+      on:
+        tags: true
+        distributions: sdist
+      skip_upload_docs: true
+
 cache: pip
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
