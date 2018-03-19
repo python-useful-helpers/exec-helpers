@@ -1,33 +1,69 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python27"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "2.7.x" # currently 2.7.11
+      PYTHON_ARCH: "32"
+
     - PYTHON: "C:\\Python27-x64"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "2.7.x" # currently 2.7.11
+      PYTHON_ARCH: "64"
+
     - PYTHON: "C:\\Python34"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.4.x" # currently 3.4.3
+      PYTHON_ARCH: "32"
+
     - PYTHON: "C:\\Python34-x64"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.4.x" # currently 3.4.3
+      PYTHON_ARCH: "64"
+
     - PYTHON: "C:\\Python35"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.5.x" # currently 3.5.1
+      PYTHON_ARCH: "32"
+
     - PYTHON: "C:\\Python35-x64"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.5.x" # currently 3.5.1
+      PYTHON_ARCH: "64"
+
     - PYTHON: "C:\\Python36"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.0
+      PYTHON_ARCH: "32"
+
     - PYTHON: "C:\\Python36-x64"
-      DISTUTILS_USE_SDK: "1"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.0
+      PYTHON_ARCH: "64"
 
 install:
-  - "tools/build.cmd %PYTHON%\\python.exe -m pip install -U pip setuptools wheel"
-  - "tools/build.cmd %PYTHON%\\python.exe -m pip install pytest pytest-sugar pytest-cov"
-  - "tools/build.cmd %PYTHON%\\python.exe -m pip install -r build_requirements.txt"
+  - cmd: echo "Using cmd"
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+
+  # Fix MSVC builds for 64-bit Python
+  # See
+  # http://stackoverflow.com/questions/32091593/cannot-install-windows-sdk-7-1-on-windows-10
+  - echo "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 > "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64/vcvars64.bat"
+
+  # Check that we have the expected version and architecture for Python
+  - python --version
+
+  - python -m pip install -U pip setuptools
+  # Pin wheel to 0.26 to avoid Windows ABI tag for built wheel
+  - pip install wheel==0.26
+  - pip install pytest pytest-sugar
+  - pip install -r build_requirements.txt
 
 build: false
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
 
+build_script:
+  - python setup.py bdist_wheel
+  - pip install --pre --no-index -f dist exec-helpers
+
 test_script:
-  - "tools/build.cmd %PYTHON%\\python.exe -m pytest --junitxml=unit_result.xml --cov-config .coveragerc --cov=exec_helpers test"
+  - python -m pytest -vvv test
 
 artifacts:
   - path: dist\*
