@@ -25,6 +25,7 @@ import base64
 import contextlib
 import logging
 import os
+import platform
 import posixpath
 import stat
 import unittest
@@ -807,6 +808,10 @@ class TestSSHClientInit(unittest.TestCase):
         self.assertFalse(ssh01 is ssh004)
 
     @mock.patch('warnings.warn')
+    @unittest.skipIf(
+        'CPython' != platform.python_implementation(),
+        'CPython only functionality: close connections depend on refcount'
+    )
     def test_init_memorize_close_unused(self, warn, client, policy, logger):
         ssh0 = exec_helpers.SSHClient(host=host)
         del ssh0  # remove reference - now it's cached and unused

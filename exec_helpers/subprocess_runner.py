@@ -200,7 +200,11 @@ class Subprocess(BaseSingleton):
                 universal_newlines=False)
 
             # Poll output
-            poll_pipes(process, result, stop_event)
+            poll_thread = poll_pipes(
+                process,
+                result,
+                stop_event
+            )  # type: threading.Thread
             # wait for process close
             stop_event.wait(timeout)
 
@@ -212,7 +216,7 @@ class Subprocess(BaseSingleton):
             try:
                 process.kill()  # kill -9
                 stop_event.wait(5)
-
+                poll_thread.join(5)
             except OSError:
                 # Nothing to kill
                 logger.warning(

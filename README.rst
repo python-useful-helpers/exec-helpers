@@ -45,6 +45,8 @@ Pros:
     Python 3.4
     Python 3.5
     Python 3.6
+    PyPy
+    PyPy3 3.5+
 
 This package includes:
 
@@ -95,6 +97,8 @@ Creation from scratch:
 Key is a main connection key (always tried first) and keys are alternate keys.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
+
+.. note:: Automatic closing connections during cache record removal supported on CPython implementation only.
 
 Subprocess
 ----------

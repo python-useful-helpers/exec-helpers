@@ -22,6 +22,7 @@ import base64
 import copy
 import io  # noqa  # pylint: disable=unused-import
 import logging
+import platform
 import stat
 import sys
 import threading
@@ -55,6 +56,8 @@ _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_multiple_results = typing.Dict[
     typing.Tuple[str, int], exec_result.ExecResult
 ]
+
+CPYTHON = 'CPython' == platform.python_implementation()
 
 
 class SSHAuth(object):
@@ -319,7 +322,7 @@ class _MemorizedSSH(type):
                     logger.debug('Reconnect {}'.format(ssh))
                     ssh.reconnect()
                 return ssh
-            if sys.getrefcount(cls.__cache[key]) == 2:
+            if CPYTHON and sys.getrefcount(cls.__cache[key]) == 2:
                 # If we have only cache reference and temporary getrefcount
                 # reference: close connection before deletion
                 logger.debug('Closing {} as unused'.format(cls.__cache[key]))
@@ -346,7 +349,7 @@ class _MemorizedSSH(type):
         # PY3: cache, ssh, temporary
         # PY4: cache, values mapping, ssh, temporary
         for ssh in mcs.__cache.values():
-            if sys.getrefcount(ssh) == n_count:
+            if CPYTHON and sys.getrefcount(ssh) == n_count:
                 logger.debug('Closing {} as unused'.format(ssh))
                 ssh.close()
         mcs.__cache = {}
