@@ -200,11 +200,13 @@ class Subprocess(BaseSingleton):
                 universal_newlines=False)
 
             # Poll output
+            # pylint: disable=assignment-from-no-return
             poll_thread = poll_pipes(
                 process,
                 result,
                 stop_event
             )  # type: threading.Thread
+            # pylint: enable=assignment-from-no-return
             # wait for process close
             stop_event.wait(timeout)
 
