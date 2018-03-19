@@ -745,7 +745,7 @@ class SSHClientBase(BaseSSHClient):
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
         **kwargs
-    ):  # type: (...) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+    ):  # type: (...) -> _type_multiple_results
         """Execute command on multiple remotes in async mode.
 
         :type remotes: list
