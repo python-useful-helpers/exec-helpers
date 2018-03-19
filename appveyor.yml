@@ -74,4 +74,4 @@ artifacts:
     name: Python built code
 
 on_success:
-  - if "%APPVEYOR_REPO_TAG%"=="true" ( twine upload dist/*.whl )
+  - if "%APPVEYOR_REPO_TAG%"=="true" ( pip install -U twine && twine upload dist/*.whl )
