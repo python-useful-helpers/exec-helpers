@@ -164,12 +164,12 @@ Execution result object has a set of useful properties:
 
 * `stdout_json` - STDOUT decoded as JSON.
 
-* `stdout_yaml` - STDOUT decoded as YAML
+* `stdout_yaml` - STDOUT decoded as YAML.
 
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 
 SSHClient specific
-==================
+------------------
 
 SSHClient commands support get_pty flag, which enables PTY open on remote side.
 PTY width and height can be set via kwargs, dimensions in pixels are always 0x0.
@@ -179,7 +179,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 .. code-block:: python
 
     results = SSHClient.execute_together(remotes, command, timeout=None, expected=None, raise_on_err=True)
-    results  # type: ttyping.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+    results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
 
 Results is a dict with keys = (hostname, port) and and results in values.
 By default execute_together raises exception if unexpected return code on any remote.
@@ -226,11 +226,30 @@ SSH Client supports sFTP for working with remote files:
 
 .. code-block:: python
 
-    with client.open(path, mode='r'):
+    with client.open(path, mode='r') as f:
         ...
 
-For fast remote paths checks available methods: `exists`, `stat`, `isfile` and `isdir`.
-All of them receives remote path and returns single result (`stat` -> `paramiko.sftp_attr.SFTPAttributes`, others bool).
+For fast remote paths checks available methods:
+- `exists(path)` -> `bool`
+- `stat(path)` -> `paramiko.sftp_attr.SFTPAttributes`
+- `isfile(path)` -> `bool`
+- `isdir(path)` -> `bool`
+
+Additional (non-standard) helpers:
+
+- `mkdir(path: str)` - execute mkdir -p path
+- `rm_rf(path: str)` - execute rm -rf path
+- `upload(source: str, target: str)` - upload file or from source to target using sFTP.
+- `download(destination: str, target: str)` - download file from target to destination using sFTP.
+
+Subprocess specific
+-------------------
+Kwargs set properties:
+
+- cwd - working directory.
+- env - environment variables dict.
+
+.. note:: `shell=true` is always set.
 
 Testing
 =======
@@ -244,6 +263,8 @@ Test environments available:
     py34
     py35
     py36
+    pypy
+    pypy3
     pylint
     pep257
 
