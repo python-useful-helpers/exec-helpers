@@ -742,7 +742,7 @@ class SSHClientBase(BaseSSHClient):
     @classmethod
     def execute_together(
         cls,
-        remotes,
+        remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
         timeout=None,  # type: typing.Optional[int]
         expected=None,  # type: typing.Optional[typing.Iterable[]]
@@ -751,7 +751,7 @@ class SSHClientBase(BaseSSHClient):
     ):  # type: (...) -> _type_multiple_results
         """Execute command on multiple remotes in async mode.
 
-        :type remotes: list
+        :type remotes: typing.Iterable[SSHClientBase]
         :type command: str
         :type timeout: typing.Optional[int]
         :type expected: typing.Optional[typing.Iterable[]]
@@ -1079,7 +1079,7 @@ class SSHClientBase(BaseSSHClient):
         """
         return self._sftp.open(path, mode)
 
-    def exists(self, path):  # type: (str) -> Bool
+    def exists(self, path):  # type: (str) -> bool
         """Check for file existence using SFTP session.
 
         :type path: str

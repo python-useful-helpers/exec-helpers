@@ -77,8 +77,8 @@ Basic initialization of `SSHClient` can be done without construction of specific
 
     client = exec_helpers.SSHClient(host, username="username", password="password")
 
-If ssh agent is running - keys will be collected by paramiko automatically, but if keys are in specific location
- - it should be loaded manually and providen as iterable object of `paramiko.RSAKey`.
+If ssh agent is running - keys will be collected by paramiko automatically,
+but if keys are in specific location  - it should be loaded manually and provided as iterable object of `paramiko.RSAKey`.
 
 For advanced cases or re-use of credentials, `SSHAuth` object should be used.
 It can be collected from connection object via property `auth`.
@@ -178,7 +178,13 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 
 .. code-block:: python
 
-    results = SSHClient.execute_together(remotes, command, timeout=None, expected=None, raise_on_err=True)
+    results = SSHClient.execute_together(
+        remotes,  # type: typing.Iterable[SSHClient]
+        command,  # type: str
+        timeout=None,  # type: typing.Optional[int]
+        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        raise_on_err=True  # type: bool
+    )
     results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
 
 Results is a dict with keys = (hostname, port) and and results in values.
@@ -230,10 +236,36 @@ SSH Client supports sFTP for working with remote files:
         ...
 
 For fast remote paths checks available methods:
+
 - `exists(path)` -> `bool`
+
+.. code-block:: python
+
+    >>> conn.exists('/etc/passwd')
+    True
+
 - `stat(path)` -> `paramiko.sftp_attr.SFTPAttributes`
+
+.. code-block:: python
+
+    >>> conn.stat('/etc/passwd')
+    <SFTPAttributes: [ size=1882 uid=0 gid=0 mode=0o100644 atime=1521618061 mtime=1449733241 ]>
+    >>> str(conn.stat('/etc/passwd'))
+    '-rw-r--r--   1 0        0            1882 10 Dec 2015  ?'
+
 - `isfile(path)` -> `bool`
+
+.. code-block:: python
+
+    >>> conn.isfile('/etc/passwd')
+    True
+
 - `isdir(path)` -> `bool`
+
+.. code-block:: python
+
+    >>> conn.isdir('/etc/passwd')
+    False
 
 Additional (non-standard) helpers:
 
