@@ -7,6 +7,9 @@ exec-helpers
     :target: https://ci.appveyor.com/project/penguinolog/exec-helpers
 .. image:: https://coveralls.io/repos/github/penguinolog/exec-helpers/badge.svg?branch=master
     :target: https://coveralls.io/github/penguinolog/exec-helpers?branch=master
+.. image:: https://readthedocs.org/projects/exec-helpers/badge/?version=latest
+    :target: http://exec-helpers.readthedocs.io/
+    :alt: Documentation Status
 .. image:: https://img.shields.io/pypi/v/exec-helpers.svg
     :target: https://pypi.python.org/pypi/exec-helpers
 .. image:: https://img.shields.io/pypi/pyversions/exec-helpers.svg
