@@ -49,7 +49,6 @@ class SSHClient(SSHClientBase):
         """
         if self.exists(path):
             return
-        logger.debug("Creating directory: {}".format(self._path_esc(path)))
         # noinspection PyTypeChecker
         self.execute("mkdir -p {}\n".format(self._path_esc(path)))
 
@@ -58,17 +57,16 @@ class SSHClient(SSHClientBase):
 
         :type path: str
         """
-        logger.debug("rm -rf {}".format(self._path_esc(path)))
         # noinspection PyTypeChecker
         self.execute("rm -rf {}".format(self._path_esc(path)))
 
-    def upload(self, source, target):
+    def upload(self, source, target):  # type: (str, str) -> None
         """Upload file(s) from source to target using SFTP session.
 
         :type source: str
         :type target: str
         """
-        logger.debug("Copying '%s' -> '%s'", source, target)
+        self.logger.debug("Copying '%s' -> '%s'", source, target)
 
         if self.isdir(target):
             target = posixpath.join(target, os.path.basename(source))
@@ -93,14 +91,19 @@ class SSHClient(SSHClientBase):
                     self._sftp.unlink(remote_path)
                 self._sftp.put(local_path, remote_path)
 
-    def download(self, destination, target):
+    def download(
+        self,
+        destination,  # type: str
+        target  # type: str
+    ):  # type: (...) -> bool
         """Download file(s) to target from destination.
 
         :type destination: str
         :type target: str
+        :return: downloaded file present on local filesystem
         :rtype: bool
         """
-        logger.debug(
+        self.logger.debug(
             "Copying '%s' -> '%s' from remote to local host",
             destination, target
         )
@@ -112,11 +115,11 @@ class SSHClient(SSHClientBase):
             if self.exists(destination):
                 self._sftp.get(destination, target)
             else:
-                logger.debug(
+                self.logger.debug(
                     "Can't download %s because it doesn't exist", destination
                 )
         else:
-            logger.debug(
+            self.logger.debug(
                 "Can't download %s because it is a directory", destination
             )
         return os.path.exists(target)

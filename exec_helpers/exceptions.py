@@ -23,8 +23,8 @@ import six
 from exec_helpers import proc_enums
 
 __all__ = (
-    'ExecWrapperError',
-    'ExecWrapperTimeoutError',
+    'ExecHelperError',
+    'ExecHelperTimeoutError',
     'ExecCalledProcessError',
     'CalledProcessError',
     'ParallelCallProcessError',
@@ -35,19 +35,19 @@ _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_multiple_results = typing.Dict[typing.Tuple[str, int], typing.Any]
 
 
-class ExecWrapperError(Exception):
+class ExecHelperError(Exception):
     """Base class for all exceptions raised inside."""
 
     __slots__ = ()
 
 
-class ExecWrapperTimeoutError(ExecWrapperError):
+class ExecHelperTimeoutError(ExecHelperError):
     """Execution timeout."""
 
     __slots__ = ()
 
 
-class ExecCalledProcessError(ExecWrapperError):
+class ExecCalledProcessError(ExecHelperError):
     """Base class for process call errors."""
 
     __slots__ = ()
@@ -76,12 +76,26 @@ class CalledProcessError(ExecCalledProcessError):
     def __init__(
         self,
         command,  # type: str
-        returncode,  # type: _type_exit_codes
+        returncode,  # type: typing.Union[int, proc_enums.ExitCodes]
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
         stdout=None,  # type: typing.Any
         stderr=None  # type: typing.Any
     ):
-        """Exception for error on process calls."""
+        """Exception for error on process calls.
+
+        :param command: command
+        :type command: str
+        :param returncode: return code
+        :type returncode: typing.Union[int, proc_enums.ExitCodes]
+        :param expected: expected return codes
+        :type expected: typing.Optional[
+            typing.List[typing.Union[int, proc_enums.ExitCodes]]
+        ]
+        :param stdout: stdout string or brief string
+        :type stdout: typing.Any
+        :param stderr: stderr string or brief string
+        :type stderr: typing.Any
+        """
         self.returncode = returncode
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
@@ -102,7 +116,7 @@ class CalledProcessError(ExecCalledProcessError):
         super(CalledProcessError, self).__init__(message)
 
 
-class ParallelCallExceptions(ExecWrapperError):
+class ParallelCallExceptions(ExecHelperError):
     """Exception raised during parallel call as result of exceptions."""
 
     __slots__ = (
@@ -121,7 +135,21 @@ class ParallelCallExceptions(ExecWrapperError):
         results,  # type: _type_multiple_results,
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
     ):
-        """Exception raised during parallel call as result of exceptions."""
+        """Exception raised during parallel call as result of exceptions.
+
+        :param command: command
+        :type command: str
+        :param exceptions: Exceptions on connections
+        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
+        :param errors: results with errors
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param results: all results
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param expected: expected return codes
+        :type expected: typing.Optional[typing.List[
+            typing.List[typing.Union[int, proc_enums.ExitCodes]]
+        ]
+        """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
         self.cmd = command
@@ -144,7 +172,7 @@ class ParallelCallExceptions(ExecWrapperError):
         super(ParallelCallExceptions, self).__init__(message)
 
 
-class ParallelCallProcessError(ExecWrapperError):
+class ParallelCallProcessError(ExecHelperError):
     """Exception during parallel execution."""
 
     __slots__ = (
@@ -161,7 +189,19 @@ class ParallelCallProcessError(ExecWrapperError):
         results,  # type: _type_multiple_results,
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
     ):
-        """Exception during parallel execution."""
+        """Exception during parallel execution.
+
+        :param command: command
+        :type command: str
+        :param errors: results with errors
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param results: all results
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param expected: expected return codes
+        :type expected: typing.Optional[typing.List[
+            typing.List[typing.Union[int, proc_enums.ExitCodes]]
+        ]
+        """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
         self.cmd = command

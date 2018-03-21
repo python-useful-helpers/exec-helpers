@@ -50,15 +50,19 @@ class ExecResult(object):
     def __init__(
         self,
         cmd,  # type: str
-        stdout=None,  # type: typing.Optional[typing.Container[bytes]]
-        stderr=None,  # type: typing.Optional[typing.Container[bytes]]
+        stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
+        stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
         exit_code=proc_enums.ExitCodes.EX_INVALID  # type: _type_exit_codes
     ):
         """Command execution result.
 
+        :param cmd: command
         :type cmd: str
-        :type stdout: typing.Optional[typing.Container[bytes]]
-        :type stderr: typing.Optional[typing.Container[bytes]]
+        :param stdout: binary STDOUT
+        :type stdout: typing.Optional[typing.Iterable[bytes]]
+        :param stderr: binary STDERR
+        :type stderr: typing.Optional[typing.Iterable[bytes]]
+        :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, proc_enums.ExitCodes]
         """
         self.__lock = threading.RLock()
@@ -180,7 +184,15 @@ class ExecResult(object):
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
     ):
-        """Read stdout file-like object to stdout."""
+        """Read stdout file-like object to stdout.
+
+        :param src: source
+        :type src: typing.Iterable
+        :param log: logger
+        :type log: typing.Optional[logging.Logger]
+        :param verbose: use log.info instead of log.debug
+        :type verbose: bool
+        """
         if self.timestamp:
             raise RuntimeError('Final exit code received.')
         with self.lock:
@@ -193,7 +205,15 @@ class ExecResult(object):
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
     ):
-        """Read stderr file-like object to stdout."""
+        """Read stderr file-like object to stdout.
+
+        :param src: source
+        :type src: typing.Iterable
+        :param log: logger
+        :type log: typing.Optional[logging.Logger]
+        :param verbose: use log.info instead of log.debug
+        :type verbose: bool
+        """
         if self.timestamp:
             raise RuntimeError('Final exit code received.')
         with self.lock:
@@ -306,7 +326,7 @@ class ExecResult(object):
                 '{{stdout!r}}\n'.format(
                     fmt=fmt))
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))
-            raise exceptions.ExecWrapperError(
+            raise exceptions.ExecHelperError(
                 self.cmd + tmpl.format(stdout=self.stdout_brief)
             )
         msg = '{fmt} deserialize target is not implemented'.format(fmt=fmt)

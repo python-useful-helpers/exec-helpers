@@ -82,6 +82,7 @@ class SigNum(enum.IntEnum):
 if six.PY3:
     digit_type = int
 else:
+    # noinspection PyUnresolvedReferences
     digit_type = long  # noqa  # pylint: disable=undefined-variable
 
 

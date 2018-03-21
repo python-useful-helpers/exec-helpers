@@ -19,12 +19,12 @@ from __future__ import absolute_import
 from .proc_enums import ExitCodes
 
 from .exceptions import (
-    ExecWrapperError,
+    ExecHelperError,
     ExecCalledProcessError,
     CalledProcessError,
     ParallelCallProcessError,
     ParallelCallExceptions,
-    ExecWrapperTimeoutError
+    ExecHelperTimeoutError
 )
 
 from .exec_result import ExecResult
@@ -32,12 +32,12 @@ from .ssh_client import SSHClient, SSHAuth
 from .subprocess_runner import Subprocess  # nosec  # Expected
 
 __all__ = (
-    'ExecWrapperError',
+    'ExecHelperError',
     'ExecCalledProcessError',
     'CalledProcessError',
     'ParallelCallExceptions',
     'ParallelCallProcessError',
-    'ExecWrapperTimeoutError',
+    'ExecHelperTimeoutError',
     'SSHClient',
     'SSHAuth',
     'Subprocess',
@@ -45,7 +45,7 @@ __all__ = (
     'ExecResult',
 )
 
-__version__ = '0.9.0'
+__version__ = '0.9.9'
 __author__ = "Alexey Stepanov"
 __author_email__ = 'penguinolog@gmail.com'
 __url__ = 'https://github.com/penguinolog/exec-helpers'

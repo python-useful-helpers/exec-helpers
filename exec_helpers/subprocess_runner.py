@@ -235,7 +235,7 @@ class Subprocess(BaseSingleton):
                 '{result.stderr_brief}'.format(result=result)
             )
             logger.debug(wait_err_msg)
-            raise exceptions.ExecWrapperTimeoutError(
+            raise exceptions.ExecHelperTimeoutError(
                 wait_err_msg + output_brief_msg
             )
 
@@ -255,7 +255,7 @@ class Subprocess(BaseSingleton):
         :type verbose: bool
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
-        :raises: ExecWrapperTimeoutError
+        :raises: ExecHelperTimeoutError
         """
         result = cls.__exec_command(command=command, timeout=timeout,
                                     verbose=verbose, **kwargs)

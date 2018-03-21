@@ -506,7 +506,8 @@ class TestSSHClientInit(unittest.TestCase):
 
         ssh.close()
 
-        logger.assert_has_calls((
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log.assert_has_calls((
             mock.call.exception('Could not close ssh connection'),
             mock.call.exception('Could not close sftp connection'),
         ))
@@ -720,7 +721,8 @@ class TestSSHClientInit(unittest.TestCase):
             # noinspection PyStatementEffect
             ssh._sftp
             # pylint: enable=pointless-statement
-        logger.assert_has_calls((
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log.assert_has_calls((
             mock.call.debug('SFTP is not connected, try to connect...'),
             mock.call.warning(
                 'SFTP enable failed! SSH only is accessible.'),
@@ -750,7 +752,8 @@ class TestSSHClientInit(unittest.TestCase):
 
         sftp = ssh._sftp
         self.assertEqual(sftp, open_sftp())
-        logger.assert_has_calls((
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log.assert_has_calls((
             mock.call.debug('SFTP is not connected, try to connect...'),
         ))
 
@@ -788,6 +791,23 @@ class TestSSHClientInit(unittest.TestCase):
         ))
         client.reset_mock()
         ssh01.close_connections()
+        # Mock returns false-connected state, so we just count close calls
+
+        client.assert_has_calls((
+            mock.call().get_transport(),
+            mock.call().get_transport(),
+            mock.call().get_transport(),
+            mock.call().close(),
+            mock.call().close(),
+            mock.call().close(),
+        ))
+
+        client.reset_mock()
+        with mock.patch(
+            'exec_helpers.ssh_client.SSHClient.close_connections'
+        ) as no_call:
+            exec_helpers.SSHClient.close()
+            no_call.assert_not_called()
         # Mock returns false-connected state, so we just count close calls
 
         client.assert_has_calls((
@@ -896,9 +916,10 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     def test_execute_async_pty(self, client, policy, logger):
@@ -930,9 +951,10 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     def test_execute_async_sudo(self, client, policy, logger):
@@ -962,9 +984,10 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     def test_execute_async_with_sudo_enforce(self, client, policy, logger):
@@ -997,9 +1020,10 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     def test_execute_async_with_no_sudo_enforce(self, client, policy, logger):
@@ -1028,9 +1052,10 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     def test_execute_async_with_none_enforce(self, client, policy, logger):
@@ -1059,9 +1084,10 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHAuth.enter_password')
@@ -1103,9 +1129,10 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.debug(command_log),
-            logger.mock_calls
+            log.mock_calls
         )
 
     @staticmethod
@@ -1175,23 +1202,24 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(command)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
-        logger.assert_has_calls(
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
             [
-                mock.call.log(level=logging.DEBUG, msg=command_log),
+                mock.call(level=logging.DEBUG, msg=command_log),
             ] + [
-                mock.call.log(
+                mock.call(
                     level=logging.DEBUG,
                     msg=str(x.rstrip().decode('utf-8'))
                 )
                 for x in stdout_list
             ] + [
-                mock.call.log(
+                mock.call(
                     level=logging.DEBUG,
                     msg=str(x.rstrip().decode('utf-8'))
                 )
                 for x in stderr_list
             ] + [
-                mock.call.log(level=logging.DEBUG, msg=message),
+                mock.call(level=logging.DEBUG, msg=message),
             ]
         )
 
@@ -1223,21 +1251,22 @@ class TestExecute(unittest.TestCase):
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
 
         message = self.gen_cmd_result_log_message(result)
-        logger.assert_has_calls(
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
             [
-                mock.call.log(level=logging.INFO, msg=command_log),
+                mock.call(level=logging.INFO, msg=command_log),
             ] + [
-                mock.call.log(
+                mock.call(
                     level=logging.INFO, msg=str(x.rstrip().decode('utf-8'))
                 )
                 for x in stdout_list
             ] + [
-                mock.call.log(
+                mock.call(
                     level=logging.INFO, msg=str(x.rstrip().decode('utf-8'))
                 )
                 for x in stderr_list
             ] + [
-                mock.call.log(level=logging.INFO, msg=message),
+                mock.call(level=logging.INFO, msg=message),
             ]
         )
 
@@ -1269,9 +1298,10 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(command)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         self.assertIn(
-            mock.call.log(level=logging.DEBUG, msg=message),
-            logger.mock_calls
+            mock.call(level=logging.DEBUG, msg=message),
+            log.mock_calls
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
@@ -1292,7 +1322,7 @@ class TestExecute(unittest.TestCase):
 
         logger.reset_mock()
 
-        with self.assertRaises(exec_helpers.ExecWrapperTimeoutError):
+        with self.assertRaises(exec_helpers.ExecHelperTimeoutError):
             # noinspection PyTypeChecker
             ssh.execute(command=command, verbose=False, timeout=1)
 
@@ -1860,34 +1890,12 @@ class TestSftp(unittest.TestCase):
         ))
 
         # Negative scenarios
-        logger.reset_mock()
         # noinspection PyTypeChecker
         result = ssh.download(destination=dst, target=target)
-        logger.assert_has_calls((
-            mock.call.debug(
-                "Copying '%s' -> '%s' from remote to local host",
-                '/etc/environment',
-                '/tmp/environment'),
-            mock.call.debug(
-                "Can't download %s because it doesn't exist",
-                '/etc/environment'
-            ),
-        ))
         self.assertFalse(result)
 
-        logger.reset_mock()
         # noinspection PyTypeChecker
         ssh.download(destination=dst, target=target)
-        logger.assert_has_calls((
-            mock.call.debug(
-                "Copying '%s' -> '%s' from remote to local host",
-                '/etc/environment',
-                '/tmp/environment'),
-            mock.call.debug(
-                "Can't download %s because it is a directory",
-                '/etc/environment'
-            ),
-        ))
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.isdir')
     @mock.patch('os.path.isdir', autospec=True)

@@ -85,7 +85,7 @@ class TestExecResult(unittest.TestCase):
             result['nonexistent']
             # pylint: enable=pointless-statement
 
-        with self.assertRaises(exec_helpers.ExecWrapperError):
+        with self.assertRaises(exec_helpers.ExecHelperError):
             # pylint: disable=pointless-statement
             # noinspection PyStatementEffect
             result['stdout_json']
@@ -187,7 +187,7 @@ class TestExecResult(unittest.TestCase):
         """Test logging exception if stdout if not a correct json"""
         cmd = "ls -la | awk \'{print $1\}\'"
         result = exec_result.ExecResult(cmd=cmd)
-        with self.assertRaises(exec_helpers.ExecWrapperError):
+        with self.assertRaises(exec_helpers.ExecHelperError):
             # pylint: disable=pointless-statement
             # noinspection PyStatementEffect
             result.stdout_json
