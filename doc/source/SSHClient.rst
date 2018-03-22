@@ -313,6 +313,7 @@ API: SSHClient and SSHAuth.
         .. versionadded:: 1.0
 
     .. py:method:: enter_password(self, tgt)
+
         Enter password to STDIN.
 
         Note: required for 'sudo' call

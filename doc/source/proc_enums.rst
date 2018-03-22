@@ -8,4 +8,4 @@ API: ExitCodes
 
 .. py:class:: ExitCodes(int, enum.Enum)
 
-    """Linux & bash exit codes."""
+    Linux & bash exit codes.
