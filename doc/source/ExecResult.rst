@@ -6,18 +6,20 @@ API: ExecResult
 .. py:module:: exec_helpers
 .. py:currentmodule:: exec_helpers
 
-.. py:class:: ExecResult(cmd, stdout=None, stderr=None, exit_code=proc_enums.ExitCodes.EX_INVALID)
+.. py:class:: ExecResult(object)
 
     Command execution result.
 
-    :param cmd: command
-    :type cmd: ``str``
-    :param stdout: binary STDOUT
-    :type stdout: ``typing.Optional[typing.Iterable[bytes]]``
-    :param stderr: binary STDERR
-    :type stderr: ``typing.Optional[typing.Iterable[bytes]]``
-    :param exit_code: Exit code. If integer - try to convert to BASH enum.
-    :type exit_code: ``typing.Union[int, proc_enums.ExitCodes]``
+    .. py:method:: __init__(cmd, stdout=None, stderr=None, exit_code=ExitCodes.EX_INVALID)
+
+        :param cmd: command
+        :type cmd: ``str``
+        :param stdout: binary STDOUT
+        :type stdout: ``typing.Optional[typing.Iterable[bytes]]``
+        :param stderr: binary STDERR
+        :type stderr: ``typing.Optional[typing.Iterable[bytes]]``
+        :param exit_code: Exit code. If integer - try to convert to BASH enum.
+        :type exit_code: typing.Union[int, ExitCodes]
 
     .. py:attribute:: lock
 
@@ -76,8 +78,9 @@ API: ExecResult
 
     .. py:attribute:: exit_code
 
-        ``typing.Union[int, proc_enums.ExitCodes]``
         Return(exit) code of command.
+
+        :rtype: typing.Union[int, ExitCodes]
 
     .. py:attribute:: stdout_json
 

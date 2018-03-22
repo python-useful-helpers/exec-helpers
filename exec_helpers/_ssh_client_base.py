@@ -34,7 +34,7 @@ import warnings
 
 import advanced_descriptors
 import paramiko
-import retrying
+import tenacity
 import threaded
 import six
 
@@ -70,14 +70,19 @@ CPYTHON = 'CPython' == platform.python_implementation()
 class SSHAuth(object):
     """SSH Authorization object."""
 
-    __slots__ = ('__username', '__password', '__key', '__keys')
+    __slots__ = (
+        '__username', '__password', '__key', '__keys',
+        '__key_filename', '__passphrase'
+    )
 
     def __init__(
         self,
         username=None,  # type: typing.Optional[str]
         password=None,  # type: typing.Optional[str]
         key=None,  # type: typing.Optional[paramiko.RSAKey]
-        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]],
+        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
+        passphrase=None,  # type: typing.Optional[str]
     ):
         """SSH credentials object.
 
@@ -92,7 +97,14 @@ class SSHAuth(object):
         :param key: Main connection key
         :type key: typing.Optional[paramiko.RSAKey]
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        :type keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]]
+        :param key_filename: filename(s) for additional key files
+        :type key_filename: typing.Union[typing.List[str], str, None]
+        :param passphrase: passphrase for keys. Need, if differs from password
+        :type passphrase: typing.Optional[str]
+
+        .. versionchanged:: 1.0
+            added: key_filename, passphrase arguments
         """
         self.__username = username
         self.__password = password
@@ -105,6 +117,8 @@ class SSHAuth(object):
             for k in keys:
                 if k not in self.__keys:
                     self.__keys.append(k)
+        self.__key_filename = key_filename
+        self.__passphrase = passphrase
 
     @property
     def username(self):  # type: () -> str
@@ -131,6 +145,16 @@ class SSHAuth(object):
         :rtype: str
         """
         return self.__get_public_key(self.__key)
+
+    @property
+    def key_filename(
+        self
+    ):  # type: () -> typing.Union[typing.List[str], str, None]
+        """Key filename(s).
+
+        .. versionadded:: 1.0
+        """
+        return copy.deepcopy(self.__key_filename)
 
     def enter_password(self, tgt):  # type: (io.StringIO) -> None
         """Enter password to STDIN.
@@ -167,7 +191,10 @@ class SSHAuth(object):
         """
         kwargs = {
             'username': self.username,
-            'password': self.__password}
+            'password': self.__password,
+            'key_filename': self.key_filename,
+            'passphrase': self.__passphrase,
+        }
         if hostname is not None:
             kwargs['hostname'] = hostname
             kwargs['port'] = port
@@ -208,7 +235,13 @@ class SSHAuth(object):
             self.__class__,
             self.username,
             self.__password,
-            tuple(self.__keys)
+            tuple(self.__keys),
+            (
+                tuple(self.key_filename)
+                if isinstance(self.key_filename, list)
+                else self.key_filename
+            ),
+            self.__passphrase
         ))
 
     def __eq__(self, other):
@@ -253,10 +286,16 @@ class SSHAuth(object):
                     self.__get_public_key(key=k)) if k is not None else None)
 
         return (
-            '{cls}(username={username}, '
-            'password=<*masked*>, key={key}, keys={keys})'.format(
+            '{cls}('
+            'username={self.username!r}, '
+            'password=<*masked*>, '
+            'key={key}, '
+            'keys={keys}, '
+            'key_filename={self.key_filename!r}, '
+            'passphrase=<*masked*>,'
+            ')'.format(
                 cls=self.__class__.__name__,
-                username=self.username,
+                self=self,
                 key=_key,
                 keys=_keys)
         )
@@ -575,10 +614,11 @@ class SSHClientBase(BaseSSHClient):
         """
         return self.__ssh
 
-    @retrying.retry(
-        retry_on_exception=lambda exc: isinstance(exc, paramiko.SSHException),
-        stop_max_attempt_number=3,
-        wait_fixed=3 * 1000,
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(paramiko.SSHException),
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_fixed(3),
+        reraise=True,
     )
     def __connect(self):
         """Main method for connection open."""
@@ -648,21 +688,6 @@ class SSHClientBase(BaseSSHClient):
         )
         _MemorizedSSH.clear_cache()
 
-    @classmethod
-    def close_connections(
-        cls,
-        hostname=None  # type: typing.Optional[str]
-    ):
-        """Close cached connections: if hostname is not set, then close all.
-
-        :type hostname: str
-        """
-        warnings.warn(
-            'Classmethod `close_connections` wil be removed at version 1.0',
-            DeprecationWarning
-        )
-        _MemorizedSSH.close_connections(hostname=hostname)
-
     def __del__(self):
         """Destructor helper: close channel and threads BEFORE closing others.
 
@@ -685,8 +710,11 @@ class SSHClientBase(BaseSSHClient):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context manager."""
-        pass
+        """Exit context manager.
+
+        .. versionchanged:: 1.0 - disconnect enforced on close
+        """
+        self.close()
 
     def reconnect(self):
         """Reconnect SSH session."""
@@ -1186,7 +1214,7 @@ class SSHClientBase(BaseSSHClient):
         :type mode: str
         :return: file.open() stream
         """
-        return self._sftp.open(path, mode)
+        return self._sftp.open(path, mode)  # pragma: no cover
 
     def exists(self, path):  # type: (str) -> bool
         """Check for file existence using SFTP session.
@@ -1206,7 +1234,23 @@ class SSHClientBase(BaseSSHClient):
         :type path: str
         :rtype: paramiko.sftp_attr.SFTPAttributes
         """
-        return self._sftp.stat(path)
+        return self._sftp.stat(path)  # pragma: no cover
+
+    def utime(
+        self,
+        path,  # type: str
+        times=None  # type: typing.Optional[typing.Tuple[int, int]]
+    ):
+        """Set atime, mtime.
+
+        :param path: filesystem object path
+        :type path: str
+        :param times: (atime, mtime)
+        :type times: typing.Optional[typing.Tuple[int, int]]
+
+        .. versionadded:: 1.0.0
+        """
+        return self._sftp.utime(path, times)  # pragma: no cover
 
     def isfile(self, path):  # type: (str) -> bool
         """Check, that path is file using SFTP session.

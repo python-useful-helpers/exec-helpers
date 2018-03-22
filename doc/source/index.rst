@@ -14,6 +14,7 @@ Contents:
     Subprocess
     ExecResult
     exceptions
+    proc_enums
 
 Indices and tables
 ==================

@@ -83,19 +83,31 @@ class TestSSHAuth(unittest.TestCase):
         with mock.patch('warnings.warn'):
             exec_helpers.SSHClient._clear_cache()
 
-    def init_checks(self, username=None, password=None, key=None, keys=None):
+    def init_checks(
+        self,
+        username=None,
+        password=None,
+        key=None,
+        keys=None,
+        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
+        passphrase=None,  # type: typing.Optional[str]
+    ):
         """shared positive init checks
 
         :type username: str
         :type password: str
         :type key: paramiko.RSAKey
         :type keys: list
+        :type key_filename: typing.Union[typing.List[str], str, None]
+        :type passphrase: typing.Optional[str]
         """
         auth = exec_helpers.SSHAuth(
             username=username,
             password=password,
             key=key,
-            keys=keys
+            keys=keys,
+            key_filename=key_filename,
+            passphrase=passphrase
         )
 
         int_keys = [None]
@@ -129,12 +141,15 @@ class TestSSHAuth(unittest.TestCase):
         self.assertEqual(
             repr(auth),
             "{cls}("
-            "username={username}, "
+            "username={auth.username!r}, "
             "password=<*masked*>, "
             "key={key}, "
-            "keys={keys})".format(
+            "keys={keys}, "
+            "key_filename={auth.key_filename!r}, "
+            "passphrase=<*masked*>,"
+            ")".format(
                 cls=exec_helpers.SSHAuth.__name__,
-                username=auth.username,
+                auth=auth,
                 key=_key,
                 keys=_keys
             )
@@ -202,6 +217,7 @@ class TestSSHClientInit(unittest.TestCase):
             client, policy, logger,
             host=None, port=22,
             username=None, password=None, private_keys=None,
+            key_filename=None, passphrase=None,
             auth=None
     ):
         """shared checks for positive cases
@@ -214,18 +230,21 @@ class TestSSHClientInit(unittest.TestCase):
         :type username: str
         :type password: str
         :type private_keys: list
+        :type key_filename: typing.Union[typing.List[str], str, None]
+        :type passphrase: typing.Optional[str]
         :type auth: exec_wrappers.SSHAuth
         """
         _ssh = mock.call()
 
-        ssh = exec_helpers.SSHClient(
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-            private_keys=private_keys,
-            auth=auth
-        )
+        with mock.patch('time.sleep'):
+            ssh = exec_helpers.SSHClient(
+                host=host,
+                port=port,
+                username=username,
+                password=password,
+                private_keys=private_keys,
+                auth=auth
+            )
         client.assert_called_once()
         policy.assert_called_once()
 
@@ -248,7 +267,9 @@ class TestSSHClientInit(unittest.TestCase):
                     _ssh.connect(
                         hostname=host, password=password,
                         pkey=pkey,
-                        port=port, username=username),
+                        port=port, username=username,
+                        key_filename=key_filename, passphrase=passphrase
+                    ),
                 ]
             else:
                 pkey = private_keys[0]
@@ -258,11 +279,15 @@ class TestSSHClientInit(unittest.TestCase):
                     _ssh.connect(
                         hostname=host, password=password,
                         pkey=None,
-                        port=port, username=username),
+                        port=port, username=username,
+                        key_filename=key_filename, passphrase=passphrase
+                    ),
                     _ssh.connect(
                         hostname=host, password=password,
                         pkey=pkey,
-                        port=port, username=username),
+                        port=port, username=username,
+                        key_filename=key_filename, passphrase=passphrase
+                    ),
                 ]
 
             self.assertIn(expected_calls, client.mock_calls)
@@ -350,7 +375,7 @@ class TestSSHClientInit(unittest.TestCase):
             client, policy, logger,
             host=host,
             username=username,
-            private_keys=gen_private_keys(1)
+            private_keys=gen_private_keys(1),
         )
 
     def test_init_username_password_single_key(self, client, policy, logger):
@@ -551,7 +576,10 @@ class TestSSHClientInit(unittest.TestCase):
                 password=None,
                 pkey=None,
                 port=22,
-                username=None),
+                username=None,
+                key_filename=None,
+                passphrase=None
+            ),
         ]
         self.assertIn(
             expected_calls,
@@ -781,28 +809,6 @@ class TestSSHClientInit(unittest.TestCase):
         self.assertFalse(ssh11 is ssh21)
 
         # 2. Close connections check
-        client.reset_mock()
-        ssh01.close_connections(ssh01.hostname)
-        client.assert_has_calls((
-            mock.call().get_transport(),
-            mock.call().get_transport(),
-            mock.call().close(),
-            mock.call().close(),
-        ))
-        client.reset_mock()
-        ssh01.close_connections()
-        # Mock returns false-connected state, so we just count close calls
-
-        client.assert_has_calls((
-            mock.call().get_transport(),
-            mock.call().get_transport(),
-            mock.call().get_transport(),
-            mock.call().close(),
-            mock.call().close(),
-            mock.call().close(),
-        ))
-
-        client.reset_mock()
         with mock.patch(
             'exec_helpers.ssh_client.SSHClient.close_connections'
         ) as no_call:
@@ -1601,7 +1607,10 @@ class TestExecuteThrowHost(unittest.TestCase):
         transp.assert_called_once_with(intermediate_channel)
         open_session.assert_called_once()
         transport.assert_has_calls((
-            mock.call.connect(username=username, password=password, pkey=None),
+            mock.call.connect(
+                username=username, password=password, pkey=None,
+                key_filename=None, passphrase=None,
+            ),
             mock.call.open_session()
         ))
         channel.assert_has_calls((
@@ -1655,7 +1664,10 @@ class TestExecuteThrowHost(unittest.TestCase):
         transp.assert_called_once_with(intermediate_channel)
         open_session.assert_called_once()
         transport.assert_has_calls((
-            mock.call.connect(username=_login, password=_password, pkey=None),
+            mock.call.connect(
+                username=_login, password=_password, pkey=None,
+                key_filename=None, passphrase=None,
+            ),
             mock.call.open_session()
         ))
         channel.assert_has_calls((

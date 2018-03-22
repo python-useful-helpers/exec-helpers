@@ -116,7 +116,7 @@ class CalledProcessError(ExecCalledProcessError):
         super(CalledProcessError, self).__init__(message)
 
 
-class ParallelCallExceptions(ExecHelperError):
+class ParallelCallExceptions(ExecCalledProcessError):
     """Exception raised during parallel call as result of exceptions."""
 
     __slots__ = (
@@ -172,7 +172,7 @@ class ParallelCallExceptions(ExecHelperError):
         super(ParallelCallExceptions, self).__init__(message)
 
 
-class ParallelCallProcessError(ExecHelperError):
+class ParallelCallProcessError(ExecCalledProcessError):
     """Exception during parallel execution."""
 
     __slots__ = (

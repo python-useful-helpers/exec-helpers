@@ -18,7 +18,7 @@ API: Subprocess
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Optional[int]``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
     .. py:classmethod:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
@@ -37,7 +37,7 @@ API: Subprocess
         :type expected: ``typing.Optional[typing.Iterable[int]]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: CalledProcessError
 
     .. py:classmethod:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
@@ -54,7 +54,7 @@ API: Subprocess
         :type error_info: ``typing.Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.

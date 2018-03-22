@@ -6,22 +6,24 @@ API: SSHClient and SSHAuth.
 .. py:module:: exec_helpers
 .. py:currentmodule:: exec_helpers
 
-.. py:class:: SSHClient(host, port=22, username=None, password=None, private_keys=None, auth=None, )
+.. py:class:: SSHClient
 
     SSHClient helper.
 
-    :param host: remote hostname
-    :type host: ``str``
-    :param port: remote ssh port
-    :type port: ``int``
-    :param username: remote username.
-    :type username: ``typing.Optional[str]``
-    :param password: remote password
-    :type password: ``typing.Optional[str]``
-    :param private_keys: private keys for connection
-    :type private_keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
-    :param auth: credentials for connection
-    :type auth: ``typing.Optional[SSHAuth]``
+    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, )
+
+        :param host: remote hostname
+        :type host: ``str``
+        :param port: remote ssh port
+        :type port: ``int``
+        :param username: remote username.
+        :type username: ``typing.Optional[str]``
+        :param password: remote password
+        :type password: ``typing.Optional[str]``
+        :param private_keys: private keys for connection
+        :type private_keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
+        :param auth: credentials for connection
+        :type auth: typing.Optional[SSHAuth]
 
     .. note:: auth has priority over username/password/private_keys
 
@@ -37,8 +39,9 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: auth
 
-        ``SSHAuth``
         Internal authorisation object
+
+        :rtype: SSHAuth
 
     .. py:attribute:: hostname
 
@@ -72,6 +75,16 @@ API: SSHClient and SSHAuth.
 
         Reconnect SSH session
 
+    .. py:method:: __enter__()
+
+        Open context manager
+
+    .. py:method:: __exit__(self, exc_type, exc_val, exc_tb)
+
+        Close context manager and disconnect
+
+        .. versionchanged:: 1.0 - disconnect enforced on close
+
     .. py:method:: sudo(enforce=None)
 
         Context manager getter for sudo operation
@@ -99,7 +112,7 @@ API: SSHClient and SSHAuth.
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Optional[int]``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
     .. py:method:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
@@ -118,7 +131,7 @@ API: SSHClient and SSHAuth.
         :type expected: ``typing.Optional[typing.Iterable[int]]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: CalledProcessError
 
     .. py:method:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
@@ -135,7 +148,7 @@ API: SSHClient and SSHAuth.
         :type error_info: ``typing.Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.
@@ -149,7 +162,7 @@ API: SSHClient and SSHAuth.
         :param command: Command for execution
         :type command: ``str``
         :param auth: credentials for target machine
-        :type auth: ``typing.Optional[SSHAuth]``
+        :type auth: typing.Optional[SSHAuth]
         :param target_port: target port
         :type target_port: ``int``
         :param verbose: Produce log.info records for command call and output
@@ -158,7 +171,7 @@ API: SSHClient and SSHAuth.
         :type timeout: ``typing.Optional[int]``
         :param get_pty: open PTY on target machine
         :type get_pty: ``bool``
-        :rtype: ``ExecResult``
+        :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
     .. py:classmethod:: execute_together(remotes, command, timeout=None, expected=None, raise_on_err=True, **kwargs)
@@ -176,7 +189,7 @@ API: SSHClient and SSHAuth.
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :return: dictionary {(hostname, port): result}
-        :rtype: ``typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]``
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
         :raises: ParallelCallProcessError
         :raises: ParallelCallExceptions
 
@@ -201,6 +214,17 @@ API: SSHClient and SSHAuth.
         :type path: ``str``
         :rtype: ``paramiko.sftp_attr.SFTPAttributes``
 
+    .. py:method:: utime(path, times=None):
+
+        Set atime, mtime.
+
+        :param path: filesystem object path
+        :type path: str
+        :param times: (atime, mtime)
+        :type times: typing.Optional[typing.Tuple[int, int]]
+
+        .. versionadded:: 1.0.0
+
     .. py:method:: isfile(path)
 
         Check, that path is file using SFTP session.
@@ -214,6 +238,8 @@ API: SSHClient and SSHAuth.
 
         :type path: ``str``
         :rtype: ``bool``
+
+    **Non standard methods:**
 
     .. py:method:: mkdir(path)
 
@@ -244,7 +270,7 @@ API: SSHClient and SSHAuth.
         :rtype: ``bool``
 
 
-.. py:class:: SSHAuth(username=None, password=None, key=None, keys=None, )
+.. py:class:: SSHAuth(object)
 
     SSH credentials object.
 
@@ -252,14 +278,23 @@ API: SSHClient and SSHAuth.
     Single SSHAuth object is associated with single host:port.
     Password and key is private, other data is read-only.
 
-    :param username: remote username.
-    :type username: ``typing.Optional[str]``
-    :param password: remote password
-    :type password: ``typing.Optional[str]``
-    :param key: Main connection key
-    :type key: ``typing.Optional[paramiko.RSAKey]``
-    :param keys: Alternate connection keys
-    :type keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
+    .. py:method:: __init__(username=None, password=None, key=None, keys=None, )
+
+        :param username: remote username.
+        :type username: ``typing.Optional[str]``
+        :param password: remote password
+        :type password: ``typing.Optional[str]``
+        :param key: Main connection key
+        :type key: ``typing.Optional[paramiko.RSAKey]``
+        :param keys: Alternate connection keys
+        :type keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
+        :param key_filename: filename(s) for additional key files
+        :type key_filename: ``typing.Union[typing.List[str], str, None]``
+        :param passphrase: passphrase for keys. Need, if differs from password
+        :type passphrase: ``typing.Optional[str]``
+
+        .. versionchanged:: 1.0
+            added: key_filename, passphrase arguments
 
     .. py:attribute:: username
 
@@ -269,6 +304,13 @@ API: SSHClient and SSHAuth.
 
         ``typing.Optional[str]``
         public key for stored private key if presents else None
+
+    .. py:attribute:: key_filename
+
+        ``typing.Union[typing.List[str], str, None]``
+        Key filename(s).
+
+        .. versionadded:: 1.0
 
     .. py:method:: enter_password(self, tgt)
         Enter password to STDIN.
