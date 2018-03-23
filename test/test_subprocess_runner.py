@@ -163,14 +163,12 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
     @mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
     def test_check_call(self, execute, logger):
         exit_code = 0
-        return_value = {
-            'stderr_str': '0\n1',
-            'stdout_str': '2\n3',
-            'stderr_brief': '0\n1',
-            'stdout_brief': '2\n3',
-            'exit_code': exit_code,
-            'stderr': [b' \n', b'0\n', b'1\n', b' \n'],
-            'stdout': [b' \n', b'2\n', b'3\n', b' \n']}
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            stderr=stdout_list,
+            exit_code=exit_code,
+        )
         execute.return_value = return_value
 
         verbose = False
@@ -184,7 +182,12 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
         self.assertEqual(result, return_value)
 
         exit_code = 1
-        return_value['exit_code'] = exit_code
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            stderr=stdout_list,
+            exit_code=exit_code,
+        )
         execute.reset_mock()
         execute.return_value = return_value
         with self.assertRaises(exec_helpers.CalledProcessError):
@@ -195,14 +198,12 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
     @mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
     def test_check_call_expected(self, execute, logger):
         exit_code = 0
-        return_value = {
-            'stderr_str': '0\n1',
-            'stdout_str': '2\n3',
-            'stderr_brief': '0\n1',
-            'stdout_brief': '2\n3',
-            'exit_code': exit_code,
-            'stderr': [b' \n', b'0\n', b'1\n', b' \n'],
-            'stdout': [b' \n', b'2\n', b'3\n', b' \n']}
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            stderr=stdout_list,
+            exit_code=exit_code,
+        )
         execute.return_value = return_value
 
         verbose = False
@@ -216,7 +217,12 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
         self.assertEqual(result, return_value)
 
         exit_code = 1
-        return_value['exit_code'] = exit_code
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            stderr=stdout_list,
+            exit_code=exit_code,
+        )
         execute.reset_mock()
         execute.return_value = return_value
         with self.assertRaises(exec_helpers.CalledProcessError):
@@ -229,14 +235,11 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
 
     @mock.patch('exec_helpers.subprocess_runner.Subprocess.check_call')
     def test_check_stderr(self, check_call, logger):
-        return_value = {
-            'stderr_str': '',
-            'stdout_str': '2\n3',
-            'stderr_brief': '',
-            'stdout_brief': '2\n3',
-            'exit_code': 0,
-            'stderr': [],
-            'stdout': [b' \n', b'2\n', b'3\n', b' \n']}
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            exit_code=0,
+        )
         check_call.return_value = return_value
 
         verbose = False
@@ -253,9 +256,12 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
             error_info=None, raise_on_err=raise_on_err)
         self.assertEqual(result, return_value)
 
-        return_value['stderr_str'] = '0\n1'
-        return_value['stderr_brief'] = '0\n1'
-        return_value['stderr'] = [b' \n', b'0\n', b'1\n', b' \n']
+        return_value = exec_helpers.ExecResult(
+            cmd=command,
+            stdout=stdout_list,
+            stderr=stdout_list,
+            exit_code=0,
+        )
 
         check_call.reset_mock()
         check_call.return_value = return_value

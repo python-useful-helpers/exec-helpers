@@ -243,18 +243,11 @@ class Subprocess(BaseSingleton):
             self.__process = None
 
             wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(
-                cmd=command.rstrip(),
-                timeout=timeout)
-            output_brief_msg = (
-                '\tSTDOUT:\n'
-                '{result.stdout_brief}\n'
-                '\tSTDERR"\n'
-                '{result.stderr_brief}'.format(result=result)
+                result=result,
+                timeout=timeout
             )
             logger.debug(wait_err_msg)
-            raise exceptions.ExecHelperTimeoutError(
-                wait_err_msg + output_brief_msg
-            )
+            raise exceptions.ExecHelperTimeoutError(wait_err_msg)
 
     def execute(
         self,
@@ -275,8 +268,7 @@ class Subprocess(BaseSingleton):
         """
         result = self.__exec_command(command=command, timeout=timeout,
                                      verbose=verbose, **kwargs)
-        message = _log_templates.CMD_RESULT.format(
-            cmd=command, code=result.exit_code)
+        message = _log_templates.CMD_RESULT.format(result=result)
         logger.log(
             level=logging.INFO if verbose else logging.DEBUG,
             msg=message
@@ -313,18 +305,17 @@ class Subprocess(BaseSingleton):
             message = (
                 _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
                     append=error_info + '\n' if error_info else '',
-                    cmd=command,
-                    code=ret['exit_code'],
+                    result=ret,
                     expected=expected
                 ))
             logger.error(message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(
                     command,
-                    ret['exit_code'],
+                    ret.exit_code,
                     expected=expected,
-                    stdout=ret['stdout_brief'],
-                    stderr=ret['stderr_brief'])
+                    stdout=ret.stdout_brief,
+                    stderr=ret.stderr_brief)
         return ret
 
     def check_stderr(
@@ -355,8 +346,7 @@ class Subprocess(BaseSingleton):
             message = (
                 _log_templates.CMD_UNEXPECTED_STDERR.format(
                     append=error_info + '\n' if error_info else '',
-                    cmd=command,
-                    code=ret['exit_code']
+                    result=ret,
                 ))
             logger.error(message)
             if raise_on_err:

@@ -905,18 +905,11 @@ class SSHClientBase(BaseSSHClient):
         future.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(
-            cmd=command.rstrip(),
-            timeout=timeout)
-        output_brief_msg = (
-            '\tSTDOUT:\n'
-            '{result.stdout_brief}\n'
-            '\tSTDERR"\n'
-            '{result.stderr_brief}'.format(result=result)
+            result=result,
+            timeout=timeout
         )
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(
-            wait_err_msg + output_brief_msg
-        )
+        raise exceptions.ExecHelperTimeoutError(wait_err_msg)
 
     def execute(
         self,
@@ -947,9 +940,7 @@ class SSHClientBase(BaseSSHClient):
             command, chan, stdout, stderr, timeout,
             verbose=verbose
         )
-        message = _log_templates.CMD_RESULT.format(
-            cmd=command.rstrip(), code=result.exit_code
-        )
+        message = _log_templates.CMD_RESULT.format(result=result)
         self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG,
             msg=message
@@ -989,8 +980,7 @@ class SSHClientBase(BaseSSHClient):
             message = (
                 _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
                     append=error_info + '\n' if error_info else '',
-                    cmd=command,
-                    code=ret.exit_code,
+                    result=ret,
                     expected=expected,
                 ))
             self.logger.error(message)
@@ -1036,8 +1026,7 @@ class SSHClientBase(BaseSSHClient):
             message = (
                 _log_templates.CMD_UNEXPECTED_STDERR.format(
                     append=error_info + '\n' if error_info else '',
-                    cmd=command,
-                    code=ret.exit_code,
+                    result=ret,
                 ))
             self.logger.error(message)
             if raise_on_err:

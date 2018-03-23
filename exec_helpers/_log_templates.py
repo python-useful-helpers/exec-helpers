@@ -20,13 +20,19 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 CMD_EXEC = "Executing command:\n{cmd!s}\n"
-CMD_RESULT = "Command exit code '{code!s}':\n{cmd!s}\n"
+CMD_RESULT = "Command exit code '{result.exit_code!s}':\n{result.cmd}\n"
 CMD_UNEXPECTED_EXIT_CODE = (
-    "{append}Command '{cmd!s}' returned exit code '{code!s}' "
-    "while expected '{expected!s}'\n"
+    "{append}Command '{result.cmd}' returned exit code '{result.exit_code!s}' "
+    "while expected '{expected!s}'"
 )
 CMD_UNEXPECTED_STDERR = (
-    "{append}Command '{cmd!s}' STDERR while not expected\n"
-    "\texit code: '{code!s}'"
+    "{append}Command '{result.cmd}' STDERR while not expected\n"
+    "\texit code: '{result.exit_code!s}'"
 )
-CMD_WAIT_ERROR = "Wait for '{cmd!s}' during {timeout!s}s: no return code!"
+CMD_WAIT_ERROR = (
+    "Wait for '{result.cmd}' during {timeout!s}s: no return code!\n"
+    '\tSTDOUT:\n'
+    '{result.stdout_brief}\n'
+    '\tSTDERR"\n'
+    '{result.stderr_brief}'
+)
