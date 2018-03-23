@@ -1,12 +1,10 @@
 exec-helpers
 ============
 
-.. image:: https://travis-ci.org/penguinolog/exec-helpers.svg?branch=master
-    :target: https://travis-ci.org/penguinolog/exec-helpers
-.. image:: https://img.shields.io/appveyor/ci/penguinolog/exec-helpers.svg
-    :target: https://ci.appveyor.com/project/penguinolog/exec-helpers
-.. image:: https://coveralls.io/repos/github/penguinolog/exec-helpers/badge.svg?branch=master
-    :target: https://coveralls.io/github/penguinolog/exec-helpers?branch=master
+.. image:: https://travis-ci.org/python-useful-helpers/exec-helpers.svg?branch=master
+    :target: https://travis-ci.org/python-useful-helpers/exec-helpers
+.. image:: https://coveralls.io/repos/github/python-useful-helpers/exec-helpers/badge.svg?branch=master
+    :target: https://coveralls.io/github/python-useful-helpers/exec-helpers?branch=master
 .. image:: https://readthedocs.org/projects/exec-helpers/badge/?version=latest
     :target: http://exec-helpers.readthedocs.io/
     :alt: Documentation Status
@@ -16,8 +14,8 @@ exec-helpers
     :target: https://pypi.python.org/pypi/exec-helpers
 .. image:: https://img.shields.io/pypi/status/exec-helpers.svg
     :target: https://pypi.python.org/pypi/exec-helpers
-.. image:: https://img.shields.io/github/license/penguinolog/exec-helpers.svg
-    :target: https://raw.githubusercontent.com/penguinolog/exec-helpers/master/LICENSE
+.. image:: https://img.shields.io/github/license/python-useful-helpers/exec-helpers.svg
+    :target: https://raw.githubusercontent.com/python-useful-helpers/exec-helpers/master/LICENSE
 
 Execution helpers for simplified usage of subprocess and ssh.
 Why another subprocess wrapper and why no clear `paramiko`?
@@ -36,7 +34,7 @@ Pros:
 * The same API for subprocess and ssh.
 * Connection memorize.
 * Free software: Apache license
-* Open Source: https://github.com/penguinolog/exec-helpers
+* Open Source: https://github.com/python-useful-helpers/exec-helpers
 * PyPI packaged: https://pypi.python.org/pypi/exec-helpers
 * Self-documented code: docstrings with types in comments
 * Tested: see bages on top
@@ -314,8 +312,6 @@ CI systems
 ==========
 For code checking several CI systems is used in parallel:
 
-1. `Travis CI: <https://travis-ci.org/penguinolog/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
+1. `Travis CI: <https://travis-ci.org/python-useful-helpers/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
 
-2. `AppVeyor: <https://ci.appveyor.com/project/penguinolog/exec-helpers>`_ is used for checking windows compatibility.
-
-3. `coveralls: <https://coveralls.io/github/penguinolog/exec-helpers>`_ is used for coverage display.
+2. `coveralls: <https://coveralls.io/github/python-useful-helpers/exec-helpers>`_ is used for coverage display.
