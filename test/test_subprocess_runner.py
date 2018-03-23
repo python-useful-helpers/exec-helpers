@@ -26,7 +26,6 @@ import unittest
 import mock
 
 import exec_helpers
-from exec_helpers import exec_result
 
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
 command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
@@ -69,7 +68,7 @@ class TestSubprocessRunner(unittest.TestCase):
         popen.return_value = popen_obj
 
         # noinspection PyTypeChecker
-        exp_result = exec_result.ExecResult(
+        exp_result = exec_helpers.ExecResult(
             cmd=command,
             stderr=stderr_lines,
             stdout=stdout_lines,
@@ -104,7 +103,8 @@ class TestSubprocessRunner(unittest.TestCase):
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                universal_newlines=False),
+                universal_newlines=False,
+            ),
         ))
         logger.assert_has_calls(
             [

@@ -45,7 +45,7 @@ __all__ = (
     'ExecResult',
 )
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __author__ = "Alexey Stepanov"
 __author_email__ = 'penguinolog@gmail.com'
 __url__ = 'https://github.com/penguinolog/exec-helpers'

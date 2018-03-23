@@ -94,19 +94,26 @@ Creation from scratch:
         username='username',  # type: typing.Optional[str]
         password='password',  # type: typing.Optional[str]
         key=None,  # type: typing.Optional[paramiko.RSAKey]
-        keys=None,
+        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]],
+        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
+        passphrase=None,  # type: typing.Optional[str]
     )
 
 Key is a main connection key (always tried first) and keys are alternate keys.
+Key filename is afilename or list of filenames with keys, which should be loaded.
+Passphrase is an alternate password for keys, if it differs from main password.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
 
 .. note:: Automatic closing connections during cache record removal supported on CPython implementation only.
 
+Context manager is available, connection is closed and lock is released on exit from context.
+
 Subprocess
 ----------
 
 No initialization required.
+Context manager is available, subprocess is killed and lock is released on exit from context.
 
 Base methods
 ------------

@@ -8,7 +8,23 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
-    .. py:classmethod:: execute(command, verbose=False, timeout=None, **kwargs)
+    .. py:attribute:: lock
+
+        ``threading.RLock``
+
+    .. py:method:: __enter__()
+
+        Open context manager
+
+        .. versionchanged:: 1.1.0 - lock on enter
+
+    .. py:method:: __exit__(self, exc_type, exc_val, exc_tb)
+
+        Close context manager
+
+        .. versionchanged:: 1.1.0 - release lock on exit
+
+    .. py:method:: execute(command, verbose=False, timeout=None, **kwargs)
 
         Execute command and wait for return code.
 
@@ -21,7 +37,9 @@ API: Subprocess
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
-    .. py:classmethod:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
+        .. versionchanged:: 1.1.0 - make method
+
+    .. py:method:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
 
         Execute command and check for return code.
 
@@ -40,7 +58,9 @@ API: Subprocess
         :rtype: ExecResult
         :raises: CalledProcessError
 
-    .. py:classmethod:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
+        .. versionchanged:: 1.1.0 - make method
+
+    .. py:method:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -58,3 +78,5 @@ API: Subprocess
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.
+
+        .. versionchanged:: 1.1.0 - make method

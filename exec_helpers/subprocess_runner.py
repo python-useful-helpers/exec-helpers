@@ -79,28 +79,45 @@ BaseSingleton = type.__new__(  # noqa
 class Subprocess(BaseSingleton):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    __lock = threading.RLock()
-
-    __slots__ = ()
+    __slots__ = (
+        '__lock',
+        '__process',
+    )
 
     def __init__(self):
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
         """
-        pass
+        self.__lock = threading.RLock()
+        self.__process = None
+
+    @property
+    def lock(self):  # type: () -> threading.RLock
+        """Lock.
+
+        :rtype: threading.RLock
+        """
+        return self.__lock
 
     def __enter__(self):
         """Context manager usage."""
+        self.lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager usage."""
-        pass
+        if self.__process:
+            self.__process.kill()
+        self.lock.release()
 
-    @classmethod
+    def __del__(self):
+        """Destructor. Kill running subprocess, if it running."""
+        if self.__process:
+            self.__process.kill()
+
     def __exec_command(
-        cls,
+        self,
         command,  # type: str
         cwd=None,  # type: typing.Optional[str]
         env=None,  # type: typing.Optional[typing.Dict[str, typing.Any]]
@@ -146,13 +163,11 @@ class Subprocess(BaseSingleton):
 
         @threaded.threaded(started=True, daemon=True)
         def poll_pipes(
-            proc,  # type: subprocess.Popen
             result,  # type: exec_result.ExecResult
             stop  # type: threading.Event
         ):
             """Polling task for FIFO buffers.
 
-            :type proc: subprocess.Popen
             :type result: exec_result.ExecResult
             :type stop: threading.Event
             """
@@ -160,29 +175,29 @@ class Subprocess(BaseSingleton):
                 time.sleep(0.1)
                 poll_streams(
                     result=result,
-                    stdout=proc.stdout,
-                    stderr=proc.stderr,
+                    stdout=self.__process.stdout,
+                    stderr=self.__process.stderr,
                 )
 
-                proc.poll()
+                self.__process.poll()
 
-                if proc.returncode is not None:
+                if self.__process.returncode is not None:
                     result.read_stdout(
-                        src=proc.stdout,
+                        src=self.__process.stdout,
                         log=logger,
                         verbose=verbose
                     )
                     result.read_stderr(
-                        src=proc.stderr,
+                        src=self.__process.stderr,
                         log=logger,
                         verbose=verbose
                     )
-                    result.exit_code = proc.returncode
+                    result.exit_code = self.__process.returncode
 
                     stop.set()
 
         # 1 Command per run
-        with cls.__lock:
+        with self.lock:
             result = exec_result.ExecResult(cmd=command)
             stop_event = threading.Event()
             message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
@@ -191,18 +206,18 @@ class Subprocess(BaseSingleton):
             else:
                 logger.debug(message)
             # Run
-            process = subprocess.Popen(
+            self.__process = subprocess.Popen(
                 args=[command],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True, cwd=cwd, env=env,
-                universal_newlines=False)
+                universal_newlines=False,
+            )
 
             # Poll output
             # pylint: disable=assignment-from-no-return
             poll_thread = poll_pipes(
-                process,
                 result,
                 stop_event
             )  # type: threading.Thread
@@ -213,10 +228,11 @@ class Subprocess(BaseSingleton):
             # Process closed?
             if stop_event.isSet():
                 stop_event.clear()
+                self.__process = None
                 return result
             # Kill not ended process and wait for close
             try:
-                process.kill()  # kill -9
+                self.__process.kill()  # kill -9
                 stop_event.wait(5)
                 poll_thread.join(5)
             except OSError:
@@ -224,6 +240,7 @@ class Subprocess(BaseSingleton):
                 logger.warning(
                     u"{!s} has been completed just after timeout: "
                     "please validate timeout.".format(command))
+            self.__process = None
 
             wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(
                 cmd=command.rstrip(),
@@ -239,9 +256,8 @@ class Subprocess(BaseSingleton):
                 wait_err_msg + output_brief_msg
             )
 
-    @classmethod
     def execute(
-        cls,
+        self,
         command,  # type: str
         verbose=False,  # type: bool
         timeout=None,  # type: typing.Optional[int]
@@ -257,8 +273,8 @@ class Subprocess(BaseSingleton):
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
         """
-        result = cls.__exec_command(command=command, timeout=timeout,
-                                    verbose=verbose, **kwargs)
+        result = self.__exec_command(command=command, timeout=timeout,
+                                     verbose=verbose, **kwargs)
         message = _log_templates.CMD_RESULT.format(
             cmd=command, code=result.exit_code)
         logger.log(
@@ -268,9 +284,8 @@ class Subprocess(BaseSingleton):
 
         return result
 
-    @classmethod
     def check_call(
-        cls,
+        self,
         command,  # type: str
         verbose=False,  # type: bool
         timeout=None,  # type: typing.Optional[int]
@@ -293,7 +308,7 @@ class Subprocess(BaseSingleton):
         :raises: DevopsCalledProcessError
         """
         expected = proc_enums.exit_codes_to_enums(expected)
-        ret = cls.execute(command, verbose, timeout, **kwargs)
+        ret = self.execute(command, verbose, timeout, **kwargs)
         if ret['exit_code'] not in expected:
             message = (
                 _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
@@ -312,9 +327,8 @@ class Subprocess(BaseSingleton):
                     stderr=ret['stderr_brief'])
         return ret
 
-    @classmethod
     def check_stderr(
-        cls,
+        self,
         command,  # type: str
         verbose=False,  # type: bool
         timeout=None,  # type: typing.Optional[int]
@@ -334,7 +348,7 @@ class Subprocess(BaseSingleton):
         :rtype: ExecResult
         :raises: DevopsCalledProcessError
         """
-        ret = cls.check_call(
+        ret = self.check_call(
             command, verbose, timeout=timeout,
             error_info=error_info, raise_on_err=raise_on_err, **kwargs)
         if ret['stderr']:

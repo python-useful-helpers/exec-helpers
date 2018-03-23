@@ -103,7 +103,7 @@ class SSHAuth(object):
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: typing.Optional[str]
 
-        .. versionchanged:: 1.0
+        .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
         """
         self.__username = username
@@ -152,7 +152,7 @@ class SSHAuth(object):
     ):  # type: () -> typing.Union[typing.List[str], str, None]
         """Key filename(s).
 
-        .. versionadded:: 1.0
+        .. versionadded:: 1.0.0
         """
         return copy.deepcopy(self.__key_filename)
 
@@ -706,15 +706,21 @@ class SSHClientBase(BaseSSHClient):
         self.__sftp = None
 
     def __enter__(self):
-        """Get context manager."""
+        """Get context manager.
+
+        .. versionchanged:: 1.1.0 - lock on enter
+        """
+        self.lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager.
 
-        .. versionchanged:: 1.0 - disconnect enforced on close
+        .. versionchanged:: 1.0.0 - disconnect enforced on close
+        .. versionchanged:: 1.1.0 - release lock on exit
         """
         self.close()
+        self.lock.release()
 
     def reconnect(self):
         """Reconnect SSH session."""

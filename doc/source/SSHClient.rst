@@ -79,11 +79,14 @@ API: SSHClient and SSHAuth.
 
         Open context manager
 
+        .. versionchanged:: 1.1.0 - lock on enter
+
     .. py:method:: __exit__(self, exc_type, exc_val, exc_tb)
 
         Close context manager and disconnect
 
-        .. versionchanged:: 1.0 - disconnect enforced on close
+        .. versionchanged:: 1.0.0 - disconnect enforced on close
+        .. versionchanged:: 1.1.0 - release lock on exit
 
     .. py:method:: sudo(enforce=None)
 
@@ -293,7 +296,7 @@ API: SSHClient and SSHAuth.
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: ``typing.Optional[str]``
 
-        .. versionchanged:: 1.0
+        .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
 
     .. py:attribute:: username
@@ -310,7 +313,7 @@ API: SSHClient and SSHAuth.
         ``typing.Union[typing.List[str], str, None]``
         Key filename(s).
 
-        .. versionadded:: 1.0
+        .. versionadded:: 1.0.0
 
     .. py:method:: enter_password(self, tgt)
 
