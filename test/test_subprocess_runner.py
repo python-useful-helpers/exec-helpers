@@ -164,7 +164,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         subprocess_runner.SingletonMeta._instances.clear()
 
-        with mock.patch('threading.RLock', autospec=True) as lock:
+        with mock.patch('threading.RLock', autospec=True):
             with exec_helpers.Subprocess() as runner:
                 self.assertEqual(
                     mock.call.acquire(), runner.lock.mock_calls[0]
