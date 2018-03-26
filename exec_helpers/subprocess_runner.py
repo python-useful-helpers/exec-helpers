@@ -138,7 +138,7 @@ class Subprocess(BaseSingleton):
             stderr,  # type: io.TextIOWrapper
         ):
             """Poll streams to the result object."""
-            if _win:
+            if _win:  # pragma: no cover
                 # select.select is not supported on windows
                 result.read_stdout(src=stdout, log=logger, verbose=verbose)
                 result.read_stderr(src=stderr, log=logger, verbose=verbose)

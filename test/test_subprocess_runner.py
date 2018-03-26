@@ -26,6 +26,7 @@ import unittest
 import mock
 
 import exec_helpers
+from exec_helpers import subprocess_runner
 
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
 command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
@@ -79,7 +80,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
     @staticmethod
     def gen_cmd_result_log_message(result):
-        return (u"Command exit code '{code!s}':\n{cmd!s}\n"
+        return ("Command exit code '{code!s}':\n{cmd!s}\n"
                 .format(cmd=result.cmd.rstrip(), code=result.exit_code))
 
     def test_call(self, popen, select, logger):
@@ -156,6 +157,27 @@ class TestSubprocessRunner(unittest.TestCase):
                     level=logging.INFO,
                     msg=self.gen_cmd_result_log_message(result)),
             ])
+
+    def test_context_manager(self, popen, select, logger):
+        popen_obj, exp_result = self.prepare_close(popen)
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        subprocess_runner.SingletonMeta._instances.clear()
+
+        with mock.patch('threading.RLock', autospec=True) as lock:
+            with exec_helpers.Subprocess() as runner:
+                self.assertEqual(
+                    mock.call.acquire(), runner.lock.mock_calls[0]
+                )
+                result = runner.execute(command)
+                self.assertEqual(
+                    result, exp_result
+
+                )
+
+            self.assertEqual(mock.call.release(), runner.lock.mock_calls[-1])
+
+        subprocess_runner.SingletonMeta._instances.clear()
 
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
