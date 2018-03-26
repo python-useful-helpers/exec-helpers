@@ -19,10 +19,10 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import os
 import posixpath
 
-import logging
 
 from ._ssh_client_base import SSHAuth, SSHClientBase
 
