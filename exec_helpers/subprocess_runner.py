@@ -311,11 +311,9 @@ class Subprocess(BaseSingleton):
             logger.error(message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(
-                    command,
-                    ret.exit_code,
+                    result=ret,
                     expected=expected,
-                    stdout=ret.stdout_brief,
-                    stderr=ret.stderr_brief)
+                )
         return ret
 
     def check_stderr(
@@ -351,10 +349,7 @@ class Subprocess(BaseSingleton):
             logger.error(message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(
-                    command,
-                    ret['exit_code'],
+                    result=ret,
                     expected=kwargs.get('expected'),
-                    stdout=ret['stdout_brief'],
-                    stderr=ret['stderr_brief'],
                 )
         return ret

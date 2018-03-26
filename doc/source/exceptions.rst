@@ -22,18 +22,20 @@ API: exceptions
 
     Exception for error on process calls.
 
-    .. py:method:: __init__(command, returncode, expected=None, stdout=None, stderr=None)
+    .. versionchanged:: 1.1.1 - provide full result
 
-        :param command: command
-        :type command: str
+    .. py:method:: __init__(result, expected=None)
+
+        :param result: execution result
+        :type result: ExecResult
         :param returncode: return code
-        :type returncode: typing.Union[int, proc_enums.ExitCodes]
-        :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-        :param stdout: stdout string or brief string
-        :type stdout: typing.Any
-        :param stderr: stderr string or brief string
-        :type stderr: typing.Any
+        :type returncode: typing.Union[int, ExitCodes]
+
+    .. py:attribute:: result
+
+        Execution result
+
+        :rtype: ExecResult
 
     .. py:attribute:: cmd
 
@@ -42,13 +44,15 @@ API: exceptions
 
     .. py:attribute:: returncode
 
-        ``typing.Union[int, proc_enums.ExitCodes]``
         return code
+
+        :rtype: typing.Union[int, ExitCodes]
 
     .. py:attribute:: expected
 
-        ``typing.List[typing.Union[int, proc_enums.ExitCodes]]``
         expected return codes
+
+        :rtype: typing.List[typing.Union[int, ExitCodes]]
 
     .. py:attribute:: stdout
 
@@ -71,11 +75,11 @@ API: exceptions
         :param exceptions: Exception on connections
         :type exceptions: ``typing.Dict[typing.Tuple[str, int], Exception]``
         :param errors: results with errors
-        :type errors: ``typing.Dict[typing.Tuple[str, int], ExecResult]``
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param results: all results
-        :type results: ``typing.Dict[typing.Tuple[str, int], ExecResult]``
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: ``typing.Optional[typing.List[typing.List[typing.Union[int, proc_enums.ExitCodes]]]``
+        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
 
         .. versionchanged:: 1.0 - fixed inheritance
 
@@ -91,18 +95,21 @@ API: exceptions
 
     .. py:attribute:: errors
 
-        ``typing.Dict[typing.Tuple[str, int], ExecResult]``
         results with errors
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
-        ``typing.Dict[typing.Tuple[str, int], ExecResult]``
         all results
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
-        ``typing.List[typing.Union[int, proc_enums.ExitCodes]]``
         expected return codes
+
+        :rtype: typing.List[typing.Union[int, ExitCodes]]
 
 .. py:exception:: ParallelCallProcessError(ExecCalledProcessError)
 
@@ -113,11 +120,11 @@ API: exceptions
         :param command: command
         :type command: ``str``
         :param errors: results with errors
-        :type errors: ``typing.Dict[typing.Tuple[str, int], ExecResult]``
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param results: all results
-        :type results: ``typing.Dict[typing.Tuple[str, int], ExecResult]``
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: ``typing.Optional[typing.List[typing.List[typing.Union[int, proc_enums.ExitCodes]]]``
+        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
 
         .. versionchanged:: 1.0 - fixed inheritance
 
@@ -128,15 +135,18 @@ API: exceptions
 
     .. py:attribute:: errors
 
-        ``typing.Dict[typing.Tuple[str, int], ExecResult]``
         results with errors
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
-        ``typing.Dict[typing.Tuple[str, int], ExecResult]``
         all results
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
-        ``typing.List[typing.Union[int, proc_enums.ExitCodes]]``
         expected return codes
+
+        :rtype: typing.List[typing.Union[int, ExitCodes]]

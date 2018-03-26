@@ -71,7 +71,9 @@ private_keys = []
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
 command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
 stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
+stdout_str = b''.join(stdout_list).strip().decode('utf-8')
 stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
+stderr_str = b''.join(stderr_list).strip().decode('utf-8')
 encoded_cmd = base64.b64encode(
     "{}\n".format(command).encode('utf-8')
 ).decode('utf-8')
@@ -1393,8 +1395,8 @@ class TestExecute(unittest.TestCase):
         exit_code = 0
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
+            stdout=stdout_list,
+            stderr=stderr_list,
             exit_code=exit_code
         )
         execute.return_value = return_value
@@ -1412,14 +1414,19 @@ class TestExecute(unittest.TestCase):
         execute.reset_mock()
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
+            stdout=stdout_list,
+            stderr=stderr_list,
             exit_code=exit_code
         )
         execute.return_value = return_value
-        with self.assertRaises(exec_helpers.CalledProcessError):
+        with self.assertRaises(exec_helpers.CalledProcessError) as cm:
             # noinspection PyTypeChecker
             ssh.check_call(command=command, verbose=verbose, timeout=None)
+        exc = cm.exception
+        self.assertEqual(exc.cmd, command)
+        self.assertEqual(exc.returncode, 1)
+        self.assertEqual(exc.stdout, stdout_str)
+        self.assertEqual(exc.stderr, stderr_str)
         execute.assert_called_once_with(command, verbose, None)
 
     @mock.patch(
@@ -1428,8 +1435,8 @@ class TestExecute(unittest.TestCase):
         exit_code = 0
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
+            stdout=stdout_list,
+            stderr=stderr_list,
             exit_code=exit_code
         )
         execute.return_value = return_value
@@ -1447,8 +1454,8 @@ class TestExecute(unittest.TestCase):
         exit_code = 1
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
+            stdout=stdout_list,
+            stderr=stderr_list,
             exit_code=exit_code
         )
         execute.reset_mock()
@@ -1466,7 +1473,7 @@ class TestExecute(unittest.TestCase):
     def test_check_stderr(self, check_call, client, policy, logger):
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
+            stdout=stdout_list,
             stderr=[],
             exit_code=0
         )
@@ -1488,8 +1495,8 @@ class TestExecute(unittest.TestCase):
 
         return_value = exec_result.ExecResult(
             cmd=command,
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
+            stdout=stdout_list,
+            stderr=stderr_list,
             exit_code=0
         )
 
@@ -1573,8 +1580,8 @@ class TestExecuteThrowHost(unittest.TestCase):
         # noinspection PyTypeChecker
         return_value = exec_result.ExecResult(
             cmd=command,
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
+            stderr=stderr_list,
+            stdout=stdout_list,
             exit_code=exit_code
         )
 
@@ -1634,8 +1641,8 @@ class TestExecuteThrowHost(unittest.TestCase):
         # noinspection PyTypeChecker
         return_value = exec_result.ExecResult(
             cmd=command,
-            stderr=[b' \n', b'0\n', b'1\n', b' \n'],
-            stdout=[b' \n', b'2\n', b'3\n', b' \n'],
+            stderr=stderr_list,
+            stdout=stdout_list,
             exit_code=exit_code
         )
 

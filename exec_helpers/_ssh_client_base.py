@@ -696,7 +696,7 @@ class SSHClientBase(BaseSSHClient):
         """
         try:
             self.__ssh.close()
-        except BaseException as e:
+        except BaseException as e:  # pragma: no cover
             self.logger.debug(
                 'Exception in {self!s} destructor call: {exc}'.format(
                     self=self,
@@ -986,10 +986,8 @@ class SSHClientBase(BaseSSHClient):
             self.logger.error(message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(
-                    command, ret.exit_code,
-                    expected=expected,
-                    stdout=ret.stdout_brief,
-                    stderr=ret.stderr_brief
+                    result=ret,
+                    expected=expected
                 )
         return ret
 
@@ -1031,11 +1029,8 @@ class SSHClientBase(BaseSSHClient):
             self.logger.error(message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(
-                    command,
-                    ret.exit_code,
+                    result=ret,
                     expected=kwargs.get('expected'),
-                    stdout=ret.stdout_brief,
-                    stderr=ret.stderr_brief
                 )
         return ret
 
