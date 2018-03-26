@@ -173,7 +173,7 @@ class SSHAuth(object):
         hostname=None,  # type: typing.Optional[str]
         port=22,  # type: int
         log=True,  # type: bool
-    ):
+    ):  # type: (...) -> None
         """Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
@@ -244,15 +244,15 @@ class SSHAuth(object):
             self.__passphrase
         ))
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # type: (typing.Any) -> bool
         """Comparison helper."""
         return hash(self) == hash(other)
 
-    def __ne__(self, other):
+    def __ne__(self, other):  # type: (typing.Any) -> bool
         """Comparison helper."""
         return not self.__eq__(other)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo):  # type: (typing.Any) -> SSHAuth
         """Helper for copy.deepcopy."""
         return self.__class__(
             username=self.username,
@@ -261,7 +261,7 @@ class SSHAuth(object):
             keys=self.__keys.copy()
         )
 
-    def __copy__(self):
+    def __copy__(self):  # type: () -> SSHAuth
         """Copy self."""
         return self.__class__(
             username=self.username,
@@ -395,7 +395,7 @@ class _MemorizedSSH(type):
         return ssh
 
     @classmethod
-    def clear_cache(mcs):
+    def clear_cache(mcs):  # type: () -> None
         """Clear cached connections for initialize new instance on next call.
 
         getrefcount is used to check for usage.
@@ -410,7 +410,10 @@ class _MemorizedSSH(type):
         mcs.__cache = {}
 
     @classmethod
-    def close_connections(mcs, hostname=None):
+    def close_connections(
+        mcs,
+        hostname=None  # type: typing.Optional[str]
+    ):  # type: (...) -> None
         """Close connections for selected or all cached records.
 
         :type hostname: str
@@ -722,7 +725,7 @@ class SSHClientBase(BaseSSHClient):
         self.close()
         self.lock.release()
 
-    def reconnect(self):
+    def reconnect(self):  # type: () -> None
         """Reconnect SSH session."""
         with self.lock:
             self.close()

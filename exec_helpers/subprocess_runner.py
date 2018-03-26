@@ -285,7 +285,7 @@ class Subprocess(BaseSingleton):
         expected=None,  # type: _type_expected
         raise_on_err=True,  # type: bool
         **kwargs
-    ):
+    ):  # type: (...) -> exec_result.ExecResult
         """Execute command and check for return code.
 
         Timeout limitation: read tick is 100 ms.
@@ -326,7 +326,7 @@ class Subprocess(BaseSingleton):
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         **kwargs
-    ):
+    ):  # type: (...) -> exec_result.ExecResult
         """Execute command expecting return code 0 and empty STDERR.
 
         Timeout limitation: read tick is 100 ms.
