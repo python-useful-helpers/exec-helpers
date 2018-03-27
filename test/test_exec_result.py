@@ -24,7 +24,6 @@ import unittest
 import mock
 
 import exec_helpers
-from exec_helpers import exec_result
 
 
 cmd = "ls -la | awk \'{print $1}\'"
@@ -35,7 +34,7 @@ class TestExecResult(unittest.TestCase):
     @mock.patch('exec_helpers.exec_result.logger')
     def test_create_minimal(self, logger):
         """Test defaults"""
-        result = exec_result.ExecResult(cmd=cmd)
+        result = exec_helpers.ExecResult(cmd=cmd)
         self.assertEqual(result.cmd, cmd)
         self.assertEqual(result.cmd, result['cmd'])
         self.assertEqual(result.stdout, ())
@@ -58,7 +57,7 @@ class TestExecResult(unittest.TestCase):
             repr(result),
             '{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, '
             'exit_code={exit_code!s})'.format(
-                cls=exec_result.ExecResult.__name__,
+                cls=exec_helpers.ExecResult.__name__,
                 cmd=cmd,
                 stdout=(),
                 stderr=(),
@@ -71,7 +70,7 @@ class TestExecResult(unittest.TestCase):
             "\n\t stdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
             '\n\texit_code={exit_code!s}\n)'.format(
-                cls=exec_result.ExecResult.__name__,
+                cls=exec_helpers.ExecResult.__name__,
                 cmd=cmd,
                 stdout_brief='',
                 stderr_brief='',
@@ -103,7 +102,7 @@ class TestExecResult(unittest.TestCase):
             hash(result),
             hash(
                 (
-                    exec_result.ExecResult,
+                    exec_helpers.ExecResult,
                     cmd,
                     (),
                     (),
@@ -115,7 +114,7 @@ class TestExecResult(unittest.TestCase):
     @mock.patch('exec_helpers.exec_result.logger', autospec=True)
     def test_not_implemented(self, logger):
         """Test assertion on non implemented deserializer"""
-        result = exec_result.ExecResult(cmd=cmd)
+        result = exec_helpers.ExecResult(cmd=cmd)
         deserialize = getattr(result, '_ExecResult__deserialize')
         with self.assertRaises(NotImplementedError):
             deserialize('tst')
@@ -126,7 +125,7 @@ class TestExecResult(unittest.TestCase):
         ))
 
     def test_setters(self):
-        result = exec_result.ExecResult(cmd=cmd)
+        result = exec_helpers.ExecResult(cmd=cmd)
         self.assertEqual(result.exit_code, exec_helpers.ExitCodes.EX_INVALID)
 
         tst_stdout = [
@@ -179,14 +178,14 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stderr_brief, stderr_brief)
 
     def test_json(self):
-        result = exec_result.ExecResult('test', stdout=[b'{"test": true}'])
+        result = exec_helpers.ExecResult('test', stdout=[b'{"test": true}'])
         self.assertEqual(result.stdout_json, {'test': True})
 
     @mock.patch('exec_helpers.exec_result.logger', autospec=True)
     def test_wrong_result(self, logger):
         """Test logging exception if stdout if not a correct json"""
         cmd = "ls -la | awk \'{print $1\}\'"
-        result = exec_result.ExecResult(cmd=cmd)
+        result = exec_helpers.ExecResult(cmd=cmd)
         with self.assertRaises(exec_helpers.ExecHelperError):
             # pylint: disable=pointless-statement
             # noinspection PyStatementEffect
@@ -200,3 +199,41 @@ class TestExecResult(unittest.TestCase):
                     stdout_str='')),
         ))
         self.assertIsNone(result['stdout_yaml'])
+
+    def test_not_equal(self):
+        """Exec result equality is validated by all fields."""
+        result1 = exec_helpers.ExecResult('cmd1')
+        result2 = exec_helpers.ExecResult('cmd2')
+        self.assertNotEqual(result1, result2)
+
+        result1 = exec_helpers.ExecResult(cmd)
+        result2 = exec_helpers.ExecResult(cmd)
+        result1.read_stdout([b'a'])
+        result2.read_stdout([b'b'])
+        self.assertNotEqual(result1, result2)
+
+        result1 = exec_helpers.ExecResult(cmd)
+        result2 = exec_helpers.ExecResult(cmd)
+        result1.read_stderr([b'a'])
+        result2.read_stderr([b'b'])
+        self.assertNotEqual(result1, result2)
+
+        result1 = exec_helpers.ExecResult(cmd)
+        result2 = exec_helpers.ExecResult(cmd)
+        result1.exit_code = 0
+        result2.exit_code = 1
+        self.assertNotEqual(result1, result2)
+
+    def test_finalize(self):
+        """After return code, no stdout/stderr/new code can be received."""
+        result = exec_helpers.ExecResult(cmd)
+        result.exit_code = 0
+
+        with self.assertRaises(RuntimeError):
+            result.exit_code = 1
+
+        with self.assertRaises(RuntimeError):
+            result.read_stdout([b'out'])
+
+        with self.assertRaises(RuntimeError):
+            result.read_stderr([b'err'])
