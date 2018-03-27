@@ -427,7 +427,7 @@ class _MemorizedSSH(type):
             mcs.__cache[key].close()
 
 
-def _py2_str(src):
+def _py2_str(src):  # pragma: no cover
     """Convert text to correct python type."""
     if not six.PY3 and isinstance(src, six.text_type):
         return src.encode(
