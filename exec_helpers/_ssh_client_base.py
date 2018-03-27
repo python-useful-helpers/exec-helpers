@@ -258,7 +258,7 @@ class SSHAuth(object):
             username=self.username,
             password=self.__password,
             key=self.__key,
-            keys=self.__keys.copy()
+            keys=copy.deepcopy(self.__keys)
         )
 
     def __copy__(self):  # type: () -> SSHAuth
