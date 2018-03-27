@@ -182,7 +182,7 @@ API: SSHClient and SSHAuth.
         Execute command on multiple remotes in async mode.
 
         :param remotes: Connections to execute on
-        :type remotes: ``typing.Iterable[SSHClientBase]``
+        :type remotes: typing.Iterable[SSHClient]
         :param command: Command for execution
         :type command: ``str``
         :param timeout: Timeout for command execution.

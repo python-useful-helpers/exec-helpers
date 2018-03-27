@@ -18,8 +18,6 @@ from __future__ import absolute_import
 
 import typing
 
-import six
-
 from exec_helpers import proc_enums
 
 __all__ = (
@@ -52,68 +50,67 @@ class ExecCalledProcessError(ExecHelperError):
 
     __slots__ = ()
 
-    @staticmethod
-    def _makestr(data):  # type: (typing.Any) -> six.text_type
-        """Make string from object."""
-        if isinstance(data, six.binary_type):
-            return data.decode('utf-8', errors='backslashreplace')
-        elif isinstance(data, six.text_type):
-            return data
-        return repr(data)
-
 
 class CalledProcessError(ExecCalledProcessError):
     """Exception for error on process calls."""
 
     __slots__ = (
-        'cmd',
-        'returncode',
+        'result',
         'expected',
-        'stdout',
-        'stderr'
     )
 
     def __init__(
         self,
-        command,  # type: str
-        returncode,  # type: typing.Union[int, proc_enums.ExitCodes]
+        result=None,  # type: exec_result.ExecResult
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
-        stdout=None,  # type: typing.Any
-        stderr=None  # type: typing.Any
     ):
         """Exception for error on process calls.
 
-        :param command: command
-        :type command: str
-        :param returncode: return code
-        :type returncode: typing.Union[int, proc_enums.ExitCodes]
+        :param result: execution result
+        :type result: exec_result.ExecResult
         :param expected: expected return codes
         :type expected: typing.Optional[
             typing.List[typing.Union[int, proc_enums.ExitCodes]]
         ]
-        :param stdout: stdout string or brief string
-        :type stdout: typing.Any
-        :param stderr: stderr string or brief string
-        :type stderr: typing.Any
+
+        .. versionchanged:: 1.1.1 - provide full result
         """
-        self.returncode = returncode
+        self.result = result
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
-        self.cmd = command
-        self.stdout = stdout
-        self.stderr = stderr
         message = (
-            "Command {cmd!r} returned exit code {code} while "
-            "expected {expected}".format(
-                cmd=self._makestr(self.cmd),
-                code=self.returncode,
+            "Command {result.cmd!r} returned exit code {result.exit_code} "
+            "while expected {expected}\n"
+            "\tSTDOUT:\n"
+            "{result.stdout_brief}\n"
+            "\tSTDERR:\n{result.stderr_brief}".format(
+                result=result,
                 expected=self.expected
-            ))
-        if self.stdout:
-            message += "\n\tSTDOUT:\n{}".format(self._makestr(self.stdout))
-        if self.stderr:
-            message += "\n\tSTDERR:\n{}".format(self._makestr(self.stderr))
+            )
+        )
         super(CalledProcessError, self).__init__(message)
+
+    @property
+    def returncode(
+        self
+    ):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
+        """Command return code."""
+        return self.result.exit_code
+
+    @property
+    def cmd(self):  # type: () -> str
+        """Failed command."""
+        return self.result.cmd
+
+    @property
+    def stdout(self):  # type: () -> str
+        """Command stdout."""
+        return self.result.stdout_str
+
+    @property
+    def stderr(self):  # type: () -> str
+        """Command stderr."""
+        return self.result.stderr_str
 
 
 class ParallelCallExceptions(ExecCalledProcessError):
