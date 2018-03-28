@@ -22,7 +22,6 @@ from __future__ import unicode_literals
 # pylint: disable=no-self-use
 
 import base64
-import contextlib
 import logging
 import os
 import platform
@@ -32,8 +31,6 @@ import unittest
 
 import mock
 import paramiko
-# noinspection PyUnresolvedReferences
-from six.moves import cStringIO
 
 import exec_helpers
 from exec_helpers import exec_result
@@ -77,131 +74,6 @@ stderr_str = b''.join(stderr_list).strip().decode('utf-8')
 encoded_cmd = base64.b64encode(
     "{}\n".format(command).encode('utf-8')
 ).decode('utf-8')
-
-
-# noinspection PyTypeChecker
-class TestSSHAuth(unittest.TestCase):
-    def tearDown(self):
-        with mock.patch('warnings.warn'):
-            exec_helpers.SSHClient._clear_cache()
-
-    def init_checks(
-        self,
-        username=None,
-        password=None,
-        key=None,
-        keys=None,
-        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
-        passphrase=None,  # type: typing.Optional[str]
-    ):
-        """shared positive init checks
-
-        :type username: str
-        :type password: str
-        :type key: paramiko.RSAKey
-        :type keys: list
-        :type key_filename: typing.Union[typing.List[str], str, None]
-        :type passphrase: typing.Optional[str]
-        """
-        auth = exec_helpers.SSHAuth(
-            username=username,
-            password=password,
-            key=key,
-            keys=keys,
-            key_filename=key_filename,
-            passphrase=passphrase
-        )
-
-        int_keys = [None]
-        if key is not None:
-            int_keys.append(key)
-        if keys is not None:
-            for k in keys:
-                if k not in int_keys:
-                    int_keys.append(k)
-
-        self.assertEqual(auth.username, username)
-        with contextlib.closing(cStringIO()) as tgt:
-            auth.enter_password(tgt)
-            self.assertEqual(tgt.getvalue(), '{}\n'.format(password))
-        self.assertEqual(
-            auth.public_key,
-            gen_public_key(key) if key is not None else None)
-
-        _key = (
-            None if auth.public_key is None else
-            '<private for pub: {}>'.format(auth.public_key)
-        )
-        _keys = []
-        for k in int_keys:
-            if k == key:
-                continue
-            _keys.append(
-                '<private for pub: {}>'.format(
-                    gen_public_key(k)) if k is not None else None)
-
-        self.assertEqual(
-            repr(auth),
-            "{cls}("
-            "username={auth.username!r}, "
-            "password=<*masked*>, "
-            "key={key}, "
-            "keys={keys}, "
-            "key_filename={auth.key_filename!r}, "
-            "passphrase=<*masked*>,"
-            ")".format(
-                cls=exec_helpers.SSHAuth.__name__,
-                auth=auth,
-                key=_key,
-                keys=_keys
-            )
-        )
-        self.assertEqual(
-            str(auth),
-            '{cls} for {username}'.format(
-                cls=exec_helpers.SSHAuth.__name__,
-                username=auth.username,
-            )
-        )
-
-    def test_init_username_only(self):
-        self.init_checks(
-            username=username
-        )
-
-    def test_init_username_password(self):
-        self.init_checks(
-            username=username,
-            password=password
-        )
-
-    def test_init_username_key(self):
-        self.init_checks(
-            username=username,
-            key=gen_private_keys(1).pop()
-        )
-
-    def test_init_username_password_key(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            key=gen_private_keys(1).pop()
-        )
-
-    def test_init_username_password_keys(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            keys=gen_private_keys(2)
-        )
-
-    def test_init_username_password_key_keys(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            key=gen_private_keys(1).pop(),
-            keys=gen_private_keys(2)
-        )
 
 
 # noinspection PyTypeChecker
@@ -1388,6 +1260,45 @@ class TestExecute(unittest.TestCase):
             # noinspection PyTypeChecker
             exec_helpers.SSHClient.execute_together(
                 remotes=remotes, command=command, expected=[1])
+
+    @mock.patch(
+        'exec_helpers.ssh_client.SSHClient.execute_async')
+    def test_execute_together_exceptions(
+        self,
+        execute_async,  # type: mock.Mock
+        client,
+        policy,
+        logger
+    ):
+        """Simple scenario: execute_async fail on all nodes."""
+        execute_async.side_effect = RuntimeError
+
+        host2 = '127.0.0.2'
+
+        ssh = self.get_ssh()
+        # noinspection PyTypeChecker
+        ssh2 = exec_helpers.SSHClient(
+            host=host2,
+            port=port,
+            auth=exec_helpers.SSHAuth(
+                username=username,
+                password=password
+            ))
+
+        remotes = [ssh, ssh2]
+
+        # noinspection PyTypeChecker
+        with self.assertRaises(exec_helpers.ParallelCallExceptions) as cm:
+            exec_helpers.SSHClient.execute_together(
+                remotes=remotes, command=command)
+
+        exc = cm.exception  # type: exec_helpers.ParallelCallExceptions
+        self.assertEqual(
+            list(sorted(exc.exceptions)),
+            [(host, port), (host2, port)]
+        )
+        for exception in exc.exceptions.values():
+            self.assertIsInstance(exception, RuntimeError)
 
     @mock.patch(
         'exec_helpers.ssh_client.SSHClient.execute')
