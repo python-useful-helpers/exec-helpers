@@ -245,8 +245,8 @@ setup_args = dict(
     author=variables['__author__'],
     author_email=variables['__author_email__'],
     maintainer=', '.join(
-        '{name} <email>'.format(name=name, email=email)
-        for name, email in variables['__maintainers__'].values()
+        '{name} <{email}>'.format(name=name, email=email)
+        for name, email in variables['__maintainers__'].items()
     ),
     url=variables['__url__'],
     version=variables['__version__'],
