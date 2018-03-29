@@ -153,6 +153,8 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         raise_on_err=True,  # type: bool
     )
 
+If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `**kwargs` with flags `open_stdout=False` and `open_stderr=False`.
+
 The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.
 Implementation specific flags are always set via kwargs.
 
