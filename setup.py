@@ -61,6 +61,7 @@ requires_optimization = [
     _extension('exec_helpers.exec_result'),
     _extension('exec_helpers.proc_enums'),
     _extension('exec_helpers._ssh_client_base'),
+    _extension('exec_helpers.ssh_auth'),
     _extension('exec_helpers.ssh_client'),
     _extension('exec_helpers.subprocess_runner'),
 ]
