@@ -107,6 +107,8 @@ If no working key - password is used and None is set as main key.
 
 Context manager is available, connection is closed and lock is released on exit from context.
 
+.. note:: context manager is strictly not recommended in scenarios with fast reconnect to the same host with te same credentials.
+
 Subprocess
 ----------
 

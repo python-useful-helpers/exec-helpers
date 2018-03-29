@@ -24,9 +24,9 @@ import os
 import posixpath
 
 
-from ._ssh_client_base import SSHAuth, SSHClientBase
+from ._ssh_client_base import SSHClientBase
 
-__all__ = ('SSHAuth', 'SSHClient')
+__all__ = ('SSHClient', )
 
 logger = logging.getLogger(__name__)
 logging.getLogger('paramiko').setLevel(logging.WARNING)
