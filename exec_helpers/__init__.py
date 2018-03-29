@@ -28,7 +28,8 @@ from .exceptions import (
 )
 
 from .exec_result import ExecResult
-from .ssh_client import SSHClient, SSHAuth
+from .ssh_auth import SSHAuth
+from .ssh_client import SSHClient
 from .subprocess_runner import Subprocess  # nosec  # Expected
 
 __all__ = (
