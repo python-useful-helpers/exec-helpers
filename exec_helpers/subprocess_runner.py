@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
+import os
 import select
 import sys
 import subprocess  # nosec  # Expected usage
@@ -36,6 +37,7 @@ from exec_helpers import _log_templates
 from exec_helpers import proc_enums
 
 logger = logging.getLogger(__name__)
+devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 _win = sys.platform == "win32"
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
@@ -218,8 +220,8 @@ class Subprocess(BaseSingleton):
             self.__process = subprocess.Popen(
                 args=[command],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
-                stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
+                stdout=subprocess.PIPE if open_stdout else devnull,
+                stderr=subprocess.PIPE if open_stderr else devnull,
                 shell=True, cwd=cwd, env=env,
                 universal_newlines=False,
             )
