@@ -235,10 +235,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(command, open_stdout=False)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[command],
@@ -276,10 +273,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(command, open_stderr=False)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[command],
