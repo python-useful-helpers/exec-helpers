@@ -54,16 +54,33 @@ class FakeFileStream(object):
 @mock.patch('subprocess.Popen', autospec=True, name='subprocess.Popen')
 class TestSubprocessRunner(unittest.TestCase):
     @staticmethod
-    def prepare_close(popen, stderr_val=None, ec=0):
-        stdout_lines = stdout_list
-        stderr_lines = stderr_list if stderr_val is None else []
-
-        stdout = FakeFileStream(*stdout_lines)
-        stderr = FakeFileStream(*stderr_lines)
+    def prepare_close(
+        popen,
+        stderr_val=None,
+        ec=0,
+        open_stdout=True,
+        open_stderr=True,
+    ):
+        if open_stdout:
+            stdout_lines = stdout_list
+            stdout = FakeFileStream(*stdout_lines)
+        else:
+            stdout = stdout_lines = None
+        if open_stderr:
+            stderr_lines = stderr_list if stderr_val is None else []
+            stderr = FakeFileStream(*stderr_lines)
+        else:
+            stderr = stderr_lines = None
 
         popen_obj = mock.Mock()
-        popen_obj.attach_mock(stdout, 'stdout')
-        popen_obj.attach_mock(stderr, 'stderr')
+        if stdout:
+            popen_obj.attach_mock(stdout, 'stdout')
+        else:
+            popen_obj.configure_mock(stdout=None)
+        if stderr:
+            popen_obj.attach_mock(stderr, 'stderr')
+        else:
+            popen_obj.configure_mock(stderr=None)
         popen_obj.configure_mock(returncode=ec)
 
         popen.return_value = popen_obj
@@ -178,6 +195,151 @@ class TestSubprocessRunner(unittest.TestCase):
             self.assertEqual(mock.call.release(), runner.lock.mock_calls[-1])
 
         subprocess_runner.SingletonMeta._instances.clear()
+
+    @mock.patch('time.sleep', autospec=True)
+    def test_execute_timeout_fail(
+        self,
+        sleep,
+        popen, select, logger
+    ):
+        popen_obj, exp_result = self.prepare_close(popen)
+        popen_obj.configure_mock(returncode=None)
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+
+        with self.assertRaises(exec_helpers.ExecHelperTimeoutError):
+            # noinspection PyTypeChecker
+            runner.execute(command, timeout=1)
+
+        popen.assert_has_calls((
+            mock.call(
+                args=[command],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+
+    def test_execute_no_stdout(self, popen, select, logger):
+        popen_obj, exp_result = self.prepare_close(popen, open_stdout=False)
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(command, open_stdout=False)
+        self.assertEqual(result, exp_result)
+        popen.assert_has_calls((
+            mock.call(
+                args=[command],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess_runner.devnull,
+                universal_newlines=False,
+            ),
+        ))
+        logger.assert_has_calls(
+            [
+                mock.call.debug(command_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8')))
+                for x in stderr_list
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=self.gen_cmd_result_log_message(result)),
+            ])
+        self.assertIn(
+            mock.call.poll(), popen_obj.mock_calls
+        )
+
+    def test_execute_no_stderr(self, popen, select, logger):
+        popen_obj, exp_result = self.prepare_close(popen, open_stderr=False)
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(command, open_stderr=False)
+        self.assertEqual(result, exp_result)
+        popen.assert_has_calls((
+            mock.call(
+                args=[command],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess_runner.devnull,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+        logger.assert_has_calls(
+            [
+                mock.call.debug(command_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stdout_list
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=self.gen_cmd_result_log_message(result)),
+            ])
+        self.assertIn(
+            mock.call.poll(), popen_obj.mock_calls
+        )
+
+    def test_execute_no_stdout_stderr(self, popen, select, logger):
+        popen_obj, exp_result = self.prepare_close(
+            popen,
+            open_stdout=False,
+            open_stderr=False
+        )
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(command, open_stdout=False, open_stderr=False)
+        self.assertEqual(result, exp_result)
+        popen.assert_has_calls((
+            mock.call(
+                args=[command],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess_runner.devnull,
+                stdin=subprocess.PIPE,
+                stdout=subprocess_runner.devnull,
+                universal_newlines=False,
+            ),
+        ))
+        logger.assert_has_calls(
+            [
+                mock.call.debug(command_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=self.gen_cmd_result_log_message(result)),
+            ])
+        self.assertIn(
+            mock.call.poll(), popen_obj.mock_calls
+        )
 
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)

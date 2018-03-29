@@ -155,6 +155,57 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
+    def test_execute_async_no_stdout_stderr(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(
+            command=command,
+            open_stdout=False
+        )
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{}\n'.format(command))
+        ))
+
+        chan.reset_mock()
+        result = ssh.execute_async(
+            command=command,
+            open_stderr=False
+        )
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.exec_command('{}\n'.format(command))
+        ))
+
+        chan.reset_mock()
+        result = ssh.execute_async(
+            command=command,
+            open_stdout=False,
+            open_stderr=False
+        )
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.exec_command('{}\n'.format(command))
+        ))
+
     def test_execute_async_sudo(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
@@ -334,7 +385,12 @@ class TestExecute(unittest.TestCase):
         )
 
     @staticmethod
-    def get_patched_execute_async_retval(ec=0, stderr_val=None):
+    def get_patched_execute_async_retval(
+        ec=0,
+        stderr_val=None,
+        open_stdout=True,
+        open_stderr=True,
+    ):
         """get patched execute_async retval
 
         :rtype:
@@ -345,20 +401,23 @@ class TestExecute(unittest.TestCase):
                 FakeStream,
                 FakeStream)
         """
-        out = stdout_list
-        err = stderr_list if stderr_val is None else []
-
-        stdout = FakeStream(*out)
-        stderr = FakeStream(*err)
+        if open_stdout:
+            out = stdout_list
+            stdout = FakeStream(*out)
+        else:
+            stdout = out = None
+        if open_stderr:
+            err = stderr_list if stderr_val is None else []
+            stderr = FakeStream(*err)
+        else:
+            stderr = err = None
 
         exit_code = ec
         chan = mock.Mock()
-        recv_exit_status = mock.Mock(return_value=exit_code)
-        chan.attach_mock(recv_exit_status, 'recv_exit_status')
+        chan.attach_mock(mock.Mock(return_value=exit_code), 'recv_exit_status')
 
-        wait = mock.Mock()
         status_event = mock.Mock()
-        status_event.attach_mock(wait, 'wait')
+        status_event.attach_mock(mock.Mock(), 'wait')
         chan.attach_mock(status_event, 'status_event')
         chan.configure_mock(exit_status=exit_code)
 
@@ -372,12 +431,12 @@ class TestExecute(unittest.TestCase):
 
         return chan, '', exp_result, stderr, stdout
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.execute_async')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute(
-            self,
-            execute_async,
-            client, policy, logger):
+        self,
+        execute_async,
+        client, policy, logger
+    ):
         (
             chan, _stdin, exp_result, stderr, stdout
         ) = self.get_patched_execute_async_retval()
@@ -468,6 +527,143 @@ class TestExecute(unittest.TestCase):
             ]
         )
 
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
+    def test_execute_no_stdout(
+        self,
+        execute_async,
+        client, policy, logger
+    ):
+        (
+            chan, _stdin, exp_result, stderr, stdout
+        ) = self.get_patched_execute_async_retval(open_stdout=False)
+        chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
+
+        execute_async.return_value = chan, _stdin, stderr, stdout
+
+        ssh = self.get_ssh()
+
+        logger.reset_mock()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute(
+            command=command,
+            verbose=False,
+            open_stdout=False
+        )
+
+        self.assertEqual(
+            result,
+            exp_result
+        )
+        execute_async.assert_called_once_with(command, open_stdout=False)
+        message = self.gen_cmd_result_log_message(result)
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
+            [
+                mock.call(level=logging.DEBUG, msg=command_log),
+            ] + [
+                mock.call(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stderr_list
+            ] + [
+                mock.call(level=logging.DEBUG, msg=message),
+            ]
+        )
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
+    def test_execute_no_stderr(
+        self,
+        execute_async,
+        client, policy, logger
+    ):
+        (
+            chan, _stdin, exp_result, stderr, stdout
+        ) = self.get_patched_execute_async_retval(open_stderr=False)
+        chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
+
+        execute_async.return_value = chan, _stdin, stderr, stdout
+
+        ssh = self.get_ssh()
+
+        logger.reset_mock()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute(
+            command=command,
+            verbose=False,
+            open_stderr=False
+        )
+
+        self.assertEqual(
+            result,
+            exp_result
+        )
+        execute_async.assert_called_once_with(command, open_stderr=False)
+        message = self.gen_cmd_result_log_message(result)
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
+            [
+                mock.call(level=logging.DEBUG, msg=command_log),
+            ] + [
+                mock.call(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stdout_list
+            ] + [
+                mock.call(level=logging.DEBUG, msg=message),
+            ]
+        )
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
+    def test_execute_no_stdout_stderr(
+        self,
+        execute_async,
+        client, policy, logger
+    ):
+        (
+            chan, _stdin, exp_result, stderr, stdout
+        ) = self.get_patched_execute_async_retval(
+            open_stdout=False,
+            open_stderr=False
+        )
+        chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
+
+        execute_async.return_value = chan, _stdin, stderr, stdout
+
+        ssh = self.get_ssh()
+
+        logger.reset_mock()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute(
+            command=command,
+            verbose=False,
+            open_stdout=False,
+            open_stderr=False,
+        )
+
+        self.assertEqual(
+            result,
+            exp_result
+        )
+        execute_async.assert_called_once_with(
+            command,
+            open_stdout=False,
+            open_stderr=False
+        )
+        message = self.gen_cmd_result_log_message(result)
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
+            [
+                mock.call(level=logging.DEBUG, msg=command_log),
+            ] + [
+                mock.call(level=logging.DEBUG, msg=message),
+            ]
+        )
+
     @mock.patch('time.sleep', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute_timeout(
@@ -502,10 +698,11 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
+    @mock.patch('time.sleep', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute_timeout_fail(
             self,
-            execute_async,
+            execute_async, sleep,
             client, policy, logger):
         (
             chan, _stdin, _, stderr, stdout
