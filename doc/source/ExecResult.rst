@@ -92,24 +92,28 @@ API: ExecResult
         ``typing.Any``
         YAML from stdout.
 
-    .. py:method:: read_stdout(src, log=None, verbose=False)
+    .. py:method:: read_stdout(src=None, log=None, verbose=False)
 
         Read stdout file-like object to stdout.
 
         :param src: source
-        :type src: ``typing.Iterable``
+        :type src: ``typing.Optional[typing.Iterable]``
         :param log: logger
         :type log: ``typing.Optional[logging.Logger]``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
 
-    .. py:method:: read_stderr(src, log=None, verbose=False)
+        .. versionchanged:: 1.2.0 - src can be None
+
+    .. py:method:: read_stderr(src=None, log=None, verbose=False)
 
         Read stderr file-like object to stderr.
 
         :param src: source
-        :type src: ``typing.Iterable``
+        :type src: ``typing.Optional[typing.Iterable]``
         :param log: logger
         :type log: ``typing.Optional[logging.Logger]``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
+
+        .. versionchanged:: 1.2.0 - src can be None

@@ -180,28 +180,32 @@ class ExecResult(object):
 
     def read_stdout(
         self,
-        src,  # type: typing.Iterable
+        src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
     ):
         """Read stdout file-like object to stdout.
 
         :param src: source
-        :type src: typing.Iterable
+        :type src: typing.Optional[typing.Iterable]
         :param log: logger
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+
+        .. versionchanged:: 1.2.0 - src can be None
         """
         if self.timestamp:
             raise RuntimeError('Final exit code received.')
+        if not src:
+            return
         with self.lock:
             self.__stdout_str = self.__stdout_brief = None
             self.__stdout += tuple(self.__poll_stream(src, log, verbose))
 
     def read_stderr(
         self,
-        src,  # type: typing.Iterable
+        src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
     ):
@@ -213,9 +217,13 @@ class ExecResult(object):
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+
+        .. versionchanged:: 1.2.0 - src can be None
         """
         if self.timestamp:
             raise RuntimeError('Final exit code received.')
+        if not src:
+            return
         with self.lock:
             self.__stderr_str = self.__stderr_brief = None
             self.__stderr += tuple(self.__poll_stream(src, log, verbose))

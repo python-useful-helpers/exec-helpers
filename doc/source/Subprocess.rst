@@ -38,6 +38,7 @@ API: Subprocess
         :raises: ExecHelperTimeoutError
 
         .. versionchanged:: 1.1.0 - make method
+        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
 
     .. py:method:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
 

@@ -95,7 +95,7 @@ API: SSHClient and SSHAuth.
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: ``typing.Optional[bool]``
 
-    .. py:method:: execute_async(command, get_pty=False, **kwargs)
+    .. py:method:: execute_async(command, get_pty=False, open_stdout=True, open_stderr=True, **kwargs)
 
         Execute command in async mode and return channel with IO objects.
 
@@ -103,7 +103,13 @@ API: SSHClient and SSHAuth.
         :type command: ``str``
         :param get_pty: open PTY on remote machine
         :type get_pty: ``bool``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, paramiko.ChannelFile, paramiko.ChannelFile]``
+
+        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
 
     .. py:method:: execute(command, verbose=False, timeout=None, **kwargs)
 

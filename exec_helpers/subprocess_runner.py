@@ -122,7 +122,9 @@ class Subprocess(BaseSingleton):
         cwd=None,  # type: typing.Optional[str]
         env=None,  # type: typing.Optional[typing.Dict[str, typing.Any]]
         timeout=None,  # type: typing.Optional[int]
-        verbose=False  # type: bool
+        verbose=False,  # type: bool
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
     ):
         """Command executor helper.
 
@@ -130,7 +132,13 @@ class Subprocess(BaseSingleton):
         :type cwd: str
         :type env: dict
         :type timeout: int
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :rtype: ExecResult
+
+        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
@@ -142,9 +150,9 @@ class Subprocess(BaseSingleton):
                 # select.select is not supported on windows
                 result.read_stdout(src=stdout, log=logger, verbose=verbose)
                 result.read_stderr(src=stderr, log=logger, verbose=verbose)
-            else:
+            else:  # pragma: no cover
                 rlist, _, _ = select.select(
-                    [stdout, stderr],
+                    [item for item in (stdout, stderr) if item is not None],
                     [],
                     [])
                 if rlist:
@@ -173,11 +181,12 @@ class Subprocess(BaseSingleton):
             """
             while not stop.isSet():
                 time.sleep(0.1)
-                poll_streams(
-                    result=result,
-                    stdout=self.__process.stdout,
-                    stderr=self.__process.stderr,
-                )
+                if open_stdout or open_stderr:
+                    poll_streams(
+                        result=result,
+                        stdout=self.__process.stdout,
+                        stderr=self.__process.stderr,
+                    )
 
                 self.__process.poll()
 
@@ -209,8 +218,8 @@ class Subprocess(BaseSingleton):
             self.__process = subprocess.Popen(
                 args=[command],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
+                stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
                 shell=True, cwd=cwd, env=env,
                 universal_newlines=False,
             )
@@ -234,6 +243,8 @@ class Subprocess(BaseSingleton):
             try:
                 self.__process.kill()  # kill -9
                 stop_event.wait(5)
+                # Force stop cycle if no exit code after kill
+                stop_event.set()
                 poll_thread.join(5)
             except OSError:
                 # Nothing to kill

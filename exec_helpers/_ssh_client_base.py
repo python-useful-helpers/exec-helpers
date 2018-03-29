@@ -507,6 +507,8 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         get_pty=False,  # type: bool
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         **kwargs
     ):  # type: (...) -> _type_execute_async
         """Execute command in async mode and return channel with IO objects.
@@ -515,12 +517,18 @@ class SSHClientBase(BaseSSHClient):
         :type command: str
         :param get_pty: open PTY on remote machine
         :type get_pty: bool
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :rtype: typing.Tuple[
             paramiko.Channel,
             paramiko.ChannelFile,
-            paramiko.ChannelFile,
-            paramiko.ChannelFile,
+            typing.Optional[paramiko.ChannelFile],
+            typing.Optional[paramiko.ChannelFile],
         ]
+
+        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
         """
         message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
         self.logger.debug(message)
@@ -536,8 +544,8 @@ class SSHClientBase(BaseSSHClient):
             )
 
         stdin = chan.makefile('wb')
-        stdout = chan.makefile('rb')
-        stderr = chan.makefile_stderr('rb')
+        stdout = chan.makefile('rb') if open_stdout else None
+        stderr = chan.makefile_stderr('rb') if open_stderr else None
         cmd = "{command}\n".format(command=command)
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode('utf-8')).decode('utf-8')
@@ -581,13 +589,13 @@ class SSHClientBase(BaseSSHClient):
             stderr,  # type:  paramiko.channel.ChannelFile
         ):
             """Poll FIFO buffers if data available."""
-            if channel.recv_ready():
+            if stdout and channel.recv_ready():
                 result.read_stdout(
                     src=stdout,
                     log=self.logger,
                     verbose=verbose
                 )
-            if channel.recv_stderr_ready():
+            if stderr and channel.recv_stderr_ready():
                 result.read_stderr(
                     src=stderr,
                     log=self.logger,
@@ -612,12 +620,13 @@ class SSHClientBase(BaseSSHClient):
             """
             while not stop.isSet():
                 time.sleep(0.1)
-                poll_streams(
-                    result=result,
-                    channel=channel,
-                    stdout=stdout,
-                    stderr=stderr,
-                )
+                if stdout or stderr:
+                    poll_streams(
+                        result=result,
+                        channel=channel,
+                        stdout=stdout,
+                        stderr=stderr,
+                    )
 
                 if channel.status_event.is_set():
                     result.read_stdout(
