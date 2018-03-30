@@ -134,7 +134,10 @@ class _MemorizedSSH(type):
                     logger.debug('Reconnect {}'.format(ssh))
                     ssh.reconnect()
                 return ssh
-            if CPYTHON and sys.getrefcount(cls.__cache[key]) == 2:
+            if (
+                CPYTHON and
+                sys.getrefcount(cls.__cache[key]) == 2
+            ):    # pragma: no cover
                 # If we have only cache reference and temporary getrefcount
                 # reference: close connection before deletion
                 logger.debug('Closing {} as unused'.format(cls.__cache[key]))
@@ -161,7 +164,10 @@ class _MemorizedSSH(type):
         # PY3: cache, ssh, temporary
         # PY4: cache, values mapping, ssh, temporary
         for ssh in mcs.__cache.values():
-            if CPYTHON and sys.getrefcount(ssh) == n_count:
+            if (
+                CPYTHON and
+                sys.getrefcount(ssh) == n_count
+            ):  # pragma: no cover
                 logger.debug('Closing {} as unused'.format(ssh))
                 ssh.close()
         mcs.__cache = {}
