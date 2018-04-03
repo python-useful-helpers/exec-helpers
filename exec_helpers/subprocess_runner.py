@@ -40,8 +40,18 @@ logger = logging.getLogger(__name__)
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 _win = sys.platform == "win32"
+_posix = 'posix' in sys.builtin_module_names
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
+
+if _posix:  # pragma: no cover
+    import fcntl  # pylint: disable=import-error
+
+elif _win:  # pragma: no cover
+    import msvcrt  # pylint: disable=import-error
+    import ctypes
+    from ctypes import wintypes  # pylint: disable=import-error
+    from ctypes import windll  # pylint: disable=import-error
 
 
 class SingletonMeta(type):
@@ -51,12 +61,15 @@ class SingletonMeta(type):
     """
 
     _instances = {}
+    _lock = threading.RLock()
 
     def __call__(cls, *args, **kwargs):
         """Singleton."""
-        if cls not in cls._instances:
-            cls._instances[cls] = super(
-                SingletonMeta, cls).__call__(*args, **kwargs)
+        with cls._lock:
+            if cls not in cls._instances:
+                cls._instances[cls] = super(
+                    SingletonMeta, cls
+                ).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
@@ -76,6 +89,35 @@ BaseSingleton = type.__new__(  # noqa
     (object, ),
     {'__slots__': ()}
 )
+
+
+def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
+    """Set PIPE unblocked to allow polling of all pipes in parallel."""
+    descriptor = pipe.fileno()
+
+    if _posix:  # pragma: no cover
+        # Get flags
+        flags = fcntl.fcntl(descriptor, fcntl.F_GETFL)
+
+        # Set nonblock mode
+        fcntl.fcntl(descriptor, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    elif _win:  # pragma: no cover
+        SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
+        SetNamedPipeHandleState.argtypes = [
+            wintypes.HANDLE,
+            wintypes.LPDWORD,
+            wintypes.LPDWORD,
+            wintypes.LPDWORD
+        ]
+        SetNamedPipeHandleState.restype = wintypes.BOOL
+        PIPE_NOWAIT = wintypes.DWORD(0x00000001)
+        handle = msvcrt.get_osfhandle(descriptor)
+
+        windll.kernel32.SetNamedPipeHandleState(
+            handle,
+            ctypes.byref(PIPE_NOWAIT), None, None
+        )
 
 
 class Subprocess(BaseSingleton):
@@ -227,6 +269,11 @@ class Subprocess(BaseSingleton):
             )
 
             # Poll output
+
+            if open_stdout:
+                set_nonblocking_pipe(self.__process.stdout)
+            if open_stderr:
+                set_nonblocking_pipe(self.__process.stderr)
             # pylint: disable=assignment-from-no-return
             poll_thread = poll_pipes(
                 result,

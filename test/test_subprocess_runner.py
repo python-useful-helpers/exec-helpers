@@ -51,6 +51,9 @@ class FakeFileStream(object):
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
 @mock.patch('select.select', autospec=True)
+@mock.patch(
+    'exec_helpers.subprocess_runner.set_nonblocking_pipe', autospec=True
+)
 @mock.patch('subprocess.Popen', autospec=True, name='subprocess.Popen')
 class TestSubprocessRunner(unittest.TestCase):
     @staticmethod
@@ -100,7 +103,7 @@ class TestSubprocessRunner(unittest.TestCase):
         return ("Command exit code '{code!s}':\n{cmd!s}\n"
                 .format(cmd=result.cmd.rstrip(), code=result.exit_code))
 
-    def test_call(self, popen, select, logger):
+    def test_call(self, popen, _, select, logger):
         popen_obj, exp_result = self.prepare_close(popen)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -147,7 +150,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_call_verbose(self, popen, select, logger):
+    def test_call_verbose(self, popen, _, select, logger):
         popen_obj, _ = self.prepare_close(popen)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -175,7 +178,7 @@ class TestSubprocessRunner(unittest.TestCase):
                     msg=self.gen_cmd_result_log_message(result)),
             ])
 
-    def test_context_manager(self, popen, select, logger):
+    def test_context_manager(self, popen, _, select, logger):
         popen_obj, exp_result = self.prepare_close(popen)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -200,7 +203,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_execute_timeout_fail(
         self,
         sleep,
-        popen, select, logger
+        popen, _, select, logger
     ):
         popen_obj, exp_result = self.prepare_close(popen)
         popen_obj.configure_mock(returncode=None)
@@ -227,7 +230,7 @@ class TestSubprocessRunner(unittest.TestCase):
             ),
         ))
 
-    def test_execute_no_stdout(self, popen, select, logger):
+    def test_execute_no_stdout(self, popen, _, select, logger):
         popen_obj, exp_result = self.prepare_close(popen, open_stdout=False)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -265,7 +268,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_execute_no_stderr(self, popen, select, logger):
+    def test_execute_no_stderr(self, popen, _, select, logger):
         popen_obj, exp_result = self.prepare_close(popen, open_stderr=False)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -304,7 +307,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_execute_no_stdout_stderr(self, popen, select, logger):
+    def test_execute_no_stdout_stderr(self, popen, _, select, logger):
         popen_obj, exp_result = self.prepare_close(
             popen,
             open_stdout=False,
