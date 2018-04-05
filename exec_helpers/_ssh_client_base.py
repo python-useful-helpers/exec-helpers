@@ -16,6 +16,8 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
 import base64
@@ -37,11 +39,12 @@ import tenacity
 import threaded
 import six
 
-from exec_helpers import exceptions
+from exec_helpers import constants
 from exec_helpers import exec_result
-from exec_helpers import _log_templates
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
+from exec_helpers import _log_templates
 
 __all__ = ('SSHClientBase', )
 
@@ -474,7 +477,7 @@ class SSHClientBase(BaseSSHClient):
     def __enter__(self):
         """Get context manager.
 
-        .. versionchanged:: 1.1.0 - lock on enter
+        .. versionchanged:: 1.1.0 lock on enter
         """
         self.lock.acquire()
         return self
@@ -482,8 +485,8 @@ class SSHClientBase(BaseSSHClient):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager.
 
-        .. versionchanged:: 1.0.0 - disconnect enforced on close
-        .. versionchanged:: 1.1.0 - release lock on exit
+        .. versionchanged:: 1.0.0 disconnect enforced on close
+        .. versionchanged:: 1.1.0 release lock on exit
         """
         self.close()
         self.lock.release()
@@ -534,7 +537,7 @@ class SSHClientBase(BaseSSHClient):
             typing.Optional[paramiko.ChannelFile],
         ]
 
-        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         """
         message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
         self.logger.debug(message)
@@ -690,7 +693,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and wait for return code.
@@ -703,6 +706,8 @@ class SSHClientBase(BaseSSHClient):
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         (
             chan,  # type: paramiko.channel.Channel
@@ -726,7 +731,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
@@ -748,6 +753,8 @@ class SSHClientBase(BaseSSHClient):
         :type raise_on_err: bool
         :rtype: ExecResult
         :raises: CalledProcessError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
@@ -770,7 +777,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         **kwargs
@@ -791,6 +798,7 @@ class SSHClientBase(BaseSSHClient):
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         ret = self.check_call(
             command, verbose, timeout=timeout,
@@ -816,7 +824,7 @@ class SSHClientBase(BaseSSHClient):
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         target_port=22,  # type: int
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         get_pty=False,  # type: bool
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
@@ -838,6 +846,8 @@ class SSHClientBase(BaseSSHClient):
         :type get_pty: bool
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         if auth is None:
             auth = self.auth
@@ -880,7 +890,7 @@ class SSHClientBase(BaseSSHClient):
         cls,
         remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
         **kwargs
@@ -901,6 +911,8 @@ class SSHClientBase(BaseSSHClient):
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         :raises: ParallelCallProcessError
         :raises: ParallelCallExceptions
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         @threaded.threadpooled
         def get_result(

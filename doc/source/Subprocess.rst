@@ -16,15 +16,15 @@ API: Subprocess
 
         Open context manager
 
-        .. versionchanged:: 1.1.0 - lock on enter
+        .. versionchanged:: 1.1.0 lock on enter
 
     .. py:method:: __exit__(self, exc_type, exc_val, exc_tb)
 
         Close context manager
 
-        .. versionchanged:: 1.1.0 - release lock on exit
+        .. versionchanged:: 1.1.0 release lock on exit
 
-    .. py:method:: execute(command, verbose=False, timeout=None, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
         Execute command and wait for return code.
 
@@ -37,10 +37,13 @@ API: Subprocess
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
-        .. versionchanged:: 1.1.0 - make method
-        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
+        .. versionchanged:: 1.1.0 make method
+        .. versionchanged:: 1.2.0
 
-    .. py:method:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
+            open_stdout and open_stderr flags
+            default timeout 1 hour
+
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
 
         Execute command and check for return code.
 
@@ -59,9 +62,10 @@ API: Subprocess
         :rtype: ExecResult
         :raises: CalledProcessError
 
-        .. versionchanged:: 1.1.0 - make method
+        .. versionchanged:: 1.1.0 make method
+        .. versionchanged:: 1.2.0 default timeout 1 hour
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -80,4 +84,5 @@ API: Subprocess
 
         .. note:: expected return codes can be overridden via kwargs.
 
-        .. versionchanged:: 1.1.0 - make method
+        .. versionchanged:: 1.1.0 make method
+        .. versionchanged:: 1.2.0 default timeout 1 hour

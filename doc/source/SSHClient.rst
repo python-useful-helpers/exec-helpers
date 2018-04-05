@@ -79,14 +79,14 @@ API: SSHClient and SSHAuth.
 
         Open context manager
 
-        .. versionchanged:: 1.1.0 - lock on enter
+        .. versionchanged:: 1.1.0 lock on enter
 
     .. py:method:: __exit__(self, exc_type, exc_val, exc_tb)
 
         Close context manager and disconnect
 
-        .. versionchanged:: 1.0.0 - disconnect enforced on close
-        .. versionchanged:: 1.1.0 - release lock on exit
+        .. versionchanged:: 1.0.0 disconnect enforced on close
+        .. versionchanged:: 1.1.0 release lock on exit
 
     .. py:method:: sudo(enforce=None)
 
@@ -109,9 +109,9 @@ API: SSHClient and SSHAuth.
         :type open_stderr: bool
         :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, paramiko.ChannelFile, paramiko.ChannelFile]``
 
-        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
 
-    .. py:method:: execute(command, verbose=False, timeout=None, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
         Execute command and wait for return code.
 
@@ -124,7 +124,9 @@ API: SSHClient and SSHAuth.
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
-    .. py:method:: check_call(command, verbose=False, timeout=None, error_info=None, expected=None, raise_on_err=True, **kwargs)
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
 
         Execute command and check for return code.
 
@@ -143,7 +145,9 @@ API: SSHClient and SSHAuth.
         :rtype: ExecResult
         :raises: CalledProcessError
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=None, error_info=None, raise_on_err=True, **kwargs)
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -161,8 +165,9 @@ API: SSHClient and SSHAuth.
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.
+        .. versionchanged:: 1.2.0 default timeout 1 hour
 
-    .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=None, get_pty=False, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=1*60*60, get_pty=False, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -183,7 +188,9 @@ API: SSHClient and SSHAuth.
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
 
-    .. py:classmethod:: execute_together(remotes, command, timeout=None, expected=None, raise_on_err=True, **kwargs)
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+
+    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=None, raise_on_err=True, **kwargs)
 
         Execute command on multiple remotes in async mode.
 
@@ -201,6 +208,8 @@ API: SSHClient and SSHAuth.
         :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
         :raises: ParallelCallProcessError
         :raises: ParallelCallExceptions
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
 
     .. py:method:: open(path, mode='r')
 
