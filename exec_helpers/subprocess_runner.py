@@ -184,7 +184,8 @@ class Subprocess(BaseSingleton):
         :type open_stderr: bool
         :rtype: ExecResult
 
-        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
@@ -327,6 +328,8 @@ class Subprocess(BaseSingleton):
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         result = self.__exec_command(command=command, timeout=timeout,
                                      verbose=verbose, **kwargs)
@@ -360,6 +363,8 @@ class Subprocess(BaseSingleton):
         :type raise_on_err: bool
         :rtype: ExecResult
         :raises: DevopsCalledProcessError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
@@ -398,6 +403,8 @@ class Subprocess(BaseSingleton):
         :type raise_on_err: bool
         :rtype: ExecResult
         :raises: DevopsCalledProcessError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         ret = self.check_call(
             command, verbose, timeout=timeout,

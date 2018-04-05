@@ -121,12 +121,14 @@ Main methods are `execute`, `check_call` and `check_stderr` for simple executing
 and executing, checking return code and checking for empty stderr output.
 This methods are almost the same for `SSHCleint` and `Subprocess`, except specific flags.
 
+.. note:: By default ALL methods have timeout 1 hour, infinite waiting can be enabled, but it's special case.
+
 .. code-block:: python
 
     result = helper.execute(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
         **kwargs
     )
 
@@ -136,7 +138,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
     result = helper.check_call(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
@@ -148,7 +150,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
     result = helper.check_stderr(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
     )
@@ -193,7 +195,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
     results = SSHClient.execute_together(
         remotes,  # type: typing.Iterable[SSHClient]
         command,  # type: str
-        timeout=None,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True  # type: bool
     )
@@ -211,7 +213,7 @@ For execute through SSH host can be used `execute_through_host` method:
         command,  # type: str
         auth=None,  # type: typing.Optional[SSHAuth]
         target_port=22,  # type: int
-        timeout=None,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
         verbose=False,  # type: bool
         get_pty=False,  # type: bool
     )

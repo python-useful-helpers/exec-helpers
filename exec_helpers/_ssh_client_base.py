@@ -477,7 +477,7 @@ class SSHClientBase(BaseSSHClient):
     def __enter__(self):
         """Get context manager.
 
-        .. versionchanged:: 1.1.0 - lock on enter
+        .. versionchanged:: 1.1.0 lock on enter
         """
         self.lock.acquire()
         return self
@@ -485,8 +485,8 @@ class SSHClientBase(BaseSSHClient):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager.
 
-        .. versionchanged:: 1.0.0 - disconnect enforced on close
-        .. versionchanged:: 1.1.0 - release lock on exit
+        .. versionchanged:: 1.0.0 disconnect enforced on close
+        .. versionchanged:: 1.1.0 release lock on exit
         """
         self.close()
         self.lock.release()
@@ -537,7 +537,7 @@ class SSHClientBase(BaseSSHClient):
             typing.Optional[paramiko.ChannelFile],
         ]
 
-        .. versionchanged:: 1.2.0 - open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         """
         message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
         self.logger.debug(message)
@@ -706,6 +706,8 @@ class SSHClientBase(BaseSSHClient):
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         (
             chan,  # type: paramiko.channel.Channel
@@ -751,6 +753,8 @@ class SSHClientBase(BaseSSHClient):
         :type raise_on_err: bool
         :rtype: ExecResult
         :raises: CalledProcessError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
@@ -794,6 +798,7 @@ class SSHClientBase(BaseSSHClient):
         :raises: CalledProcessError
 
         .. note:: expected return codes can be overridden via kwargs.
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         ret = self.check_call(
             command, verbose, timeout=timeout,
@@ -841,6 +846,8 @@ class SSHClientBase(BaseSSHClient):
         :type get_pty: bool
         :rtype: ExecResult
         :raises: ExecHelperTimeoutError
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         if auth is None:
             auth = self.auth
@@ -904,6 +911,8 @@ class SSHClientBase(BaseSSHClient):
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         :raises: ParallelCallProcessError
         :raises: ParallelCallExceptions
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         @threaded.threadpooled
         def get_result(
