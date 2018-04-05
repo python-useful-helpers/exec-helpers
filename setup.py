@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import ast
 import collections
@@ -54,7 +55,11 @@ with open('README.rst',) as f:
 
 def _extension(modpath):
     """Make setuptools.Extension."""
-    return setuptools.Extension(modpath, [modpath.replace('.', '/') + '.py'])
+    source_path = modpath.replace('.', '/') + '.py'
+    return setuptools.Extension(
+        modpath if PY3 else modpath.encode('utf-8'),
+        [source_path if PY3 else source_path.encode('utf-8')]
+    )
 
 
 requires_optimization = [
