@@ -16,6 +16,8 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import ast
@@ -56,6 +58,7 @@ def _extension(modpath):
 
 
 requires_optimization = [
+    _extension('exec_helpers.constants'),
     _extension('exec_helpers._log_templates'),
     _extension('exec_helpers.exceptions'),
     _extension('exec_helpers.exec_result'),

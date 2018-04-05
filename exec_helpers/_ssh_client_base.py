@@ -16,6 +16,8 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
 import base64
@@ -37,11 +39,12 @@ import tenacity
 import threaded
 import six
 
-from exec_helpers import exceptions
+from exec_helpers import constants
 from exec_helpers import exec_result
-from exec_helpers import _log_templates
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
+from exec_helpers import _log_templates
 
 __all__ = ('SSHClientBase', )
 
@@ -690,7 +693,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and wait for return code.
@@ -726,7 +729,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
@@ -770,7 +773,7 @@ class SSHClientBase(BaseSSHClient):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         **kwargs
@@ -816,7 +819,7 @@ class SSHClientBase(BaseSSHClient):
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         target_port=22,  # type: int
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         get_pty=False,  # type: bool
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
@@ -880,7 +883,7 @@ class SSHClientBase(BaseSSHClient):
         cls,
         remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         expected=None,  # type: typing.Optional[typing.Iterable[]]
         raise_on_err=True,  # type: bool
         **kwargs

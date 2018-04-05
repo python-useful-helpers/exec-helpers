@@ -17,6 +17,7 @@
 """Python subprocess.Popen wrapper."""
 
 from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
 import logging
@@ -31,10 +32,11 @@ import typing
 import six
 import threaded
 
-from exec_helpers import exceptions
+from exec_helpers import constants
 from exec_helpers import exec_result
-from exec_helpers import _log_templates
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
+from exec_helpers import _log_templates
 
 logger = logging.getLogger(__name__)
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
@@ -165,7 +167,7 @@ class Subprocess(BaseSingleton):
         command,  # type: str
         cwd=None,  # type: typing.Optional[str]
         env=None,  # type: typing.Optional[typing.Dict[str, typing.Any]]
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         verbose=False,  # type: bool
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
@@ -313,7 +315,7 @@ class Subprocess(BaseSingleton):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and wait for return code.
@@ -340,7 +342,7 @@ class Subprocess(BaseSingleton):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: _type_expected
         raise_on_err=True,  # type: bool
@@ -380,7 +382,7 @@ class Subprocess(BaseSingleton):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=None,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         **kwargs

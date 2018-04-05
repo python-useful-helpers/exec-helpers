@@ -17,6 +17,7 @@
 #    under the License.
 
 from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
 # pylint: disable=no-self-use
@@ -32,6 +33,7 @@ import mock
 import paramiko
 
 import exec_helpers
+from exec_helpers import constants
 from exec_helpers import exec_result
 
 
@@ -724,8 +726,7 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(command)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.execute_async')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute_together(self, execute_async, client, policy, logger):
         (
             chan, _stdin, _, stderr, stdout
@@ -754,10 +755,10 @@ class TestExecute(unittest.TestCase):
         self.assertEqual(
             sorted(chan.mock_calls),
             sorted((
-                mock.call.status_event.wait(None),
+                mock.call.status_event.wait(constants.DEFAULT_TIMEOUT),
                 mock.call.recv_exit_status(),
                 mock.call.close(),
-                mock.call.status_event.wait(None),
+                mock.call.status_event.wait(constants.DEFAULT_TIMEOUT),
                 mock.call.recv_exit_status(),
                 mock.call.close()
             ))
@@ -776,8 +777,7 @@ class TestExecute(unittest.TestCase):
             exec_helpers.SSHClient.execute_together(
                 remotes=remotes, command=command, expected=[1])
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.execute_async')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute_together_exceptions(
         self,
         execute_async,  # type: mock.Mock
@@ -815,8 +815,7 @@ class TestExecute(unittest.TestCase):
         for exception in exc.exceptions.values():
             self.assertIsInstance(exception, RuntimeError)
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.execute')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
     def test_check_call(self, execute, client, policy, logger):
         exit_code = 0
         return_value = exec_result.ExecResult(
@@ -855,8 +854,7 @@ class TestExecute(unittest.TestCase):
         self.assertEqual(exc.stderr, stderr_str)
         execute.assert_called_once_with(command, verbose, None)
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.execute')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
     def test_check_call_expected(self, execute, client, policy, logger):
         exit_code = 0
         return_value = exec_result.ExecResult(
@@ -894,8 +892,7 @@ class TestExecute(unittest.TestCase):
             )
         execute.assert_called_once_with(command, verbose, None)
 
-    @mock.patch(
-        'exec_helpers.ssh_client.SSHClient.check_call')
+    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
     def test_check_stderr(self, check_call, client, policy, logger):
         return_value = exec_result.ExecResult(
             cmd=command,
