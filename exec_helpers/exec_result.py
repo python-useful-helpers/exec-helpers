@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Execution restult."""
+"""Execution result."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -322,7 +322,8 @@ class ExecResult(object):
 
         :type fmt: str
         :rtype: object
-        :raises: DevopsError
+        :raises NotImplementedError: fmt deserialization not implemented
+        :raises DeserializeValueError: Not valid source format
         """
         try:
             if fmt == 'json':
@@ -335,7 +336,7 @@ class ExecResult(object):
                 '{{stdout!r}}\n'.format(
                     fmt=fmt))
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))
-            raise exceptions.ExecHelperError(
+            raise exceptions.DeserializeValueError(
                 self.cmd + tmpl.format(stdout=self.stdout_brief)
             )
         msg = '{fmt} deserialize target is not implemented'.format(fmt=fmt)
@@ -408,7 +409,7 @@ class ExecResult(object):
         )
 
     def __eq__(self, other):
-        """Comparsion."""
+        """Comparision."""
         return all(
             (
                 getattr(self, val) == getattr(other, val)
@@ -417,7 +418,7 @@ class ExecResult(object):
         )
 
     def __ne__(self, other):
-        """Comparsion."""
+        """Comparision."""
         return not self.__eq__(other)
 
     def __hash__(self):

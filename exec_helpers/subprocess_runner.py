@@ -39,6 +39,7 @@ from exec_helpers import proc_enums
 from exec_helpers import _log_templates
 
 logger = logging.getLogger(__name__)
+# noinspection PyUnresolvedReferences
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 _win = sys.platform == "win32"
@@ -50,6 +51,7 @@ if _posix:  # pragma: no cover
     import fcntl  # pylint: disable=import-error
 
 elif _win:  # pragma: no cover
+    # noinspection PyUnresolvedReferences
     import msvcrt  # pylint: disable=import-error
     import ctypes
     from ctypes import wintypes  # pylint: disable=import-error
@@ -105,6 +107,7 @@ def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
         fcntl.fcntl(descriptor, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
     elif _win:  # pragma: no cover
+        # noinspection PyPep8Naming
         SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
         SetNamedPipeHandleState.argtypes = [
             wintypes.HANDLE,
@@ -113,6 +116,7 @@ def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
             wintypes.LPDWORD
         ]
         SetNamedPipeHandleState.restype = wintypes.BOOL
+        # noinspection PyPep8Naming
         PIPE_NOWAIT = wintypes.DWORD(0x00000001)
         handle = msvcrt.get_osfhandle(descriptor)
 
@@ -327,7 +331,7 @@ class Subprocess(BaseSingleton):
         :type verbose: bool
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
@@ -362,7 +366,8 @@ class Subprocess(BaseSingleton):
         :type expected: typing.Optional[typing.Iterable[_type_exit_codes]]
         :type raise_on_err: bool
         :rtype: ExecResult
-        :raises: DevopsCalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
@@ -402,7 +407,8 @@ class Subprocess(BaseSingleton):
         :type error_info: typing.Optional[str]
         :type raise_on_err: bool
         :rtype: ExecResult
-        :raises: DevopsCalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code or stderr presents
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """

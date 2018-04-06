@@ -84,13 +84,17 @@ API: ExecResult
 
     .. py:attribute:: stdout_json
 
-        ``typing.Any``
         JSON from stdout.
+
+        :rtype: ``typing.Any``
+        :raises DeserializeValueError: STDOUT can not be deserialized as JSON
 
     .. py:attribute:: stdout_yaml
 
-        ``typing.Any``
         YAML from stdout.
+
+        :rtype: ``typing.Any``
+        :raises DeserializeValueError: STDOUT can not be deserialized as YAML
 
     .. py:method:: read_stdout(src=None, log=None, verbose=False)
 

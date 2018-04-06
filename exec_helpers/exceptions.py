@@ -41,6 +41,12 @@ class ExecHelperError(Exception):
     __slots__ = ()
 
 
+class DeserializeValueError(ExecHelperError, ValueError):
+    """Deserialize impossible."""
+
+    __slots__ = ()
+
+
 class ExecHelperTimeoutError(ExecHelperError):
     """Execution timeout."""
 

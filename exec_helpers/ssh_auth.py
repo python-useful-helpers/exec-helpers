@@ -159,7 +159,7 @@ class SSHAuth(object):
         :type port: int
         :param log: Log on generic connection failure
         :type log: bool
-        :raises: paramiko.AuthenticationException
+        :raises paramiko.AuthenticationException: Authentication failed.
         """
         kwargs = {
             'username': self.username,

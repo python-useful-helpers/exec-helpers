@@ -412,7 +412,7 @@ class SSHClientBase(BaseSSHClient):
         """SFTP channel access for inheritance.
 
         :rtype: paramiko.sftp_client.SFTPClient
-        :raises: paramiko.SSHException
+        :raises paramiko.SSHException: SFTP connection failed
         """
         if self.__sftp is not None:
             return self.__sftp
@@ -445,7 +445,7 @@ class SSHClientBase(BaseSSHClient):
     @close.class_method
     def close(cls):  # pylint: disable=no-self-argument
         """Close all memorized SSH and SFTP sessions."""
-        # noinspection PyDeprecation
+        # noinspection PyUnresolvedReferences
         cls.__class__.close_connections()
 
     @classmethod
@@ -589,7 +589,7 @@ class SSHClientBase(BaseSSHClient):
         :type timeout: int
         :type verbose: bool
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
@@ -705,7 +705,7 @@ class SSHClientBase(BaseSSHClient):
         :param timeout: Timeout for command execution.
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
@@ -752,7 +752,8 @@ class SSHClientBase(BaseSSHClient):
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :rtype: ExecResult
-        :raises: CalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
@@ -795,7 +796,8 @@ class SSHClientBase(BaseSSHClient):
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :rtype: ExecResult
-        :raises: CalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code or stderr presents
 
         .. note:: expected return codes can be overridden via kwargs.
         .. versionchanged:: 1.2.0 default timeout 1 hour
@@ -845,7 +847,7 @@ class SSHClientBase(BaseSSHClient):
         :param get_pty: open PTY on target machine
         :type get_pty: bool
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
@@ -909,8 +911,10 @@ class SSHClientBase(BaseSSHClient):
         :type raise_on_err: bool
         :return: dictionary {(hostname, port): result}
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        :raises: ParallelCallProcessError
-        :raises: ParallelCallExceptions
+        :raises ParallelCallProcessError:
+            Unexpected any code at lest on one target
+        :raises ParallelCallExceptions:
+            At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """

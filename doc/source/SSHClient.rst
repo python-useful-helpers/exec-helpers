@@ -122,7 +122,7 @@ API: SSHClient and SSHAuth.
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Optional[int]``
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
@@ -143,7 +143,8 @@ API: SSHClient and SSHAuth.
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :rtype: ExecResult
-        :raises: CalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
@@ -162,7 +163,8 @@ API: SSHClient and SSHAuth.
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :rtype: ExecResult
-        :raises: CalledProcessError
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code or stderr presents
 
         .. note:: expected return codes can be overridden via kwargs.
         .. versionchanged:: 1.2.0 default timeout 1 hour
@@ -186,7 +188,7 @@ API: SSHClient and SSHAuth.
         :param get_pty: open PTY on target machine
         :type get_pty: ``bool``
         :rtype: ExecResult
-        :raises: ExecHelperTimeoutError
+        :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
@@ -206,8 +208,8 @@ API: SSHClient and SSHAuth.
         :type raise_on_err: ``bool``
         :return: dictionary {(hostname, port): result}
         :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :raises: ParallelCallProcessError
-        :raises: ParallelCallExceptions
+        :raises ParallelCallProcessError: Unexpected any code at lest on one target
+        :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
@@ -351,4 +353,4 @@ API: SSHClient and SSHAuth.
         :type port: ``int``
         :param log: Log on generic connection failure
         :type log: ``bool``
-        :raises: paramiko.AuthenticationException
+        :raises paramiko.AuthenticationException: Authentication failed.
