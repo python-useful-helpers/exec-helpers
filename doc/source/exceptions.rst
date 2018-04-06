@@ -10,6 +10,10 @@ API: exceptions
 
     Base class for all exceptions raised inside.
 
+.. py:exception:: DeserializeValueError(ExecHelperError, ValueError)
+
+    Deserialize impossible.
+
 .. py:exception:: ExecHelperTimeoutError(ExecHelperError)
 
     Execution timeout.
