@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import collections
 import logging
 import os
 import select
@@ -32,6 +33,7 @@ import typing
 import six
 import threaded
 
+from exec_helpers import _api
 from exec_helpers import constants
 from exec_helpers import exec_result
 from exec_helpers import exceptions
@@ -76,23 +78,18 @@ class SingletonMeta(type):
                 ).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+    @classmethod
+    def __prepare__(
+        mcs,
+        name,
+        bases,
+        **kwargs
+    ):  # pylint: disable=unused-argument
+        """Metaclass magic for object storage.
 
-def _py2_str(src):  # pragma: no cover
-    """Convert text to correct python type."""
-    if not six.PY3 and isinstance(src, six.text_type):
-        return src.encode(
-            encoding='utf-8',
-            errors='strict',
-        )
-    return src
-
-
-BaseSingleton = type.__new__(  # noqa
-    SingletonMeta,
-    _py2_str('BaseSingleton'),
-    (object, ),
-    {'__slots__': ()}
-)
+        .. versionadded:: 1.2.0
+        """
+        return collections.OrderedDict()
 
 
 def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
@@ -126,34 +123,32 @@ def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
         )
 
 
-class Subprocess(BaseSingleton):
+class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     __slots__ = (
-        '__lock',
         '__process',
     )
 
-    def __init__(self):
+    def __init__(
+        self,
+        log_mask_re=None,  # type: typing.Optional[str]
+    ):
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
+
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        self.__lock = threading.RLock()
+        super(Subprocess, self).__init__(
+            logger=logger,
+            log_mask_re=log_mask_re
+        )
         self.__process = None
-
-    @property
-    def lock(self):  # type: () -> threading.RLock
-        """Lock.
-
-        :rtype: threading.RLock
-        """
-        return self.__lock
-
-    def __enter__(self):
-        """Context manager usage."""
-        self.lock.acquire()
-        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager usage."""
@@ -173,6 +168,7 @@ class Subprocess(BaseSingleton):
         env=None,  # type: typing.Optional[typing.Dict[str, typing.Any]]
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         verbose=False,  # type: bool
+        log_mask_re=None,  # type: typing.Optional[str]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
     ):
@@ -182,6 +178,11 @@ class Subprocess(BaseSingleton):
         :type cwd: str
         :type env: dict
         :type timeout: int
+        :param verbose: use INFO log level instead of DEBUG
+        :type verbose: str
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -190,6 +191,7 @@ class Subprocess(BaseSingleton):
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
@@ -258,13 +260,20 @@ class Subprocess(BaseSingleton):
 
         # 1 Command per run
         with self.lock:
-            result = exec_result.ExecResult(cmd=command)
+            cmd_for_log = self._mask_command(
+                cmd=command,
+                log_mask_re=log_mask_re
+            )
+
+            # Store command with hidden data
+            result = exec_result.ExecResult(cmd=cmd_for_log)
             stop_event = threading.Event()
-            message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
-            if verbose:
-                logger.info(message)
-            else:
-                logger.debug(message)
+
+            logger.log(
+                level=logging.INFO if verbose else logging.DEBUG,
+                msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            )
+
             # Run
             self.__process = subprocess.Popen(
                 args=[command],
@@ -327,8 +336,11 @@ class Subprocess(BaseSingleton):
 
         Timeout limitation: read tick is 100 ms.
 
+        :param command: Command for execution
         :type command: str
+        :param verbose: Produce log.info records for command call and output
         :type verbose: bool
+        :param timeout: Timeout for command execution.
         :type timeout: typing.Optional[int]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
@@ -344,87 +356,3 @@ class Subprocess(BaseSingleton):
         )
 
         return result
-
-    def check_call(
-        self,
-        command,  # type: str
-        verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        error_info=None,  # type: typing.Optional[str]
-        expected=None,  # type: _type_expected
-        raise_on_err=True,  # type: bool
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
-        """Execute command and check for return code.
-
-        Timeout limitation: read tick is 100 ms.
-
-        :type command: str
-        :type verbose: bool
-        :type timeout: typing.Optional[int]
-        :type error_info: typing.Optional[str]
-        :type expected: typing.Optional[typing.Iterable[_type_exit_codes]]
-        :type raise_on_err: bool
-        :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        """
-        expected = proc_enums.exit_codes_to_enums(expected)
-        ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret['exit_code'] not in expected:
-            message = (
-                _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                    expected=expected
-                ))
-            logger.error(message)
-            if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=expected,
-                )
-        return ret
-
-    def check_stderr(
-        self,
-        command,  # type: str
-        verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        error_info=None,  # type: typing.Optional[str]
-        raise_on_err=True,  # type: bool
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
-        """Execute command expecting return code 0 and empty STDERR.
-
-        Timeout limitation: read tick is 100 ms.
-
-        :type command: str
-        :type verbose: bool
-        :type timeout: typing.Optional[int]
-        :type error_info: typing.Optional[str]
-        :type raise_on_err: bool
-        :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code or stderr presents
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        """
-        ret = self.check_call(
-            command, verbose, timeout=timeout,
-            error_info=error_info, raise_on_err=raise_on_err, **kwargs)
-        if ret['stderr']:
-            message = (
-                _log_templates.CMD_UNEXPECTED_STDERR.format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                ))
-            logger.error(message)
-            if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=kwargs.get('expected'),
-                )
-        return ret

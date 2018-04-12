@@ -8,6 +8,21 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
+    .. py:method:: __init__(logger, log_mask_re=None)
+
+        ExecHelper global API.
+
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+
+    .. py:attribute:: log_mask_re
+
+        ``typing.Optional[str]``
+
+        regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
+
     .. py:attribute:: lock
 
         ``threading.RLock``

@@ -60,10 +60,12 @@ class TestSubprocessRunner(unittest.TestCase):
     @staticmethod
     def prepare_close(
         popen,
+        cmd=command,
         stderr_val=None,
         ec=0,
         open_stdout=True,
         open_stderr=True,
+        cmd_in_result=None,
     ):
         if open_stdout:
             stdout_lines = stdout_list
@@ -91,7 +93,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         exp_result = exec_helpers.ExecResult(
-            cmd=command,
+            cmd=cmd_in_result if cmd_in_result is not None else cmd,
             stderr=stderr_lines,
             stdout=stdout_lines,
             exit_code=ec
@@ -130,7 +132,7 @@ class TestSubprocessRunner(unittest.TestCase):
         ))
         logger.assert_has_calls(
             [
-                mock.call.debug(command_log),
+                mock.call.log(level=logging.DEBUG, msg=command_log),
             ] + [
                 mock.call.log(
                     level=logging.DEBUG,
@@ -162,7 +164,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         logger.assert_has_calls(
             [
-                mock.call.info(command_log),
+                mock.call.log(level=logging.INFO, msg=command_log),
             ] + [
                 mock.call.log(
                     level=logging.INFO,
@@ -254,7 +256,7 @@ class TestSubprocessRunner(unittest.TestCase):
         ))
         logger.assert_has_calls(
             [
-                mock.call.debug(command_log),
+                mock.call.log(level=logging.DEBUG, msg=command_log),
             ] + [
                 mock.call.log(
                     level=logging.DEBUG,
@@ -292,7 +294,7 @@ class TestSubprocessRunner(unittest.TestCase):
         ))
         logger.assert_has_calls(
             [
-                mock.call.debug(command_log),
+                mock.call.log(level=logging.DEBUG, msg=command_log),
             ] + [
                 mock.call.log(
                     level=logging.DEBUG,
@@ -335,7 +337,121 @@ class TestSubprocessRunner(unittest.TestCase):
         ))
         logger.assert_has_calls(
             [
-                mock.call.debug(command_log),
+                mock.call.log(level=logging.DEBUG, msg=command_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=self.gen_cmd_result_log_message(result)),
+            ])
+        self.assertIn(
+            mock.call.poll(), popen_obj.mock_calls
+        )
+
+    def test_execute_mask_global(self, popen, _, select, logger):
+        cmd = "USE='secret=secret_pass' do task"
+        log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+        masked_cmd = "USE='secret=<*masked*>' do task"
+        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+
+        popen_obj, exp_result = self.prepare_close(
+            popen,
+            cmd=cmd,
+            cmd_in_result=masked_cmd
+        )
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess(
+            log_mask_re=log_mask_re
+        )
+
+        # noinspection PyTypeChecker
+        result = runner.execute(cmd)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[cmd],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+        logger.assert_has_calls(
+            [
+                mock.call.log(level=logging.DEBUG, msg=cmd_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stdout_list
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8')))
+                for x in stderr_list
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=self.gen_cmd_result_log_message(result)),
+            ])
+        self.assertIn(
+            mock.call.poll(), popen_obj.mock_calls
+        )
+
+    def test_execute_mask_local(self, popen, _, select, logger):
+        cmd = "USE='secret=secret_pass' do task"
+        log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+        masked_cmd = "USE='secret=<*masked*>' do task"
+        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+
+        popen_obj, exp_result = self.prepare_close(
+            popen,
+            cmd=cmd,
+            cmd_in_result=masked_cmd
+        )
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(cmd, log_mask_re=log_mask_re)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[cmd],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+        logger.assert_has_calls(
+            [
+                mock.call.log(level=logging.DEBUG, msg=cmd_log),
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stdout_list
+            ] + [
+                mock.call.log(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8')))
+                for x in stderr_list
             ] + [
                 mock.call.log(
                     level=logging.DEBUG,
