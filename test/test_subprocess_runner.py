@@ -33,6 +33,7 @@ command = 'ls ~\nline 2\nline 3\nline с кирилицей'
 command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
 stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
 stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
+print_stdin = 'read line; echo "$line"'
 
 
 class FakeFileStream(object):
@@ -577,3 +578,96 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
         check_call.assert_called_once_with(
             command, verbose, timeout=None,
             error_info=None, raise_on_err=raise_on_err)
+
+    @mock.patch('exec_helpers.subprocess_runner.Subprocess.check_call')
+    def test_check_stdin_str(self, check_call, logger):
+        stdin = u'this is a line'
+
+        expected_result = exec_helpers.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[b''],
+            exit_code=0,
+        )
+        check_call.return_value = expected_result
+
+        verbose = False
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.check_call(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        self.assertEqual(result, expected_result)
+        assert result == expected_result
+
+    @mock.patch('exec_helpers.subprocess_runner.Subprocess.check_call')
+    def test_check_stdin_bytes(self, check_call, logger):
+        stdin = b'this is a line'
+
+        expected_result = exec_helpers.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[b''],
+            exit_code=0,
+        )
+        check_call.return_value = expected_result
+
+        verbose = False
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.check_call(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        self.assertEqual(result, expected_result)
+        assert result == expected_result
+
+    @mock.patch('exec_helpers.subprocess_runner.Subprocess.check_call')
+    def test_check_stdin_bytearray(self, check_call, logger):
+        stdin = bytearray(b'this is a line')
+
+        expected_result = exec_helpers.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[b''],
+            exit_code=0,
+        )
+        check_call.return_value = expected_result
+
+        verbose = False
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.check_call(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            verbose=verbose,
+            timeout=None,
+            stdin=stdin)
+        self.assertEqual(result, expected_result)
+        assert result == expected_result

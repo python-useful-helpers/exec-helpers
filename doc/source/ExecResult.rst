@@ -10,10 +10,12 @@ API: ExecResult
 
     Command execution result.
 
-    .. py:method:: __init__(cmd, stdout=None, stderr=None, exit_code=ExitCodes.EX_INVALID)
+    .. py:method:: __init__(cmd, stdin=None, stdout=None, stderr=None, exit_code=ExitCodes.EX_INVALID)
 
         :param cmd: command
         :type cmd: ``str``
+        :param stdin: STDIN
+        :type stdin: ``typing.Optional[str]``
         :param stdout: binary STDOUT
         :type stdout: ``typing.Optional[typing.Iterable[bytes]]``
         :param stderr: binary STDERR
@@ -35,6 +37,11 @@ API: ExecResult
 
         ``str``
         Command
+
+    .. py:attribute:: stdin
+
+        ``str``
+        Stdin input as string.
 
     .. py:attribute:: stdout
 

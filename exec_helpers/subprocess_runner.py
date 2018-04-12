@@ -169,6 +169,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
+        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
     ):
@@ -183,6 +184,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :type stdin: typing.Union[six.text_type, six.binary_type, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -277,12 +279,19 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
             # Run
             self.__process = subprocess.Popen(
                 args=[command],
-                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE if open_stdout else devnull,
                 stderr=subprocess.PIPE if open_stderr else devnull,
-                shell=True, cwd=cwd, env=env,
+                stdin=subprocess.PIPE,
+                shell=True,
+                cwd=cwd,
+                env=env,
                 universal_newlines=False,
             )
+            if stdin is not None:
+                if not isinstance(stdin, six.binary_type):
+                    stdin = stdin.encode(encoding='utf-8')
+                self.__process.stdin.write(stdin)
+                self.__process.stdin.close()
 
             # Poll output
 
