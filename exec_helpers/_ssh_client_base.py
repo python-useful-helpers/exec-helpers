@@ -489,6 +489,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         self,
         command,  # type: str
         get_pty=False,  # type: bool
+        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         **kwargs
@@ -499,6 +500,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :type command: str
         :param get_pty: open PTY on remote machine
         :type get_pty: bool
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[six.text_type, six.binary_type, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -511,6 +514,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         ]
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 stdin data
         """
         cmd_for_log = self._mask_command(
             cmd=command,
@@ -532,7 +536,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
                 width_pixels=0, height_pixels=0
             )
 
-        stdin = chan.makefile('wb')
+        _stdin = chan.makefile('wb')
         stdout = chan.makefile('rb') if open_stdout else None
         stderr = chan.makefile_stderr('rb') if open_stderr else None
         cmd = "{command}\n".format(command=command)
@@ -545,11 +549,17 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             )
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
-                self.auth.enter_password(stdin)
-                stdin.flush()
+                self.auth.enter_password(_stdin)
+                _stdin.flush()
         else:
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
-        return chan, stdin, stderr, stdout
+        if stdin is not None:
+            if not isinstance(stdin, six.binary_type):
+                stdin = stdin.encode(encoding='utf-8')
+            _stdin.write('{}\n'.format(stdin))
+            _stdin.flush()
+
+        return chan, _stdin, stderr, stdout
 
     def __exec_command(
         self,

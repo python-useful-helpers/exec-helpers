@@ -61,6 +61,7 @@ stderr_str = b''.join(stderr_list).strip().decode('utf-8')
 encoded_cmd = base64.b64encode(
     "{}\n".format(command).encode('utf-8')
 ).decode('utf-8')
+print_stdin = 'read line; echo "$line"'
 
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
@@ -1045,6 +1046,99 @@ class TestExecute(unittest.TestCase):
         check_call.assert_called_once_with(
             command, verbose, timeout=None,
             error_info=None, raise_on_err=raise_on_err)
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
+    def test_check_stdin_str(self, check_call, client, policy, logger):
+        stdin = u'this is a line'
+
+        return_value = exec_result.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[],
+            exit_code=0
+        )
+        check_call.return_value = return_value
+
+        verbose = False
+        raise_on_err = True
+
+        # noinspection PyTypeChecker
+        result = self.get_ssh().check_call(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        self.assertEqual(result, return_value)
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
+    def test_check_stdin_bytes(self, check_call, client, policy, logger):
+        stdin = b'this is a line'
+
+        return_value = exec_result.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[],
+            exit_code=0
+        )
+        check_call.return_value = return_value
+
+        verbose = False
+        raise_on_err = True
+
+        # noinspection PyTypeChecker
+        result = self.get_ssh().check_call(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        self.assertEqual(result, return_value)
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
+    def test_check_stdin_bytearray(self, check_call, client, policy, logger):
+        stdin = bytearray(b'this is a line')
+
+        return_value = exec_result.ExecResult(
+            cmd=print_stdin,
+            stdin=stdin,
+            stdout=[stdin],
+            stderr=[],
+            exit_code=0
+        )
+        check_call.return_value = return_value
+
+        verbose = False
+        raise_on_err = True
+
+        # noinspection PyTypeChecker
+        result = self.get_ssh().check_call(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        check_call.assert_called_once_with(
+            command=print_stdin,
+            stdin=stdin,
+            verbose=verbose,
+            timeout=None,
+            raise_on_err=raise_on_err)
+        self.assertEqual(result, return_value)
 
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)

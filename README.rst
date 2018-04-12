@@ -181,6 +181,7 @@ Execution result object has a set of useful properties:
 
 * `cmd` - Command
 * `exit_code` - Command return code. If possible to decode using enumerators for Linux -> it used.
+* `stdin` -> `str`. Text representation of stdin.
 * `stdout` -> `typing.Tuple[bytes]`. Raw stdout output.
 * `stderr` -> `typing.Tuple[bytes]`. Raw stderr output.
 * `stdout_bin` -> `bytearray`. Binary stdout output.

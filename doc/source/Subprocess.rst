@@ -45,6 +45,8 @@ API: Subprocess
 
         :param command: Command for execution
         :type command: ``str``
+        :param stdin: STDIN passed to execution
+        :type stdin: ``typing.Union[six.text_type, six.binary_type, None]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -52,11 +54,11 @@ API: Subprocess
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
+        .. note:: stdin channel is closed after the input processing
         .. versionchanged:: 1.1.0 make method
-        .. versionchanged:: 1.2.0
-
-            open_stdout and open_stderr flags
-            default timeout 1 hour
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.2.0 stdin data
 
     .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
 
