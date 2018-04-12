@@ -63,6 +63,7 @@ def _extension(modpath):
 
 
 requires_optimization = [
+    _extension('exec_helpers._api'),
     _extension('exec_helpers.constants'),
     _extension('exec_helpers._log_templates'),
     _extension('exec_helpers.exceptions'),

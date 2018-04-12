@@ -21,6 +21,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import base64
+import collections
 # noinspection PyCompatibility
 import concurrent.futures
 import copy
@@ -39,6 +40,7 @@ import tenacity
 import threaded
 import six
 
+from exec_helpers import _api
 from exec_helpers import constants
 from exec_helpers import exec_result
 from exec_helpers import exceptions
@@ -100,6 +102,19 @@ class _MemorizedSSH(type):
     """
 
     __cache = {}
+
+    @classmethod
+    def __prepare__(
+        mcs,
+        name,
+        bases,
+        **kwargs
+    ):  # pylint: disable=unused-argument
+        """Metaclass magic for object storage.
+
+        .. versionadded:: 1.2.0
+        """
+        return collections.OrderedDict()
 
     def __call__(
         cls,
@@ -196,30 +211,11 @@ class _MemorizedSSH(type):
             mcs.__cache[key].close()
 
 
-def _py2_str(src):  # pragma: no cover
-    """Convert text to correct python type."""
-    if not six.PY3 and isinstance(src, six.text_type):
-        return src.encode(
-            encoding='utf-8',
-            errors='strict',
-        )
-    return src
-
-
-BaseSSHClient = type.__new__(  # noqa
-    _MemorizedSSH,
-    _py2_str('BaseSSHClient'),
-    (object, ),
-    {'__slots__': ()}
-)
-
-
-class SSHClientBase(BaseSSHClient):
+class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     """SSH Client helper."""
 
     __slots__ = (
         '__hostname', '__port', '__auth', '__ssh', '__sftp', 'sudo_mode',
-        '__lock', '__logger'
     )
 
     class __get_sudo(object):
@@ -281,7 +277,11 @@ class SSHClientBase(BaseSSHClient):
 
         .. note:: auth has priority over username/password/private_keys
         """
-        self.__lock = threading.RLock()
+        super(SSHClientBase, self).__init__(
+            logger=logger.getChild(
+                '{host}:{port}'.format(host=host, port=port)
+            ),
+        )
 
         self.__hostname = host
         self.__port = port
@@ -301,25 +301,6 @@ class SSHClientBase(BaseSSHClient):
             self.__auth = copy.copy(auth)
 
         self.__connect()
-        self.__logger = logger.getChild(
-            '{host}:{port}'.format(host=host, port=port)
-        )
-
-    @property
-    def lock(self):  # type: () -> threading.RLock
-        """Connection lock.
-
-        :rtype: threading.RLock
-        """
-        return self.__lock
-
-    @property
-    def logger(self):  # type: () -> logging.Logger
-        """Internal logger.
-
-        :rtype: logging.Logger
-        """
-        return self.__logger
 
     @property
     def auth(self):  # type: () -> ssh_auth.SSHAuth
@@ -474,14 +455,6 @@ class SSHClientBase(BaseSSHClient):
             )
         self.__sftp = None
 
-    def __enter__(self):
-        """Get context manager.
-
-        .. versionchanged:: 1.1.0 lock on enter
-        """
-        self.lock.acquire()
-        return self
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager.
 
@@ -489,7 +462,7 @@ class SSHClientBase(BaseSSHClient):
         .. versionchanged:: 1.1.0 release lock on exit
         """
         self.close()
-        self.lock.release()
+        super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
 
     def reconnect(self):  # type: () -> None
         """Reconnect SSH session."""
@@ -539,8 +512,15 @@ class SSHClientBase(BaseSSHClient):
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         """
-        message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
-        self.logger.debug(message)
+        cmd_for_log = self._mask_command(
+            cmd=command,
+            log_mask_re=kwargs.get('log_mask_re', None)
+        )
+
+        self.logger.log(
+            level=logging.INFO if kwargs.get('verbose') else logging.DEBUG,
+            msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+        )
 
         chan = self._ssh.get_transport().open_session()
 
@@ -578,7 +558,8 @@ class SSHClientBase(BaseSSHClient):
         stdout,  # type: paramiko.channel.ChannelFile
         stderr,  # type: paramiko.channel.ChannelFile
         timeout,  # type: int
-        verbose=False  # type: bool
+        verbose=False,  # type: bool
+        log_mask_re=None,  # type: typing.Optional[str]
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
 
@@ -588,8 +569,13 @@ class SSHClientBase(BaseSSHClient):
         :type stderr: paramiko.channel.ChannelFile
         :type timeout: int
         :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
@@ -652,13 +638,15 @@ class SSHClientBase(BaseSSHClient):
                     stop.set()
 
         # channel.status_event.wait(timeout)
-        result = exec_result.ExecResult(cmd=command)
-        stop_event = threading.Event()
-        message = _log_templates.CMD_EXEC.format(cmd=command.rstrip())
-        self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG,
-            msg=message
+        cmd_for_log = self._mask_command(
+            cmd=command,
+            log_mask_re=log_mask_re
         )
+
+        # Store command with hidden data
+        result = exec_result.ExecResult(cmd=cmd_for_log)
+
+        stop_event = threading.Event()
 
         # pylint: disable=assignment-from-no-return
         future = poll_pipes(
@@ -714,11 +702,16 @@ class SSHClientBase(BaseSSHClient):
             _,
             stderr,  # type: paramiko.channel.ChannelFile
             stdout,  # type: paramiko.channel.ChannelFile
-        ) = self.execute_async(command, **kwargs)
+        ) = self.execute_async(
+            command,
+            verbose=verbose,
+            **kwargs
+        )
 
         result = self.__exec_command(
             command, chan, stdout, stderr, timeout,
-            verbose=verbose
+            verbose=verbose,
+            log_mask_re=kwargs.get('log_mask_re', None),
         )
         message = _log_templates.CMD_RESULT.format(result=result)
         self.logger.log(
@@ -726,98 +719,6 @@ class SSHClientBase(BaseSSHClient):
             msg=message
         )
         return result
-
-    def check_call(
-        self,
-        command,  # type: str
-        verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        error_info=None,  # type: typing.Optional[str]
-        expected=None,  # type: typing.Optional[typing.Iterable[]]
-        raise_on_err=True,  # type: bool
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
-        """Execute command and check for return code.
-
-        :param command: Command for execution
-        :type command: str
-        :param verbose: Produce log.info records for command call and output
-        :type verbose: bool
-        :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
-        :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
-        :param expected: expected return codes (0 by default)
-        :type expected: typing.Optional[typing.Iterable[int]]
-        :param raise_on_err: Raise exception on unexpected return code
-        :type raise_on_err: bool
-        :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        """
-        expected = proc_enums.exit_codes_to_enums(expected)
-        ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret.exit_code not in expected:
-            message = (
-                _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                    expected=expected,
-                ))
-            self.logger.error(message)
-            if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=expected
-                )
-        return ret
-
-    def check_stderr(
-        self,
-        command,  # type: str
-        verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        error_info=None,  # type: typing.Optional[str]
-        raise_on_err=True,  # type: bool
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
-        """Execute command expecting return code 0 and empty STDERR.
-
-        :param command: Command for execution
-        :type command: str
-        :param verbose: Produce log.info records for command call and output
-        :type verbose: bool
-        :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
-        :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
-        :param raise_on_err: Raise exception on unexpected return code
-        :type raise_on_err: bool
-        :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code or stderr presents
-
-        .. note:: expected return codes can be overridden via kwargs.
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        """
-        ret = self.check_call(
-            command, verbose, timeout=timeout,
-            error_info=error_info, raise_on_err=raise_on_err, **kwargs)
-        if ret.stderr:
-            message = (
-                _log_templates.CMD_UNEXPECTED_STDERR.format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                ))
-            self.logger.error(message)
-            if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=kwargs.get('expected'),
-                )
-        return ret
 
     def execute_through_host(
         self,
@@ -850,7 +751,17 @@ class SSHClientBase(BaseSSHClient):
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
+        cmd_for_log = self._mask_command(
+            cmd=command,
+            log_mask_re=kwargs.get('log_mask_re', None)
+        )
+        logger.log(
+            level=logging.INFO if verbose else logging.DEBUG,
+            msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+        )
+
         if auth is None:
             auth = self.auth
 
@@ -881,7 +792,9 @@ class SSHClientBase(BaseSSHClient):
 
         # noinspection PyDictCreation
         result = self.__exec_command(
-            command, channel, stdout, stderr, timeout, verbose=verbose)
+            command, channel, stdout, stderr, timeout, verbose=verbose,
+            log_mask_re=kwargs.get('log_mask_re', None),
+        )
 
         intermediate_channel.close()
 
@@ -917,6 +830,7 @@ class SSHClientBase(BaseSSHClient):
             At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         @threaded.threadpooled
         def get_result(
@@ -933,7 +847,14 @@ class SSHClientBase(BaseSSHClient):
             chan.status_event.wait(timeout)
             exit_code = chan.recv_exit_status()
 
-            result = exec_result.ExecResult(cmd=command)
+            # pylint: disable=protected-access
+            cmd_for_log = remote._mask_command(
+                cmd=command,
+                log_mask_re=kwargs.get('log_mask_re', None)
+            )
+            # pylint: enable=protected-access
+
+            result = exec_result.ExecResult(cmd=cmd_for_log)
             result.read_stdout(src=stdout)
             result.read_stderr(src=stderr)
             result.exit_code = exit_code

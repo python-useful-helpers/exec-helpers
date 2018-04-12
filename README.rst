@@ -160,6 +160,20 @@ If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `
 The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.
 Implementation specific flags are always set via kwargs.
 
+If required to mask part of command from logging, `log_mask_re` attribute can be set global over instance or providden with command.
+All regex matched groups will be replaced by `'<*masked*>'`.
+
+.. code-block:: python
+
+    result = helper.execute(
+        command="AUTH='top_secret_key'; run command",  # type: str
+        verbose=False,  # type: bool
+        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        log_mask_re=r"AUTH\s*=\s*'(\w+)'"  # type: typing.Optional[str]
+    )
+
+`result.cmd` will be equal to `AUTH='<*masked*>'; run command`
+
 ExecResult
 ----------
 

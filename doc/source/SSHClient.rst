@@ -27,6 +27,12 @@ API: SSHClient and SSHAuth.
 
     .. note:: auth has priority over username/password/private_keys
 
+    .. py:attribute:: log_mask_re
+
+        ``typing.Optional[str]``
+
+        regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
+
     .. py:attribute:: lock
 
         ``threading.RLock``

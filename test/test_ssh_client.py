@@ -118,7 +118,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -153,7 +153,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -237,7 +237,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -273,7 +273,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -305,7 +305,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -337,7 +337,7 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
         )
 
@@ -382,7 +382,72 @@ class TestExecute(unittest.TestCase):
         ))
         log = logger.getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
-            mock.call.debug(command_log),
+            mock.call.log(level=logging.DEBUG, msg=command_log),
+            log.mock_calls
+        )
+
+    def test_execute_async_verbose(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=command, verbose=True)
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{}\n'.format(command))
+        ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        self.assertIn(
+            mock.call.log(level=logging.INFO, msg=command_log),
+            log.mock_calls
+        )
+
+    def test_execute_async_mask_command(self, client, policy, logger):
+        cmd = "USE='secret=secret_pass' do task"
+        log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+        masked_cmd = "USE='secret=<*masked*>' do task"
+        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=cmd, log_mask_re=log_mask_re)
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{}\n'.format(cmd))
+        ))
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        self.assertIn(
+            mock.call.log(level=logging.DEBUG, msg=cmd_log),
             log.mock_calls
         )
 
@@ -392,6 +457,7 @@ class TestExecute(unittest.TestCase):
         stderr_val=None,
         open_stdout=True,
         open_stderr=True,
+        cmd_log=None
     ):
         """get patched execute_async retval
 
@@ -425,7 +491,7 @@ class TestExecute(unittest.TestCase):
 
         # noinspection PyTypeChecker
         exp_result = exec_result.ExecResult(
-            cmd=command,
+            cmd=cmd_log if cmd_log is not None else command,
             stderr=err,
             stdout=out,
             exit_code=ec
@@ -458,14 +524,12 @@ class TestExecute(unittest.TestCase):
             result,
             exp_result
         )
-        execute_async.assert_called_once_with(command)
+        execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
-                mock.call(level=logging.DEBUG, msg=command_log),
-            ] + [
                 mock.call(
                     level=logging.DEBUG,
                     msg=str(x.rstrip().decode('utf-8'))
@@ -506,15 +570,13 @@ class TestExecute(unittest.TestCase):
             result,
             exp_result
         )
-        execute_async.assert_called_once_with(command)
+        execute_async.assert_called_once_with(command, verbose=True)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
 
         message = self.gen_cmd_result_log_message(result)
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
-                mock.call(level=logging.INFO, msg=command_log),
-            ] + [
                 mock.call(
                     level=logging.INFO, msg=str(x.rstrip().decode('utf-8'))
                 )
@@ -557,13 +619,12 @@ class TestExecute(unittest.TestCase):
             result,
             exp_result
         )
-        execute_async.assert_called_once_with(command, open_stdout=False)
+        execute_async.assert_called_once_with(
+            command, verbose=False, open_stdout=False)
         message = self.gen_cmd_result_log_message(result)
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
-                mock.call(level=logging.DEBUG, msg=command_log),
-            ] + [
                 mock.call(
                     level=logging.DEBUG,
                     msg=str(x.rstrip().decode('utf-8'))
@@ -602,13 +663,12 @@ class TestExecute(unittest.TestCase):
             result,
             exp_result
         )
-        execute_async.assert_called_once_with(command, open_stderr=False)
+        execute_async.assert_called_once_with(
+            command, verbose=False, open_stderr=False)
         message = self.gen_cmd_result_log_message(result)
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
-                mock.call(level=logging.DEBUG, msg=command_log),
-            ] + [
                 mock.call(
                     level=logging.DEBUG,
                     msg=str(x.rstrip().decode('utf-8'))
@@ -653,6 +713,7 @@ class TestExecute(unittest.TestCase):
         )
         execute_async.assert_called_once_with(
             command,
+            verbose=False,
             open_stdout=False,
             open_stderr=False
         )
@@ -660,8 +721,6 @@ class TestExecute(unittest.TestCase):
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
-                mock.call(level=logging.DEBUG, msg=command_log),
-            ] + [
                 mock.call(level=logging.DEBUG, msg=message),
             ]
         )
@@ -691,7 +750,7 @@ class TestExecute(unittest.TestCase):
             result,
             exp_result
         )
-        execute_async.assert_called_once_with(command)
+        execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
         log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
@@ -723,8 +782,61 @@ class TestExecute(unittest.TestCase):
             # noinspection PyTypeChecker
             ssh.execute(command=command, verbose=False, timeout=1)
 
-        execute_async.assert_called_once_with(command)
+        execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
+
+    @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
+    def test_execute_mask_command(
+        self,
+        execute_async,
+        client, policy, logger
+    ):
+        cmd = "USE='secret=secret_pass' do task"
+        log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+        masked_cmd = "USE='secret=<*masked*>' do task"
+
+        (
+            chan, _stdin, exp_result, stderr, stdout
+        ) = self.get_patched_execute_async_retval(cmd_log=masked_cmd)
+        is_set = mock.Mock(return_value=True)
+        chan.status_event.attach_mock(is_set, 'is_set')
+
+        execute_async.return_value = chan, _stdin, stderr, stdout
+
+        ssh = self.get_ssh()
+
+        logger.reset_mock()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute(
+            command=cmd, verbose=False, log_mask_re=log_mask_re)
+
+        self.assertEqual(
+            result,
+            exp_result
+        )
+        execute_async.assert_called_once_with(
+            cmd, log_mask_re=log_mask_re, verbose=False)
+        chan.assert_has_calls((mock.call.status_event.is_set(),))
+        message = self.gen_cmd_result_log_message(result)
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log.assert_has_calls(
+            [
+                mock.call(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stdout_list
+            ] + [
+                mock.call(
+                    level=logging.DEBUG,
+                    msg=str(x.rstrip().decode('utf-8'))
+                )
+                for x in stderr_list
+            ] + [
+                mock.call(level=logging.DEBUG, msg=message),
+            ]
+        )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
     def test_execute_together(self, execute_async, client, policy, logger):
