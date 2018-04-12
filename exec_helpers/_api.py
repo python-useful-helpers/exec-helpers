@@ -78,9 +78,9 @@ class ExecHelper(object):
         self.lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):  # pragma: no cover
         """Context manager usage."""
-        raise NotImplementedError()  # pragma: no cover
+        self.lock.release()
 
     def _mask_command(
         self,

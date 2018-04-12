@@ -154,7 +154,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         """Context manager usage."""
         if self.__process:
             self.__process.kill()
-        self.lock.release()
+        super(Subprocess, self).__exit__(exc_type, exc_val, exc_tb)
 
     def __del__(self):
         """Destructor. Kill running subprocess, if it running."""

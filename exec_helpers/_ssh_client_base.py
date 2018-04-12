@@ -462,7 +462,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         .. versionchanged:: 1.1.0 release lock on exit
         """
         self.close()
-        self.lock.release()
+        super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
 
     def reconnect(self):  # type: () -> None
         """Reconnect SSH session."""
