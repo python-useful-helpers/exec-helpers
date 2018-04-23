@@ -51,7 +51,7 @@ class ExecResult(object):
     def __init__(
         self,
         cmd,  # type: str
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, None]
+        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
         exit_code=proc_enums.ExitCodes.EX_INVALID  # type: _type_exit_codes
@@ -61,7 +61,7 @@ class ExecResult(object):
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[six.text_type, six.binary_type, None]
+        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
         :param stdout: binary STDOUT
         :type stdout: typing.Optional[typing.Iterable[bytes]]
         :param stderr: binary STDERR
@@ -72,7 +72,9 @@ class ExecResult(object):
         self.__lock = threading.RLock()
 
         self.__cmd = cmd
-        if stdin is not None and not isinstance(stdin, six.text_type):
+        if isinstance(stdin, six.binary_type):
+            stdin = self._get_str_from_bin(bytearray(stdin))
+        elif isinstance(stdin, bytearray):
             stdin = self._get_str_from_bin(stdin)
         self.__stdin = stdin
         self.__stdout = tuple(stdout) if stdout is not None else ()
@@ -148,7 +150,7 @@ class ExecResult(object):
         return self.__cmd
 
     @property
-    def stdin(self):  # type: () -> str
+    def stdin(self):  # type: () -> typing.Optional[str]
         """Stdin input as string.
 
         :rtype: str
