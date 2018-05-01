@@ -8,6 +8,7 @@ python:
 - &mainstream_python 3.6
 - &pypy pypy
 - pypy3.5
+- 3.7-dev
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
 - pip install tox-travis
