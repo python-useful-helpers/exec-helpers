@@ -666,7 +666,7 @@ class TestSubprocessRunner(unittest.TestCase):
         popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
 
         pipe_error = OSError()
-        pipe_error.errno=errno.EINVAL
+        pipe_error.errno = errno.EINVAL
 
         stdin_mock = mock.Mock()
         stdin_mock.attach_mock(mock.Mock(side_effect=pipe_error), 'write')
@@ -842,6 +842,38 @@ class TestSubprocessRunner(unittest.TestCase):
             # noinspection PyTypeChecker
             runner.execute(print_stdin, stdin=stdin)
         popen_obj.kill.assert_called_once()
+
+    @mock.patch('time.sleep', autospec=True)
+    def test_013_execute_timeout_done(
+        self,
+        sleep,
+        popen, _, select, logger
+    ):
+        popen_obj, exp_result = self.prepare_close(popen, ec=exec_helpers.ExitCodes.EX_INVALID)
+        popen_obj.configure_mock(returncode=None)
+        popen_obj.attach_mock(mock.Mock(side_effect=OSError), 'kill')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+
+        res = runner.execute(command, timeout=1)
+
+        self.assertEqual(res, exp_result)
+
+        popen.assert_has_calls((
+            mock.call(
+                args=[command],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
 
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)

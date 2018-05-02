@@ -354,7 +354,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
                     self.logger.warning('STDIN Send failed: closed PIPE')
-                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):
+                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
                     self.logger.warning('STDIN Send failed: broken PIPE')
                 else:
                     process.kill()
