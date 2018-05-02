@@ -39,6 +39,27 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 release lock on exit
 
+    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
+
+        Execute command in async mode and return Popen with IO objects.
+
+        :param command: Command for execution
+        :type command: str
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :rtype: ``typing.Tuple[subprocess.Popen, None, typing.Optional[io.TextIOWrapper], typing.Optional[io.TextIOWrapper], ]``
+
+        .. versionadded:: 1.2.0
+
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
         Execute command and wait for return code.

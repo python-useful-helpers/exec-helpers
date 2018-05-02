@@ -114,7 +114,7 @@ class _MemorizedSSH(type):
 
         .. versionadded:: 1.2.0
         """
-        return collections.OrderedDict()
+        return collections.OrderedDict()  # pragma: no cover
 
     def __call__(
         cls,
@@ -225,7 +225,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             self,
             ssh,  # type: SSHClientBase
             enforce=None  # type: typing.Optional[bool]
-        ):
+        ):  # type: (...) -> None
             """Context manager for call commands with sudo.
 
             :type ssh: SSHClient
@@ -259,7 +259,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         password=None,  # type: typing.Optional[str]
         private_keys=None,  # type: typing.Optional[_type_RSAKeys]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
-    ):
+    ):  # type: (...) -> None
         """SSHClient helper.
 
         :param host: remote hostname
@@ -488,24 +488,28 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     def execute_async(
         self,
         command,  # type: str
-        get_pty=False,  # type: bool
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, None]
+        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        verbose=False,  # type: bool
+        log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
     ):  # type: (...) -> _type_execute_async
         """Execute command in async mode and return channel with IO objects.
 
         :param command: Command for execution
         :type command: str
-        :param get_pty: open PTY on remote machine
-        :type get_pty: bool
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[six.text_type, six.binary_type, None]
+        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :rtype: typing.Tuple[
             paramiko.Channel,
             paramiko.ChannelFile,
@@ -515,20 +519,21 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
+        .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
         """
         cmd_for_log = self._mask_command(
             cmd=command,
-            log_mask_re=kwargs.get('log_mask_re', None)
+            log_mask_re=log_mask_re
         )
 
         self.logger.log(
-            level=logging.INFO if kwargs.get('verbose') else logging.DEBUG,
+            level=logging.INFO if verbose else logging.DEBUG,
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
         chan = self._ssh.get_transport().open_session()
 
-        if get_pty:
+        if kwargs.get('get_pty', False):
             # Open PTY
             chan.get_pty(
                 term='vt100',
@@ -536,45 +541,45 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
                 width_pixels=0, height_pixels=0
             )
 
-        _stdin = chan.makefile('wb')
+        _stdin = chan.makefile('wb')  # type: paramiko.ChannelFile
         stdout = chan.makefile('rb') if open_stdout else None
         stderr = chan.makefile_stderr('rb') if open_stderr else None
+
         cmd = "{command}\n".format(command=command)
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode('utf-8')).decode('utf-8')
-            cmd = (
-                "sudo -S bash -c 'eval \"$(base64 -d <(echo \"{0}\"))\"'"
-            ).format(
-                encoded_cmd
-            )
+            cmd = "sudo -S bash -c 'eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd)
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
                 self.auth.enter_password(_stdin)
                 _stdin.flush()
         else:
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
+
         if stdin is not None:
-            if not isinstance(stdin, six.binary_type):
-                stdin = stdin.encode(encoding='utf-8')
-            _stdin.write('{}\n'.format(stdin))
-            _stdin.flush()
+            if not _stdin.channel.closed:
+                _stdin.write('{stdin}\n'.format(stdin=stdin))
+                _stdin.flush()
+            else:
+                self.logger.warning('STDIN Send failed: closed channel')
 
         return chan, _stdin, stderr, stdout
 
-    def __exec_command(
+    def _exec_command(
         self,
         command,  # type: str
-        channel,  # type: paramiko.channel.Channel
+        interface,  # type: paramiko.channel.Channel
         stdout,  # type: paramiko.channel.ChannelFile
         stderr,  # type: paramiko.channel.ChannelFile
         timeout,  # type: int
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
+        **kwargs
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
 
         :type command: str
-        :type channel: paramiko.channel.Channel
+        :type interface: paramiko.channel.Channel
         :type stdout: paramiko.channel.ChannelFile
         :type stderr: paramiko.channel.ChannelFile
         :type timeout: int
@@ -589,18 +594,15 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         """
         def poll_streams(
             result,  # type: exec_result.ExecResult
-            channel,  # type: paramiko.channel.Channel
-            stdout,  # type:  paramiko.channel.ChannelFile
-            stderr,  # type:  paramiko.channel.ChannelFile
         ):
             """Poll FIFO buffers if data available."""
-            if stdout and channel.recv_ready():
+            if stdout and interface.recv_ready():
                 result.read_stdout(
                     src=stdout,
                     log=self.logger,
                     verbose=verbose
                 )
-            if stderr and channel.recv_stderr_ready():
+            if stderr and interface.recv_stderr_ready():
                 result.read_stderr(
                     src=stderr,
                     log=self.logger,
@@ -609,11 +611,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         @threaded.threadpooled
         def poll_pipes(
-            stdout,  # type:  paramiko.channel.ChannelFile
-            stderr,  # type:  paramiko.channel.ChannelFile
             result,  # type: exec_result.ExecResult
             stop,  # type: threading.Event
-            channel  # type: paramiko.channel.Channel
         ):
             """Polling task for FIFO buffers.
 
@@ -626,14 +625,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             while not stop.isSet():
                 time.sleep(0.1)
                 if stdout or stderr:
-                    poll_streams(
-                        result=result,
-                        channel=channel,
-                        stdout=stdout,
-                        stderr=stderr,
-                    )
+                    poll_streams(result=result)
 
-                if channel.status_event.is_set():
+                if interface.status_event.is_set():
                     result.read_stdout(
                         src=stdout,
                         log=self.logger,
@@ -643,7 +637,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
                         log=self.logger,
                         verbose=verbose
                     )
-                    result.exit_code = channel.exit_status
+                    result.exit_code = interface.exit_status
 
                     stop.set()
 
@@ -660,11 +654,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         # pylint: disable=assignment-from-no-return
         future = poll_pipes(
-            stdout=stdout,
-            stderr=stderr,
             result=result,
             stop=stop_event,
-            channel=channel
         )  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 
@@ -673,11 +664,11 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         # Process closed?
         if stop_event.isSet():
             stop_event.clear()
-            channel.close()
+            interface.close()
             return result
 
         stop_event.set()
-        channel.close()
+        interface.close()
         future.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(
@@ -686,49 +677,6 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         )
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(wait_err_msg)
-
-    def execute(
-        self,
-        command,  # type: str
-        verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
-        """Execute command and wait for return code.
-
-        :param command: Command for execution
-        :type command: str
-        :param verbose: Produce log.info records for command call and output
-        :type verbose: bool
-        :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
-        :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        """
-        (
-            chan,  # type: paramiko.channel.Channel
-            _,
-            stderr,  # type: paramiko.channel.ChannelFile
-            stdout,  # type: paramiko.channel.ChannelFile
-        ) = self.execute_async(
-            command,
-            verbose=verbose,
-            **kwargs
-        )
-
-        result = self.__exec_command(
-            command, chan, stdout, stderr, timeout,
-            verbose=verbose,
-            log_mask_re=kwargs.get('log_mask_re', None),
-        )
-        message = _log_templates.CMD_RESULT.format(result=result)
-        self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG,
-            msg=message
-        )
-        return result
 
     def execute_through_host(
         self,
@@ -767,7 +715,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             cmd=command,
             log_mask_re=kwargs.get('log_mask_re', None)
         )
-        logger.log(
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG,
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
@@ -801,7 +749,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
         # noinspection PyDictCreation
-        result = self.__exec_command(
+        result = self._exec_command(
             command, channel, stdout, stderr, timeout, verbose=verbose,
             log_mask_re=kwargs.get('log_mask_re', None),
         )

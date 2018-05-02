@@ -65,8 +65,7 @@ print_stdin = 'read line; echo "$line"'
 
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
-@mock.patch(
-    'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
+@mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 class TestExecute(unittest.TestCase):
     def tearDown(self):
@@ -451,6 +450,186 @@ class TestExecute(unittest.TestCase):
             mock.call.log(level=logging.DEBUG, msg=cmd_log),
             log.mock_calls
         )
+
+    def test_check_stdin_str(self, client, policy, logger):
+        stdin_val = u'this is a line'
+
+        stdin = mock.Mock(name='stdin')
+        stdin_channel = mock.Mock()
+        stdin_channel.configure_mock(closed=False)
+        stdin.attach_mock(stdin_channel, 'channel')
+
+        stdout = mock.Mock(name='stdout')
+        stdout_channel = mock.Mock()
+        stdout_channel.configure_mock(closed=False)
+        stdout.attach_mock(stdout_channel, 'channel')
+
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(side_effect=[stdin, stdout]), 'makefile')
+
+        open_session = mock.Mock(return_value=chan)
+
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=print_stdin, stdin=stdin_val)
+
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+        stdin.assert_has_calls([
+            mock.call.write('{val}\n'.format(val=stdin_val)),
+            mock.call.flush()
+        ])
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{val}\n'.format(val=print_stdin))
+        ))
+
+    def test_check_stdin_bytes(self, client, policy, logger):
+        stdin_val = b'this is a line'
+
+        stdin = mock.Mock(name='stdin')
+        stdin_channel = mock.Mock()
+        stdin_channel.configure_mock(closed=False)
+        stdin.attach_mock(stdin_channel, 'channel')
+
+        stdout = mock.Mock(name='stdout')
+        stdout_channel = mock.Mock()
+        stdout_channel.configure_mock(closed=False)
+        stdout.attach_mock(stdout_channel, 'channel')
+
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(side_effect=[stdin, stdout]), 'makefile')
+
+        open_session = mock.Mock(return_value=chan)
+
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=print_stdin, stdin=stdin_val)
+
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+        stdin.assert_has_calls([
+            mock.call.write('{val}\n'.format(val=stdin_val)),
+            mock.call.flush()
+        ])
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{val}\n'.format(val=print_stdin))
+        ))
+
+    def test_check_stdin_bytearray(self, client, policy, logger):
+        stdin_val = bytearray(b'this is a line')
+
+        stdin = mock.Mock(name='stdin')
+        stdin_channel = mock.Mock()
+        stdin_channel.configure_mock(closed=False)
+        stdin.attach_mock(stdin_channel, 'channel')
+
+        stdout = mock.Mock(name='stdout')
+        stdout_channel = mock.Mock()
+        stdout_channel.configure_mock(closed=False)
+        stdout.attach_mock(stdout_channel, 'channel')
+
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(side_effect=[stdin, stdout]), 'makefile')
+
+        open_session = mock.Mock(return_value=chan)
+
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=print_stdin, stdin=stdin_val)
+
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+        stdin.assert_has_calls([
+            mock.call.write('{val}\n'.format(val=stdin_val)),
+            mock.call.flush()
+        ])
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{val}\n'.format(val=print_stdin))
+        ))
+
+    def test_check_stdin_closed(self, client, policy, logger):
+        stdin_val = 'this is a line'
+
+        stdin = mock.Mock(name='stdin')
+        stdin_channel = mock.Mock()
+        stdin_channel.configure_mock(closed=True)
+        stdin.attach_mock(stdin_channel, 'channel')
+
+        stdout = mock.Mock(name='stdout')
+        stdout_channel = mock.Mock()
+        stdout_channel.configure_mock(closed=False)
+        stdout.attach_mock(stdout_channel, 'channel')
+
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(side_effect=[stdin, stdout]), 'makefile')
+
+        open_session = mock.Mock(return_value=chan)
+
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=print_stdin, stdin=stdin_val)
+
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+        stdin.assert_not_called()
+
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log.warning.assert_called_once_with('STDIN Send failed: closed channel')
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{val}\n'.format(val=print_stdin))
+        ))
 
     @staticmethod
     def get_patched_execute_async_retval(
@@ -1047,103 +1226,9 @@ class TestExecute(unittest.TestCase):
             command, verbose, timeout=None,
             error_info=None, raise_on_err=raise_on_err)
 
-    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
-    def test_check_stdin_str(self, check_call, client, policy, logger):
-        stdin = u'this is a line'
-
-        return_value = exec_result.ExecResult(
-            cmd=print_stdin,
-            stdin=stdin,
-            stdout=[stdin],
-            stderr=[],
-            exit_code=0
-        )
-        check_call.return_value = return_value
-
-        verbose = False
-        raise_on_err = True
-
-        # noinspection PyTypeChecker
-        result = self.get_ssh().check_call(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        check_call.assert_called_once_with(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        self.assertEqual(result, return_value)
-
-    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
-    def test_check_stdin_bytes(self, check_call, client, policy, logger):
-        stdin = b'this is a line'
-
-        return_value = exec_result.ExecResult(
-            cmd=print_stdin,
-            stdin=stdin,
-            stdout=[stdin],
-            stderr=[],
-            exit_code=0
-        )
-        check_call.return_value = return_value
-
-        verbose = False
-        raise_on_err = True
-
-        # noinspection PyTypeChecker
-        result = self.get_ssh().check_call(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        check_call.assert_called_once_with(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        self.assertEqual(result, return_value)
-
-    @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
-    def test_check_stdin_bytearray(self, check_call, client, policy, logger):
-        stdin = bytearray(b'this is a line')
-
-        return_value = exec_result.ExecResult(
-            cmd=print_stdin,
-            stdin=stdin,
-            stdout=[stdin],
-            stderr=[],
-            exit_code=0
-        )
-        check_call.return_value = return_value
-
-        verbose = False
-        raise_on_err = True
-
-        # noinspection PyTypeChecker
-        result = self.get_ssh().check_call(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        check_call.assert_called_once_with(
-            command=print_stdin,
-            stdin=stdin,
-            verbose=verbose,
-            timeout=None,
-            raise_on_err=raise_on_err)
-        self.assertEqual(result, return_value)
-
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
-@mock.patch(
-    'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
+@mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 @mock.patch('paramiko.Transport', autospec=True)
 class TestExecuteThrowHost(unittest.TestCase):

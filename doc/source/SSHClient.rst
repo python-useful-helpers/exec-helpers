@@ -101,24 +101,28 @@ API: SSHClient and SSHAuth.
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: ``typing.Optional[bool]``
 
-    .. py:method:: execute_async(command, get_pty=False, open_stdout=True, open_stderr=True, stdin=None, **kwargs)
+    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
 
         Execute command in async mode and return channel with IO objects.
 
         :param command: Command for execution
         :type command: ``str``
-        :param get_pty: open PTY on remote machine
-        :type get_pty: ``bool``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[six.text_type, six.binary_type, None]``
+        :type stdin: ``typing.Union[six.text_type, six.binary_type, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, paramiko.ChannelFile, paramiko.ChannelFile]``
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
+        .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 

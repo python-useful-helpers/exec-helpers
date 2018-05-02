@@ -22,11 +22,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import logging
 import re
 import threading
+import typing  # noqa  # pylint: disable=unused-import
+
+import six  # noqa  # pylint: disable=unused-import
 
 from exec_helpers import constants
 from exec_helpers import exceptions
+from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
 from exec_helpers import _log_templates
 
@@ -44,7 +49,7 @@ class ExecHelper(object):
         self,
         logger,  # type: logging.Logger
         log_mask_re=None,  # type: typing.Optional[str]
-    ):
+    ):  # type: (...) -> None
         """ExecHelper global API.
 
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -126,6 +131,78 @@ class ExecHelper(object):
 
         return cmd
 
+    def execute_async(
+        self,
+        command,  # type: str
+        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
+        verbose=False,  # type: bool
+        log_mask_re=None,  # type: typing.Optional[str]
+        **kwargs
+    ):
+        """Execute command in async mode and return remote interface with IO objects.
+
+        :param command: Command for execution
+        :type command: str
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :rtype: typing.Tuple[
+            typing.Any,
+            typing.Any,
+            typing.Any,
+            typing.Any,
+        ]
+
+        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
+        .. versionchanged:: 1.2.0 stdin data
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    def _exec_command(
+        self,
+        command,  # type: str
+        interface,  # type: typing.Any,
+        stdout,  # type: typing.Any,
+        stderr,  # type: typing.Any,
+        timeout,  # type: int
+        verbose=False,  # type: bool
+        log_mask_re=None,  # type: typing.Optional[str]
+        **kwargs
+    ):  # type: (...) -> exec_result.ExecResult
+        """Get exit status from channel with timeout.
+
+        :param command: Command for execution
+        :type command: str
+        :param interface: Control interface
+        :type interface: typing.Any
+        :param stdout: STDOUT pipe or file-like object
+        :type stdout: typing.Any
+        :param stderr: STDERR pipe or file-like object
+        :type stderr: typing.Any
+        :param timeout: Timeout for command execution
+        :type timeout: int
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        """
+        raise NotImplementedError  # pragma: no cover
+
     def execute(
         self,
         command,  # type: str
@@ -148,7 +225,33 @@ class ExecHelper(object):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
-        raise NotImplementedError()  # pragma: no cover
+        with self.lock:
+            (
+                iface,  # type: typing.Any
+                _,
+                stderr,  # type: typing.Any
+                stdout,  # type: typing.Any
+            ) = self.execute_async(
+                command,
+                verbose=verbose,
+                **kwargs
+            )
+
+            result = self._exec_command(
+                command=command,
+                interface=iface,
+                stdout=stdout,
+                stderr=stderr,
+                timeout=timeout,
+                verbose=verbose,
+                **kwargs
+            )
+            message = _log_templates.CMD_RESULT.format(result=result)
+            self.logger.log(
+                level=logging.INFO if verbose else logging.DEBUG,
+                msg=message
+            )
+            return result
 
     def check_call(
         self,
