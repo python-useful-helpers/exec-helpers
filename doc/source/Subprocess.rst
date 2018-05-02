@@ -56,7 +56,7 @@ API: Subprocess
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :rtype: ``typing.Tuple[subprocess.Popen, None, typing.Optional[io.TextIOWrapper], typing.Optional[io.TextIOWrapper], ]``
+        :rtype: ``typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]``
 
         .. versionadded:: 1.2.0
 

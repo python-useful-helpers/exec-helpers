@@ -65,8 +65,8 @@ _type_multiple_results = typing.Dict[
 _type_execute_async = typing.Tuple[
     paramiko.Channel,
     paramiko.ChannelFile,
-    paramiko.ChannelFile,
-    paramiko.ChannelFile
+    typing.Optional[paramiko.ChannelFile],
+    typing.Optional[paramiko.ChannelFile]
 ]
 
 CPYTHON = 'CPython' == platform.python_implementation()
@@ -101,7 +101,7 @@ class _MemorizedSSH(type):
       duplicates is possible.
     """
 
-    __cache = {}
+    __cache = {}  # type: typing.Dict[typing.Tuple[str, int], SSHClientBase]
 
     @classmethod
     def __prepare__(
@@ -622,7 +622,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             :type stop: Event
             :type channel: paramiko.channel.Channel
             """
-            while not stop.isSet():
+            while not stop.is_set():
                 time.sleep(0.1)
                 if stdout or stderr:
                     poll_streams(result=result)
@@ -662,7 +662,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         concurrent.futures.wait([future], timeout)
 
         # Process closed?
-        if stop_event.isSet():
+        if stop_event.is_set():
             stop_event.clear()
             interface.close()
             return result
@@ -764,7 +764,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
-        expected=None,  # type: typing.Optional[typing.Iterable[]]
+        expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
         **kwargs
     ):  # type: (...) -> _type_multiple_results
@@ -782,10 +782,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :type raise_on_err: bool
         :return: dictionary {(hostname, port): result}
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        :raises ParallelCallProcessError:
-            Unexpected any code at lest on one target
-        :raises ParallelCallExceptions:
-            At lest one exception raised during execution (including timeout)
+        :raises ParallelCallProcessError: Unexpected any code at lest on one target
+        :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
@@ -796,11 +794,14 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         ):  # type: (...) -> exec_result.ExecResult
             """Get result from remote call."""
             (
-                chan,  # type: paramiko.channel.Channel
+                chan,
                 _,
-                stderr,  # type: paramiko.channel.ChannelFile
-                stdout,  # type: paramiko.channel.ChannelFile
-            ) = remote.execute_async(command, **kwargs)
+                stderr,
+                stdout,
+            ) = remote.execute_async(
+                command,
+                **kwargs
+            )  # type: _type_execute_async
 
             chan.status_event.wait(timeout)
             exit_code = chan.recv_exit_status()
@@ -832,19 +833,19 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             futures[remote] = get_result(remote)
 
         (
-            _,  # type: typing.Set[concurrent.futures.Future]
-            not_done,  # type: typing.Set[concurrent.futures.Future]
+            _,
+            not_done,
         ) = concurrent.futures.wait(
             list(futures.values()),
             timeout=timeout
-        )
+        )  # type: typing.Set[concurrent.futures.Future], typing.Set[concurrent.futures.Future]
         for future in not_done:
             future.cancel()
 
         for (
-            remote,  # type: SSHClientBase
-            future,  # type: concurrent.futures.Future
-        ) in futures.items():
+            remote,
+            future,
+        ) in futures.items():  # type: SSHClientBase, concurrent.futures.Future
             try:
                 result = future.result()
                 results[(remote.hostname, remote.port)] = result

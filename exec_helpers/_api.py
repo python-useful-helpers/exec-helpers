@@ -25,7 +25,7 @@ from __future__ import unicode_literals
 import logging
 import re
 import threading
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 import six  # noqa  # pylint: disable=unused-import
 
@@ -34,6 +34,9 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
 from exec_helpers import _log_templates
+
+_type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
+_type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
 
 
 class ExecHelper(object):
@@ -171,9 +174,9 @@ class ExecHelper(object):
     def _exec_command(
         self,
         command,  # type: str
-        interface,  # type: typing.Any,
-        stdout,  # type: typing.Any,
-        stderr,  # type: typing.Any,
+        interface,  # type: typing.Any
+        stdout,  # type: typing.Any
+        stderr,  # type: typing.Any
         timeout,  # type: int
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
@@ -227,10 +230,10 @@ class ExecHelper(object):
         """
         with self.lock:
             (
-                iface,  # type: typing.Any
+                iface,
                 _,
-                stderr,  # type: typing.Any
-                stdout,  # type: typing.Any
+                stderr,
+                stdout,
             ) = self.execute_async(
                 command,
                 verbose=verbose,

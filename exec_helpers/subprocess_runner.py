@@ -22,7 +22,6 @@ from __future__ import unicode_literals
 
 import collections
 import errno
-import io
 import logging
 import os
 import select
@@ -30,7 +29,7 @@ import sys
 import subprocess  # nosec  # Expected usage
 import threading
 import time
-import typing
+import typing  # noqa  # pylint: disable=unused-import
 
 import six
 import threaded
@@ -43,13 +42,6 @@ from exec_helpers import _log_templates
 logger = logging.getLogger(__name__)
 # noinspection PyUnresolvedReferences
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
-
-_type_execute_async = typing.Tuple[
-    subprocess.Popen,
-    None,
-    typing.Optional[io.TextIOWrapper],
-    typing.Optional[io.TextIOWrapper],
-]
 
 _win = sys.platform == "win32"
 _posix = 'posix' in sys.builtin_module_names
@@ -71,7 +63,7 @@ class SingletonMeta(type):
     Main goals: not need to implement __new__ in singleton classes
     """
 
-    _instances = {}
+    _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
     _lock = threading.RLock()
 
     def __call__(cls, *args, **kwargs):
@@ -97,7 +89,7 @@ class SingletonMeta(type):
         return collections.OrderedDict()  # pragma: no cover
 
 
-def set_nonblocking_pipe(pipe):  # type: (os.pipe) -> None
+def set_nonblocking_pipe(pipe):  # type: (typing.Any) -> None
     """Set PIPE unblocked to allow polling of all pipes in parallel."""
     descriptor = pipe.fileno()  # pragma: no cover
 
@@ -154,9 +146,9 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
     def _exec_command(
         self,
         command,  # type: str
-        interface,  # type: subprocess.Popen,
-        stdout,  # type: typing.Optional[io.TextIOWrapper],
-        stderr,  # type: typing.Optional[io.TextIOWrapper],
+        interface,  # type: subprocess.Popen
+        stdout,  # type: typing.Optional[typing.IO]
+        stderr,  # type: typing.Optional[typing.IO]
         timeout,  # type: int
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
@@ -211,7 +203,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                             verbose=verbose
                         )
 
-        @threaded.threaded(started=True, daemon=True)
+        @threaded.threaded(started=True)
         def poll_pipes(
             result,  # type: exec_result.ExecResult
             stop,  # type: threading.Event
@@ -221,7 +213,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
             :type result: ExecResult
             :type stop: Event
             """
-            while not stop.isSet():
+            while not stop.is_set():
                 time.sleep(0.1)
                 if stdout or stderr:
                     poll_streams(result=result)
@@ -262,7 +254,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         stop_event.wait(timeout)
 
         # Process closed?
-        if stop_event.isSet():
+        if stop_event.is_set():
+            poll_thread.join(0.1)
             stop_event.clear()
             return result
         # Kill not ended process and wait for close
@@ -295,7 +288,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
-    ):  # type: (...) -> _type_execute_async
+    ):  # type: (...) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
@@ -314,8 +307,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         :rtype: typing.Tuple[
             subprocess.Popen,
             None,
-            typing.Optional[io.TextIOWrapper],
-            typing.Optional[io.TextIOWrapper],
+            typing.Optional[typing.IO],
+            typing.Optional[typing.IO],
         ]
 
         .. versionadded:: 1.2.0

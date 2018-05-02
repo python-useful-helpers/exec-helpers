@@ -71,7 +71,7 @@ class CalledProcessError(ExecCalledProcessError):
         self,
         result=None,  # type: exec_result.ExecResult
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
-    ):
+    ):  # type: (...) -> None
         """Exception for error on process calls.
 
         :param result: execution result
@@ -136,10 +136,10 @@ class ParallelCallExceptions(ExecCalledProcessError):
         self,
         command,  # type: str
         exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
-        errors,  # type: _type_multiple_results,
-        results,  # type: _type_multiple_results,
+        errors,  # type: _type_multiple_results
+        results,  # type: _type_multiple_results
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
-    ):
+    ):  # type: (...) -> None
         """Exception raised during parallel call as result of exceptions.
 
         :param command: command
@@ -190,10 +190,10 @@ class ParallelCallProcessError(ExecCalledProcessError):
     def __init__(
         self,
         command,  # type: str
-        errors,  # type: _type_multiple_results,
-        results,  # type: _type_multiple_results,
+        errors,  # type: _type_multiple_results
+        results,  # type: _type_multiple_results
         expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
-    ):
+    ):  # type: (...) -> None
         """Exception during parallel execution.
 
         :param command: command
