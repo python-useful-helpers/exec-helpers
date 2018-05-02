@@ -26,6 +26,7 @@ import subprocess
 import unittest
 
 import mock
+import six
 
 import exec_helpers
 from exec_helpers import subprocess_runner
@@ -606,6 +607,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.close()
         ])
 
+    @unittest.skipIf(six.PY2, 'Not implemented exception')
     def test_007_check_stdin_fail_broken_pipe(
         self,
         popen,  # type: mock.MagicMock
@@ -617,8 +619,11 @@ class TestSubprocessRunner(unittest.TestCase):
 
         popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
 
+        pipe_err = BrokenPipeError()
+        pipe_err.errno = errno.EPIPE
+
         stdin_mock = mock.Mock()
-        stdin_mock.attach_mock(mock.Mock(side_effect=BrokenPipeError), 'write')
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_err), 'write')
         popen_obj.attach_mock(stdin_mock, 'stdin')
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -720,6 +725,7 @@ class TestSubprocessRunner(unittest.TestCase):
             runner.execute(print_stdin, stdin=stdin)
         popen_obj.kill.assert_called_once()
 
+    @unittest.skipIf(six.PY2, 'Not implemented exception')
     def test_010_check_stdin_fail_close_pipe(
         self,
         popen,  # type: mock.MagicMock
@@ -731,8 +737,11 @@ class TestSubprocessRunner(unittest.TestCase):
 
         popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
 
+        pipe_err = BrokenPipeError()
+        pipe_err.errno = errno.EPIPE
+
         stdin_mock = mock.Mock()
-        stdin_mock.attach_mock(mock.Mock(side_effect=BrokenPipeError), 'close')
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_err), 'close')
         popen_obj.attach_mock(stdin_mock, 'stdin')
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 

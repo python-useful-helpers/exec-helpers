@@ -348,23 +348,21 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                 stdin = bytes(stdin)
             try:
                 process.stdin.write(stdin)
-            except BrokenPipeError:
-                self.logger.warning('STDIN Send failed: broken PIPE')
             except OSError as exc:
                 if exc.errno == errno.EINVAL:
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
                     self.logger.warning('STDIN Send failed: closed PIPE')
+                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):
+                    self.logger.warning('STDIN Send failed: broken PIPE')
                 else:
                     process.kill()
                     raise
             try:
                 process.stdin.close()
-            except BrokenPipeError:
-                pass  # communicate() must ignore broken pipe errors.
             except OSError as exc:
-                if exc.errno == errno.EINVAL:
+                if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
                     pass
                 else:
                     process.kill()
