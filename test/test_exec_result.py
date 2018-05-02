@@ -238,3 +238,19 @@ class TestExecResult(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             result.read_stderr([b'err'])
+
+    def test_stdin_none(self):
+        result = exec_helpers.ExecResult(cmd, exit_code=0)
+        self.assertIsNone(result.stdin)
+
+    def test_stdin_utf(self):
+        result = exec_helpers.ExecResult(cmd, stdin=u'STDIN', exit_code=0)
+        self.assertEqual(result.stdin, u'STDIN')
+
+    def test_stdin_bytes(self):
+        result = exec_helpers.ExecResult(cmd, stdin=b'STDIN', exit_code=0)
+        self.assertEqual(result.stdin, u'STDIN')
+
+    def test_stdin_bytearray(self):
+        result = exec_helpers.ExecResult(cmd, stdin=bytearray(b'STDIN'), exit_code=0)
+        self.assertEqual(result.stdin, u'STDIN')
