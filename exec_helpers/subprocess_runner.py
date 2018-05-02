@@ -357,6 +357,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                     # process is still running but closed the pipe.
                     self.logger.warning('STDIN Send failed: closed PIPE')
                 else:
+                    process.kill()
                     raise
             try:
                 process.stdin.close()
@@ -366,6 +367,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                 if exc.errno == errno.EINVAL:
                     pass
                 else:
+                    process.kill()
                     raise
 
         if open_stdout:

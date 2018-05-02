@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import errno
 import logging
 import subprocess
 import unittest
@@ -604,6 +605,234 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.write(stdin),
             mock.call.close()
         ])
+
+    def test_007_check_stdin_fail_broken_pipe(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=BrokenPipeError), 'write')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(print_stdin, stdin=stdin)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[print_stdin],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+
+        stdin_mock.assert_has_calls([
+            mock.call.write(stdin),
+            mock.call.close()
+        ])
+        logger.warning.assert_called_once_with('STDIN Send failed: broken PIPE')
+
+    def test_008_check_stdin_fail_closed_win(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        pipe_error = OSError()
+        pipe_error.errno=errno.EINVAL
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_error), 'write')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(print_stdin, stdin=stdin)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[print_stdin],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+
+        stdin_mock.assert_has_calls([
+            mock.call.write(stdin),
+            mock.call.close()
+        ])
+        logger.warning.assert_called_once_with('STDIN Send failed: closed PIPE')
+
+    def test_009_check_stdin_fail_write(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        pipe_error = OSError()
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_error), 'write')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        with self.assertRaises(OSError):
+            # noinspection PyTypeChecker
+            runner.execute(print_stdin, stdin=stdin)
+        popen_obj.kill.assert_called_once()
+
+    def test_010_check_stdin_fail_close_pipe(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=BrokenPipeError), 'close')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(print_stdin, stdin=stdin)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[print_stdin],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+
+        stdin_mock.assert_has_calls([
+            mock.call.write(stdin),
+            mock.call.close()
+        ])
+        logger.warning.assert_not_called()
+
+    def test_011_check_stdin_fail_close_pipe_win(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        pipe_error = OSError()
+        pipe_error.errno = errno.EINVAL
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_error), 'close')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        # noinspection PyTypeChecker
+        result = runner.execute(print_stdin, stdin=stdin)
+        self.assertEqual(
+            result, exp_result
+
+        )
+        popen.assert_has_calls((
+            mock.call(
+                args=[print_stdin],
+                cwd=None,
+                env=None,
+                shell=True,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=False,
+            ),
+        ))
+
+        stdin_mock.assert_has_calls([
+            mock.call.write(stdin),
+            mock.call.close()
+        ])
+        logger.warning.assert_not_called()
+
+    def test_012_check_stdin_fail_close(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):  # type: (...) -> None
+        stdin = b'this is a line'
+
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+
+        pipe_error = OSError()
+
+        stdin_mock = mock.Mock()
+        stdin_mock.attach_mock(mock.Mock(side_effect=pipe_error), 'close')
+        popen_obj.attach_mock(stdin_mock, 'stdin')
+        select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
+
+        runner = exec_helpers.Subprocess()
+
+        with self.assertRaises(OSError):
+            # noinspection PyTypeChecker
+            runner.execute(print_stdin, stdin=stdin)
+        popen_obj.kill.assert_called_once()
 
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
