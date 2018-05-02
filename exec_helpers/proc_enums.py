@@ -169,7 +169,7 @@ def exit_code_to_enum(code):  # type: (_type_exit_codes) -> _type_exit_codes
 
 
 def exit_codes_to_enums(
-    codes=None  # type: typing.Optional[typing.List[_type_exit_codes]]
+    codes=None  # type: typing.Optional[typing.Iterable[_type_exit_codes]]
 ):  # type: (...) -> typing.List[_type_exit_codes]
     """Convert integer exit codes to enums."""
     if codes is None:

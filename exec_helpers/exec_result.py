@@ -55,7 +55,7 @@ class ExecResult(object):
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
         exit_code=proc_enums.ExitCodes.EX_INVALID  # type: _type_exit_codes
-    ):
+    ):  # type: (...) -> None
         """Command execution result.
 
         :param cmd: command
@@ -77,8 +77,8 @@ class ExecResult(object):
         elif isinstance(stdin, bytearray):
             stdin = self._get_str_from_bin(stdin)
         self.__stdin = stdin
-        self.__stdout = tuple(stdout) if stdout is not None else ()
-        self.__stderr = tuple(stderr) if stderr is not None else ()
+        self.__stdout = tuple(stdout) if stdout is not None else ()  # type: typing.Tuple[bytes]
+        self.__stderr = tuple(stderr) if stderr is not None else ()  # type: typing.Tuple[bytes]
 
         self.__exit_code = None
         self.__timestamp = None
@@ -99,7 +99,7 @@ class ExecResult(object):
         return self.__lock
 
     @property
-    def timestamp(self):  # type: () -> typing.Optional(datetime.datetime)
+    def timestamp(self):  # type: () -> typing.Optional[datetime.datetime]
         """Timestamp.
 
         :rtype: typing.Optional(datetime.datetime)
@@ -133,10 +133,10 @@ class ExecResult(object):
     def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> str
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
-        :type data: typing.List[bytes]
+        :type data: typing.Tuple[bytes]
         :rtype: str
         """
-        src = data if len(data) <= 7 else data[:3] + (b'...\n',) + data[-3:]
+        src = data if len(data) <= 7 else data[:3] + (b'...\n',) + data[-3:]  # type: typing.Tuple[bytes]
         return cls._get_str_from_bin(
             cls._get_bytearray_from_array(src)
         )

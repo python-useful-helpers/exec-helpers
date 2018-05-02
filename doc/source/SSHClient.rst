@@ -118,7 +118,7 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, paramiko.ChannelFile, paramiko.ChannelFile]``
+        :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, typing.Optional[paramiko.ChannelFile], typing.Optional[paramiko.ChannelFile]]``
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data

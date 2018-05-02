@@ -50,9 +50,6 @@ class FakeFileStream(object):
         return hash(tuple(self.__src))
 
 
-# TODO(AStepanov): Cover negative scenarios (timeout)
-
-
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
 @mock.patch('select.select', autospec=True)
 @mock.patch('exec_helpers.subprocess_runner.set_nonblocking_pipe', autospec=True)
@@ -125,10 +122,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(command)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[command],
@@ -389,10 +383,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(cmd)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[cmd],
@@ -445,10 +436,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(cmd, log_mask_re=log_mask_re)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[cmd],
@@ -503,10 +491,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
+        self.assertEqual(result, exp_result)
 
-        )
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -544,10 +530,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
+        self.assertEqual(result, exp_result)
 
-        )
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -585,10 +569,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
+        self.assertEqual(result, exp_result)
 
-        )
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -631,10 +613,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
+        self.assertEqual(result, exp_result)
 
-        )
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -677,10 +657,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -722,7 +699,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         with self.assertRaises(OSError):
             # noinspection PyTypeChecker
-            runner.execute(print_stdin, stdin=stdin)
+            runner.execute_async(print_stdin, stdin=stdin)
         popen_obj.kill.assert_called_once()
 
     @unittest.skipIf(six.PY2, 'Not implemented exception')
@@ -749,10 +726,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
+        self.assertEqual(result, exp_result)
 
-        )
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -795,10 +770,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
         result = runner.execute(print_stdin, stdin=stdin)
-        self.assertEqual(
-            result, exp_result
-
-        )
+        self.assertEqual(result, exp_result)
         popen.assert_has_calls((
             mock.call(
                 args=[print_stdin],
@@ -840,7 +812,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         with self.assertRaises(OSError):
             # noinspection PyTypeChecker
-            runner.execute(print_stdin, stdin=stdin)
+            runner.execute_async(print_stdin, stdin=stdin)
         popen_obj.kill.assert_called_once()
 
     @mock.patch('time.sleep', autospec=True)
@@ -858,7 +830,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
 
-        res = runner.execute(command, timeout=1)
+        res = runner.execute(command, timeout=0.1)
 
         self.assertEqual(res, exp_result)
 
@@ -877,8 +849,8 @@ class TestSubprocessRunner(unittest.TestCase):
 
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
+@mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
 class TestSubprocessRunnerHelpers(unittest.TestCase):
-    @mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
     def test_001_check_call(self, execute, logger):
         exit_code = 0
         return_value = exec_helpers.ExecResult(
@@ -913,7 +885,6 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
             runner.check_call(command=command, verbose=verbose, timeout=None)
         execute.assert_called_once_with(command, verbose, None)
 
-    @mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
     def test_002_check_call_expected(self, execute, logger):
         exit_code = 0
         return_value = exec_helpers.ExecResult(
@@ -952,7 +923,7 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
         execute.assert_called_once_with(command, verbose, None)
 
     @mock.patch('exec_helpers.subprocess_runner.Subprocess.check_call')
-    def test_003_check_stderr(self, check_call, logger):
+    def test_003_check_stderr(self, check_call, _, logger):
         return_value = exec_helpers.ExecResult(
             cmd=command,
             stdout=stdout_list,

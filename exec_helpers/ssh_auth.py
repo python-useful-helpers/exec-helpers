@@ -52,10 +52,10 @@ class SSHAuth(object):
         username=None,  # type: typing.Optional[str]
         password=None,  # type: typing.Optional[str]
         key=None,  # type: typing.Optional[paramiko.RSAKey]
-        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]],
+        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         key_filename=None,  # type: typing.Union[typing.List[str], str, None]
         passphrase=None,  # type: typing.Optional[str]
-    ):
+    ):  # type: (...) -> None
         """SSH credentials object.
 
         Used to authorize SSHClient.
@@ -137,7 +137,7 @@ class SSHAuth(object):
         :type tgt: file
         """
         # noinspection PyTypeChecker
-        return tgt.write('{}\n'.format(self.__password))
+        tgt.write('{}\n'.format(self.__password))
 
     def connect(
         self,
@@ -166,7 +166,7 @@ class SSHAuth(object):
             'password': self.__password,
             'key_filename': self.key_filename,
             'passphrase': self.__passphrase,
-        }
+        }  # type: typing.Dict[str, typing.Any]
         if hostname is not None:
             kwargs['hostname'] = hostname
             kwargs['port'] = port
