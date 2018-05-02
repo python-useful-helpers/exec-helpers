@@ -89,7 +89,7 @@ ext_modules = cythonize(
         overflowcheck=True,
         language_level=3,
     )
-) if cythonize is not None else ()
+) if cythonize is not None and PY3 else []
 
 
 class BuildFailed(Exception):
