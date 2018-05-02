@@ -715,7 +715,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             cmd=command,
             log_mask_re=kwargs.get('log_mask_re', None)
         )
-        logger.log(
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG,
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )

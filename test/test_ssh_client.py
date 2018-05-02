@@ -586,6 +586,51 @@ class TestExecute(unittest.TestCase):
             mock.call.exec_command('{val}\n'.format(val=print_stdin))
         ))
 
+    def test_check_stdin_closed(self, client, policy, logger):
+        stdin_val = 'this is a line'
+
+        stdin = mock.Mock(name='stdin')
+        stdin_channel = mock.Mock()
+        stdin_channel.configure_mock(closed=True)
+        stdin.attach_mock(stdin_channel, 'channel')
+
+        stdout = mock.Mock(name='stdout')
+        stdout_channel = mock.Mock()
+        stdout_channel.configure_mock(closed=False)
+        stdout.attach_mock(stdout_channel, 'channel')
+
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(side_effect=[stdin, stdout]), 'makefile')
+
+        open_session = mock.Mock(return_value=chan)
+
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_async(command=print_stdin, stdin=stdin_val)
+
+        get_transport.assert_called_once()
+        open_session.assert_called_once()
+        stdin.assert_not_called()
+
+        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log.warning.assert_called_once_with('STDIN Send failed: closed channel')
+
+        self.assertIn(chan, result)
+        chan.assert_has_calls((
+            mock.call.makefile('wb'),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command('{val}\n'.format(val=print_stdin))
+        ))
+
     @staticmethod
     def get_patched_execute_async_retval(
         ec=0,
