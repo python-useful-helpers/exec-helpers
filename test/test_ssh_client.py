@@ -92,7 +92,7 @@ class TestExecute(unittest.TestCase):
         return (u"Command exit code '{code!s}':\n{cmd!s}\n"
                 .format(cmd=result.cmd.rstrip(), code=result.exit_code))
 
-    def test_execute_async(self, client, policy, logger):
+    def test_001_execute_async(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -122,7 +122,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_pty(self, client, policy, logger):
+    def test_002_execute_async_pty(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -157,7 +157,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_no_stdout_stderr(self, client, policy, logger):
+    def test_003_execute_async_no_stdout_stderr(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -208,7 +208,7 @@ class TestExecute(unittest.TestCase):
             mock.call.exec_command('{}\n'.format(command))
         ))
 
-    def test_execute_async_sudo(self, client, policy, logger):
+    def test_004_execute_async_sudo(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -241,7 +241,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_with_sudo_enforce(self, client, policy, logger):
+    def test_005_execute_async_with_sudo_enforce(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -277,7 +277,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_with_no_sudo_enforce(self, client, policy, logger):
+    def test_006_execute_async_with_no_sudo_enforce(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -309,7 +309,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_with_none_enforce(self, client, policy, logger):
+    def test_007_execute_async_with_sudo_none_enforce(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -342,7 +342,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_auth.SSHAuth.enter_password')
-    def test_execute_async_sudo_password(
+    def test_008_execute_async_sudo_password(
             self, enter_password, client, policy, logger):
         stdin = mock.Mock(name='stdin')
         stdout = mock.Mock(name='stdout')
@@ -386,7 +386,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_verbose(self, client, policy, logger):
+    def test_009_execute_async_verbose(self, client, policy, logger):
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
         transport = mock.Mock()
@@ -416,7 +416,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_execute_async_mask_command(self, client, policy, logger):
+    def test_010_execute_async_mask_command(self, client, policy, logger):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
@@ -451,7 +451,7 @@ class TestExecute(unittest.TestCase):
             log.mock_calls
         )
 
-    def test_check_stdin_str(self, client, policy, logger):
+    def test_011_check_stdin_str(self, client, policy, logger):
         stdin_val = u'this is a line'
 
         stdin = mock.Mock(name='stdin')
@@ -496,7 +496,7 @@ class TestExecute(unittest.TestCase):
             mock.call.exec_command('{val}\n'.format(val=print_stdin))
         ))
 
-    def test_check_stdin_bytes(self, client, policy, logger):
+    def test_012_check_stdin_bytes(self, client, policy, logger):
         stdin_val = b'this is a line'
 
         stdin = mock.Mock(name='stdin')
@@ -541,7 +541,7 @@ class TestExecute(unittest.TestCase):
             mock.call.exec_command('{val}\n'.format(val=print_stdin))
         ))
 
-    def test_check_stdin_bytearray(self, client, policy, logger):
+    def test_013_check_stdin_bytearray(self, client, policy, logger):
         stdin_val = bytearray(b'this is a line')
 
         stdin = mock.Mock(name='stdin')
@@ -586,7 +586,7 @@ class TestExecute(unittest.TestCase):
             mock.call.exec_command('{val}\n'.format(val=print_stdin))
         ))
 
-    def test_check_stdin_closed(self, client, policy, logger):
+    def test_014_check_stdin_closed(self, client, policy, logger):
         stdin_val = 'this is a line'
 
         stdin = mock.Mock(name='stdin')
@@ -630,6 +630,76 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{val}\n'.format(val=print_stdin))
         ))
+
+    def test_015_keepalive(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        with ssh:
+            pass
+
+        _ssh.close.assert_not_called()
+
+    def test_016_no_keepalive(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+        ssh.keepalive_mode = False
+
+        with ssh:
+            pass
+
+        _ssh.close.assert_called_once()
+
+    def test_017_keepalive_enforced(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+        ssh.keepalive_mode = False
+
+        with ssh.keepalive():
+            pass
+
+        _ssh.close.assert_not_called()
+
+    def test_018_no_keepalive_enforced(self, client, policy, logger):
+        chan = mock.Mock()
+        open_session = mock.Mock(return_value=chan)
+        transport = mock.Mock()
+        transport.attach_mock(open_session, 'open_session')
+        get_transport = mock.Mock(return_value=transport)
+        _ssh = mock.Mock()
+        _ssh.attach_mock(get_transport, 'get_transport')
+        client.return_value = _ssh
+
+        ssh = self.get_ssh()
+
+        with ssh.keepalive(enforce=False):
+            pass
+
+        _ssh.close.assert_called_once()
 
     @staticmethod
     def get_patched_execute_async_retval(
@@ -680,7 +750,7 @@ class TestExecute(unittest.TestCase):
         return chan, '', exp_result, stderr, stdout
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute(
+    def test_019_execute(
         self,
         execute_async,
         client, policy, logger
@@ -727,7 +797,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_verbose(
+    def test_020_execute_verbose(
             self,
             execute_async,
             client, policy, logger):
@@ -772,7 +842,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_no_stdout(
+    def test_021_execute_no_stdout(
         self,
         execute_async,
         client, policy, logger
@@ -816,7 +886,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_no_stderr(
+    def test_022_execute_no_stderr(
         self,
         execute_async,
         client, policy, logger
@@ -860,7 +930,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_no_stdout_stderr(
+    def test_023_execute_no_stdout_stderr(
         self,
         execute_async,
         client, policy, logger
@@ -907,7 +977,7 @@ class TestExecute(unittest.TestCase):
 
     @mock.patch('time.sleep', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_timeout(
+    def test_024_execute_timeout(
             self,
             execute_async, sleep,
             client, policy, logger):
@@ -941,7 +1011,7 @@ class TestExecute(unittest.TestCase):
 
     @mock.patch('time.sleep', autospec=True)
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_timeout_fail(
+    def test_025_execute_timeout_fail(
             self,
             execute_async, sleep,
             client, policy, logger):
@@ -966,7 +1036,7 @@ class TestExecute(unittest.TestCase):
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_mask_command(
+    def test_026_execute_mask_command(
         self,
         execute_async,
         client, policy, logger
@@ -1019,7 +1089,7 @@ class TestExecute(unittest.TestCase):
         )
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_together(self, execute_async, client, policy, logger):
+    def test_027_execute_together(self, execute_async, client, policy, logger):
         (
             chan, _stdin, _, stderr, stdout
         ) = self.get_patched_execute_async_retval()
@@ -1070,7 +1140,7 @@ class TestExecute(unittest.TestCase):
                 remotes=remotes, command=command, expected=[1])
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute_async')
-    def test_execute_together_exceptions(
+    def test_028_execute_together_exceptions(
         self,
         execute_async,  # type: mock.Mock
         client,
@@ -1108,7 +1178,7 @@ class TestExecute(unittest.TestCase):
             self.assertIsInstance(exception, RuntimeError)
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
-    def test_check_call(self, execute, client, policy, logger):
+    def test_029_check_call(self, execute, client, policy, logger):
         exit_code = 0
         return_value = exec_result.ExecResult(
             cmd=command,
@@ -1147,7 +1217,7 @@ class TestExecute(unittest.TestCase):
         execute.assert_called_once_with(command, verbose, None)
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
-    def test_check_call_expected(self, execute, client, policy, logger):
+    def test_030_check_call_expected(self, execute, client, policy, logger):
         exit_code = 0
         return_value = exec_result.ExecResult(
             cmd=command,
@@ -1185,7 +1255,7 @@ class TestExecute(unittest.TestCase):
         execute.assert_called_once_with(command, verbose, None)
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.check_call')
-    def test_check_stderr(self, check_call, client, policy, logger):
+    def test_031_check_stderr(self, check_call, client, policy, logger):
         return_value = exec_result.ExecResult(
             cmd=command,
             stdout=stdout_list,
