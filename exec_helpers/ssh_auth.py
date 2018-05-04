@@ -23,7 +23,7 @@ from __future__ import unicode_literals
 import copy
 import io  # noqa  # pylint: disable=unused-import
 import logging
-import typing
+import typing  # noqa  # pylint: disable=unused-import
 
 import paramiko
 
@@ -32,11 +32,6 @@ __all__ = ('SSHAuth', )
 logger = logging.getLogger(__name__)
 logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
-
-_type_ConnectSSH = typing.Union[
-    paramiko.client.SSHClient, paramiko.transport.Transport
-]
-_type_RSAKeys = typing.Iterable[paramiko.RSAKey]
 
 
 class SSHAuth(object):
@@ -141,7 +136,7 @@ class SSHAuth(object):
 
     def connect(
         self,
-        client,  # type: _type_ConnectSSH
+        client,  # type: typing.Union[paramiko.SSHClient, paramiko.Transport]
         hostname=None,  # type: typing.Optional[str]
         port=22,  # type: int
         log=True,  # type: bool
@@ -149,10 +144,7 @@ class SSHAuth(object):
         """Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
-        :type client: typing.Union[
-            paramiko.client.SSHClient,
-            paramiko.transport.Transport,
-        ]
+        :type client: typing.Union[paramiko.SSHClient, paramiko.Transport]
         :param hostname: remote hostname
         :type hostname: str
         :param port: remote ssh port
@@ -164,12 +156,18 @@ class SSHAuth(object):
         kwargs = {
             'username': self.username,
             'password': self.__password,
-            'key_filename': self.key_filename,
-            'passphrase': self.__passphrase,
         }  # type: typing.Dict[str, typing.Any]
         if hostname is not None:
             kwargs['hostname'] = hostname
             kwargs['port'] = port
+
+        if isinstance(client, paramiko.client.SSHClient):  # pragma: no cover
+            # paramiko.transport.Transport still do not allow passphrase and key filename
+
+            if self.key_filename is not None:
+                kwargs['key_filename'] = self.key_filename
+            if self.__passphrase is not None:
+                kwargs['passphrase'] = self.__passphrase
 
         keys = [self.__key]
         keys.extend([k for k in self.__keys if k != self.__key])

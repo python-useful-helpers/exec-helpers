@@ -683,9 +683,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        def poll_streams(
-            result,  # type: exec_result.ExecResult
-        ):
+        def poll_streams():
             """Poll FIFO buffers if data available."""
             if stdout and interface.recv_ready():
                 result.read_stdout(
@@ -701,22 +699,15 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
                 )
 
         @threaded.threadpooled
-        def poll_pipes(
-            result,  # type: exec_result.ExecResult
-            stop,  # type: threading.Event
-        ):
+        def poll_pipes(stop, ):  # type: (threading.Event) -> None
             """Polling task for FIFO buffers.
 
-            :type stdout: paramiko.channel.ChannelFile
-            :type stderr: paramiko.channel.ChannelFile
-            :type result: ExecResult
             :type stop: Event
-            :type channel: paramiko.channel.Channel
             """
             while not stop.is_set():
                 time.sleep(0.1)
                 if stdout or stderr:
-                    poll_streams(result=result)
+                    poll_streams()
 
                 if interface.status_event.is_set():
                     result.read_stdout(
@@ -744,10 +735,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         stop_event = threading.Event()
 
         # pylint: disable=assignment-from-no-return
-        future = poll_pipes(
-            result=result,
-            stop=stop_event,
-        )  # type: concurrent.futures.Future
+        future = poll_pipes(stop=stop_event)  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
@@ -880,9 +868,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         @threaded.threadpooled
-        def get_result(
-            remote  # type: SSHClientBase
-        ):  # type: (...) -> exec_result.ExecResult
+        def get_result():  # type: () -> exec_result.ExecResult
             """Get result from remote call."""
             (
                 chan,
@@ -921,7 +907,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         raised_exceptions = {}
 
         for remote in set(remotes):  # Use distinct remotes
-            futures[remote] = get_result(remote)
+            futures[remote] = get_result()
 
         (
             _,

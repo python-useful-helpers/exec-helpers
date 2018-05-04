@@ -1314,7 +1314,10 @@ class TestExecuteThrowHost(unittest.TestCase):
             return_value=intermediate_channel,
             name='open_channel'
         )
-        intermediate_transport = mock.Mock(name='intermediate_transport')
+        intermediate_transport = mock.Mock(
+            name='intermediate_transport',
+            spec='paramiko.transport.Transport'
+        )
         intermediate_transport.attach_mock(open_channel, 'open_channel')
         get_transport = mock.Mock(
             return_value=intermediate_transport,
@@ -1356,8 +1359,7 @@ class TestExecuteThrowHost(unittest.TestCase):
             open_channel, intermediate_channel
         )
 
-    def test_execute_through_host_no_creds(
-            self, transp, client, policy, logger):
+    def test_01_execute_through_host_no_creds(self, transp, client, policy, logger):
         target = '127.0.0.2'
         exit_code = 0
 
@@ -1398,10 +1400,7 @@ class TestExecuteThrowHost(unittest.TestCase):
         transp.assert_called_once_with(intermediate_channel)
         open_session.assert_called_once()
         transport.assert_has_calls((
-            mock.call.connect(
-                username=username, password=password, pkey=None,
-                key_filename=None, passphrase=None,
-            ),
+            mock.call.connect(username=username, password=password, pkey=None),
             mock.call.open_session()
         ))
         channel.assert_has_calls((
@@ -1414,8 +1413,7 @@ class TestExecuteThrowHost(unittest.TestCase):
             mock.call.close()
         ))
 
-    def test_execute_through_host_auth(
-            self, transp, client, policy, logger):
+    def test_02_execute_through_host_auth(self, transp, client, policy, logger):
         _login = 'cirros'
         _password = 'cubswin:)'
 
@@ -1442,7 +1440,9 @@ class TestExecuteThrowHost(unittest.TestCase):
             port=port,
             auth=exec_helpers.SSHAuth(
                 username=username,
-                password=password
+                password=password,
+                key_filename='~/fake_key',
+                passphrase='fake_passphrase'
             ))
 
         # noinspection PyTypeChecker
@@ -1455,10 +1455,7 @@ class TestExecuteThrowHost(unittest.TestCase):
         transp.assert_called_once_with(intermediate_channel)
         open_session.assert_called_once()
         transport.assert_has_calls((
-            mock.call.connect(
-                username=_login, password=_password, pkey=None,
-                key_filename=None, passphrase=None,
-            ),
+            mock.call.connect(username=_login, password=_password, pkey=None),
             mock.call.open_session()
         ))
         channel.assert_has_calls((
@@ -1473,8 +1470,7 @@ class TestExecuteThrowHost(unittest.TestCase):
 
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
-@mock.patch(
-    'paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
+@mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 class TestSftp(unittest.TestCase):
     def tearDown(self):
