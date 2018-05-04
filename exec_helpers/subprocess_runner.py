@@ -178,9 +178,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         """
-        def poll_streams(
-            result,  # type: exec_result.ExecResult
-        ):
+        def poll_streams():
             """Poll streams to the result object."""
             if _win:  # pragma: no cover
                 # select.select is not supported on windows
@@ -206,19 +204,15 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                         )
 
         @threaded.threadpooled()
-        def poll_pipes(
-            result,  # type: exec_result.ExecResult
-            stop,  # type: threading.Event
-        ):
+        def poll_pipes(stop, ):    # type: (threading.Event) -> None
             """Polling task for FIFO buffers.
 
-            :type result: ExecResult
             :type stop: Event
             """
             while not stop.is_set():
                 time.sleep(0.1)
                 if stdout or stderr:
-                    poll_streams(result=result)
+                    poll_streams()
 
                 interface.poll()
 
@@ -247,10 +241,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         stop_event = threading.Event()
 
         # pylint: disable=assignment-from-no-return
-        future = poll_pipes(
-            result,
-            stop_event
-        )  # type: concurrent.futures.Future
+        future = poll_pipes(stop_event)  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
         # wait for process close
 
