@@ -206,6 +206,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         with mock.patch('threading.RLock', autospec=True):
             with exec_helpers.Subprocess() as runner:
+                runner.lock.acquire.assert_called()
                 self.assertEqual(
                     mock.call.acquire(), runner.lock.mock_calls[0]
                 )
@@ -215,7 +216,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
                 )
 
-            self.assertEqual(mock.call.release(), runner.lock.mock_calls[-1])
+            runner.lock.release.assert_called()
 
         subprocess_runner.SingletonMeta._instances.clear()
 

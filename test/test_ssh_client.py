@@ -1468,6 +1468,65 @@ class TestExecuteThrowHost(unittest.TestCase):
             mock.call.close()
         ))
 
+    def test_03_execute_through_host_get_pty(
+            self, transp, client, policy, logger):
+        target = '127.0.0.2'
+        exit_code = 0
+
+        # noinspection PyTypeChecker
+        return_value = exec_result.ExecResult(
+            cmd=command,
+            stderr=stderr_list,
+            stdout=stdout_list,
+            exit_code=exit_code
+        )
+
+        (
+            open_session,
+            transport,
+            channel,
+            get_transport,
+            open_channel,
+            intermediate_channel
+        ) = self.prepare_execute_through_host(
+            transp=transp,
+            client=client,
+            exit_code=exit_code)
+
+        # noinspection PyTypeChecker
+        ssh = exec_helpers.SSHClient(
+            host=host,
+            port=port,
+            auth=exec_helpers.SSHAuth(
+                username=username,
+                password=password
+            ))
+
+        # noinspection PyTypeChecker
+        result = ssh.execute_through_host(target, command, get_pty=True)
+        self.assertEqual(result, return_value)
+        get_transport.assert_called_once()
+        open_channel.assert_called_once()
+        transp.assert_called_once_with(intermediate_channel)
+        open_session.assert_called_once()
+        transport.assert_has_calls((
+            mock.call.connect(
+                username=username, password=password, pkey=None,
+            ),
+            mock.call.open_session()
+        ))
+
+        channel.assert_has_calls((
+            mock.call.get_pty(term='vt100', width=80, height=24, width_pixels=0, height_pixels=0),
+            mock.call.makefile('rb'),
+            mock.call.makefile_stderr('rb'),
+            mock.call.exec_command(command),
+            mock.call.recv_ready(),
+            mock.call.recv_stderr_ready(),
+            mock.call.status_event.is_set(),
+            mock.call.close()
+        ))
+
 
 @mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
 @mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')

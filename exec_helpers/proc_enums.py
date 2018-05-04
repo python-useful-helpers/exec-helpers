@@ -24,7 +24,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import enum
-import typing
+import typing  # noqa  # pylint: disable=unused-import
 
 import six
 
@@ -72,7 +72,7 @@ class SigNum(enum.IntEnum):
     SIGPWR = 30  # Power failure restart (System V).
     SIGSYS = 31  # Bad system call.
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """Representation for logs."""
         return "{name}<{value:d}(0x{value:02X})>".format(
             name=self.name,
@@ -158,10 +158,7 @@ class ExitCodes(digit_type, enum.Enum):
         )
 
 
-_type_exit_codes = typing.Union[int, ExitCodes]
-
-
-def exit_code_to_enum(code):  # type: (_type_exit_codes) -> _type_exit_codes
+def exit_code_to_enum(code):  # type: (typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]
     """Convert exit code to enum if possible."""
     if isinstance(code, int) and code in ExitCodes.__members__.values():
         return ExitCodes(code)
@@ -169,8 +166,8 @@ def exit_code_to_enum(code):  # type: (_type_exit_codes) -> _type_exit_codes
 
 
 def exit_codes_to_enums(
-    codes=None  # type: typing.Optional[typing.Iterable[_type_exit_codes]]
-):  # type: (...) -> typing.List[_type_exit_codes]
+    codes=None  # type: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]]
+):  # type: (...) -> typing.List[typing.Union[int, ExitCodes]]
     """Convert integer exit codes to enums."""
     if codes is None:
         return [ExitCodes.EX_OK]

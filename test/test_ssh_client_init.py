@@ -708,13 +708,10 @@ class TestSSHClientInit(unittest.TestCase):
             no_call.assert_not_called()
         # Mock returns false-connected state, so we just count close calls
 
-        client.assert_has_calls((
-            mock.call().get_transport(),
-            mock.call().get_transport(),
-            mock.call().get_transport(),
-            mock.call().close(),
-            mock.call().close(),
-            mock.call().close(),
+        client().close.assert_has_calls((
+            mock.call(),
+            mock.call(),
+            mock.call(),
         ))
 
         # change creds
