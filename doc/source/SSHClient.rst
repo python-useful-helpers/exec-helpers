@@ -98,6 +98,7 @@ API: SSHClient and SSHAuth.
 
         .. versionchanged:: 1.0.0 disconnect enforced on close
         .. versionchanged:: 1.1.0 release lock on exit
+        .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
 
     .. py:method:: sudo(enforce=None)
 

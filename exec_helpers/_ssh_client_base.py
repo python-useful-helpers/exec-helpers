@@ -503,6 +503,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         .. versionchanged:: 1.0.0 disconnect enforced on close
         .. versionchanged:: 1.1.0 release lock on exit
+        .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
         """
         if not self.__keepalive_mode:
             self.close()
