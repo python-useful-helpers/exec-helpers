@@ -21,6 +21,8 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import collections
+# noinspection PyCompatibility
+import concurrent.futures
 import errno
 import logging
 import os
@@ -203,7 +205,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                             verbose=verbose
                         )
 
-        @threaded.threaded(started=True)
+        @threaded.threadpooled()
         def poll_pipes(
             result,  # type: exec_result.ExecResult
             stop,  # type: threading.Event
@@ -245,17 +247,17 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         stop_event = threading.Event()
 
         # pylint: disable=assignment-from-no-return
-        poll_thread = poll_pipes(
+        future = poll_pipes(
             result,
             stop_event
-        )  # type: threading.Thread
+        )  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
         # wait for process close
-        stop_event.wait(timeout)
+
+        concurrent.futures.wait([future], timeout)
 
         # Process closed?
         if stop_event.is_set():
-            poll_thread.join(0.1)
             stop_event.clear()
             return result
         # Kill not ended process and wait for close
@@ -264,7 +266,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
             stop_event.wait(5)
             # Force stop cycle if no exit code after kill
             stop_event.set()
-            poll_thread.join(5)
+            future.cancel()
         except OSError:
             # Nothing to kill
             logger.warning(

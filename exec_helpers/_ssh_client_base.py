@@ -215,11 +215,18 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     """SSH Client helper."""
 
     __slots__ = (
-        '__hostname', '__port', '__auth', '__ssh', '__sftp', 'sudo_mode',
+        '__hostname', '__port', '__auth', '__ssh', '__sftp',
+        '__sudo_mode', '__keepalive_mode',
     )
 
     class __get_sudo(object):
         """Context manager for call commands with sudo."""
+
+        __slots__ = (
+            '__ssh',
+            '__sudo_status',
+            '__enforce',
+        )
 
         def __init__(
             self,
@@ -242,6 +249,40 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.__ssh.sudo_mode = self.__sudo_status
+
+    class __get_keepalive(object):
+        """Context manager for keepalive management."""
+
+        __slots__ = (
+            '__ssh',
+            '__keepalive_status',
+            '__enforce',
+        )
+
+        def __init__(
+            self,
+            ssh,  # type: SSHClientBase
+            enforce=True  # type: bool
+        ):  # type: (...) -> None
+            """Context manager for keepalive management.
+
+            :type ssh: SSHClient
+            :type enforce: bool
+            :param enforce: Keep connection alive after context manager exit
+            """
+            self.__ssh = ssh
+            self.__keepalive_status = ssh.keepalive_mode
+            self.__enforce = enforce
+
+        def __enter__(self):
+            self.__keepalive_status = self.__ssh.keepalive_mode
+            if self.__enforce is not None:
+                self.__ssh.keepalive_mode = self.__enforce
+            self.__ssh.__enter__()
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)
+            self.__ssh.keepalive_mode = self.__keepalive_status
 
     def __hash__(self):
         """Hash for usage as dict keys."""
@@ -286,7 +327,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         self.__hostname = host
         self.__port = port
 
-        self.sudo_mode = False
+        self.__sudo_mode = False
+        self.__keepalive_mode = True
+
         self.__ssh = paramiko.SSHClient()
         self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.__sftp = None
@@ -460,9 +503,43 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         .. versionchanged:: 1.0.0 disconnect enforced on close
         .. versionchanged:: 1.1.0 release lock on exit
+        .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
         """
-        self.close()
+        if not self.__keepalive_mode:
+            self.close()
         super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
+
+    @property
+    def sudo_mode(self):  # type: () -> bool
+        """Persistent sudo mode for connection object.
+
+        :rtype: bool
+        """
+        return self.__sudo_mode
+
+    @sudo_mode.setter
+    def sudo_mode(self, mode):  # type: (bool) -> None
+        """Persistent sudo mode change for connection object.
+
+        :type mode: bool
+        """
+        self.__sudo_mode = bool(mode)
+
+    @property
+    def keepalive_mode(self):  # type: () -> bool
+        """Persistent keepalive mode for connection object.
+
+        :rtype: bool
+        """
+        return self.__keepalive_mode
+
+    @keepalive_mode.setter
+    def keepalive_mode(self, mode):  # type: (bool) -> None
+        """Persistent keepalive mode change for connection object.
+
+        :type mode: bool
+        """
+        self.__keepalive_mode = bool(mode)
 
     def reconnect(self):  # type: () -> None
         """Reconnect SSH session."""
@@ -484,6 +561,20 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :type enforce: typing.Optional[bool]
         """
         return self.__get_sudo(ssh=self, enforce=enforce)
+
+    def keepalive(
+        self,
+        enforce=True  # type: bool
+    ):
+        """Call contextmanager with keepalive mode change.
+
+        :param enforce: Enforce keepalive enabled or disabled.
+        :type enforce: bool
+
+        .. Note:: Enter and exit ssh context manager is produced as well.
+        .. versionadded:: 1.2.1
+        """
+        return self.__get_keepalive(ssh=self, enforce=enforce)
 
     def execute_async(
         self,
@@ -839,7 +930,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             list(futures.values()),
             timeout=timeout
         )  # type: typing.Set[concurrent.futures.Future], typing.Set[concurrent.futures.Future]
-        for future in not_done:
+
+        for future in not_done:  # pragma: no cover
             future.cancel()
 
         for (

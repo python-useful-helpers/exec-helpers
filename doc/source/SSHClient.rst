@@ -69,6 +69,11 @@ API: SSHClient and SSHAuth.
         ``bool``
         Use sudo for all calls, except wrapped in connection.sudo context manager.
 
+    .. py:attribute:: keepalive_mode
+
+        ``bool``
+        Use keepalive mode for context manager. If `False` - close connection on exit from context manager.
+
     .. py:method:: close()
 
         Close connection
@@ -93,6 +98,7 @@ API: SSHClient and SSHAuth.
 
         .. versionchanged:: 1.0.0 disconnect enforced on close
         .. versionchanged:: 1.1.0 release lock on exit
+        .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
 
     .. py:method:: sudo(enforce=None)
 
@@ -100,6 +106,16 @@ API: SSHClient and SSHAuth.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: ``typing.Optional[bool]``
+
+    .. py:method:: keepalive(enforce=None)
+
+        Context manager getter for keepalive operation.
+
+        :param enforce: Enforce keepalive enabled or disabled. By default: True
+        :type enforce: ``typing.bool``
+
+        .. Note:: Enter and exit ssh context manager is produced as well.
+        .. versionadded:: 1.2.1
 
     .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
 
