@@ -729,7 +729,6 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         # Process closed?
         if stop_event.is_set():
-            stop_event.clear()
             interface.close()
             return result
 

@@ -236,7 +236,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         with self.assertRaises(exec_helpers.ExecHelperTimeoutError):
             # noinspection PyTypeChecker
-            runner.execute(command, timeout=1)
+            runner.execute(command, timeout=0.2)
 
         popen.assert_has_calls((
             mock.call(
@@ -831,7 +831,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
         # noinspection PyTypeChecker
 
-        res = runner.execute(command, timeout=0.1)
+        res = runner.execute(command, timeout=0.2)
 
         self.assertEqual(res, exp_result)
 

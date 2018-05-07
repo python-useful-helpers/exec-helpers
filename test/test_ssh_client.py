@@ -994,7 +994,7 @@ class TestExecute(unittest.TestCase):
         logger.reset_mock()
 
         # noinspection PyTypeChecker
-        result = ssh.execute(command=command, verbose=False, timeout=0.1)
+        result = ssh.execute(command=command, verbose=False, timeout=0.2)
 
         self.assertEqual(
             result,
@@ -1030,7 +1030,7 @@ class TestExecute(unittest.TestCase):
 
         with self.assertRaises(exec_helpers.ExecHelperTimeoutError):
             # noinspection PyTypeChecker
-            ssh.execute(command=command, verbose=False, timeout=0.1)
+            ssh.execute(command=command, verbose=False, timeout=0.2)
 
         execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))

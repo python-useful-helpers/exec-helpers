@@ -249,7 +249,6 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
 
         # Process closed?
         if stop_event.is_set():
-            stop_event.clear()
             return result
         # Kill not ended process and wait for close
         try:
