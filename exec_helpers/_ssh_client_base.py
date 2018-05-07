@@ -191,24 +191,11 @@ class _MemorizedSSH(type):
         mcs.__cache = {}
 
     @classmethod
-    def close_connections(
-        mcs,
-        hostname=None  # type: typing.Optional[str]
-    ):  # type: (...) -> None
-        """Close connections for selected or all cached records.
-
-        :type hostname: str
-        """
-        if hostname is None:
-            keys = [key for key, ssh in mcs.__cache.items() if ssh.is_alive]
-        else:
-            keys = [
-                (host, port)
-                for (host, port), ssh
-                in mcs.__cache.items() if host == hostname and ssh.is_alive]
-        # raise ValueError(keys)
-        for key in keys:
-            mcs.__cache[key].close()
+    def close_connections(mcs):  # type: (...) -> None
+        """Close connections for selected or all cached records."""
+        for ssh in mcs.__cache.values():
+            if ssh.is_alive:
+                ssh.close()
 
 
 class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
@@ -742,7 +729,6 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         # Process closed?
         if stop_event.is_set():
-            stop_event.clear()
             interface.close()
             return result
 
