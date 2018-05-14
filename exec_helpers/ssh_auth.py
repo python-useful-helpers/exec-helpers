@@ -187,9 +187,7 @@ class SSHAuth(object):
                     logger.exception('No password has been set!')
                     raise
                 else:
-                    logger.critical(
-                        'Unexpected PasswordRequiredException, '
-                        'when password is set!')
+                    logger.critical('Unexpected PasswordRequiredException, when password is set!')
                     raise
             except (paramiko.AuthenticationException,
                     paramiko.BadHostKeyException):

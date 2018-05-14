@@ -32,7 +32,7 @@ import exec_helpers
 from exec_helpers import subprocess_runner
 
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
-command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
+command_log = u"Executing command:\n{!r}\n".format(command.rstrip())
 stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
 stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
 print_stdin = 'read line; echo "$line"'
@@ -105,8 +105,7 @@ class TestSubprocessRunner(unittest.TestCase):
 
     @staticmethod
     def gen_cmd_result_log_message(result):
-        return ("Command exit code '{code!s}':\n{cmd!s}\n"
-                .format(cmd=result.cmd.rstrip(), code=result.exit_code))
+        return u"Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
 
     def test_001_call(
         self,
@@ -369,7 +368,7 @@ class TestSubprocessRunner(unittest.TestCase):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
-        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+        cmd_log = u"Executing command:\n{!r}\n".format(masked_cmd)
 
         popen_obj, exp_result = self.prepare_close(
             popen,
@@ -424,7 +423,7 @@ class TestSubprocessRunner(unittest.TestCase):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
-        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+        cmd_log = u"Executing command:\n{!r}\n".format(masked_cmd)
 
         popen_obj, exp_result = self.prepare_close(
             popen,

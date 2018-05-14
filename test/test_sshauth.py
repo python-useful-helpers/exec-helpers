@@ -36,10 +36,7 @@ import exec_helpers
 
 
 def gen_private_keys(amount=1):
-    keys = []
-    for _ in range(amount):
-        keys.append(paramiko.RSAKey.generate(1024))
-    return keys
+    return [paramiko.RSAKey.generate(1024) for _ in range(amount)]
 
 
 def gen_public_key(private_key=None):
