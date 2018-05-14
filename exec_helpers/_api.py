@@ -33,7 +33,6 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
-from exec_helpers import _log_templates
 
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
