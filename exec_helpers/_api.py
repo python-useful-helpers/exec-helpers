@@ -33,7 +33,6 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
-from exec_helpers import _log_templates
 
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 _type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
@@ -249,7 +248,7 @@ class ExecHelper(object):
                 verbose=verbose,
                 **kwargs
             )
-            message = _log_templates.CMD_RESULT.format(result=result)
+            message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
             self.logger.log(
                 level=logging.INFO if verbose else logging.DEBUG,
                 msg=message
@@ -292,7 +291,8 @@ class ExecHelper(object):
         ret = self.execute(command, verbose, timeout, **kwargs)
         if ret['exit_code'] not in expected:
             message = (
-                _log_templates.CMD_UNEXPECTED_EXIT_CODE.format(
+                "{append}Command {result.cmd!r} returned exit code "
+                "{result.exit_code!s} while expected {expected!s}".format(
                     append=error_info + '\n' if error_info else '',
                     result=ret,
                     expected=expected
@@ -339,7 +339,8 @@ class ExecHelper(object):
             error_info=error_info, raise_on_err=raise_on_err, **kwargs)
         if ret['stderr']:
             message = (
-                _log_templates.CMD_UNEXPECTED_STDERR.format(
+                "{append}Command {result.cmd!r} STDERR while not expected\n"
+                "\texit code: {result.exit_code!s}".format(
                     append=error_info + '\n' if error_info else '',
                     result=ret,
                 ))

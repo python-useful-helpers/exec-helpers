@@ -53,7 +53,7 @@ port = 22
 username = 'user'
 password = 'pass'
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
-command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
+command_log = u"Executing command:\n{!r}\n".format(command.rstrip())
 stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
 stdout_str = b''.join(stdout_list).strip().decode('utf-8')
 stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
@@ -64,7 +64,7 @@ encoded_cmd = base64.b64encode(
 print_stdin = 'read line; echo "$line"'
 
 
-@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
+@mock.patch('logging.getLogger', autospec=True)
 @mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 class TestExecute(unittest.TestCase):
@@ -89,8 +89,7 @@ class TestExecute(unittest.TestCase):
 
     @staticmethod
     def gen_cmd_result_log_message(result):
-        return (u"Command exit code '{code!s}':\n{cmd!s}\n"
-                .format(cmd=result.cmd.rstrip(), code=result.exit_code))
+        return u"Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
 
     def test_001_execute_async(self, client, policy, logger):
         chan = mock.Mock()
@@ -116,7 +115,8 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        # raise ValueError(logger.mock_calls)
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -151,7 +151,7 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -235,7 +235,7 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -271,7 +271,7 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -303,7 +303,7 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -335,7 +335,7 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -380,7 +380,7 @@ class TestExecute(unittest.TestCase):
                 "sudo -S bash -c '"
                 "eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=command_log),
             log.mock_calls
@@ -410,7 +410,7 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(command))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.INFO, msg=command_log),
             log.mock_calls
@@ -420,7 +420,7 @@ class TestExecute(unittest.TestCase):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
-        cmd_log = u"Executing command:\n{!s}\n".format(masked_cmd)
+        cmd_log = u"Executing command:\n{!r}\n".format(masked_cmd)
 
         chan = mock.Mock()
         open_session = mock.Mock(return_value=chan)
@@ -445,7 +445,7 @@ class TestExecute(unittest.TestCase):
             mock.call.makefile_stderr('rb'),
             mock.call.exec_command('{}\n'.format(cmd))
         ))
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         self.assertIn(
             mock.call.log(level=logging.DEBUG, msg=cmd_log),
             log.mock_calls
@@ -620,7 +620,7 @@ class TestExecute(unittest.TestCase):
         open_session.assert_called_once()
         stdin.assert_not_called()
 
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port))
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port))
         log.warning.assert_called_once_with('STDIN Send failed: closed channel')
 
         self.assertIn(chan, result)
@@ -777,7 +777,7 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(
@@ -824,7 +824,7 @@ class TestExecute(unittest.TestCase):
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
 
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(
@@ -872,7 +872,7 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(
             command, verbose=False, open_stdout=False)
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(
@@ -916,7 +916,7 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(
             command, verbose=False, open_stderr=False)
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(
@@ -968,7 +968,7 @@ class TestExecute(unittest.TestCase):
             open_stderr=False
         )
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(level=logging.DEBUG, msg=message),
@@ -1003,7 +1003,7 @@ class TestExecute(unittest.TestCase):
         execute_async.assert_called_once_with(command, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(), ))
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         self.assertIn(
             mock.call(level=logging.DEBUG, msg=message),
             log.mock_calls
@@ -1069,7 +1069,7 @@ class TestExecute(unittest.TestCase):
             cmd, log_mask_re=log_mask_re, verbose=False)
         chan.assert_has_calls((mock.call.status_event.is_set(),))
         message = self.gen_cmd_result_log_message(result)
-        log = logger.getChild('{host}:{port}'.format(host=host, port=port)).log
+        log = logger(ssh.__class__.__name__).getChild('{host}:{port}'.format(host=host, port=port)).log
         log.assert_has_calls(
             [
                 mock.call(
@@ -1297,7 +1297,7 @@ class TestExecute(unittest.TestCase):
             error_info=None, raise_on_err=raise_on_err)
 
 
-@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
+@mock.patch('logging.getLogger', autospec=True)
 @mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 @mock.patch('paramiko.Transport', autospec=True)
@@ -1528,7 +1528,7 @@ class TestExecuteThrowHost(unittest.TestCase):
         ))
 
 
-@mock.patch('exec_helpers._ssh_client_base.logger', autospec=True)
+@mock.patch('logging.getLogger', autospec=True)
 @mock.patch('paramiko.AutoAddPolicy', autospec=True, return_value='AutoAddPolicy')
 @mock.patch('paramiko.SSHClient', autospec=True)
 class TestSftp(unittest.TestCase):

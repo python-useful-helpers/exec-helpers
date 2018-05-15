@@ -381,9 +381,10 @@ class TestSSHClientInit(unittest.TestCase):
         _ssh.attach_mock(mock.Mock(return_value=_sftp), 'open_sftp')
 
         with mock.patch(
-            'exec_helpers._ssh_client_base.logger',
+            'logging.getLogger',
             autospec=True
-        ) as ssh_logger:
+        ) as get_logger:
+            ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
 
             ssh = exec_helpers.SSHClient(
                 host=host,
@@ -408,13 +409,13 @@ class TestSSHClientInit(unittest.TestCase):
 
             ssh.close()
 
-        log = ssh_logger.getChild(
-            '{host}:{port}'.format(host=host, port=port)
-        )
-        log.assert_has_calls((
-            mock.call.exception('Could not close ssh connection'),
-            mock.call.exception('Could not close sftp connection'),
-        ))
+            log = ssh_logger.getChild(
+                '{host}:{port}'.format(host=host, port=port)
+            )
+            log.assert_has_calls((
+                mock.call.exception('Could not close ssh connection'),
+                mock.call.exception('Could not close sftp connection'),
+            ))
 
     def test_014_init_reconnect(self, client, policy, logger):
         """Test reconnect
@@ -619,9 +620,10 @@ class TestSSHClientInit(unittest.TestCase):
         client.return_value = _ssh
 
         with mock.patch(
-            'exec_helpers._ssh_client_base.logger',
+            'logging.getLogger',
             autospec=True
-        ) as ssh_logger:
+        ) as get_logger:
+            ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
 
             ssh = exec_helpers.SSHClient(
                 host=host, auth=exec_helpers.SSHAuth(password=password))
@@ -631,14 +633,14 @@ class TestSSHClientInit(unittest.TestCase):
                 # noinspection PyStatementEffect
                 ssh._sftp
                 # pylint: enable=pointless-statement
-        log = ssh_logger.getChild(
-            '{host}:{port}'.format(host=host, port=port)
-        )
-        log.assert_has_calls((
-            mock.call.debug('SFTP is not connected, try to connect...'),
-            mock.call.warning(
-                'SFTP enable failed! SSH only is accessible.'),
-        ))
+            log = ssh_logger.getChild(
+                '{host}:{port}'.format(host=host, port=port)
+            )
+            log.assert_has_calls((
+                mock.call.debug('SFTP is not connected, try to connect...'),
+                mock.call.warning(
+                    'SFTP enable failed! SSH only is accessible.'),
+            ))
 
     def test_022_init_sftp_repair(self, client, policy, logger):
         _sftp = mock.Mock()
@@ -652,9 +654,10 @@ class TestSSHClientInit(unittest.TestCase):
         client.return_value = _ssh
 
         with mock.patch(
-            'exec_helpers._ssh_client_base.logger',
+            'logging.getLogger',
             autospec=True
-        ) as ssh_logger:
+        ) as get_logger:
+            ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
 
             ssh = exec_helpers.SSHClient(
                 host=host, auth=exec_helpers.SSHAuth(password=password)
@@ -670,12 +673,12 @@ class TestSSHClientInit(unittest.TestCase):
 
             sftp = ssh._sftp
             self.assertEqual(sftp, open_sftp())
-        log = ssh_logger.getChild(
-            '{host}:{port}'.format(host=host, port=port)
-        )
-        log.assert_has_calls((
-            mock.call.debug('SFTP is not connected, try to connect...'),
-        ))
+            log = ssh_logger.getChild(
+                '{host}:{port}'.format(host=host, port=port)
+            )
+            log.assert_has_calls((
+                mock.call.debug('SFTP is not connected, try to connect...'),
+            ))
 
     @mock.patch('exec_helpers.exec_result.ExecResult', autospec=True)
     def test_023_init_memorize(

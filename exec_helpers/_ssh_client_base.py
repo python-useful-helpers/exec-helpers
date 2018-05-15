@@ -50,7 +50,6 @@ from exec_helpers import _log_templates
 
 __all__ = ('SSHClientBase', )
 
-logger = logging.getLogger(__name__)
 logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
 
@@ -59,9 +58,6 @@ _type_ConnectSSH = typing.Union[
 ]
 _type_RSAKeys = typing.Iterable[paramiko.RSAKey]
 _type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
-_type_multiple_results = typing.Dict[
-    typing.Tuple[str, int], exec_result.ExecResult
-]
 _type_execute_async = typing.Tuple[
     paramiko.Channel,
     paramiko.ChannelFile,
@@ -149,7 +145,7 @@ class _MemorizedSSH(type):
                 try:
                     ssh.execute('cd ~', timeout=5)
                 except BaseException:  # Note: Do not change to lower level!
-                    logger.debug('Reconnect {}'.format(ssh))
+                    ssh.logger.debug('Reconnect')
                     ssh.reconnect()
                 return ssh
             if (
@@ -158,7 +154,7 @@ class _MemorizedSSH(type):
             ):    # pragma: no cover
                 # If we have only cache reference and temporary getrefcount
                 # reference: close connection before deletion
-                logger.debug('Closing {} as unused'.format(cls.__cache[key]))
+                cls.__cache[key].logger.debug('Closing as unused')
                 cls.__cache[key].close()
             del cls.__cache[key]
         # noinspection PyArgumentList
@@ -186,7 +182,7 @@ class _MemorizedSSH(type):
                 CPYTHON and
                 sys.getrefcount(ssh) == n_count
             ):  # pragma: no cover
-                logger.debug('Closing {} as unused'.format(ssh))
+                ssh.logger.debug('Closing as unused')
                 ssh.close()
         mcs.__cache = {}
 
@@ -306,7 +302,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logger.getChild(
+            logger=logging.getLogger(
+                self.__class__.__name__
+            ).getChild(
                 '{host}:{port}'.format(host=host, port=port)
             ),
         )
@@ -376,7 +374,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             auth=self.auth
         )
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """Representation for debug purposes."""
         return '{cls}(host={host}, port={port}) for user {user}'.format(
             cls=self.__class__.__name__, host=self.hostname, port=self.port,
@@ -832,7 +830,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
         **kwargs
-    ):  # type: (...) -> _type_multiple_results
+    ):  # type: (...) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         """Execute command on multiple remotes in async mode.
 
         :param remotes: Connections to execute on
