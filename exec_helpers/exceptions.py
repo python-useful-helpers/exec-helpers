@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import typing
+import typing  # noqa  # pylint: disable=unused-import
 
 from exec_helpers import proc_enums
 
@@ -30,9 +30,6 @@ __all__ = (
     'ParallelCallProcessError',
     'ParallelCallExceptions',
 )
-
-_type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
-_type_multiple_results = typing.Dict[typing.Tuple[str, int], typing.Any]
 
 
 class ExecHelperError(Exception):
@@ -69,8 +66,8 @@ class CalledProcessError(ExecCalledProcessError):
 
     def __init__(
         self,
-        result=None,  # type: exec_result.ExecResult
-        expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
+        result,  # type: exec_result.ExecResult
+        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
     ):  # type: (...) -> None
         """Exception for error on process calls.
 
@@ -111,12 +108,12 @@ class CalledProcessError(ExecCalledProcessError):
         return self.result.cmd
 
     @property
-    def stdout(self):  # type: () -> str
+    def stdout(self):  # type: () -> typing.Text
         """Command stdout."""
         return self.result.stdout_str
 
     @property
-    def stderr(self):  # type: () -> str
+    def stderr(self):  # type: () -> typing.Text
         """Command stderr."""
         return self.result.stderr_str
 
@@ -136,9 +133,9 @@ class ParallelCallExceptions(ExecCalledProcessError):
         self,
         command,  # type: str
         exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
-        errors,  # type: _type_multiple_results
-        results,  # type: _type_multiple_results
-        expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
+        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
     ):  # type: (...) -> None
         """Exception raised during parallel call as result of exceptions.
 
@@ -190,9 +187,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
     def __init__(
         self,
         command,  # type: str
-        errors,  # type: _type_multiple_results
-        results,  # type: _type_multiple_results
-        expected=None,  # type: typing.Optional[typing.List[_type_exit_codes]]
+        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
     ):  # type: (...) -> None
         """Exception during parallel execution.
 

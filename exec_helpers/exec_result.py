@@ -24,7 +24,7 @@ import datetime
 import json
 import logging
 import threading
-import typing
+import typing  # noqa  # pylint: disable=unused-import
 
 import six
 import yaml
@@ -35,7 +35,6 @@ from exec_helpers import proc_enums
 __all__ = ('ExecResult', )
 
 logger = logging.getLogger(__name__)
-_type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
 
 
 class ExecResult(object):
@@ -51,17 +50,17 @@ class ExecResult(object):
     def __init__(
         self,
         cmd,  # type: str
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
-        exit_code=proc_enums.ExitCodes.EX_INVALID  # type: _type_exit_codes
+        exit_code=proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
     ):  # type: (...) -> None
         """Command execution result.
 
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
         :param stdout: binary STDOUT
         :type stdout: typing.Optional[typing.Iterable[bytes]]
         :param stderr: binary STDERR
@@ -76,7 +75,7 @@ class ExecResult(object):
             stdin = self._get_str_from_bin(bytearray(stdin))
         elif isinstance(stdin, bytearray):
             stdin = self._get_str_from_bin(stdin)
-        self.__stdin = stdin
+        self.__stdin = stdin  # type: typing.Optional[typing.Text]
         self.__stdout = tuple(stdout) if stdout is not None else ()  # type: typing.Tuple[bytes]
         self.__stderr = tuple(stderr) if stderr is not None else ()  # type: typing.Tuple[bytes]
 
@@ -118,7 +117,7 @@ class ExecResult(object):
         return bytearray(b''.join(src))
 
     @staticmethod
-    def _get_str_from_bin(src):  # type: (bytearray) -> str
+    def _get_str_from_bin(src):  # type: (bytearray) -> typing.Text
         """Join data in list to the string, with python 2&3 compatibility.
 
         :type src: bytearray
@@ -130,7 +129,7 @@ class ExecResult(object):
         )
 
     @classmethod
-    def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> str
+    def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> typing.Text
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
         :type data: typing.Tuple[bytes]
@@ -142,7 +141,7 @@ class ExecResult(object):
         )
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self):  # type: () -> typing.Text
         """Executed command.
 
         :rtype: str
@@ -150,10 +149,10 @@ class ExecResult(object):
         return self.__cmd
 
     @property
-    def stdin(self):  # type: () -> typing.Optional[str]
+    def stdin(self):  # type: () -> typing.Optional[typing.Text]
         """Stdin input as string.
 
-        :rtype: str
+        :rtype: typing.Optional[typing.Text]
         """
         return self.__stdin
 
@@ -200,7 +199,7 @@ class ExecResult(object):
         src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
-    ):
+    ):  # type: (...) -> None
         """Read stdout file-like object to stdout.
 
         :param src: source
@@ -225,7 +224,7 @@ class ExecResult(object):
         src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False  # type: bool
-    ):
+    ):  # type: (...) -> None
         """Read stderr file-like object to stdout.
 
         :param src: source
@@ -266,7 +265,7 @@ class ExecResult(object):
             return self._get_bytearray_from_array(self.stderr)
 
     @property
-    def stdout_str(self):  # type: () -> str
+    def stdout_str(self):  # type: () -> typing.Text
         """Stdout output as string.
 
         :rtype: str
@@ -277,7 +276,7 @@ class ExecResult(object):
             return self.__stdout_str
 
     @property
-    def stderr_str(self):  # type: () -> str
+    def stderr_str(self):  # type: () -> typing.Text
         """Stderr output as string.
 
         :rtype: str
@@ -288,7 +287,7 @@ class ExecResult(object):
             return self.__stderr_str
 
     @property
-    def stdout_brief(self):  # type: () -> str
+    def stdout_brief(self):  # type: () -> typing.Text
         """Brief stdout output (mostly for exceptions).
 
         :rtype: str
@@ -299,7 +298,7 @@ class ExecResult(object):
             return self.__stdout_brief
 
     @property
-    def stderr_brief(self):  # type: () -> str
+    def stderr_brief(self):  # type: () -> typing.Text
         """Brief stderr output (mostly for exceptions).
 
         :rtype: str
@@ -318,7 +317,7 @@ class ExecResult(object):
         return self.__exit_code
 
     @exit_code.setter
-    def exit_code(self, new_val):  # type: (_type_exit_codes) -> None
+    def exit_code(self, new_val):  # type: (typing.Union[int, proc_enums.ExitCodes]) -> None
         """Return(exit) code of command.
 
         :type new_val: int
@@ -387,7 +386,7 @@ class ExecResult(object):
             'lock'
         ]
 
-    def __getitem__(self, item):
+    def __getitem__(self, item):  # type: (str) -> typing.Any
         """Dict like get data."""
         if item in dir(self):
             return getattr(self, item)
@@ -397,7 +396,7 @@ class ExecResult(object):
             )
         )
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         """Representation for debugging."""
         return (
             '{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, '
@@ -409,7 +408,7 @@ class ExecResult(object):
                 exit_code=self.exit_code
             ))
 
-    def __str__(self):
+    def __str__(self):  # type: () -> str
         """Representation for logging."""
         return (
             "{cls}(\n\tcmd={cmd!r},"
@@ -424,7 +423,7 @@ class ExecResult(object):
             )
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # type: (typing.Any) -> bool
         """Comparision."""
         return all(
             (
@@ -433,7 +432,7 @@ class ExecResult(object):
             )
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other):  # type: (typing.Any) -> bool
         """Comparision."""
         return not self.__eq__(other)
 

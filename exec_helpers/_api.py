@@ -25,17 +25,12 @@ from __future__ import unicode_literals
 import logging
 import re
 import threading
-import typing
-
-import six  # noqa  # pylint: disable=unused-import
+import typing  # noqa  # pylint: disable=unused-import
 
 from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
-
-_type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
-_type_expected = typing.Optional[typing.Iterable[_type_exit_codes]]
 
 
 class ExecHelper(object):
@@ -136,19 +131,19 @@ class ExecHelper(object):
     def execute_async(
         self,
         command,  # type: str
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
-    ):
+    ):  # type: (...) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any,]
         """Execute command in async mode and return remote interface with IO objects.
 
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -176,7 +171,7 @@ class ExecHelper(object):
         interface,  # type: typing.Any
         stdout,  # type: typing.Any
         stderr,  # type: typing.Any
-        timeout,  # type: int
+        timeout,  # type: typing.Union[int, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
@@ -209,7 +204,7 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and wait for return code.
@@ -221,7 +216,7 @@ class ExecHelper(object):
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
+        :type timeout: typing.Union[int, None]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -259,9 +254,9 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
         error_info=None,  # type: typing.Optional[str]
-        expected=None,  # type: _type_expected
+        expected=None,  # type: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
         raise_on_err=True,  # type: bool
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
@@ -274,11 +269,11 @@ class ExecHelper(object):
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
+        :type timeout: typing.Union[int, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Optional[typing.Iterable[int]]
+        :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :rtype: ExecResult
@@ -309,7 +304,7 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         **kwargs
@@ -323,7 +318,7 @@ class ExecHelper(object):
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
+        :type timeout: typing.Union[int, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code

@@ -53,11 +53,7 @@ __all__ = ('SSHClientBase', )
 logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
 
-_type_ConnectSSH = typing.Union[
-    paramiko.client.SSHClient, paramiko.transport.Transport
-]
-_type_RSAKeys = typing.Iterable[paramiko.RSAKey]
-_type_exit_codes = typing.Union[int, proc_enums.ExitCodes]
+
 _type_execute_async = typing.Tuple[
     paramiko.Channel,
     paramiko.ChannelFile,
@@ -102,10 +98,10 @@ class _MemorizedSSH(type):
     @classmethod
     def __prepare__(
         mcs,
-        name,
-        bases,
+        name,  # type: str
+        bases,  # type: typing.Iterable[typing.Type]
         **kwargs
-    ):  # pylint: disable=unused-argument
+    ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0
@@ -118,7 +114,7 @@ class _MemorizedSSH(type):
         port=22,  # type: int
         username=None,  # type: typing.Optional[str]
         password=None,  # type: typing.Optional[str]
-        private_keys=None,  # type: typing.Optional[_type_RSAKeys]
+        private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
     ):  # type: (...) -> SSHClientBase
         """Main memorize method: check for cached instance and return it.
@@ -281,7 +277,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         port=22,  # type: int
         username=None,  # type: typing.Optional[str]
         password=None,  # type: typing.Optional[str]
-        private_keys=None,  # type: typing.Optional[_type_RSAKeys]
+        private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
     ):  # type: (...) -> None
         """SSHClient helper.
@@ -367,14 +363,14 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         """
         return self.__ssh.get_transport() is not None
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         """Representation for debug purposes."""
         return '{cls}(host={host}, port={port}, auth={auth!r})'.format(
             cls=self.__class__.__name__, host=self.hostname, port=self.port,
             auth=self.auth
         )
 
-    def __str__(self):  # pragma: no cover
+    def __str__(self):  # type: () -> str  # pragma: no cover
         """Representation for debug purposes."""
         return '{cls}(host={host}, port={port}) for user {user}'.format(
             cls=self.__class__.__name__, host=self.hostname, port=self.port,
@@ -539,7 +535,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     def sudo(
         self,
         enforce=None  # type: typing.Optional[bool]
-    ):
+    ):  # type: (...) -> typing.ContextManager
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -550,7 +546,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     def keepalive(
         self,
         enforce=True  # type: bool
-    ):
+    ):  # type: (...) -> typing.ContextManager
         """Call contextmanager with keepalive mode change.
 
         :param enforce: Enforce keepalive enabled or disabled.
@@ -564,7 +560,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
     def execute_async(
         self,
         command,  # type: str
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
@@ -576,7 +572,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -647,7 +643,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         interface,  # type: paramiko.channel.Channel
         stdout,  # type: paramiko.channel.ChannelFile
         stderr,  # type: paramiko.channel.ChannelFile
-        timeout,  # type: int
+        timeout,  # type: typing.Union[int, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
@@ -658,7 +654,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :type interface: paramiko.channel.Channel
         :type stdout: paramiko.channel.ChannelFile
         :type stderr: paramiko.channel.ChannelFile
-        :type timeout: int
+        :type timeout: typing.Union[int, None]
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
@@ -748,7 +744,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         target_port=22,  # type: int
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
         get_pty=False,  # type: bool
         **kwargs
     ):  # type: (...) -> exec_result.ExecResult
@@ -765,7 +761,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
+        :type timeout: typing.Union[int, None]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
         :rtype: ExecResult
@@ -826,7 +822,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         cls,
         remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Optional[int]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
         **kwargs
@@ -838,7 +834,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :param command: Command for execution
         :type command: str
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Optional[int]
+        :type timeout: typing.Union[int, None]
         :param expected: expected return codes (0 by default)
         :type expected: typing.Optional[typing.Iterable[]]
         :param raise_on_err: Raise exception on unexpected return code
@@ -930,7 +926,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             )
         return results
 
-    def open(self, path, mode='r'):
+    def open(self, path, mode='r'):  # type: (str, str) -> paramiko.SFTPFile
         """Open file on remote using SFTP session.
 
         :type path: str
@@ -963,7 +959,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         self,
         path,  # type: str
         times=None  # type: typing.Optional[typing.Tuple[int, int]]
-    ):
+    ):  # type: (...) -> None
         """Set atime, mtime.
 
         :param path: filesystem object path

@@ -84,7 +84,7 @@ if six.PY3:  # pragma: no cover
     digit_type = int
 else:  # pragma: no cover
     # noinspection PyUnresolvedReferences
-    digit_type = long  # noqa  # pylint: disable=undefined-variable
+    digit_type = long  # noqa  # pylint: disable=undefined-variable, long-builtin
 
 
 @enum.unique
