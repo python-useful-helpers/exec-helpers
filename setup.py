@@ -275,7 +275,7 @@ setup_args = dict(
     },
     install_requires=required,
     package_data={
-        'exec_helpers': [
+        str('exec_helpers'): [
             os.path.basename(filename)
             for filename in glob.glob(os.path.join('exec_helpers', '*.pyi'))
         ] + [
