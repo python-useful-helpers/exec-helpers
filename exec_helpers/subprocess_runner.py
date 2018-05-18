@@ -41,22 +41,22 @@ from exec_helpers import exec_result
 from exec_helpers import exceptions
 from exec_helpers import _log_templates
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # type: logging.Logger
 # noinspection PyUnresolvedReferences
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
-_win = sys.platform == "win32"
-_posix = 'posix' in sys.builtin_module_names
+_win = sys.platform == "win32"  # type: bool
+_posix = 'posix' in sys.builtin_module_names  # type: bool
 
 if _posix:  # pragma: no cover
     import fcntl  # pylint: disable=import-error
 
 elif _win:  # pragma: no cover
-    # noinspection PyUnresolvedReferences
-    import msvcrt  # pylint: disable=import-error
     import ctypes
     from ctypes import wintypes  # pylint: disable=import-error
     from ctypes import windll  # pylint: disable=import-error
+    # noinspection PyUnresolvedReferences
+    import msvcrt  # pylint: disable=import-error
 
 
 class SingletonMeta(type):
@@ -66,7 +66,7 @@ class SingletonMeta(type):
     """
 
     _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
-    _lock = threading.RLock()
+    _lock = threading.RLock()  # type: threading.RLock
 
     def __call__(cls, *args, **kwargs):
         """Singleton."""
@@ -80,10 +80,10 @@ class SingletonMeta(type):
     @classmethod
     def __prepare__(
         mcs,
-        name,
-        bases,
+        name,  # type: str
+        bases,  # type: typing.Iterable[typing.Type]
         **kwargs
-    ):  # pylint: disable=unused-argument
+    ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0
@@ -151,7 +151,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         interface,  # type: subprocess.Popen
         stdout,  # type: typing.Optional[typing.IO]
         stderr,  # type: typing.Optional[typing.IO]
-        timeout,  # type: int
+        timeout,  # type: typing.Union[int, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
@@ -167,7 +167,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         :param stderr: STDERR pipe or file-like object
         :type stderr: typing.Any
         :param timeout: Timeout for command execution
-        :type timeout: int
+        :type timeout: typing.Union[int, None]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -203,7 +203,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
                             verbose=verbose
                         )
 
-        @threaded.threadpooled()
+        @threaded.threadpooled
         def poll_pipes(stop, ):    # type: (threading.Event) -> None
             """Polling task for FIFO buffers.
 
@@ -274,7 +274,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
     def execute_async(
         self,
         command,  # type: str
-        stdin=None,  # type: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
@@ -286,7 +286,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read

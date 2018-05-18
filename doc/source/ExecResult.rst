@@ -40,7 +40,7 @@ API: ExecResult
 
     .. py:attribute:: stdin
 
-        ``str``
+        ``typing.Text``
         Stdin input as string.
 
     .. py:attribute:: stdout
@@ -65,22 +65,22 @@ API: ExecResult
 
     .. py:attribute:: stdout_str
 
-        ``str``
+        ``typing.Text``
         Stdout output as string.
 
     .. py:attribute:: stderr_str
 
-        ``str``
+        ``typing.Text``
         Stderr output as string.
 
     .. py:attribute:: stdout_brief
 
-        ``str``
+        ``typing.Text``
         Brief stdout output (mostly for exceptions).
 
     .. py:attribute:: stderr_brief
 
-        ``str``
+        ``typing.Text``
         Brief stderr output (mostly for exceptions).
 
     .. py:attribute:: exit_code

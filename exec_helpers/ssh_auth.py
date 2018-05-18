@@ -88,7 +88,7 @@ class SSHAuth(object):
         self.__passphrase = passphrase
 
     @property
-    def username(self):  # type: () -> str
+    def username(self):  # type: () -> typing.Optional[str]
         """Username for auth.
 
         :rtype: str
@@ -238,7 +238,7 @@ class SSHAuth(object):
             keys=self.__keys
         )
 
-    def __repr__(self):
+    def __repr__(self):  # type: (...) -> str
         """Representation for debug purposes."""
         _key = (
             None if self.__key is None else
@@ -268,7 +268,7 @@ class SSHAuth(object):
                 keys=_keys)
         )
 
-    def __str__(self):
+    def __str__(self):  # type: (...) -> str
         """Representation for debug purposes."""
         return (
             '{cls} for {username}'.format(

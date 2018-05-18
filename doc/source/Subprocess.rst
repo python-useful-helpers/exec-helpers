@@ -46,16 +46,16 @@ API: Subprocess
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[six.text_type, six.binary_type, bytearray, None]
+        :type stdin: ``typing.Union[typing.AnyStr, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
+        :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
+        :type open_stderr: ``bool``
         :param verbose: produce verbose log record on command call
-        :type verbose: bool
+        :type verbose: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: ``typing.Optional[str]``
         :rtype: ``typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]``
 
         .. versionadded:: 1.2.0
@@ -66,12 +66,10 @@ API: Subprocess
 
         :param command: Command for execution
         :type command: ``str``
-        :param stdin: STDIN passed to execution
-        :type stdin: ``typing.Union[six.text_type, six.binary_type, None]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Optional[int]``
+        :type timeout: ``typing.Union[int, None]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -90,7 +88,7 @@ API: Subprocess
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Optional[int]``
+        :type timeout: ``typing.Union[int, None]``
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param expected: expected return codes (0 by default)
@@ -113,7 +111,7 @@ API: Subprocess
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Optional[int]``
+        :type timeout: ``typing.Union[int, None]``
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code
