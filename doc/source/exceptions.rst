@@ -14,13 +14,45 @@ API: exceptions
 
     Deserialize impossible.
 
-.. py:exception:: ExecHelperTimeoutError(ExecHelperError)
-
-    Execution timeout.
-
 .. py:exception:: ExecCalledProcessError(ExecHelperError)
 
     Base class for process call errors.
+
+.. py:exception:: ExecHelperTimeoutError(ExecCalledProcessError)
+
+    Execution timeout.
+
+    .. versionchanged:: 1.3.0 provide full result and timeout inside.
+    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
+
+    .. py:method:: __init__(self, result, timeout)
+
+        Exception for error on process calls.
+
+        :param result: execution result
+        :type result: exec_result.ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+
+    .. py:attribute:: timeout
+
+        ``int``
+
+    .. py:attribute:: result
+
+        Execution result
+
+        :rtype: ExecResult
+
+    .. py:attribute:: stdout
+
+        ``typing.Text``
+        stdout string or brief string
+
+    .. py:attribute:: stderr
+
+        ``typing.Text``
+        stdout string or brief string
 
 .. py:exception:: CalledProcessError(ExecCalledProcessError)
 
@@ -60,12 +92,12 @@ API: exceptions
 
     .. py:attribute:: stdout
 
-        ``typing.Any``
+        ``typing.Text``
         stdout string or brief string
 
     .. py:attribute:: stderr
 
-        ``typing.Any``
+        ``typing.Text``
         stdout string or brief string
 
 .. py:exception:: ParallelCallExceptions(ExecCalledProcessError)

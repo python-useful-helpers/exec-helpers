@@ -269,7 +269,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
             timeout=timeout
         )
         logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(wait_err_msg)
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
     def execute_async(
         self,

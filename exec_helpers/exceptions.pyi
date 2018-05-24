@@ -7,11 +7,30 @@ class ExecHelperError(Exception):
 class DeserializeValueError(ExecHelperError, ValueError):
     ...
 
-class ExecHelperTimeoutError(ExecHelperError):
-    ...
 
 class ExecCalledProcessError(ExecHelperError):
     ...
+
+
+class ExecHelperTimeoutError(ExecCalledProcessError):
+
+    result: exec_result.ExecResult = ...
+    timeout: int = ...
+
+    def __init__(
+        self,
+        result: exec_result.ExecResult,
+        timeout: typing.Union[int, float],
+    ) -> None: ...
+
+    @property
+    def cmd(self) -> str: ...
+
+    @property
+    def stdout(self) -> typing.Text: ...
+
+    @property
+    def stderr(self) -> typing.Text: ...
 
 
 class CalledProcessError(ExecCalledProcessError):

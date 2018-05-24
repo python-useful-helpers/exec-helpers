@@ -735,7 +735,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             timeout=timeout
         )
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(wait_err_msg)
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
     def execute_through_host(
         self,
