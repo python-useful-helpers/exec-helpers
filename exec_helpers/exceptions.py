@@ -21,6 +21,7 @@ from __future__ import unicode_literals
 import typing  # noqa  # pylint: disable=unused-import
 
 from exec_helpers import proc_enums
+from exec_helpers import _log_templates
 
 __all__ = (
     'ExecHelperError',
@@ -44,16 +45,58 @@ class DeserializeValueError(ExecHelperError, ValueError):
     __slots__ = ()
 
 
-class ExecHelperTimeoutError(ExecHelperError):
-    """Execution timeout."""
-
-    __slots__ = ()
-
-
 class ExecCalledProcessError(ExecHelperError):
     """Base class for process call errors."""
 
     __slots__ = ()
+
+
+class ExecHelperTimeoutError(ExecCalledProcessError):
+    """Execution timeout.
+
+    .. versionchanged:: 1.3.0 provide full result and timeout inside.
+    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
+    """
+
+    __slots__ = (
+        'result',
+        'timeout',
+    )
+
+    def __init__(
+        self,
+        result,  # type: exec_result.ExecResult
+        timeout,  # type: typing.Union[int, float]
+    ):  # type: (...) -> None
+        """Exception for error on process calls.
+
+        :param result: execution result
+        :type result: exec_result.ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+        """
+        self.result = result
+        self.timeout = timeout
+        message = _log_templates.CMD_WAIT_ERROR.format(
+            result=result,
+            timeout=timeout
+        )
+        super(ExecHelperTimeoutError, self).__init__(message)
+
+    @property
+    def cmd(self):  # type: () -> str
+        """Failed command."""
+        return self.result.cmd
+
+    @property
+    def stdout(self):  # type: () -> typing.Text
+        """Command stdout."""
+        return self.result.stdout_str
+
+    @property
+    def stderr(self):  # type: () -> typing.Text
+        """Command stderr."""
+        return self.result.stderr_str
 
 
 class CalledProcessError(ExecCalledProcessError):
@@ -74,9 +117,7 @@ class CalledProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: exec_result.ExecResult
         :param expected: expected return codes
-        :type expected: typing.Optional[
-            typing.List[typing.Union[int, proc_enums.ExitCodes]]
-        ]
+        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
 
         .. versionchanged:: 1.1.1 - provide full result
         """
@@ -89,7 +130,7 @@ class CalledProcessError(ExecCalledProcessError):
             "\tSTDOUT:\n"
             "{result.stdout_brief}\n"
             "\tSTDERR:\n{result.stderr_brief}".format(
-                result=result,
+                result=self.result,
                 expected=self.expected
             )
         )
