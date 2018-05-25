@@ -6,7 +6,7 @@ python:
 - 3.4
 - 3.5
 - &mainstream_python 3.6
-- pypy
+- &pypy pypy
 - pypy3.5
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
@@ -42,7 +42,8 @@ jobs:
   - stage: deploy
     # This prevents job from appearing in test plan unless commit is tagged:
     if: tag IS present
-    python: *mainstream_python
+    # Run on pypy to build not cythonized wheel
+    python: *pypy
     services:
     - docker
     install:
@@ -61,7 +62,7 @@ jobs:
         secure: "maml4+SU/6NtRf7JIwWhVyXkesE9Gk5Umdo3txOjcrcvt84S3NlN/hFgdNclMUpJ3b+rOFEpiZOamtDKbP67uhlA6yJ364SxW5T3ZQJ8tjFFzMHcaM38HgGbgLR8AxK8fdZKRg9gVMnGofeiusB5aNsKmn9XnvESc8dNv0Umdmi83wXxm+DfVRXL8VTFgwsH3BxQy/Kdv6upRrXyNWkyoi8Zk8PkrFFDpFoW9WK1fRBqnvCw1Wt8nEAJah7y2b7vj52eM+MfT3IL+jpocZqOJQlFPdWkTonX7mAP9nB97kk4DMbm3ZqUw2Qr9pM0nKK9HhrXhsSSUGa1w95zmw9nbXLrpfnQ61Lyk9pGcVh60WbrVKstE/x9Lq3pqGsA/YKqsIZK3OAqRfBHNG9L7lekP05hXyDNHJXGoEyGQjVA/666S2ZCjM10XaaUmZ5P1kPGocCnEjv86dKdINTkFM6L0n4oIu1nyftBhVu9jz0xQaxute4LZNJiQtE6x8NX3WuSO68UhWjDqevYdRgW55Gp1OD4ilfA/SVNPpsHJfB2baue1fi9m8Rn3bWQSJoZ8twYHoIxEOAIXyMBhYnmldvsuUY6h5p+/hk6kpJAsTXZFjUSa/FPIH84QvDkNCoZxwInSkjEN1tj9PBep2vYcLMd92+g6udtin8FbYMZItiDl1M="
       on:
         tags: true
-        distributions: sdist
+        distributions: sdist bdist_wheel
       skip_upload_docs: true
 
 cache: pip
