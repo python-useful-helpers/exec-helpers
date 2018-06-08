@@ -6,7 +6,7 @@ exec-helpers
 .. image:: https://coveralls.io/repos/github/python-useful-helpers/exec-helpers/badge.svg?branch=master
     :target: https://coveralls.io/github/python-useful-helpers/exec-helpers?branch=master
 .. image:: https://readthedocs.org/projects/exec-helpers/badge/?version=latest
-    :target: http://exec-helpers.readthedocs.io/
+    :target: https://exec-helpers.readthedocs.io/
     :alt: Documentation Status
 .. image:: https://img.shields.io/pypi/v/exec-helpers.svg
     :target: https://pypi.python.org/pypi/exec-helpers
