@@ -261,10 +261,6 @@ setup_args = dict(
         for name, email in variables['__maintainers__'].items()
     ),
     url=variables['__url__'],
-    project_urls={
-        "Bug Tracker": "https://github.com/python-useful-helpers/exec-helpers/issues",
-        "Documentation": "https://exec-helpers.readthedocs.io/",
-    },
     version=variables['__version__'],
     license=variables['__license__'],
     description=variables['__description__'],
