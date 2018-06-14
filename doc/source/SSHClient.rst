@@ -24,6 +24,8 @@ API: SSHClient and SSHAuth.
         :type private_keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
         :param auth: credentials for connection
         :type auth: typing.Optional[SSHAuth]
+        :param verbose: show additional error/warning messages
+        :type verbose: bool
 
     .. note:: auth has priority over username/password/private_keys
 

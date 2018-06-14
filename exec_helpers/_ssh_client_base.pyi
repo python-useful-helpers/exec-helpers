@@ -17,7 +17,8 @@ class _MemorizedSSH(type):
         username: typing.Optional[str]=...,
         password: typing.Optional[str]=...,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]=...,
-        auth: typing.Optional[ssh_auth.SSHAuth]=...
+        auth: typing.Optional[ssh_auth.SSHAuth]=...,
+        verbose: bool=...
     ) -> SSHClientBase: ...
 
     @classmethod
@@ -37,7 +38,8 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
         username: typing.Optional[str]=...,
         password: typing.Optional[str]=...,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]=...,
-        auth: typing.Optional[ssh_auth.SSHAuth]=...
+        auth: typing.Optional[ssh_auth.SSHAuth]=...,
+        verbose: bool=...
     ) -> None: ...
 
     @property

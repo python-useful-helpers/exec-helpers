@@ -116,6 +116,7 @@ class _MemorizedSSH(type):
         password=None,  # type: typing.Optional[str]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
+        verbose=True,  # type: bool
     ):  # type: (...) -> SSHClientBase
         """Main memorize method: check for cached instance and return it.
 
@@ -125,6 +126,7 @@ class _MemorizedSSH(type):
         :type password: str
         :type private_keys: list
         :type auth: ssh_auth.SSHAuth
+        :type verbose: bool
         :rtype: SSHClient
         """
         if (host, port) in cls.__cache:
@@ -160,7 +162,7 @@ class _MemorizedSSH(type):
         ).__call__(
             host=host, port=port,
             username=username, password=password, private_keys=private_keys,
-            auth=auth)
+            auth=auth, verbose=verbose)
         cls.__cache[(ssh.hostname, ssh.port)] = ssh
         return ssh
 
@@ -195,7 +197,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
     __slots__ = (
         '__hostname', '__port', '__auth', '__ssh', '__sftp',
-        '__sudo_mode', '__keepalive_mode',
+        '__sudo_mode', '__keepalive_mode', '__verbose',
     )
 
     class __get_sudo(object):
@@ -279,6 +281,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         password=None,  # type: typing.Optional[str]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
+        verbose=True,  # type: bool
     ):  # type: (...) -> None
         """SSHClient helper.
 
@@ -294,6 +297,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
         :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         :param auth: credentials for connection
         :type auth: typing.Optional[ssh_auth.SSHAuth]
+        :param verbose: show additional error/warning messages
+        :type verbose: bool
 
         .. note:: auth has priority over username/password/private_keys
         """
@@ -310,6 +315,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
         self.__sudo_mode = False
         self.__keepalive_mode = True
+        self.__verbose = verbose
 
         self.__ssh = paramiko.SSHClient()
         self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -400,7 +406,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
             self.auth.connect(
                 client=self.__ssh,
                 hostname=self.hostname, port=self.port,
-                log=True)
+                log=self.__verbose)
 
     def __connect_sftp(self):
         """SFTP connection opener."""

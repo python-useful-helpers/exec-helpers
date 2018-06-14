@@ -759,3 +759,21 @@ class TestSSHClientInit(unittest.TestCase):
         exec_helpers.SSHClient(host=host)
         client.assert_called_once()
         policy.assert_called_once()
+
+    @mock.patch('time.sleep', autospec=True)
+    def test_026_init_auth_impossible_key_no_verbose(
+            self, sleep, client, policy, logger):
+        connect = mock.Mock(side_effect=paramiko.AuthenticationException)
+
+        _ssh = mock.Mock()
+        _ssh.attach_mock(connect, 'connect')
+        client.return_value = _ssh
+
+        with self.assertRaises(paramiko.AuthenticationException):
+            exec_helpers.SSHClient(
+                host=host,
+                auth=exec_helpers.SSHAuth(key=gen_private_keys(1).pop()),
+                verbose=False
+            )
+
+        logger.assert_not_called()
