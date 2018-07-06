@@ -96,7 +96,7 @@ class SSHAuth(object):
         return self.__username
 
     @staticmethod
-    def __get_public_key(key):  # type: () -> typing.Optional[str]
+    def __get_public_key(key):  # type: (typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]
         """Internal method for get public key from private.
 
         :type key: paramiko.RSAKey
