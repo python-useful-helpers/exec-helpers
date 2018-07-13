@@ -425,12 +425,7 @@ class ExecResult(object):
 
     def __eq__(self, other):  # type: (typing.Any) -> bool
         """Comparision."""
-        return all(
-            (
-                getattr(self, val) == getattr(other, val)
-                for val in ['cmd', 'stdout', 'stderr', 'exit_code']
-            )
-        )
+        return hash(self) == hash(other)
 
     def __ne__(self, other):  # type: (typing.Any) -> bool
         """Comparision."""
@@ -440,6 +435,6 @@ class ExecResult(object):
         """Hash for usage as dict key and in sets."""
         return hash(
             (
-                self.__class__, self.cmd, self.stdout, self.stderr,
+                self.__class__, self.cmd, self.stdin, self.stdout, self.stderr,
                 self.exit_code
             ))

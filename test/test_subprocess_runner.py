@@ -564,7 +564,7 @@ class TestSubprocessRunner(unittest.TestCase):
     ):  # type: (...) -> None
         stdin = bytearray(b'this is a line')
 
-        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[stdin])
+        popen_obj, exp_result = self.prepare_close(popen, cmd=print_stdin, stdout_override=[bytes(l) for l in stdin])
 
         stdin_mock = mock.Mock()
         popen_obj.attach_mock(stdin_mock, 'stdin')
