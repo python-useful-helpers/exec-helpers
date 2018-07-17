@@ -1,3 +1,5 @@
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fpython-useful-helpers%2Fexec-helpers.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fpython-useful-helpers%2Fexec-helpers?ref=badge_shield)
+
 exec-helpers
 ============
 
@@ -325,3 +327,6 @@ For code checking several CI systems is used in parallel:
 1. `Travis CI: <https://travis-ci.org/python-useful-helpers/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
 
 2. `coveralls: <https://coveralls.io/github/python-useful-helpers/exec-helpers>`_ is used for coverage display.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fpython-useful-helpers%2Fexec-helpers.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fpython-useful-helpers%2Fexec-helpers?ref=badge_large)
