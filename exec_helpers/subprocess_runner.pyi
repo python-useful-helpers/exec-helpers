@@ -16,10 +16,10 @@ class SingletonMeta(type):
     _instances: typing.Dict[typing.Type, typing.Any] = ...
     _lock: threading.RLock = ...
 
-    def __call__(cls, *args, **kwargs): ...
+    def __call__(cls: typing.Type, *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any: ...
 
     @classmethod
-    def __prepare__(mcs, name: str, bases: typing.Iterable[typing.Type], **kwargs) -> collections.OrderedDict: ...
+    def __prepare__(mcs: typing.Type, name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
 
 
 def set_nonblocking_pipe(pipe: typing.Any) -> None: ...
@@ -40,16 +40,29 @@ class Subprocess(_api.ExecHelper, metaclass=SingletonMeta):
         timeout: typing.Union[int, None],
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
+    @typing.overload  # type: ignore
     def execute_async(
         self,
         command: str,
-        stdin: typing.Union[typing.AnyStr, bytearray, None]=...,
+        stdin: typing.Union[typing.AnyStr, bytearray]=...,
         open_stdout: bool=...,
         open_stderr: bool=...,
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
-    ) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO]]: ...
+        **kwargs: typing.Dict
+    ) -> typing.Tuple[subprocess.Popen, None, None, None]: ...
+
+    @typing.overload
+    def execute_async(
+        self,
+        command: str,
+        stdin: None=...,
+        open_stdout: bool=...,
+        open_stderr: bool=...,
+        verbose: bool=...,
+        log_mask_re: typing.Optional[str]=...,
+        **kwargs: typing.Dict
+    ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]: ...

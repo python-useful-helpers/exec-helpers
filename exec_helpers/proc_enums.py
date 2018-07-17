@@ -72,9 +72,9 @@ class SigNum(enum.IntEnum):
     SIGPWR = 30  # Power failure restart (System V).
     SIGSYS = 31  # Bad system call.
 
-    def __str__(self):  # pragma: no cover
+    def __str__(self):  # type: () -> str
         """Representation for logs."""
-        return "{name}<{value:d}(0x{value:02X})>".format(
+        return "{name}<{value:d}(0x{value:02X})>".format(  # pragma: no cover
             name=self.name,
             value=self.value
         )
@@ -150,7 +150,7 @@ class ExitCodes(digit_type, enum.Enum):
     EX_SIGPWR = 128 + SigNum.SIGPWR
     EX_SIGSYS = 128 + SigNum.SIGSYS
 
-    def __str__(self):
+    def __str__(self):  # type: () -> str
         """Representation for logs."""
         return "{name}<{value:d}(0x{value:02X})>".format(
             name=self.name,
