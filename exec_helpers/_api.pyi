@@ -15,7 +15,7 @@ class ExecHelper:
     @property
     def lock(self) -> threading.RLock: ...
 
-    def __enter__(self): ...
+    def __enter__(self) -> ExecHelper: ...
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None: ...
 
@@ -29,7 +29,7 @@ class ExecHelper:
         open_stderr: bool=...,
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any,]: ...
 
     def _exec_command(
@@ -41,7 +41,7 @@ class ExecHelper:
         timeout: typing.Union[int, None],
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
     def execute(
@@ -49,7 +49,7 @@ class ExecHelper:
         command: str,
         verbose: bool=...,
         timeout: typing.Union[int, None]=...,
-        **kwargs
+        **kwargs: typing.Type
     ) -> exec_result.ExecResult: ...
 
     def check_call(
@@ -60,7 +60,7 @@ class ExecHelper:
         error_info: typing.Optional[str]=...,
         expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]=...,
         raise_on_err: bool=...,
-        **kwargs
+        **kwargs: typing.Type
     ) -> exec_result.ExecResult: ...
 
     def check_stderr(
@@ -70,5 +70,5 @@ class ExecHelper:
         timeout: typing.Union[int, None]=...,
         error_info: typing.Optional[str]=...,
         raise_on_err: bool=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...

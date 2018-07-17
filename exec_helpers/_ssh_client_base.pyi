@@ -8,10 +8,10 @@ from exec_helpers import exec_result, ssh_auth, _api
 
 class _MemorizedSSH(type):
     @classmethod
-    def __prepare__(mcs, name: str, bases: typing.Iterable[typing.Type], **kwargs) -> collections.OrderedDict: ...
+    def __prepare__(mcs: typing.Type, name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
 
     def __call__(  # type: ignore
-        cls,
+        cls: typing.Type[SSHClientBase],
         host: str,
         port: int=...,
         username: typing.Optional[str]=...,
@@ -22,14 +22,14 @@ class _MemorizedSSH(type):
     ) -> SSHClientBase: ...
 
     @classmethod
-    def clear_cache(mcs) -> None: ...
+    def clear_cache(mcs: typing.Type[SSHClientBase]) -> None: ...  # type: ignore
 
     @classmethod
-    def close_connections(mcs) -> None: ...
+    def close_connections(mcs: typing.Type[SSHClientBase]) -> None: ...  # type: ignore
 
 
 class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
-    def __hash__(self): ...
+    def __hash__(self) -> int: ...
 
     def __init__(
         self,
@@ -100,7 +100,7 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
         open_stderr: bool=...,
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> typing.Tuple[paramiko.Channel, paramiko.ChannelFile, typing.Optional[paramiko.ChannelFile], typing.Optional[paramiko.ChannelFile]]: ...
 
     def _exec_command(
@@ -112,7 +112,7 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, None],
         verbose: bool=...,
         log_mask_re: typing.Optional[str]=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
     def execute_through_host(
@@ -124,7 +124,7 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool=...,
         timeout: typing.Union[int, None]=...,
         get_pty: bool=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
     @classmethod
@@ -135,7 +135,7 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, None]=...,
         expected: typing.Optional[typing.Iterable[int]]=...,
         raise_on_err: bool=...,
-        **kwargs
+        **kwargs: typing.Dict
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]: ...
 
     def open(self, path: str, mode: str = ...) -> paramiko.SFTPFile: ...
