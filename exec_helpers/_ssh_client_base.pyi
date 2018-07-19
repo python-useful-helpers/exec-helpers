@@ -3,15 +3,17 @@ import typing
 
 import paramiko  # type: ignore
 
-from exec_helpers import exec_result, ssh_auth, _api
+from exec_helpers import exec_result, ssh_auth, api
+
+CPYTHON: bool = ...
 
 
 class _MemorizedSSH(type):
     @classmethod
-    def __prepare__(mcs: typing.Type, name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
+    def __prepare__(mcs: typing.Type[_MemorizedSSH], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
 
     def __call__(  # type: ignore
-        cls: typing.Type[SSHClientBase],
+        cls: _MemorizedSSH,
         host: str,
         port: int=...,
         username: typing.Optional[str]=...,
@@ -22,13 +24,13 @@ class _MemorizedSSH(type):
     ) -> SSHClientBase: ...
 
     @classmethod
-    def clear_cache(mcs: typing.Type[SSHClientBase]) -> None: ...  # type: ignore
+    def clear_cache(mcs: typing.Type[_MemorizedSSH]) -> None: ...
 
     @classmethod
-    def close_connections(mcs: typing.Type[SSHClientBase]) -> None: ...  # type: ignore
+    def close_connections(mcs: typing.Type[_MemorizedSSH]) -> None: ...
 
 
-class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
+class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def __hash__(self) -> int: ...
 
     def __init__(
@@ -65,7 +67,7 @@ class SSHClientBase(_api.ExecHelper, metaclass=_MemorizedSSH):
     def _sftp(self) -> paramiko.sftp_client.SFTPClient: ...
 
     @classmethod
-    def close(cls) -> None: ...
+    def close(cls: typing.Union[SSHClientBase, typing.Type[SSHClientBase]]) -> None: ...
 
     @classmethod
     def _clear_cache(cls) -> None: ...

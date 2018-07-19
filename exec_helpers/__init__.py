@@ -28,6 +28,7 @@ from .exceptions import (
 )
 
 from .exec_result import ExecResult
+from .api import ExecHelper
 from .ssh_auth import SSHAuth
 from .ssh_client import SSHClient
 from .subprocess_runner import Subprocess  # nosec  # Expected
@@ -39,6 +40,7 @@ __all__ = (
     'ParallelCallExceptions',
     'ParallelCallProcessError',
     'ExecHelperTimeoutError',
+    'ExecHelper',
     'SSHClient',
     'SSHAuth',
     'Subprocess',

@@ -4,7 +4,7 @@ import subprocess
 import threading
 import typing
 
-from exec_helpers import exec_result, _api
+from exec_helpers import exec_result, api
 
 logger: logging.Logger
 devnull: typing.IO
@@ -16,16 +16,16 @@ class SingletonMeta(type):
     _instances: typing.Dict[typing.Type, typing.Any] = ...
     _lock: threading.RLock = ...
 
-    def __call__(cls: typing.Type, *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any: ...
+    def __call__(cls: SingletonMeta, *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any: ...
 
     @classmethod
-    def __prepare__(mcs: typing.Type, name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
+    def __prepare__(mcs: typing.Type[SingletonMeta], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
 
 
 def set_nonblocking_pipe(pipe: typing.Any) -> None: ...
 
 
-class Subprocess(_api.ExecHelper, metaclass=SingletonMeta):
+class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     def __init__(
         self,
         log_mask_re: typing.Optional[str]=...
