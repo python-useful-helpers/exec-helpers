@@ -36,7 +36,7 @@ import typing  # noqa  # pylint: disable=unused-import
 import six
 import threaded
 
-from exec_helpers import _api
+from exec_helpers import api
 from exec_helpers import exec_result
 from exec_helpers import exceptions
 from exec_helpers import _log_templates
@@ -122,7 +122,7 @@ def set_nonblocking_pipe(pipe):  # type: (typing.Any) -> None
         )
 
 
-class Subprocess(six.with_metaclass(SingletonMeta, _api.ExecHelper)):
+class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     def __init__(

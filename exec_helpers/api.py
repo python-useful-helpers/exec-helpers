@@ -16,6 +16,7 @@
 """ExecHelpers global API.
 
 .. versionadded:: 1.2.0
+.. versionchanged:: 1.3.5 make API public to use as interface
 """
 
 from __future__ import absolute_import
@@ -54,6 +55,7 @@ class ExecHelper(object):
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 1.3.5 make API public to use as interface
         """
         self.__lock = threading.RLock()
         self.__logger = logger

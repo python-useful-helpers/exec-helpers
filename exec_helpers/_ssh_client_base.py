@@ -40,7 +40,7 @@ import tenacity
 import threaded
 import six
 
-from exec_helpers import _api
+from exec_helpers import api
 from exec_helpers import constants
 from exec_helpers import exec_result
 from exec_helpers import exceptions
@@ -97,10 +97,10 @@ class _MemorizedSSH(type):
 
     @classmethod
     def __prepare__(
-        mcs,
+        mcs,  # type: typing.Type[_MemorizedSSH]
         name,  # type: str
         bases,  # type: typing.Iterable[typing.Type]
-        **kwargs
+        **kwargs  # type: typing.Dict
     ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
         """Metaclass magic for object storage.
 
@@ -109,7 +109,7 @@ class _MemorizedSSH(type):
         return collections.OrderedDict()  # pragma: no cover
 
     def __call__(
-        cls,
+        cls,  # type: _MemorizedSSH
         host,  # type: str
         port=22,  # type: int
         username=None,  # type: typing.Optional[str]
@@ -167,7 +167,7 @@ class _MemorizedSSH(type):
         return ssh
 
     @classmethod
-    def clear_cache(mcs):  # type: () -> None
+    def clear_cache(mcs):  # type: (typing.Type[_MemorizedSSH]) -> None
         """Clear cached connections for initialize new instance on next call.
 
         getrefcount is used to check for usage.
@@ -185,14 +185,14 @@ class _MemorizedSSH(type):
         mcs.__cache = {}
 
     @classmethod
-    def close_connections(mcs):  # type: (...) -> None
+    def close_connections(mcs):  # type: (typing.Type[_MemorizedSSH]) -> None
         """Close connections for selected or all cached records."""
         for ssh in mcs.__cache.values():
             if ssh.is_alive:
                 ssh.close()
 
 
-class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
+class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
     """SSH Client helper."""
 
     __slots__ = (
@@ -454,7 +454,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, _api.ExecHelper)):
 
     # noinspection PyMethodParameters
     @close.class_method
-    def close(cls):  # pylint: disable=no-self-argument
+    def close(  # pylint: disable=no-self-argument
+        cls  # type: typing.Type[SSHClientBase]
+    ):  # type: (...) -> None
         """Close all memorized SSH and SFTP sessions."""
         # noinspection PyUnresolvedReferences
         cls.__class__.close_connections()
