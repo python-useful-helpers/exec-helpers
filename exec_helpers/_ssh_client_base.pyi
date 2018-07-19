@@ -10,17 +10,22 @@ CPYTHON: bool = ...
 
 class _MemorizedSSH(type):
     @classmethod
-    def __prepare__(mcs: typing.Type[_MemorizedSSH], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
+    def __prepare__(
+        mcs: typing.Type[_MemorizedSSH],
+        name: str,
+        bases: typing.Iterable[typing.Type],
+        **kwargs: typing.Dict
+    ) -> collections.OrderedDict: ...
 
     def __call__(  # type: ignore
         cls: _MemorizedSSH,
         host: str,
-        port: int=...,
-        username: typing.Optional[str]=...,
-        password: typing.Optional[str]=...,
-        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]=...,
-        auth: typing.Optional[ssh_auth.SSHAuth]=...,
-        verbose: bool=...
+        port: int = ...,
+        username: typing.Optional[str] = ...,
+        password: typing.Optional[str] = ...,
+        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = ...,
+        auth: typing.Optional[ssh_auth.SSHAuth] = ...,
+        verbose: bool = ...,
     ) -> SSHClientBase: ...
 
     @classmethod
@@ -36,12 +41,12 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def __init__(
         self,
         host: str,
-        port: int=...,
-        username: typing.Optional[str]=...,
-        password: typing.Optional[str]=...,
-        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]=...,
-        auth: typing.Optional[ssh_auth.SSHAuth]=...,
-        verbose: bool=...
+        port: int = ...,
+        username: typing.Optional[str] = ...,
+        password: typing.Optional[str] = ...,
+        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = ...,
+        auth: typing.Optional[ssh_auth.SSHAuth] = ...,
+        verbose: bool = ...,
     ) -> None: ...
 
     @property
@@ -90,20 +95,25 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     def reconnect(self) -> None: ...
 
-    def sudo(self, enforce: typing.Optional[bool]=...) -> typing.ContextManager: ...
+    def sudo(self, enforce: typing.Optional[bool] = ...) -> typing.ContextManager: ...
 
-    def keepalive(self, enforce: bool=...) -> typing.ContextManager: ...
+    def keepalive(self, enforce: bool = ...) -> typing.ContextManager: ...
 
     def execute_async(
         self,
         command: str,
-        stdin: typing.Union[typing.AnyStr, bytearray, None]=...,
-        open_stdout: bool=...,
-        open_stderr: bool=...,
-        verbose: bool=...,
-        log_mask_re: typing.Optional[str]=...,
+        stdin: typing.Union[typing.AnyStr, bytearray, None] = ...,
+        open_stdout: bool = ...,
+        open_stderr: bool = ...,
+        verbose: bool = ...,
+        log_mask_re: typing.Optional[str] = ...,
         **kwargs: typing.Dict
-    ) -> typing.Tuple[paramiko.Channel, paramiko.ChannelFile, typing.Optional[paramiko.ChannelFile], typing.Optional[paramiko.ChannelFile]]: ...
+    ) -> typing.Tuple[
+        paramiko.Channel,
+        paramiko.ChannelFile,
+        typing.Optional[paramiko.ChannelFile],
+        typing.Optional[paramiko.ChannelFile],
+    ]: ...
 
     def _exec_command(
         self,
@@ -112,8 +122,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stdout: paramiko.channel.ChannelFile,
         stderr: paramiko.channel.ChannelFile,
         timeout: typing.Union[int, None],
-        verbose: bool=...,
-        log_mask_re: typing.Optional[str]=...,
+        verbose: bool = ...,
+        log_mask_re: typing.Optional[str] = ...,
         **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
@@ -121,11 +131,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         self,
         hostname: str,
         command: str,
-        auth: typing.Optional[ssh_auth.SSHAuth]=...,
-        target_port: int=...,
-        verbose: bool=...,
-        timeout: typing.Union[int, None]=...,
-        get_pty: bool=...,
+        auth: typing.Optional[ssh_auth.SSHAuth] = ...,
+        target_port: int = ...,
+        verbose: bool = ...,
+        timeout: typing.Union[int, None] = ...,
+        get_pty: bool = ...,
         **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
@@ -134,9 +144,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cls,
         remotes: typing.Iterable[SSHClientBase],
         command: str,
-        timeout: typing.Union[int, None]=...,
-        expected: typing.Optional[typing.Iterable[int]]=...,
-        raise_on_err: bool=...,
+        timeout: typing.Union[int, None] = ...,
+        expected: typing.Optional[typing.Iterable[int]] = ...,
+        raise_on_err: bool = ...,
         **kwargs: typing.Dict
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]: ...
 
@@ -146,7 +156,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     def stat(self, path: str) -> paramiko.sftp_attr.SFTPAttributes: ...
 
-    def utime(self, path: str, times: typing.Optional[typing.Tuple[int, int]]=...) -> None: ...
+    def utime(self, path: str, times: typing.Optional[typing.Tuple[int, int]] = ...) -> None: ...
 
     def isfile(self, path: str) -> bool: ...
 

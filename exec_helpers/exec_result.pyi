@@ -8,10 +8,10 @@ class ExecResult:
     def __init__(
         self,
         cmd: str,
-        stdin: typing.Union[typing.AnyStr, bytearray, None]=...,
-        stdout: typing.Optional[typing.Iterable[bytes]]=...,
-        stderr: typing.Optional[typing.Iterable[bytes]]=...,
-        exit_code: typing.Union[int, proc_enums.ExitCodes]=...
+        stdin: typing.Union[typing.AnyStr, bytearray, None] = ...,
+        stdout: typing.Optional[typing.Iterable[bytes]] = ...,
+        stderr: typing.Optional[typing.Iterable[bytes]] = ...,
+        exit_code: typing.Union[int, proc_enums.ExitCodes] = ...,
     ) -> None: ...
 
     @property
@@ -43,16 +43,16 @@ class ExecResult:
 
     def read_stdout(
         self,
-        src: typing.Optional[typing.Iterable]=...,
-        log: typing.Optional[logging.Logger]=...,
-        verbose: bool=...
+        src: typing.Optional[typing.Iterable] = ...,
+        log: typing.Optional[logging.Logger] = ...,
+        verbose: bool = ...,
     ) -> None: ...
 
     def read_stderr(
         self,
-        src: typing.Optional[typing.Iterable]=...,
-        log: typing.Optional[logging.Logger]=...,
-        verbose: bool=...
+        src: typing.Optional[typing.Iterable] = ...,
+        log: typing.Optional[logging.Logger] = ...,
+        verbose: bool = ...,
     ) -> None: ...
 
     @property

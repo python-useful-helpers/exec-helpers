@@ -19,17 +19,19 @@ class SingletonMeta(type):
     def __call__(cls: SingletonMeta, *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any: ...
 
     @classmethod
-    def __prepare__(mcs: typing.Type[SingletonMeta], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Dict) -> collections.OrderedDict: ...
+    def __prepare__(
+        mcs: typing.Type[SingletonMeta],
+        name: str,
+        bases: typing.Iterable[typing.Type],
+        **kwargs: typing.Dict
+    ) -> collections.OrderedDict: ...
 
 
 def set_nonblocking_pipe(pipe: typing.Any) -> None: ...
 
 
 class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
-    def __init__(
-        self,
-        log_mask_re: typing.Optional[str]=...
-    ) -> None: ...
+    def __init__(self, log_mask_re: typing.Optional[str] = ...) -> None: ...
 
     def _exec_command(
         self,
@@ -38,8 +40,8 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         stdout: typing.Optional[typing.IO],
         stderr: typing.Optional[typing.IO],
         timeout: typing.Union[int, None],
-        verbose: bool=...,
-        log_mask_re: typing.Optional[str]=...,
+        verbose: bool = ...,
+        log_mask_re: typing.Optional[str] = ...,
         **kwargs: typing.Dict
     ) -> exec_result.ExecResult: ...
 
@@ -47,11 +49,11 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     def execute_async(
         self,
         command: str,
-        stdin: typing.Union[typing.AnyStr, bytearray]=...,
-        open_stdout: bool=...,
-        open_stderr: bool=...,
-        verbose: bool=...,
-        log_mask_re: typing.Optional[str]=...,
+        stdin: typing.Union[typing.AnyStr, bytearray] = ...,
+        open_stdout: bool = ...,
+        open_stderr: bool = ...,
+        verbose: bool = ...,
+        log_mask_re: typing.Optional[str] = ...,
         **kwargs: typing.Dict
     ) -> typing.Tuple[subprocess.Popen, None, None, None]: ...
 
@@ -59,10 +61,10 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     def execute_async(
         self,
         command: str,
-        stdin: None=...,
-        open_stdout: bool=...,
-        open_stderr: bool=...,
-        verbose: bool=...,
-        log_mask_re: typing.Optional[str]=...,
+        stdin: None = ...,
+        open_stdout: bool = ...,
+        open_stderr: bool = ...,
+        verbose: bool = ...,
+        log_mask_re: typing.Optional[str] = ...,
         **kwargs: typing.Dict
     ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]: ...
