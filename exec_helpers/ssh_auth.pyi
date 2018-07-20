@@ -5,12 +5,12 @@ import typing
 class SSHAuth:
     def __init__(
         self,
-        username: typing.Optional[str]=...,
-        password: typing.Optional[str]=...,
-        key: typing.Optional[paramiko.RSAKey]=...,
-        keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]=...,
-        key_filename: typing.Union[typing.List[str], str, None]=...,
-        passphrase: typing.Optional[str]=...
+        username: typing.Optional[str] = ...,
+        password: typing.Optional[str] = ...,
+        key: typing.Optional[paramiko.RSAKey] = ...,
+        keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = ...,
+        key_filename: typing.Union[typing.List[str], str, None] = ...,
+        passphrase: typing.Optional[str] = ...,
     ) -> None: ...
 
     @property
@@ -27,9 +27,9 @@ class SSHAuth:
     def connect(
         self,
         client: typing.Union[paramiko.SSHClient, paramiko.Transport],
-        hostname: typing.Optional[str]=...,
-        port: int=...,
-        log: bool=...
+        hostname: typing.Optional[str] = ...,
+        port: int = ...,
+        log: bool = ...,
     ) -> None: ...
 
     def __eq__(self, other: typing.Any) -> bool: ...
