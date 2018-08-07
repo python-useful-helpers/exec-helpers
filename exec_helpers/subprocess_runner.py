@@ -93,6 +93,9 @@ class SingletonMeta(type):
 
 def set_nonblocking_pipe(pipe):  # type: (typing.Any) -> None
     """Set PIPE unblocked to allow polling of all pipes in parallel."""
+    if pipe is None:  # pragma: no cover
+        return
+
     descriptor = pipe.fileno()  # pragma: no cover
 
     if _posix:  # pragma: no cover
@@ -106,10 +109,10 @@ def set_nonblocking_pipe(pipe):  # type: (typing.Any) -> None
         # noinspection PyPep8Naming
         SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
         SetNamedPipeHandleState.argtypes = [
-            wintypes.HANDLE,
-            wintypes.LPDWORD,
-            wintypes.LPDWORD,
-            wintypes.LPDWORD
+            wintypes.HANDLE,  # hNamedPipe
+            wintypes.LPDWORD,  # lpMode
+            wintypes.LPDWORD,  # lpMaxCollectionCount
+            wintypes.LPDWORD,  # lpCollectDataTimeout
         ]
         SetNamedPipeHandleState.restype = wintypes.BOOL
         # noinspection PyPep8Naming
@@ -119,6 +122,43 @@ def set_nonblocking_pipe(pipe):  # type: (typing.Any) -> None
         windll.kernel32.SetNamedPipeHandleState(
             handle,
             ctypes.byref(PIPE_NOWAIT), None, None
+        )
+
+
+def set_blocking_pipe(pipe):  # type: (typing.Any) -> None
+    """Set pipe blocking mode for final read on process close.
+
+    This will allow to read pipe until closed on remote side.
+    """
+    if pipe is None:  # pragma: no cover
+        return
+
+    descriptor = pipe.fileno()  # pragma: no cover
+
+    if _posix:  # pragma: no cover
+        # Get flags
+        flags = fcntl.fcntl(descriptor, fcntl.F_GETFL)
+
+        # Set block mode
+        fcntl.fcntl(descriptor, fcntl.F_SETFL, flags & (flags ^ os.O_NONBLOCK))
+
+    elif _win:  # pragma: no cover
+        # noinspection PyPep8Naming
+        SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
+        SetNamedPipeHandleState.argtypes = [
+            wintypes.HANDLE,  # hNamedPipe
+            wintypes.LPDWORD,  # lpMode
+            wintypes.LPDWORD,  # lpMaxCollectionCount
+            wintypes.LPDWORD,  # lpCollectDataTimeout
+        ]
+        SetNamedPipeHandleState.restype = wintypes.BOOL
+        # noinspection PyPep8Naming
+        PIPE_WAIT = wintypes.DWORD(0x00000000)
+        handle = msvcrt.get_osfhandle(descriptor)
+
+        windll.kernel32.SetNamedPipeHandleState(
+            handle,
+            ctypes.byref(PIPE_WAIT), None, None
         )
 
 
@@ -217,6 +257,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 interface.poll()
 
                 if interface.returncode is not None:
+                    set_blocking_pipe(stdout)
+                    set_blocking_pipe(stderr)
                     result.read_stdout(
                         src=stdout,
                         log=logger,
