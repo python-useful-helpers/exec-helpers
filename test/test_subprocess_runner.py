@@ -23,6 +23,7 @@ from __future__ import unicode_literals
 import errno
 import logging
 import subprocess
+import sys
 import unittest
 
 import mock
@@ -30,6 +31,13 @@ import six
 
 import exec_helpers
 from exec_helpers import subprocess_runner
+
+if 'posix' in sys.builtin_module_names:
+    mock_block = 'fcntl.fcntl'
+elif sys.platform == "win32":
+    mock_block = 'windll.kernel32.SetNamedPipeHandleState'
+else:
+    mock_block = 'logging.captureWarnings'
 
 command = 'ls ~\nline 2\nline 3\nline с кирилицей'
 command_log = u"Executing command:\n{!r}\n".format(command.rstrip())
@@ -52,7 +60,7 @@ class FakeFileStream(object):
 
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
 @mock.patch('select.select', autospec=True)
-@mock.patch('exec_helpers.subprocess_runner.set_nonblocking_pipe', autospec=True)
+@mock.patch(mock_block, autospec=True)
 @mock.patch('subprocess.Popen', autospec=True, name='subprocess.Popen')
 class TestSubprocessRunner(unittest.TestCase):
     def setUp(self):
@@ -222,8 +230,11 @@ class TestSubprocessRunner(unittest.TestCase):
     @mock.patch('time.sleep', autospec=True)
     def test_004_execute_timeout_fail(
         self,
-        sleep,
-        popen, _, select, logger
+        sleep,  # type: mock.MagicMock
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
     ):
         popen_obj, exp_result = self.prepare_close(popen)
         popen_obj.configure_mock(returncode=None)
@@ -255,7 +266,13 @@ class TestSubprocessRunner(unittest.TestCase):
             ),
         ))
 
-    def test_005_execute_no_stdout(self, popen, _, select, logger):
+    def test_005_execute_no_stdout(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):
         popen_obj, exp_result = self.prepare_close(popen, open_stdout=False)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -293,7 +310,13 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_006_execute_no_stderr(self, popen, _, select, logger):
+    def test_006_execute_no_stderr(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):
         popen_obj, exp_result = self.prepare_close(popen, open_stderr=False)
         select.return_value = [popen_obj.stdout, popen_obj.stderr], [], []
 
@@ -332,7 +355,13 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_007_execute_no_stdout_stderr(self, popen, _, select, logger):
+    def test_007_execute_no_stdout_stderr(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):
         popen_obj, exp_result = self.prepare_close(
             popen,
             open_stdout=False,
@@ -369,7 +398,13 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_008_execute_mask_global(self, popen, _, select, logger):
+    def test_008_execute_mask_global(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
@@ -424,7 +459,13 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.poll(), popen_obj.mock_calls
         )
 
-    def test_009_execute_mask_local(self, popen, _, select, logger):
+    def test_009_execute_mask_local(
+        self,
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+    ):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         masked_cmd = "USE='secret=<*masked*>' do task"
@@ -823,8 +864,12 @@ class TestSubprocessRunner(unittest.TestCase):
     @mock.patch('time.sleep', autospec=True)
     def test_013_execute_timeout_done(
         self,
-        sleep,
-        popen, _, select, logger
+        sleep,  # type: mock.MagicMock
+        popen,  # type: mock.MagicMock
+        _,  # type: mock.MagicMock
+        select,  # type: mock.MagicMock
+        logger  # type: mock.MagicMock
+
     ):
         popen_obj, exp_result = self.prepare_close(popen, ec=exec_helpers.ExitCodes.EX_INVALID)
         popen_obj.configure_mock(returncode=None)
