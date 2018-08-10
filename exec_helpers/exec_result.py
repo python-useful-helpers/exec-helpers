@@ -185,10 +185,7 @@ class ExecResult(object):
                 if log:
                     log.log(
                         level=logging.INFO if verbose else logging.DEBUG,
-                        msg=line.decode(
-                            'utf-8',
-                            errors='backslashreplace'
-                        ).rstrip()
+                        msg=line.decode('utf-8', errors='backslashreplace').rstrip()
                     )
         except IOError:
             pass

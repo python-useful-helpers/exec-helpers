@@ -9,9 +9,6 @@ from exec_helpers import exec_result, api
 logger: logging.Logger
 devnull: typing.IO
 
-_win: bool
-_posix: bool
-
 class SingletonMeta(type):
     _instances: typing.Dict[typing.Type, typing.Any] = ...
     _lock: threading.RLock = ...
@@ -25,12 +22,6 @@ class SingletonMeta(type):
         bases: typing.Iterable[typing.Type],
         **kwargs: typing.Dict
     ) -> collections.OrderedDict: ...
-
-
-def set_nonblocking_pipe(pipe: typing.Any) -> None: ...
-
-def set_blocking_pipe(pipe: typing.Any) -> None: ...
-
 
 class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     def __init__(self, log_mask_re: typing.Optional[str] = ...) -> None: ...
