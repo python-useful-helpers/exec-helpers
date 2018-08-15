@@ -14,14 +14,13 @@
 
 """Package specific exceptions."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 from exec_helpers import proc_enums
 from exec_helpers import _log_templates
+
+if typing.TYPE_CHECKING:
+    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
 
 __all__ = (
     'ExecHelperError',
@@ -65,9 +64,9 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
 
     def __init__(
         self,
-        result,  # type: exec_result.ExecResult
-        timeout,  # type: typing.Union[int, float]
-    ):  # type: (...) -> None
+        result: 'exec_result.ExecResult',
+        timeout: typing.Union[int, float],
+    ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
@@ -84,17 +83,17 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
         super(ExecHelperTimeoutError, self).__init__(message)
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self) -> str:
         """Failed command."""
         return self.result.cmd
 
     @property
-    def stdout(self):  # type: () -> typing.Text
+    def stdout(self) -> str:
         """Command stdout."""
         return self.result.stdout_str
 
     @property
-    def stderr(self):  # type: () -> typing.Text
+    def stderr(self) -> str:
         """Command stderr."""
         return self.result.stderr_str
 
@@ -109,9 +108,9 @@ class CalledProcessError(ExecCalledProcessError):
 
     def __init__(
         self,
-        result,  # type: exec_result.ExecResult
-        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-    ):  # type: (...) -> None
+        result: 'exec_result.ExecResult',
+        expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]] = None,
+    ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
@@ -139,22 +138,22 @@ class CalledProcessError(ExecCalledProcessError):
     @property
     def returncode(
         self
-    ):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
+    ) -> typing.Union[int, proc_enums.ExitCodes]:
         """Command return code."""
         return self.result.exit_code
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self) -> str:
         """Failed command."""
         return self.result.cmd
 
     @property
-    def stdout(self):  # type: () -> typing.Text
+    def stdout(self) -> str:
         """Command stdout."""
         return self.result.stdout_str
 
     @property
-    def stderr(self):  # type: () -> typing.Text
+    def stderr(self) -> str:
         """Command stderr."""
         return self.result.stderr_str
 
@@ -172,12 +171,12 @@ class ParallelCallExceptions(ExecCalledProcessError):
 
     def __init__(
         self,
-        command,  # type: str
-        exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
-        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-    ):  # type: (...) -> None
+        command: str,
+        exceptions: typing.Dict[typing.Tuple[str, int], Exception],
+        errors: typing.Dict[typing.Tuple[str, int], 'exec_result.ExecResult'],
+        results: typing.Dict[typing.Tuple[str, int], 'exec_result.ExecResult'],
+        expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]] = None,
+    ) -> None:
         """Exception raised during parallel call as result of exceptions.
 
         :param command: command
@@ -227,11 +226,11 @@ class ParallelCallProcessError(ExecCalledProcessError):
 
     def __init__(
         self,
-        command,  # type: str
-        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-    ):  # type: (...) -> None
+        command: str,
+        errors: typing.Dict[typing.Tuple[str, int], 'exec_result.ExecResult'],
+        results: typing.Dict[typing.Tuple[str, int], 'exec_result.ExecResult'],
+        expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]] = None,
+    ) -> None:
         """Exception during parallel execution.
 
         :param command: command

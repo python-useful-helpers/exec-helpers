@@ -16,10 +16,6 @@
 
 """Text templates for logging."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 CMD_EXEC = "Executing command:\n{cmd!r}\n"
 
 CMD_WAIT_ERROR = (

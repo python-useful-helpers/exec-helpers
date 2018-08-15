@@ -37,8 +37,6 @@ except ImportError:
 
 import setuptools
 
-PY3 = sys.version_info[:2] > (2, 7)
-
 with open(
     os.path.join(
         os.path.dirname(__file__),
@@ -57,10 +55,7 @@ with open('README.rst',) as f:
 def _extension(modpath):
     """Make setuptools.Extension."""
     source_path = modpath.replace('.', '/') + '.py'
-    return setuptools.Extension(
-        modpath if PY3 else modpath.encode('utf-8'),
-        [source_path if PY3 else source_path.encode('utf-8')]
-    )
+    return setuptools.Extension(modpath, [source_path])
 
 
 requires_optimization = [
@@ -90,7 +85,7 @@ ext_modules = cythonize(
         overflowcheck=True,
         language_level=3,
     )
-) if cythonize is not None and PY3 else []
+) if cythonize is not None else []
 
 
 class BuildFailed(Exception):
@@ -189,10 +184,9 @@ def get_simple_vars_from_src(src):
     """
     ast_data = (
         ast.Str, ast.Num,
-        ast.List, ast.Set, ast.Dict, ast.Tuple
+        ast.List, ast.Set, ast.Dict, ast.Tuple,
+        ast.Bytes, ast.NameConstant,
     )
-    if PY3:
-        ast_data += (ast.Bytes, ast.NameConstant,)
 
     tree = ast.parse(src)
 
@@ -234,10 +228,7 @@ classifiers = [
 
     'License :: OSI Approved :: Apache Software License',
 
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
@@ -267,7 +258,7 @@ setup_args = dict(
     long_description=long_description,
     classifiers=classifiers,
     keywords=keywords,
-    python_requires='>=2.7.5,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+    python_requires='>=3.5',
     # While setuptools cannot deal with pre-installed incompatible versions,
     # setting a lower bound is not harmful - it makes error messages cleaner. DO
     # NOT set an upper bound on setuptools, as that will lead to uninstallable
@@ -277,12 +268,6 @@ setup_args = dict(
     setup_requires="setuptools >= 21.0.0,!=24.0.0,"
                    "!=34.0.0,!=34.0.1,!=34.0.2,!=34.0.3,!=34.1.0,!=34.1.1,!=34.2.0,!=34.3.0,!=34.3.1,!=34.3.2,"
                    "!=36.2.0",
-    extras_require={
-        ':python_version == "2.7"': [
-            'futures>=1.0',
-            'enum34>=1.1'
-        ],
-    },
     install_requires=required,
     package_data={
         str('exec_helpers'): [

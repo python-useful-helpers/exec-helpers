@@ -14,8 +14,6 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
-from __future__ import absolute_import
-
 from .proc_enums import ExitCodes
 
 from .exceptions import (
@@ -48,7 +46,7 @@ __all__ = (
     'ExecResult',
 )
 
-__version__ = '1.3.6'
+__version__ = '2.0.0'
 __author__ = "Alexey Stepanov"
 __author_email__ = 'penguinolog@gmail.com'
 __maintainers__ = {
