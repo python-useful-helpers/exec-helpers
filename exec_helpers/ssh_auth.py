@@ -16,16 +16,11 @@
 
 """SSH client credentials class."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 import copy
-import io  # noqa  # pylint: disable=unused-import
 import logging
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
-import paramiko
+import paramiko  # type: ignore
 
 __all__ = ('SSHAuth', )
 
@@ -34,7 +29,7 @@ logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
 
 
-class SSHAuth(object):
+class SSHAuth:
     """SSH Authorization object."""
 
     __slots__ = (
@@ -44,13 +39,13 @@ class SSHAuth(object):
 
     def __init__(
         self,
-        username=None,  # type: typing.Optional[str]
-        password=None,  # type: typing.Optional[str]
-        key=None,  # type: typing.Optional[paramiko.RSAKey]
-        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
-        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
-        passphrase=None,  # type: typing.Optional[str]
-    ):  # type: (...) -> None
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
+        key: typing.Optional[paramiko.RSAKey] = None,
+        keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+        key_filename: typing.Union[typing.List[str], str, None] = None,
+        passphrase: typing.Optional[str] = None,
+    ) -> None:
         """SSH credentials object.
 
         Used to authorize SSHClient.
@@ -88,7 +83,7 @@ class SSHAuth(object):
         self.__passphrase = passphrase
 
     @property
-    def username(self):  # type: () -> typing.Optional[str]
+    def username(self) -> typing.Optional[str]:
         """Username for auth.
 
         :rtype: str
@@ -96,7 +91,7 @@ class SSHAuth(object):
         return self.__username
 
     @staticmethod
-    def __get_public_key(key):  # type: (typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]
+    def __get_public_key(key: typing.Union[paramiko.RSAKey, None])-> typing.Optional[str]:
         """Internal method for get public key from private.
 
         :type key: paramiko.RSAKey
@@ -106,7 +101,7 @@ class SSHAuth(object):
         return '{0} {1}'.format(key.get_name(), key.get_base64())
 
     @property
-    def public_key(self):  # type: () -> typing.Optional[str]
+    def public_key(self) -> typing.Optional[str]:
         """public key for stored private key if presents else None.
 
         :rtype: str
@@ -114,16 +109,14 @@ class SSHAuth(object):
         return self.__get_public_key(self.__key)
 
     @property
-    def key_filename(
-        self
-    ):  # type: () -> typing.Union[typing.List[str], str, None]
+    def key_filename(self) -> typing.Union[typing.List[str], str, None]:
         """Key filename(s).
 
         .. versionadded:: 1.0.0
         """
         return copy.deepcopy(self.__key_filename)
 
-    def enter_password(self, tgt):  # type: (io.StringIO) -> None
+    def enter_password(self, tgt: typing.IO) -> None:
         """Enter password to STDIN.
 
         Note: required for 'sudo' call
@@ -136,11 +129,11 @@ class SSHAuth(object):
 
     def connect(
         self,
-        client,  # type: typing.Union[paramiko.SSHClient, paramiko.Transport]
-        hostname=None,  # type: typing.Optional[str]
-        port=22,  # type: int
-        log=True,  # type: bool
-    ):  # type: (...) -> None
+        client: typing.Union[paramiko.SSHClient, paramiko.Transport],
+        hostname: typing.Optional[str] = None,
+        port: int = 22,
+        log: bool = True,
+    ) -> None:
         """Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
@@ -197,7 +190,7 @@ class SSHAuth(object):
             logger.exception(msg)
         raise paramiko.AuthenticationException(msg)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """Hash for usage as dict keys and comparison."""
         return hash((
             self.__class__,
@@ -212,39 +205,39 @@ class SSHAuth(object):
             self.__passphrase
         ))
 
-    def __eq__(self, other):  # type: (typing.Any) -> bool
+    def __eq__(self, other: typing.Any) -> bool:
         """Comparison helper."""
         return hash(self) == hash(other)
 
-    def __ne__(self, other):  # type: (typing.Any) -> bool
+    def __ne__(self, other: typing.Any) -> bool:
         """Comparison helper."""
         return not self.__eq__(other)
 
-    def __deepcopy__(self, memo):  # type: (typing.Any) -> SSHAuth
+    def __deepcopy__(self, memo: typing.Any) -> 'SSHAuth':
         """Helper for copy.deepcopy."""
-        return self.__class__(
+        return self.__class__(  # type: ignore
             username=self.username,
             password=self.__password,
             key=self.__key,
             keys=copy.deepcopy(self.__keys)
         )
 
-    def __copy__(self):  # type: () -> SSHAuth
+    def __copy__(self) -> 'SSHAuth':
         """Copy self."""
-        return self.__class__(
+        return self.__class__(  # type: ignore
             username=self.username,
             password=self.__password,
             key=self.__key,
             keys=self.__keys
         )
 
-    def __repr__(self):  # type: (...) -> str
+    def __repr__(self) -> str:
         """Representation for debug purposes."""
         _key = (
             None if self.__key is None else
             '<private for pub: {}>'.format(self.public_key)
         )
-        _keys = []
+        _keys = []  # type: typing.List[typing.Union[str, None]]
         for k in self.__keys:
             if k == self.__key:
                 continue
@@ -268,7 +261,7 @@ class SSHAuth(object):
                 keys=_keys)
         )
 
-    def __str__(self):  # type: (...) -> str
+    def __str__(self) -> str:
         """Representation for debug purposes."""
         return (
             '{cls} for {username}'.format(

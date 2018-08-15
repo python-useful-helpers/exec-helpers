@@ -16,10 +16,6 @@
 
 """SSH client helper based on Paramiko. Extended API helpers."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 import logging
 import os
 import posixpath
@@ -39,11 +35,11 @@ class SSHClient(SSHClientBase):
     __slots__ = ()
 
     @staticmethod
-    def _path_esc(path):  # type: (str) -> str
+    def _path_esc(path: str) -> str:
         """Escape space character in the path."""
         return path.replace(' ', '\ ')
 
-    def mkdir(self, path):  # type: (str) -> None
+    def mkdir(self, path: str) -> None:
         """run 'mkdir -p path' on remote.
 
         :type path: str
@@ -53,7 +49,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute("mkdir -p {}\n".format(self._path_esc(path)))
 
-    def rm_rf(self, path):  # type: (str) -> None
+    def rm_rf(self, path: str) -> None:
         """run 'rm -rf path' on remote.
 
         :type path: str
@@ -61,7 +57,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute("rm -rf {}".format(self._path_esc(path)))
 
-    def upload(self, source, target):  # type: (str, str) -> None
+    def upload(self, source: str, target: str) -> None:
         """Upload file(s) from source to target using SFTP session.
 
         :type source: str
@@ -92,11 +88,7 @@ class SSHClient(SSHClientBase):
                     self._sftp.unlink(remote_path)
                 self._sftp.put(local_path, remote_path)
 
-    def download(
-        self,
-        destination,  # type: str
-        target  # type: str
-    ):  # type: (...) -> bool
+    def download(self, destination: str, target: str) -> bool:
         """Download file(s) to target from destination.
 
         :type destination: str

@@ -16,21 +16,14 @@
 
 """Python subprocess.Popen wrapper."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 import collections
-# noinspection PyCompatibility
 import concurrent.futures
 import errno
 import logging
-import os
 import subprocess  # nosec  # Expected usage
 import threading
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
-import six
 import threaded
 
 from exec_helpers import api
@@ -39,8 +32,6 @@ from exec_helpers import exceptions
 from exec_helpers import _log_templates
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
-# noinspection PyUnresolvedReferences
-devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 
 class SingletonMeta(type):
@@ -52,7 +43,7 @@ class SingletonMeta(type):
     _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls: 'SingletonMeta', *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any:
         """Singleton."""
         with cls._lock:
             if cls not in cls._instances:
@@ -61,12 +52,12 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
     @classmethod
-    def __prepare__(
-        mcs,
-        name,  # type: str
-        bases,  # type: typing.Iterable[typing.Type]
-        **kwargs
-    ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
+    def __prepare__(  # pylint: disable=unused-argument
+        mcs: typing.Type['SingletonMeta'],
+        name: str,
+        bases: typing.Iterable[typing.Type],
+        **kwargs: typing.Dict
+    ) -> collections.OrderedDict:
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0
@@ -74,13 +65,10 @@ class SingletonMeta(type):
         return collections.OrderedDict()  # pragma: no cover
 
 
-class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
+class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(
-        self,
-        log_mask_re=None,  # type: typing.Optional[str]
-    ):  # type: (...) -> None
+    def __init__(self, log_mask_re: typing.Optional[str] = None) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -96,15 +84,15 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
 
     def _exec_command(
         self,
-        command,  # type: str
-        interface,  # type: subprocess.Popen
-        stdout,  # type: typing.Optional[typing.IO]
-        stderr,  # type: typing.Optional[typing.IO]
-        timeout,  # type: typing.Union[int, None]
-        verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
-    ):  # type: (...) -> exec_result.ExecResult
+        command: str,
+        interface: subprocess.Popen,
+        stdout: typing.Optional[typing.IO],
+        stderr: typing.Optional[typing.IO],
+        timeout: typing.Union[int, float, None],
+        verbose: bool = False,
+        log_mask_re: typing.Optional[str] = None,
+        **kwargs: typing.Dict
+    ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Command for execution
@@ -127,8 +115,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         """
-        @threaded.threadpooled
-        def poll_stdout():
+        @threaded.threadpooled  # type: ignore
+        def poll_stdout() -> None:
             """Sync stdout poll."""
             result.read_stdout(
                 src=stdout,
@@ -136,8 +124,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 verbose=verbose
             )
 
-        @threaded.threadpooled
-        def poll_stderr():
+        @threaded.threadpooled  # type: ignore
+        def poll_stderr() -> None:
             """Sync stderr poll."""
             result.read_stderr(
                 src=stderr,
@@ -181,16 +169,47 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
+    # pylint: disable=function-redefined, unused-argument
+    # noinspection PyMethodOverriding
+    @typing.overload  # type: ignore
+    def execute_async(  # pylint: disable=signature-differs
+        self,
+        command: str,
+        stdin: typing.Union[bytes, str, bytearray],
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        verbose: bool = False,
+        log_mask_re: typing.Optional[str] = None,
+        **kwargs: typing.Dict
+    ) -> typing.Tuple[subprocess.Popen, None, None, None]:
+        """Overload: with stdin."""
+        pass
+
+    @typing.overload  # noqa: F811
     def execute_async(
         self,
-        command,  # type: str
-        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
-        open_stdout=True,  # type: bool
-        open_stderr=True,  # type: bool
-        verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
-    ):  # type: (...) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]
+        command: str,
+        stdin: None = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        verbose: bool = False,
+        log_mask_re: typing.Optional[str] = None,
+        **kwargs: typing.Dict
+    ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]:
+        """Overload: no stdin."""
+        pass
+
+    # pylint: enable=unused-argument
+    def execute_async(  # type: ignore  # noqa: F811
+        self,
+        command: str,
+        stdin: typing.Union[typing.AnyStr, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        verbose: bool = False,
+        log_mask_re: typing.Optional[str] = None,
+        **kwargs: typing.Dict
+    ) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO]]:
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
@@ -217,15 +236,15 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(
+        self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG,
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # type: ignore
             args=[command],
-            stdout=subprocess.PIPE if open_stdout else devnull,
-            stderr=subprocess.PIPE if open_stderr else devnull,
+            stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
+            stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
             stdin=subprocess.PIPE,
             shell=True,
             cwd=kwargs.get('cwd', None),
@@ -234,10 +253,10 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         )
 
         if stdin is not None:
-            if isinstance(stdin, six.text_type):
-                stdin = stdin.encode(encoding='utf-8')
+            if isinstance(stdin, str):
+                stdin = stdin.encode(encoding='utf-8')  # type: ignore
             elif isinstance(stdin, bytearray):
-                stdin = bytes(stdin)
+                stdin = bytes(stdin)  # type: ignore
             try:
                 process.stdin.write(stdin)
             except OSError as exc:
@@ -261,3 +280,5 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                     raise
 
         return process, None, process.stderr, process.stdout
+
+    # pylint: enable=function-redefined
