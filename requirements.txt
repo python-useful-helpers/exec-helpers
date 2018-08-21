@@ -4,4 +4,6 @@ six>=1.10.0  # MIT
 threaded>=1.0  # Apache-2.0
 PyYAML>=3.12  # MIT
 advanced-descriptors>=1.0  # Apache-2.0
-typing >= 3.6 ; python_version < "3.8"
+typing >= 3.6  # PSF
+futures>=3.1; python_version == "2.7"
+enum34>=1.1; python_version == "2.7"
