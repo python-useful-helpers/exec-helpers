@@ -135,6 +135,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 log=logger,
                 verbose=verbose
             )
+            interface.wait()  # wait for the end of execution
 
         @threaded.threadpooled
         def poll_stderr():

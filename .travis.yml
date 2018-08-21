@@ -2,13 +2,9 @@ sudo: false
 language: python
 os: linux
 python:
-- 2.7
+- &main_python 2.7
 - 3.4
-- 3.5
-- 3.6
-- &mainstream_python 3.7-dev
 - &pypy pypy
-- pypy3.5
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
 - pip install tox-travis
@@ -21,7 +17,7 @@ jobs:
   fast_finish: true
   include:
   - stage: Static analisys
-    python: 3.6
+    python: 3.4
     services: []
     install:
     - *upgrade_python_toolset
@@ -31,7 +27,7 @@ jobs:
     after_success: skip
 
   - stage: Code style check
-    python: *mainstream_python
+    python: 3.4
     install:
     - *upgrade_python_toolset
     - pip install tox

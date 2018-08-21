@@ -1,4 +1,2 @@
 mock  # no assert_called_once in py35
-futures>=3.1; python_version == "2.7"
-enum34>=1.1; python_version == "2.7"
 -r requirements.txt
