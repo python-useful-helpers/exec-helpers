@@ -104,7 +104,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         :param stderr: STDERR pipe or file-like object
         :type stderr: typing.Any
         :param timeout: Timeout for command execution
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -143,8 +143,12 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         stderr_future = poll_stderr()  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 
-        concurrent.futures.wait([stdout_future, stderr_future], timeout=timeout)  # Wait real timeout here
-        exit_code = interface.poll()  # Update exit code
+        try:
+            exit_code = interface.wait(timeout=timeout)  # Wait real timeout here, it's python 3 only feature
+        except subprocess.TimeoutExpired:
+            exit_code = interface.poll()  # Update exit code
+
+        concurrent.futures.wait([stdout_future, stderr_future], timeout=1)  # Minimal timeout to complete polling
 
         # Process closed?
         if exit_code is not None:
@@ -183,7 +187,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         **kwargs: typing.Dict
     ) -> typing.Tuple[subprocess.Popen, None, None, None]:
         """Overload: with stdin."""
-        pass
+        pass  # pragma: no cover
 
     @typing.overload  # noqa: F811
     def execute_async(
@@ -197,7 +201,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         **kwargs: typing.Dict
     ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]:
         """Overload: no stdin."""
-        pass
+        pass  # pragma: no cover
 
     # pylint: enable=unused-argument
     def execute_async(  # type: ignore  # noqa: F811
