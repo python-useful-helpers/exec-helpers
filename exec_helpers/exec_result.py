@@ -329,7 +329,7 @@ class ExecResult:
         if self.timestamp:
             raise RuntimeError('Exit code is already received.')
         if not isinstance(new_val, int):
-            raise TypeError('Exit code is strictly int')
+            raise TypeError('Exit code is strictly int, received: {code!r}'.format(code=new_val))
         with self.lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:

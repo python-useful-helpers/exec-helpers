@@ -654,7 +654,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type interface: paramiko.channel.Channel
         :type stdout: typing.Optional[paramiko.ChannelFile]
         :type stderr: typing.Optional[paramiko.ChannelFile]
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
@@ -744,7 +744,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         target_port: int = 22,
         verbose: bool = False,
-        timeout: typing.Union[int, None] = constants.DEFAULT_TIMEOUT,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         get_pty: bool = False,
         **kwargs: typing.Dict
     ) -> exec_result.ExecResult:
@@ -761,7 +761,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
         :rtype: ExecResult
@@ -822,7 +822,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cls,
         remotes: typing.Iterable['SSHClientBase'],
         command: str,
-        timeout: typing.Union[int, None] = constants.DEFAULT_TIMEOUT,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         expected: typing.Optional[typing.Iterable[int]] = None,
         raise_on_err: bool = True,
         **kwargs: typing.Dict
@@ -834,7 +834,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param command: Command for execution
         :type command: str
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param expected: expected return codes (0 by default)
         :type expected: typing.Optional[typing.Iterable[]]
         :param raise_on_err: Raise exception on unexpected return code

@@ -36,6 +36,7 @@ command_log = u"Executing command:\n{!r}\n".format(command.rstrip())
 stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
 stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
 print_stdin = 'read line; echo "$line"'
+default_timeout = 60 * 60  # 1 hour
 
 
 class FakeFileStream(object):
@@ -88,6 +89,7 @@ class TestSubprocessRunner(unittest.TestCase):
         else:
             popen_obj.configure_mock(stderr=None)
         popen_obj.attach_mock(mock.Mock(return_value=ec), 'poll')
+        popen_obj.attach_mock(mock.Mock(return_value=ec), 'wait')
         popen_obj.configure_mock(returncode=ec)
 
         popen.return_value = popen_obj
@@ -140,7 +142,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.log(level=logging.DEBUG, msg=self.gen_cmd_result_log_message(result)),
         )
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_002_call_verbose(
@@ -198,6 +200,7 @@ class TestSubprocessRunner(unittest.TestCase):
     ):
         popen_obj, exp_result = self.prepare_close(popen)
         popen_obj.poll.return_value = None
+        popen_obj.wait.return_value = None
 
         runner = exec_helpers.Subprocess()
 
@@ -263,7 +266,7 @@ class TestSubprocessRunner(unittest.TestCase):
                     msg=self.gen_cmd_result_log_message(result)),
             ])
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_006_execute_no_stderr(
@@ -305,7 +308,7 @@ class TestSubprocessRunner(unittest.TestCase):
                     msg=self.gen_cmd_result_log_message(result)),
             ])
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_007_execute_no_stdout_stderr(
@@ -345,7 +348,7 @@ class TestSubprocessRunner(unittest.TestCase):
                     msg=self.gen_cmd_result_log_message(result)),
             ])
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_008_execute_mask_global(
@@ -394,7 +397,7 @@ class TestSubprocessRunner(unittest.TestCase):
         )
 
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_009_execute_mask_local(
@@ -439,7 +442,7 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.log(level=logging.DEBUG, msg=self.gen_cmd_result_log_message(result)),
         )
         self.assertIn(
-            mock.call.poll(), popen_obj.mock_calls
+            mock.call.wait(timeout=default_timeout), popen_obj.mock_calls
         )
 
     def test_004_check_stdin_str(
@@ -767,8 +770,9 @@ class TestSubprocessRunner(unittest.TestCase):
 
     ):
         popen_obj, exp_result = self.prepare_close(popen, ec=exec_helpers.ExitCodes.EX_INVALID)
-        popen_obj.poll.side_effect = [None, exec_helpers.ExitCodes.EX_INVALID]
+        popen_obj.poll.return_value = exec_helpers.ExitCodes.EX_INVALID
         popen_obj.attach_mock(mock.Mock(side_effect=OSError), 'kill')
+        popen_obj.wait.return_value = None
 
         runner = exec_helpers.Subprocess()
 

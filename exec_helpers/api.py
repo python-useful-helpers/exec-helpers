@@ -197,7 +197,7 @@ class ExecHelper:
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, None] = constants.DEFAULT_TIMEOUT,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         **kwargs: typing.Dict
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -247,7 +247,7 @@ class ExecHelper:
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, None] = constants.DEFAULT_TIMEOUT,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]] = None,
         raise_on_err: bool = True,
@@ -297,7 +297,7 @@ class ExecHelper:
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, None] = constants.DEFAULT_TIMEOUT,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         **kwargs: typing.Dict
