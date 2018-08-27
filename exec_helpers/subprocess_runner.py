@@ -43,7 +43,7 @@ class SingletonMeta(type):
     _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
-    def __call__(cls: 'SingletonMeta', *args: typing.Tuple, **kwargs: typing.Dict) -> typing.Any:
+    def __call__(cls: 'SingletonMeta', *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """Singleton."""
         with cls._lock:
             if cls not in cls._instances:
@@ -56,7 +56,7 @@ class SingletonMeta(type):
         mcs: typing.Type['SingletonMeta'],
         name: str,
         bases: typing.Iterable[typing.Type],
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> collections.OrderedDict:
         """Metaclass magic for object storage.
 
@@ -91,7 +91,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -184,7 +184,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> typing.Tuple[subprocess.Popen, None, None, None]:
         """Overload: with stdin."""
         pass  # pragma: no cover
@@ -198,7 +198,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]:
         """Overload: no stdin."""
         pass  # pragma: no cover
@@ -212,7 +212,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO]]:
         """Execute command in async mode and return Popen with IO objects.
 
@@ -245,7 +245,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
-        process = subprocess.Popen(  # type: ignore
+        process = subprocess.Popen(
             args=[command],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,

@@ -94,7 +94,7 @@ class _MemorizedSSH(type):
         mcs: typing.Type['_MemorizedSSH'],
         name: str,
         bases: typing.Iterable[typing.Type],
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> collections.OrderedDict:
         """Metaclass magic for object storage.
 
@@ -565,7 +565,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> _type_execute_async:
         """Execute command in async mode and return channel with IO objects.
 
@@ -646,7 +646,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -746,7 +746,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         get_pty: bool = False,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command on remote host through currently connected host.
 
@@ -770,7 +770,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        cmd_for_log = self._mask_command(  # type: ignore
+        cmd_for_log = self._mask_command(
             cmd=command,
             log_mask_re=kwargs.get('log_mask_re', None)
         )
@@ -808,7 +808,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
         # noinspection PyDictCreation
-        result = self._exec_command(  # type: ignore
+        result = self._exec_command(
             command, channel, stdout, stderr, timeout, verbose=verbose,
             log_mask_re=kwargs.get('log_mask_re', None),
         )
@@ -825,7 +825,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         expected: typing.Optional[typing.Iterable[int]] = None,
         raise_on_err: bool = True,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
 
@@ -855,7 +855,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                 _,
                 stderr,
                 stdout,
-            ) = remote.execute_async(  # type: ignore
+            ) = remote.execute_async(
                 command,
                 **kwargs
             )  # type: _type_execute_async
@@ -864,7 +864,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             exit_code = chan.recv_exit_status()
 
             # pylint: disable=protected-access
-            cmd_for_log = remote._mask_command(  # type: ignore
+            cmd_for_log = remote._mask_command(
                 cmd=command,
                 log_mask_re=kwargs.get('log_mask_re', None)
             )

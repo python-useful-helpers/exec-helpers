@@ -134,7 +134,7 @@ class ExecHelper:
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]:
         """Execute command in async mode and return remote interface with IO objects.
 
@@ -167,7 +167,7 @@ class ExecHelper:
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -198,7 +198,7 @@ class ExecHelper:
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
@@ -221,13 +221,13 @@ class ExecHelper:
                 _,
                 stderr,
                 stdout,
-            ) = self.execute_async(  # type: ignore
+            ) = self.execute_async(
                 command,
                 verbose=verbose,
                 **kwargs
             )
 
-            result = self._exec_command(  # type: ignore
+            result = self._exec_command(
                 command=command,
                 interface=iface,
                 stdout=stdout,
@@ -251,7 +251,7 @@ class ExecHelper:
         error_info: typing.Optional[str] = None,
         expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]] = None,
         raise_on_err: bool = True,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
@@ -300,7 +300,7 @@ class ExecHelper:
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
-        **kwargs: typing.Dict
+        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
@@ -334,7 +334,7 @@ class ExecHelper:
                 ))
             self.logger.error(message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(  # type: ignore
+                raise exceptions.CalledProcessError(
                     result=ret,
                     expected=kwargs.get('expected'),
                 )
