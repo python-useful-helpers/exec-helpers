@@ -21,11 +21,10 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import copy
-import io  # noqa  # pylint: disable=unused-import
 import logging
 import typing  # noqa  # pylint: disable=unused-import
 
-import paramiko
+import paramiko  # type: ignore
 
 __all__ = ('SSHAuth', )
 
@@ -114,16 +113,14 @@ class SSHAuth(object):
         return self.__get_public_key(self.__key)
 
     @property
-    def key_filename(
-        self
-    ):  # type: () -> typing.Union[typing.List[str], str, None]
+    def key_filename(self):  # type: () -> typing.Union[typing.List[str], str, None]
         """Key filename(s).
 
         .. versionadded:: 1.0.0
         """
         return copy.deepcopy(self.__key_filename)
 
-    def enter_password(self, tgt):  # type: (io.StringIO) -> None
+    def enter_password(self, tgt):  # type: (typing.IO) -> None
         """Enter password to STDIN.
 
         Note: required for 'sudo' call
@@ -197,7 +194,7 @@ class SSHAuth(object):
             logger.exception(msg)
         raise paramiko.AuthenticationException(msg)
 
-    def __hash__(self):
+    def __hash__(self):  # type: () -> int
         """Hash for usage as dict keys and comparison."""
         return hash((
             self.__class__,
@@ -222,7 +219,7 @@ class SSHAuth(object):
 
     def __deepcopy__(self, memo):  # type: (typing.Any) -> SSHAuth
         """Helper for copy.deepcopy."""
-        return self.__class__(
+        return self.__class__(  # type: ignore
             username=self.username,
             password=self.__password,
             key=self.__key,
@@ -231,7 +228,7 @@ class SSHAuth(object):
 
     def __copy__(self):  # type: () -> SSHAuth
         """Copy self."""
-        return self.__class__(
+        return self.__class__(  # type: ignore
             username=self.username,
             password=self.__password,
             key=self.__key,
@@ -244,7 +241,7 @@ class SSHAuth(object):
             None if self.__key is None else
             '<private for pub: {}>'.format(self.public_key)
         )
-        _keys = []
+        _keys = []  # type: typing.List[typing.Union[str, None]]
         for k in self.__keys:
             if k == self.__key:
                 continue

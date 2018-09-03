@@ -18,10 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 from exec_helpers import proc_enums
 from exec_helpers import _log_templates
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import, unused-import
 
 __all__ = (
     'ExecHelperError',
