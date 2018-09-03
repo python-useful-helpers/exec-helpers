@@ -44,7 +44,7 @@ class ExecResult:
 
     def __init__(
         self,
-        cmd,  # type: str
+        cmd: str,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         stdout: typing.Optional[typing.Iterable[bytes]] = None,
         stderr: typing.Optional[typing.Iterable[bytes]] = None,
@@ -55,7 +55,7 @@ class ExecResult:
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[str, bytes, bytearray, None]
         :param stdout: binary STDOUT
         :type stdout: typing.Optional[typing.Iterable[bytes]]
         :param stderr: binary STDERR
@@ -145,7 +145,7 @@ class ExecResult:
         )
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self) -> str:
         """Executed command.
 
         :rtype: str

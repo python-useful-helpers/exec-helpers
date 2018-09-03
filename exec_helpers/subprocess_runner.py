@@ -207,7 +207,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
     def execute_async(  # type: ignore  # noqa: F811
         self,
         command: str,
-        stdin: typing.Union[typing.AnyStr, bytearray, None] = None,
+        stdin: typing.Union[str, bytes, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         verbose: bool = False,
@@ -219,7 +219,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[str, bytes, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
