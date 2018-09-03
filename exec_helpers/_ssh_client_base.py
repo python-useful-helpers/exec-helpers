@@ -572,7 +572,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[str, bytes, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
