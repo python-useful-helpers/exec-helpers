@@ -204,7 +204,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         pass  # pragma: no cover
 
     # pylint: enable=unused-argument
-    def execute_async(  # type: ignore  # noqa: F811
+    def execute_async(  # noqa: F811
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
@@ -258,9 +258,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
 
         if stdin is not None:
             if isinstance(stdin, str):
-                stdin = stdin.encode(encoding='utf-8')  # type: ignore
+                stdin = stdin.encode(encoding='utf-8')
             elif isinstance(stdin, bytearray):
-                stdin = bytes(stdin)  # type: ignore
+                stdin = bytes(stdin)
             try:
                 process.stdin.write(stdin)
             except OSError as exc:
