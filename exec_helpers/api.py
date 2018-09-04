@@ -27,7 +27,7 @@ import typing
 
 from exec_helpers import constants
 from exec_helpers import exceptions
-from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
+from exec_helpers import exec_result
 from exec_helpers import proc_enums
 
 
