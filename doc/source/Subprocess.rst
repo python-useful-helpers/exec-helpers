@@ -46,7 +46,7 @@ API: Subprocess
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[typing.AnyStr, bytearray, None]``
+        :type stdin: ``typing.Union[str, bytes, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
@@ -69,7 +69,7 @@ API: Subprocess
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, None]``
+        :type timeout: ``typing.Union[int, float, None]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -88,7 +88,7 @@ API: Subprocess
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, None]``
+        :type timeout: ``typing.Union[int, float, None]``
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param expected: expected return codes (0 by default)
@@ -111,7 +111,7 @@ API: Subprocess
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, None]``
+        :type timeout: ``typing.Union[int, float, None]``
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code

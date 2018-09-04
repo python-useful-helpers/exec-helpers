@@ -136,9 +136,7 @@ class CalledProcessError(ExecCalledProcessError):
         super(CalledProcessError, self).__init__(message)
 
     @property
-    def returncode(
-        self
-    ) -> typing.Union[int, proc_enums.ExitCodes]:
+    def returncode(self) -> typing.Union[int, proc_enums.ExitCodes]:
         """Command return code."""
         return self.result.exit_code
 
@@ -188,9 +186,7 @@ class ParallelCallExceptions(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[
-            typing.List[typing.Union[int, proc_enums.ExitCodes]]
-        ]
+        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
         """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
@@ -240,9 +236,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[
-            typing.List[typing.Union[int, proc_enums.ExitCodes]]
-        ]
+        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
         """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)

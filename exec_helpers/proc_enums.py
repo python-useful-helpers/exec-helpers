@@ -20,7 +20,7 @@ Linux signals, Linux & bash return codes.
 """
 
 import enum
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 __all__ = (
     'SigNum',
