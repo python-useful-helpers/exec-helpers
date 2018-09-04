@@ -16,6 +16,7 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
+import abc
 import base64
 import collections
 import concurrent.futures
@@ -58,7 +59,7 @@ _type_execute_async = typing.Tuple[
 CPYTHON = 'CPython' == platform.python_implementation()
 
 
-class _MemorizedSSH(type):
+class _MemorizedSSH(abc.ABCMeta):
     """Memorize metaclass for SSHClient.
 
     This class implements caching and managing of SSHClient connections.
@@ -112,16 +113,23 @@ class _MemorizedSSH(type):
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
     ) -> 'SSHClientBase':
-        """Main memorize method: check for cached instance and return it.
+        """Main memorize method: check for cached instance and return it. API follows target __init__.
 
+        :param host: remote hostname
         :type host: str
+        :param port: remote ssh port
         :type port: int
-        :type username: str
-        :type password: str
-        :type private_keys: list
-        :type auth: ssh_auth.SSHAuth
+        :param username: remote username.
+        :type username: typing.Optional[str]
+        :param password: remote password
+        :type password: typing.Optional[str]
+        :param private_keys: private keys for connection
+        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        :param auth: credentials for connection
+        :type auth: typing.Optional[ssh_auth.SSHAuth]
+        :param verbose: show additional error/warning messages
         :type verbose: bool
-        :rtype: SSHClient
+        :rtype: SSHClientBase
         """
         if (host, port) in cls.__cache:
             key = host, port
@@ -164,7 +172,7 @@ class _MemorizedSSH(type):
     def clear_cache(mcs: typing.Type['_MemorizedSSH']) -> None:
         """Clear cached connections for initialize new instance on next call.
 
-        getrefcount is used to check for usage.
+        getrefcount is used to check for usage, so connections closed on CPYTHON only.
         """
         n_count = 3
         # PY3: cache, ssh, temporary
@@ -210,8 +218,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         ) -> None:
             """Context manager for call commands with sudo.
 
-            :type ssh: SSHClient
-            :type enforce: bool
+            :type ssh: SSHClientBase
+            :type enforce: typing.Optional[bool]
             """
             self.__ssh = ssh
             self.__sudo_status = ssh.sudo_mode
@@ -241,7 +249,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         ) -> None:
             """Context manager for keepalive management.
 
-            :type ssh: SSHClient
+            :type ssh: SSHClientBase
             :type enforce: bool
             :param enforce: Keep connection alive after context manager exit
             """
@@ -465,8 +473,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def __del__(self) -> None:
         """Destructor helper: close channel and threads BEFORE closing others.
 
-        Due to threading in paramiko, default destructor could generate asserts
-        on close, so we calling channel close before closing main ssh object.
+        Due to threading in paramiko, default destructor could generate asserts on close,
+        so we calling channel close before closing main ssh object.
         """
         try:
             self.__ssh.close()
@@ -540,6 +548,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: typing.Optional[bool]
+        :rtype: typing.ContextManager
         """
         return self.__get_sudo(ssh=self, enforce=enforce)
 
@@ -551,6 +560,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         :param enforce: Enforce keepalive enabled or disabled.
         :type enforce: bool
+        :rtype: typing.ContextManager
 
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
@@ -572,7 +582,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[str, bytes, bytearray, None]
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -623,6 +633,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             cmd = "sudo -S bash -c 'eval \"$(base64 -d <(echo \"{0}\"))\"'".format(encoded_cmd)
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
+                # noinspection PyTypeChecker
                 self.auth.enter_password(_stdin)
                 _stdin.flush()
         else:
@@ -716,6 +727,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stop_event = threading.Event()
 
         # pylint: disable=assignment-from-no-return
+        # noinspection PyNoneFunctionAssignment
         future = poll_pipes(stop=stop_event)  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 

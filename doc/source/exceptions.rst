@@ -36,7 +36,7 @@ API: exceptions
 
     .. py:attribute:: timeout
 
-        ``int``
+        ``typing.Union[int, float]``
 
     .. py:attribute:: result
 
@@ -46,12 +46,12 @@ API: exceptions
 
     .. py:attribute:: stdout
 
-        ``typing.Text``
+        ``str``
         stdout string or brief string
 
     .. py:attribute:: stderr
 
-        ``typing.Text``
+        ``str``
         stdout string or brief string
 
 .. py:exception:: CalledProcessError(ExecCalledProcessError)
@@ -92,12 +92,12 @@ API: exceptions
 
     .. py:attribute:: stdout
 
-        ``typing.Text``
+        ``str``
         stdout string or brief string
 
     .. py:attribute:: stderr
 
-        ``typing.Text``
+        ``str``
         stdout string or brief string
 
 .. py:exception:: ParallelCallExceptions(ExecCalledProcessError)

@@ -55,7 +55,7 @@ class ExecResult:
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[str, bytes, bytearray, None]
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param stdout: binary STDOUT
         :type stdout: typing.Optional[typing.Iterable[bytes]]
         :param stderr: binary STDERR
@@ -104,7 +104,7 @@ class ExecResult:
     def timestamp(self) -> typing.Optional[datetime.datetime]:
         """Timestamp.
 
-        :rtype: typing.Optional(datetime.datetime)
+        :rtype: typing.Optional[datetime.datetime]
         """
         return self.__timestamp
 
@@ -119,7 +119,7 @@ class ExecResult:
 
     @staticmethod
     def _get_str_from_bin(src: bytearray) -> str:
-        """Join data in list to the string, with python 2&3 compatibility.
+        """Join data in list to the string.
 
         :type src: bytearray
         :rtype: str
@@ -230,7 +230,7 @@ class ExecResult:
         """Read stderr file-like object to stdout.
 
         :param src: source
-        :type src: typing.Iterable
+        :type src: typing.Optional[typing.Iterable]
         :param log: logger
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
@@ -323,7 +323,7 @@ class ExecResult:
     def exit_code(self, new_val: typing.Union[int, proc_enums.ExitCodes]) -> None:
         """Return(exit) code of command.
 
-        :type new_val: int
+        :type new_val: typing.Union[int, proc_enums.ExitCodes]
         If valid exit code is set - object became read-only.
         """
         if self.timestamp:
@@ -339,7 +339,7 @@ class ExecResult:
         """Deserialize stdout as data format.
 
         :type fmt: str
-        :rtype: object
+        :rtype: typing.Any
         :raises NotImplementedError: fmt deserialization not implemented
         :raises DeserializeValueError: Not valid source format
         """
@@ -365,7 +365,7 @@ class ExecResult:
     def stdout_json(self) -> typing.Any:
         """JSON from stdout.
 
-        :rtype: object
+        :rtype: typing.Any
         """
         with self.lock:
             return self.__deserialize(fmt='json')
@@ -374,7 +374,7 @@ class ExecResult:
     def stdout_yaml(self) -> typing.Any:
         """YAML from stdout.
 
-        :rtype: Union(list, dict, None)
+        :rtype: typing.Any
         """
         with self.lock:
             return self.__deserialize(fmt='yaml')

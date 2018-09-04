@@ -19,6 +19,7 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
+import abc
 import logging
 import re
 import threading
@@ -30,7 +31,7 @@ from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
 
 
-class ExecHelper:
+class ExecHelper(metaclass=abc.ABCMeta):
     """ExecHelper global API."""
 
     __slots__ = (
@@ -126,6 +127,7 @@ class ExecHelper:
 
         return cmd
 
+    @abc.abstractmethod
     def execute_async(
         self,
         command: str,
@@ -141,7 +143,7 @@ class ExecHelper:
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[str, bytes, bytearray, None]
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -158,6 +160,7 @@ class ExecHelper:
         """
         raise NotImplementedError  # pragma: no cover
 
+    @abc.abstractmethod
     def _exec_command(
         self,
         command: str,
@@ -180,7 +183,7 @@ class ExecHelper:
         :param stderr: STDERR pipe or file-like object
         :type stderr: typing.Any
         :param timeout: Timeout for command execution
-        :type timeout: int
+        :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -202,14 +205,12 @@ class ExecHelper:
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
-        Timeout limitation: read tick is 100 ms.
-
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -255,14 +256,12 @@ class ExecHelper:
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
-        Timeout limitation: read tick is 100 ms.
-
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
@@ -304,14 +303,12 @@ class ExecHelper:
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
-        Timeout limitation: read tick is 100 ms.
-
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code

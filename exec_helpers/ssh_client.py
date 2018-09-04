@@ -108,11 +108,7 @@ class SSHClient(SSHClientBase):
             if self.exists(destination):
                 self._sftp.get(destination, target)
             else:
-                self.logger.debug(
-                    "Can't download %s because it doesn't exist", destination
-                )
+                self.logger.debug("Can't download %s because it doesn't exist", destination)
         else:
-            self.logger.debug(
-                "Can't download %s because it is a directory", destination
-            )
+            self.logger.debug("Can't download %s because it is a directory", destination)
         return os.path.exists(target)

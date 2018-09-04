@@ -16,6 +16,7 @@
 
 """Python subprocess.Popen wrapper."""
 
+import abc
 import collections
 import concurrent.futures
 import errno
@@ -34,7 +35,7 @@ from exec_helpers import _log_templates
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
-class SingletonMeta(type):
+class SingletonMeta(abc.ABCMeta):
     """Metaclass for Singleton.
 
     Main goals: not need to implement __new__ in singleton classes
@@ -100,9 +101,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         :param interface: Control interface
         :type interface: subprocess.Popen
         :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Any
+        :type stdout: typing.Optional[typing.IO]
         :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Any
+        :type stderr: typing.Optional[typing.IO]
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
@@ -139,7 +140,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         result = exec_result.ExecResult(cmd=cmd_for_log)
 
         # pylint: disable=assignment-from-no-return
+        # noinspection PyNoneFunctionAssignment
         stdout_future = poll_stdout()  # type: concurrent.futures.Future
+        # noinspection PyNoneFunctionAssignment
         stderr_future = poll_stderr()  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 

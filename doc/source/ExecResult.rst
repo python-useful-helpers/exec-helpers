@@ -15,7 +15,7 @@ API: ExecResult
         :param cmd: command
         :type cmd: ``str``
         :param stdin: STDIN
-        :type stdin: ``typing.Optional[str]``
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :param stdout: binary STDOUT
         :type stdout: ``typing.Optional[typing.Iterable[bytes]]``
         :param stderr: binary STDERR
@@ -40,17 +40,17 @@ API: ExecResult
 
     .. py:attribute:: stdin
 
-        ``typing.Text``
+        ``typing.Optional[str]``
         Stdin input as string.
 
     .. py:attribute:: stdout
 
-        ``typing.Tuple[bytes]``
+        ``typing.Tuple[bytes, ...]``
         Stdout output as list of binaries.
 
     .. py:attribute:: stderr
 
-        ``typing.Tuple[bytes]``
+        ``typing.Tuple[bytes, ...]``
         Stderr output as list of binaries.
 
     .. py:attribute:: stdout_bin
@@ -65,22 +65,22 @@ API: ExecResult
 
     .. py:attribute:: stdout_str
 
-        ``typing.Text``
+        ``str``
         Stdout output as string.
 
     .. py:attribute:: stderr_str
 
-        ``typing.Text``
+        ``str``
         Stderr output as string.
 
     .. py:attribute:: stdout_brief
 
-        ``typing.Text``
+        ``str``
         Brief stdout output (mostly for exceptions).
 
     .. py:attribute:: stderr_brief
 
-        ``typing.Text``
+        ``str``
         Brief stderr output (mostly for exceptions).
 
     .. py:attribute:: exit_code
