@@ -26,7 +26,6 @@ import subprocess
 import unittest
 
 import mock
-import six
 
 import exec_helpers
 from exec_helpers import subprocess_runner
