@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import abc
 import collections
 # noinspection PyCompatibility
 import concurrent.futures
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 
-class SingletonMeta(type):
+class SingletonMeta(abc.ABCMeta):
     """Metaclass for Singleton.
 
     Main goals: not need to implement __new__ in singleton classes
@@ -52,7 +53,7 @@ class SingletonMeta(type):
     _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):  # type: (SingletonMeta, typing.Any, typing.Any) -> typing.Any
         """Singleton."""
         with cls._lock:
             if cls not in cls._instances:
@@ -65,7 +66,7 @@ class SingletonMeta(type):
         mcs,
         name,  # type: str
         bases,  # type: typing.Iterable[typing.Type]
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
         """Metaclass magic for object storage.
 
@@ -100,10 +101,10 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         interface,  # type: subprocess.Popen
         stdout,  # type: typing.Optional[typing.IO]
         stderr,  # type: typing.Optional[typing.IO]
-        timeout,  # type: typing.Union[int, None]
+        timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
 
@@ -112,11 +113,11 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         :param interface: Control interface
         :type interface: subprocess.Popen
         :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Any
+        :type stdout: typing.Optional[typing.IO]
         :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Any
+        :type stderr: typing.Optional[typing.IO]
         :param timeout: Timeout for command execution
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -127,8 +128,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         """
-        @threaded.threadpooled
-        def poll_stdout():
+        @threaded.threadpooled  # type: ignore
+        def poll_stdout():  # type: () -> None
             """Sync stdout poll."""
             result.read_stdout(
                 src=stdout,
@@ -137,8 +138,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
             )
             interface.wait()  # wait for the end of execution
 
-        @threaded.threadpooled
-        def poll_stderr():
+        @threaded.threadpooled  # type: ignore
+        def poll_stderr():  # type: () -> None
             """Sync stderr poll."""
             result.read_stderr(
                 src=stderr,
@@ -185,19 +186,19 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
     def execute_async(
         self,
         command,  # type: str
-        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
+        stdin=None,  # type: typing.Union[str, bytes, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[str, bytes, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -218,7 +219,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(
+        self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG,
             msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )

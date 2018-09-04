@@ -3,7 +3,6 @@ language: python
 os: linux
 python:
 - &main_python 2.7
-- 3.4
 - &pypy pypy
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
@@ -17,7 +16,7 @@ jobs:
   fast_finish: true
   include:
   - stage: Static analisys
-    python: 3.4
+    python: 3.6
     services: []
     install:
     - *upgrade_python_toolset
@@ -27,7 +26,7 @@ jobs:
     after_success: skip
 
   - stage: Code style check
-    python: 3.4
+    python: *main_python
     install:
     - *upgrade_python_toolset
     - pip install tox
@@ -43,8 +42,7 @@ jobs:
     services: []
     install:
     - *upgrade_python_toolset
-    script:
-    - ./tools/run_docker.sh "exec_helpers"
+    script: []
     before_deploy:
     - pip install -r build_requirements.txt
     - python setup.py bdist_wheel

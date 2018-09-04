@@ -43,10 +43,9 @@ Pros:
 ::
 
     Python 2.7
-    Python 3.4
     PyPy
 
-.. note:: Update to version 2.0+ for usage with python 3.5+. This version is for legacy python and no new features are planned.
+.. note:: Update to version 2.0+ for usage with python 3.4+. This version is for legacy python and no new features are planned.
 
 This package includes:
 
@@ -127,7 +126,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
     result = helper.execute(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
         **kwargs
     )
 
@@ -137,7 +136,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
     result = helper.check_call(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
@@ -149,7 +148,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
     result = helper.check_stderr(
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
     )
@@ -185,10 +184,10 @@ Execution result object has a set of useful properties:
 * `stderr` -> `typing.Tuple[bytes]`. Raw stderr output.
 * `stdout_bin` -> `bytearray`. Binary stdout output.
 * `stderr_bin` -> `bytearray`. Binary stderr output.
-* `stdout_str` -> `six.text_types`. Text representation of output.
-* `stderr_str` -> `six.text_types`. Text representation of output.
-* `stdout_brief` -> `six.text_types`. Up to 7 lines from stdout (3 first and 3 last if >7 lines).
-* `stderr_brief` -> `six.text_types`. Up to 7 lines from stderr (3 first and 3 last if >7 lines).
+* `stdout_str` -> `typing.Text`. Text representation of output.
+* `stderr_str` -> `typing.Text`. Text representation of output.
+* `stdout_brief` -> `typing.Text`. Up to 7 lines from stdout (3 first and 3 last if >7 lines).
+* `stderr_brief` -> `typing.Text`. Up to 7 lines from stderr (3 first and 3 last if >7 lines).
 
 * `stdout_json` - STDOUT decoded as JSON.
 
@@ -209,7 +208,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
     results = SSHClient.execute_together(
         remotes,  # type: typing.Iterable[SSHClient]
         command,  # type: str
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True  # type: bool
     )
@@ -227,7 +226,7 @@ For execute through SSH host can be used `execute_through_host` method:
         command,  # type: str
         auth=None,  # type: typing.Optional[SSHAuth]
         target_port=22,  # type: int
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
+        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         verbose=False,  # type: bool
         get_pty=False,  # type: bool
     )

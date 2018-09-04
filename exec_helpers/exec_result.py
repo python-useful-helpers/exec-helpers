@@ -50,7 +50,7 @@ class ExecResult(object):
     def __init__(
         self,
         cmd,  # type: str
-        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
         exit_code=proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
@@ -60,7 +60,7 @@ class ExecResult(object):
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param stdout: binary STDOUT
         :type stdout: typing.Optional[typing.Iterable[bytes]]
         :param stderr: binary STDERR
@@ -76,10 +76,18 @@ class ExecResult(object):
         elif isinstance(stdin, bytearray):
             stdin = self._get_str_from_bin(stdin)
         self.__stdin = stdin  # type: typing.Optional[typing.Text]
-        self.__stdout = tuple(stdout) if stdout is not None else ()  # type: typing.Tuple[bytes]
-        self.__stderr = tuple(stderr) if stderr is not None else ()  # type: typing.Tuple[bytes]
 
-        self.__exit_code = None
+        if stdout is not None:
+            self.__stdout = tuple(stdout)  # type: typing.Tuple[bytes, ...]
+        else:
+            self.__stdout = ()
+
+        if stderr is not None:
+            self.__stderr = tuple(stderr)  # type: typing.Tuple[bytes, ...]
+        else:
+            self.__stderr = ()
+
+        self.__exit_code = proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
         self.__timestamp = None
         self.exit_code = exit_code
 
@@ -101,7 +109,7 @@ class ExecResult(object):
     def timestamp(self):  # type: () -> typing.Optional[datetime.datetime]
         """Timestamp.
 
-        :rtype: typing.Optional(datetime.datetime)
+        :rtype: typing.Optional[datetime.datetime]
         """
         return self.__timestamp
 
@@ -117,7 +125,7 @@ class ExecResult(object):
         return bytearray(b''.join(src))
 
     @staticmethod
-    def _get_str_from_bin(src):  # type: (bytearray) -> typing.Text
+    def _get_str_from_bin(src):  # type: (bytearray) -> str
         """Join data in list to the string, with python 2&3 compatibility.
 
         :type src: bytearray
@@ -135,7 +143,10 @@ class ExecResult(object):
         :type data: typing.Tuple[bytes]
         :rtype: str
         """
-        src = data if len(data) <= 7 else data[:3] + (b'...\n',) + data[-3:]  # type: typing.Tuple[bytes]
+        if len(data) <= 7:
+            src = data  # type: typing.Tuple[bytes, ...]
+        else:
+            src = data[:3] + (b'...\n',) + data[-3:]
         return cls._get_str_from_bin(
             cls._get_bytearray_from_array(src)
         )
@@ -157,7 +168,7 @@ class ExecResult(object):
         return self.__stdin
 
     @property
-    def stdout(self):  # type: () -> typing.Tuple[bytes]
+    def stdout(self):  # type: () -> typing.Tuple[bytes, ...]
         """Stdout output as list of binaries.
 
         :rtype: typing.Tuple[bytes]
@@ -165,10 +176,10 @@ class ExecResult(object):
         return self.__stdout
 
     @property
-    def stderr(self):  # type: () -> typing.Tuple[bytes]
+    def stderr(self):  # type: () -> typing.Tuple[bytes, ...]
         """Stderr output as list of binaries.
 
-        :rtype: typing.Tuple[bytes]
+        :rtype: typing.Tuple[bytes, ...]
         """
         return self.__stderr
 
@@ -183,7 +194,7 @@ class ExecResult(object):
             for line in src:
                 dst.append(line)
                 if log:
-                    log.log(
+                    log.log(  # type: ignore
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode('utf-8', errors='backslashreplace').rstrip()
                     )
@@ -208,10 +219,11 @@ class ExecResult(object):
 
         .. versionchanged:: 1.2.0 - src can be None
         """
-        if self.timestamp:
-            raise RuntimeError('Final exit code received.')
         if not src:
             return
+        if self.timestamp:
+            raise RuntimeError('Final exit code received.')
+
         with self.lock:
             self.__stdout_str = self.__stdout_brief = None
             self.__stdout += tuple(self.__poll_stream(src, log, verbose))
@@ -225,7 +237,7 @@ class ExecResult(object):
         """Read stderr file-like object to stdout.
 
         :param src: source
-        :type src: typing.Iterable
+        :type src: typing.Optional[typing.Iterable]
         :param log: logger
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
@@ -233,10 +245,11 @@ class ExecResult(object):
 
         .. versionchanged:: 1.2.0 - src can be None
         """
-        if self.timestamp:
-            raise RuntimeError('Final exit code received.')
         if not src:
             return
+        if self.timestamp:
+            raise RuntimeError('Final exit code received.')
+
         with self.lock:
             self.__stderr_str = self.__stderr_brief = None
             self.__stderr += tuple(self.__poll_stream(src, log, verbose))
@@ -269,8 +282,8 @@ class ExecResult(object):
         """
         with self.lock:
             if self.__stdout_str is None:
-                self.__stdout_str = self._get_str_from_bin(self.stdout_bin)
-            return self.__stdout_str
+                self.__stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
+            return self.__stdout_str  # type: ignore
 
     @property
     def stderr_str(self):  # type: () -> typing.Text
@@ -280,8 +293,8 @@ class ExecResult(object):
         """
         with self.lock:
             if self.__stderr_str is None:
-                self.__stderr_str = self._get_str_from_bin(self.stderr_bin)
-            return self.__stderr_str
+                self.__stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
+            return self.__stderr_str  # type: ignore
 
     @property
     def stdout_brief(self):  # type: () -> typing.Text
@@ -291,8 +304,8 @@ class ExecResult(object):
         """
         with self.lock:
             if self.__stdout_brief is None:
-                self.__stdout_brief = self._get_brief(self.stdout)
-            return self.__stdout_brief
+                self.__stdout_brief = self._get_brief(self.stdout)  # type: ignore
+            return self.__stdout_brief  # type: ignore
 
     @property
     def stderr_brief(self):  # type: () -> typing.Text
@@ -302,8 +315,8 @@ class ExecResult(object):
         """
         with self.lock:
             if self.__stderr_brief is None:
-                self.__stderr_brief = self._get_brief(self.stderr)
-            return self.__stderr_brief
+                self.__stderr_brief = self._get_brief(self.stderr)  # type: ignore
+            return self.__stderr_brief  # type: ignore
 
     @property
     def exit_code(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
@@ -317,7 +330,7 @@ class ExecResult(object):
     def exit_code(self, new_val):  # type: (typing.Union[int, proc_enums.ExitCodes]) -> None
         """Return(exit) code of command.
 
-        :type new_val: int
+        :type new_val: typing.Union[int, proc_enums.ExitCodes]
         If valid exit code is set - object became read-only.
         """
         if self.timestamp:
@@ -327,13 +340,13 @@ class ExecResult(object):
         with self.lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:
-                self.__timestamp = datetime.datetime.utcnow()
+                self.__timestamp = datetime.datetime.utcnow()  # type: ignore
 
     def __deserialize(self, fmt):  # type: (str) -> typing.Any
         """Deserialize stdout as data format.
 
         :type fmt: str
-        :rtype: object
+        :rtype: typing.Any
         :raises NotImplementedError: fmt deserialization not implemented
         :raises DeserializeValueError: Not valid source format
         """
@@ -359,7 +372,7 @@ class ExecResult(object):
     def stdout_json(self):  # type: () -> typing.Any
         """JSON from stdout.
 
-        :rtype: object
+        :rtype: typing.Any
         """
         with self.lock:
             return self.__deserialize(fmt='json')
@@ -368,12 +381,12 @@ class ExecResult(object):
     def stdout_yaml(self):  # type: () -> typing.Any
         """YAML from stdout.
 
-        :rtype: Union(list, dict, None)
+        :rtype: typing.Any
         """
         with self.lock:
             return self.__deserialize(fmt='yaml')
 
-    def __dir__(self):
+    def __dir__(self):  # type: () -> typing.List[str]
         """Override dir for IDE and as source for getitem checks."""
         return [
             'cmd', 'stdout', 'stderr', 'exit_code',
@@ -428,7 +441,7 @@ class ExecResult(object):
         """Comparision."""
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self):  # type: () -> int
         """Hash for usage as dict key and in sets."""
         return hash(
             (

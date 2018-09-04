@@ -36,7 +36,7 @@ API: exceptions
 
     .. py:attribute:: timeout
 
-        ``int``
+        ``typing.Union[int, float]``
 
     .. py:attribute:: result
 

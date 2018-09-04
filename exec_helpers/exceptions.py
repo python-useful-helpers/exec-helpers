@@ -18,10 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 from exec_helpers import proc_enums
 from exec_helpers import _log_templates
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import, unused-import
 
 __all__ = (
     'ExecHelperError',
@@ -137,9 +140,7 @@ class CalledProcessError(ExecCalledProcessError):
         super(CalledProcessError, self).__init__(message)
 
     @property
-    def returncode(
-        self
-    ):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
+    def returncode(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
         """Command return code."""
         return self.result.exit_code
 
@@ -189,9 +190,7 @@ class ParallelCallExceptions(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[
-            typing.List[typing.Union[int, proc_enums.ExitCodes]]
-        ]
+        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
         """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
@@ -241,9 +240,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[
-            typing.List[typing.Union[int, proc_enums.ExitCodes]]
-        ]
+        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
         """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)

@@ -23,10 +23,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import abc
 import logging
 import re
 import threading
 import typing  # noqa  # pylint: disable=unused-import
+
+import six
 
 from exec_helpers import constants
 from exec_helpers import exceptions
@@ -34,7 +37,7 @@ from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
 
 
-class ExecHelper(object):
+class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     """ExecHelper global API."""
 
     __slots__ = (
@@ -74,7 +77,7 @@ class ExecHelper(object):
         """
         return self.__lock
 
-    def __enter__(self):
+    def __enter__(self):  # type: () -> ExecHelper
         """Get context manager.
 
         .. versionchanged:: 1.1.0 lock on enter
@@ -82,9 +85,9 @@ class ExecHelper(object):
         self.lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):  # pragma: no cover
+    def __exit__(self, exc_type, exc_val, exc_tb):  # type: (typing.Any, typing.Any, typing.Any) -> None
         """Context manager usage."""
-        self.lock.release()
+        self.lock.release()  # pragma: no cover
 
     def _mask_command(
         self,
@@ -130,22 +133,23 @@ class ExecHelper(object):
 
         return cmd
 
+    @abc.abstractmethod
     def execute_async(
         self,
         command,  # type: str
-        stdin=None,  # type: typing.Union[typing.AnyStr, bytearray, None]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any,]
         """Execute command in async mode and return remote interface with IO objects.
 
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[typing.AnyStr, bytearray, None]
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
@@ -155,28 +159,24 @@ class ExecHelper(object):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :rtype: typing.Tuple[
-            typing.Any,
-            typing.Any,
-            typing.Any,
-            typing.Any,
-        ]
+        :rtype: typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
         """
         raise NotImplementedError  # pragma: no cover
 
+    @abc.abstractmethod
     def _exec_command(
         self,
         command,  # type: str
         interface,  # type: typing.Any
         stdout,  # type: typing.Any
         stderr,  # type: typing.Any
-        timeout,  # type: typing.Union[int, None]
+        timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
 
@@ -189,7 +189,7 @@ class ExecHelper(object):
         :param stderr: STDERR pipe or file-like object
         :type stderr: typing.Any
         :param timeout: Timeout for command execution
-        :type timeout: int
+        :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -206,19 +206,17 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
-        **kwargs
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and wait for return code.
-
-        Timeout limitation: read tick is 100 ms.
 
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -246,7 +244,7 @@ class ExecHelper(object):
                 **kwargs
             )
             message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-            self.logger.log(
+            self.logger.log(  # type: ignore
                 level=logging.INFO if verbose else logging.DEBUG,
                 msg=message
             )
@@ -256,22 +254,20 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
         raise_on_err=True,  # type: bool
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command and check for return code.
-
-        Timeout limitation: read tick is 100 ms.
 
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
@@ -306,21 +302,19 @@ class ExecHelper(object):
         self,
         command,  # type: str
         verbose=False,  # type: bool
-        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, None]
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
-        **kwargs
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Execute command expecting return code 0 and empty STDERR.
-
-        Timeout limitation: read tick is 100 ms.
 
         :param command: Command for execution
         :type command: str
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, None]
+        :type timeout: typing.Union[int, float, None]
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code
