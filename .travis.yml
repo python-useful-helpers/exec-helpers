@@ -92,7 +92,7 @@ jobs:
     - tox -e py36-nocov
     after_success: skip
   - stage: Test cythonized
-    name: "Python 3.7 no coverage"
+    name: "Python 3.7"
     python: 3.7
     dist: xenial
     sudo: true
