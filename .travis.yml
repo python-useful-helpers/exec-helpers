@@ -12,7 +12,7 @@ matrix:
     - python: 3.6
       env:
       - TOXENV=py36
-    - &mainstream_python python: 3.7
+    - python: 3.7
       dist: xenial
       sudo: true
       env:
@@ -42,7 +42,7 @@ jobs:
     after_success: skip
 
   - stage: Code style check
-    python: *mainstream_python
+    python: 3.7
     install:
     - *upgrade_python_toolset
     - pip install tox
