@@ -1,36 +1,57 @@
 sudo: false
 language: python
 os: linux
-matrix:
-  include:
-    - python: 3.4
-      env:
-      - TOXENV=py34
-    - python: 3.5
-      env:
-      - TOXENV=py35
-    - python: 3.6
-      env:
-      - TOXENV=py36
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env:
-      - TOXENV=py37
-    - python: pypy3.5
-      env:
-      - TOXENV=pypy3
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
-- pip install tox-travis
+- pip install tox
 - pip install coveralls
-script: tox
+script: []
 after_success:
 - coveralls
 
 jobs:
   fast_finish: true
   include:
+  - stage: test
+    python: 3.4
+    script:
+    - tox -e py34
+  - stage: test
+    python: 3.4
+    script:
+    - tox -e py34-nocov
+
+  - stage: test
+    python: 3.5
+    script:
+    - tox -e py35
+  - stage: test
+    python: 3.5
+    script:
+    - tox -e py35-nocov
+
+  - stage: test
+    python: 3.6
+    script:
+    - tox -e py36
+  - stage: test
+    python: 3.6
+    script:
+    - tox -e py36-nocov
+
+  - stage: test
+    python: 3.7
+    dist: xenial
+    sudo: true
+    script:
+    - tox -e py37
+  - stage: test
+    python: 3.7
+    dist: xenial
+    sudo: true
+    script:
+    - tox -e py37-nocov
+
   - stage: Static analisys
     python: 3.6
     services: []
@@ -38,11 +59,31 @@ jobs:
     - *upgrade_python_toolset
     - pip install tox
     script:
-    - tox -e pylint,bandit,mypy
+    - tox -e pylint
+    after_success: skip
+  - stage: Static analisys
+    python: 3.6
+    services: []
+    install:
+    - *upgrade_python_toolset
+    - pip install tox
+    script:
+    - tox -e bandit
+    after_success: skip
+  - stage: Static analisys
+    python: 3.7
+    dist: xenial
+    sudo: true
+    services: []
+    install:
+    - *upgrade_python_toolset
+    - pip install tox
+    script:
+    - tox mypy
     after_success: skip
 
   - stage: Code style check
-    python: 3.7
+    python: 3.6
     install:
     - *upgrade_python_toolset
     - pip install tox
