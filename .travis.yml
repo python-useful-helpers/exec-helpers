@@ -18,36 +18,15 @@ jobs:
     script:
     - tox -e py34
   - stage: test
-    name: "Python 3.4 no coverage"
-    python: 3.4
-    script:
-    - tox -e py34-nocov
-    after_success: skip
-
-  - stage: test
     name: "Python 3.5"
     python: 3.5
     script:
     - tox -e py35
   - stage: test
-    name: "Python 3.5 no coverage"
-    python: 3.5
-    script:
-    - tox -e py35-nocov
-    after_success: skip
-
-  - stage: test
     name: "Python 3.6"
     python: 3.6
     script:
     - tox -e py36
-  - stage: test
-    name: "Python 3.6 no coverage"
-    python: 3.6
-    script:
-    - tox -e py36-nocov
-    after_success: skip
-
   - stage: test
     name: "Python 3.7"
     python: 3.7
@@ -55,15 +34,6 @@ jobs:
     sudo: true
     script:
     - tox -e py37
-  - stage: test
-    name: "Python 3.7 no coverage"
-    python: 3.7
-    dist: xenial
-    sudo: true
-    script:
-    - tox -e py37-nocov
-    after_success: skip
-
   - stage: test
     name: "PyPy3"
     python: pypy3.5
@@ -100,7 +70,34 @@ jobs:
     - *upgrade_python_toolset
     - pip install tox
     script:
-    - tox mypy
+    - tox -e mypy
+    after_success: skip
+
+  - stage: Test cythonized
+    name: "Python 3.4"
+    python: 3.4
+    script:
+    - tox -e py34-nocov
+    after_success: skip
+  - stage: Test cythonized
+    name: "Python 3.5"
+    python: 3.5
+    script:
+    - tox -e py35-nocov
+    after_success: skip
+  - stage: Test cythonized
+    name: "Python 3.6"
+    python: 3.6
+    script:
+    - tox -e py36-nocov
+    after_success: skip
+  - stage: Test cythonized
+    name: "Python 3.7 no coverage"
+    python: 3.7
+    dist: xenial
+    sudo: true
+    script:
+    - tox -e py37-nocov
     after_success: skip
 
   - stage: Code style check
