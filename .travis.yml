@@ -42,7 +42,8 @@ jobs:
     if: tag IS present
     # Run on pypy to build not cythonized wheel
     python: *pypy
-    services: []
+    services:
+    - docker
     install:
     - *upgrade_python_toolset
     script:
