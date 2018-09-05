@@ -17,7 +17,7 @@ matrix:
       sudo: true
       env:
       - TOXENV=py37
-    - &pypy pypy3.5
+    - python: pypy3.5
       env:
       - TOXENV=pypy3
 install:
@@ -54,7 +54,7 @@ jobs:
     # This prevents job from appearing in test plan unless commit is tagged:
     if: tag IS present
     # Run on pypy to build not cythonized wheel
-    python: *pypy
+    python: pypy3.5
     services:
     - docker
     install:
