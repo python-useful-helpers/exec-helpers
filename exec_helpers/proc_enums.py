@@ -37,7 +37,7 @@ __all__ = (
 
 
 @enum.unique
-class SigNum(enum.IntEnum):
+class SigNum(int, enum.Enum):
     """Signal enumerators."""
 
     SIGHUP = 1  # Hangup (POSIX).
