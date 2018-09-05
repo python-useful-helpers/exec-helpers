@@ -13,44 +13,56 @@ jobs:
   fast_finish: true
   include:
   - stage: test
+    name: "Python 3.4"
     python: 3.4
     script:
     - tox -e py34
   - stage: test
+    name: "Python 3.4 no coverage"
     python: 3.4
     script:
     - tox -e py34-nocov
+    after_success: skip
 
   - stage: test
+    name: "Python 3.5"
     python: 3.5
     script:
     - tox -e py35
   - stage: test
+    name: "Python 3.5 no coverage"
     python: 3.5
     script:
     - tox -e py35-nocov
+    after_success: skip
 
   - stage: test
+    name: "Python 3.6"
     python: 3.6
     script:
     - tox -e py36
   - stage: test
+    name: "Python 3.6 no coverage"
     python: 3.6
     script:
     - tox -e py36-nocov
+    after_success: skip
 
   - stage: test
+    name: "Python 3.7"
     python: 3.7
     dist: xenial
     sudo: true
     script:
     - tox -e py37
   - stage: test
+    name: "Python 3.7 no coverage"
     python: 3.7
     dist: xenial
     sudo: true
     script:
     - tox -e py37-nocov
+    after_success: skip
 
   - stage: test
     name: "PyPy3"
@@ -59,6 +71,7 @@ jobs:
     - tox -e pypy3
 
   - stage: Static analisys
+    name: "PyLint"
     python: 3.6
     services: []
     install:
@@ -68,6 +81,7 @@ jobs:
     - tox -e pylint
     after_success: skip
   - stage: Static analisys
+    name: "Bandit"
     python: 3.6
     services: []
     install:
@@ -77,6 +91,7 @@ jobs:
     - tox -e bandit
     after_success: skip
   - stage: Static analisys
+    name: "MyPy"
     python: 3.7
     dist: xenial
     sudo: true
@@ -89,12 +104,22 @@ jobs:
     after_success: skip
 
   - stage: Code style check
+    name: "PEP8"
     python: 3.6
     install:
     - *upgrade_python_toolset
     - pip install tox
     script:
-    - tox -e pep8,pep257
+    - tox -e pep8
+    after_success: skip
+  - stage: Code style check
+    name: "PEP257"
+    python: 3.6
+    install:
+    - *upgrade_python_toolset
+    - pip install tox
+    script:
+    - tox -e pep257
     after_success: skip
 
   - stage: deploy
