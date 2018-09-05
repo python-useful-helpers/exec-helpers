@@ -52,6 +52,12 @@ jobs:
     script:
     - tox -e py37-nocov
 
+  - stage: test
+    name: "PyPy3"
+    python: pypy3.5
+    script:
+    - tox -e pypy3
+
   - stage: Static analisys
     python: 3.6
     services: []
