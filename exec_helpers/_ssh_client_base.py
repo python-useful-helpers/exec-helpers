@@ -285,7 +285,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
     ) -> None:
-        """SSHClient helper.
+        """Main SSH Client helper.
 
         :param host: remote hostname
         :type host: str
@@ -387,7 +387,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     @property
     def _ssh(self) -> paramiko.SSHClient:
-        """ssh client object getter for inheritance support only.
+        """Ssh client object getter for inheritance support only.
 
         Attention: ssh client object creation and change
         is allowed only by __init__ and reconnect call.

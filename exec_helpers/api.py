@@ -45,7 +45,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         logger: logging.Logger,
         log_mask_re: typing.Optional[str] = None,
     ) -> None:
-        """ExecHelper global API.
+        """Global ExecHelper API.
 
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
