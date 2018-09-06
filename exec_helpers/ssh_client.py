@@ -40,7 +40,7 @@ class SSHClient(SSHClientBase):
         return path.replace(' ', '\ ')
 
     def mkdir(self, path: str) -> None:
-        """run 'mkdir -p path' on remote.
+        """Run 'mkdir -p path' on remote.
 
         :type path: str
         """
@@ -50,7 +50,7 @@ class SSHClient(SSHClientBase):
         self.execute("mkdir -p {}\n".format(self._path_esc(path)))
 
     def rm_rf(self, path: str) -> None:
-        """run 'rm -rf path' on remote.
+        """Run 'rm -rf path' on remote.
 
         :type path: str
         """

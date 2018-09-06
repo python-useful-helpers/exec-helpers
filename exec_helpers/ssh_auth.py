@@ -102,7 +102,7 @@ class SSHAuth:
 
     @property
     def public_key(self) -> typing.Optional[str]:
-        """public key for stored private key if presents else None.
+        """Public key for stored private key if presents else None.
 
         :rtype: str
         """
