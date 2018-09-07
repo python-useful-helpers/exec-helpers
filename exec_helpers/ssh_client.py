@@ -91,7 +91,9 @@ class SSHClient(SSHClientBase):
     def download(self, destination: str, target: str) -> bool:
         """Download file(s) to target from destination.
 
+        :param destination: remote path
         :type destination: str
+        :param target: local path
         :type target: str
         :return: downloaded file present on local filesystem
         :rtype: bool

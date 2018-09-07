@@ -96,6 +96,7 @@ class ExecResult:
     def lock(self) -> threading.RLock:
         """Lock object for thread-safe operation.
 
+        :return: internal lock
         :rtype: threading.RLock
         """
         return self.__lock
@@ -104,6 +105,7 @@ class ExecResult:
     def timestamp(self) -> typing.Optional[datetime.datetime]:
         """Timestamp.
 
+        :return: exit code timestamp
         :rtype: typing.Optional[datetime.datetime]
         """
         return self.__timestamp
@@ -112,7 +114,9 @@ class ExecResult:
     def _get_bytearray_from_array(src: typing.Iterable[bytes]) -> bytearray:
         """Get bytearray from array of bytes blocks.
 
+        :param src: source to process
         :type src: typing.List[bytes]
+        :return: bytearray
         :rtype: bytearray
         """
         return bytearray(b''.join(src))
@@ -121,7 +125,9 @@ class ExecResult:
     def _get_str_from_bin(src: bytearray) -> str:
         """Join data in list to the string.
 
+        :param src: source to process
         :type src: bytearray
+        :return: decoded string
         :rtype: str
         """
         return src.strip().decode(
@@ -133,7 +139,9 @@ class ExecResult:
     def _get_brief(cls, data: typing.Tuple[bytes, ...]) -> str:
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
+        :param data: source to process
         :type data: typing.Tuple[bytes, ...]
+        :return: brief from source
         :rtype: str
         """
         if len(data) <= 7:
@@ -209,6 +217,7 @@ class ExecResult:
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+        :raises RuntimeError: Exit code is already received
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -235,6 +244,7 @@ class ExecResult:
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+        :raises RuntimeError: Exit code is already received
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -315,6 +325,7 @@ class ExecResult:
     def exit_code(self) -> typing.Union[int, proc_enums.ExitCodes]:
         """Return(exit) code of command.
 
+        :return: exit code
         :rtype: typing.Union[int, proc_enums.ExitCodes]
         """
         return self.__exit_code
@@ -323,7 +334,11 @@ class ExecResult:
     def exit_code(self, new_val: typing.Union[int, proc_enums.ExitCodes]) -> None:
         """Return(exit) code of command.
 
+        :param new_val: new exit code
         :type new_val: typing.Union[int, proc_enums.ExitCodes]
+        :raises RuntimeError: Exit code is already received
+        :raises TypeError: exit code is not int instance
+
         If valid exit code is set - object became read-only.
         """
         if self.timestamp:
@@ -338,7 +353,9 @@ class ExecResult:
     def __deserialize(self, fmt: str) -> typing.Any:
         """Deserialize stdout as data format.
 
+        :param fmt: format to decode from
         :type fmt: str
+        :return: decoded object
         :rtype: typing.Any
         :raises NotImplementedError: fmt deserialization not implemented
         :raises DeserializeValueError: Not valid source format
@@ -390,7 +407,14 @@ class ExecResult:
         ]
 
     def __getitem__(self, item: str) -> typing.Any:
-        """Dict like get data."""
+        """Dict like get data.
+
+        :param item: key
+        :type item: str
+        :return: item if attribute exists
+        :rtype: typing.Any
+        :raises IndexError: no attribute exists or not allowed to get (not in dir())
+        """
         if item in dir(self):
             return getattr(self, item)
         raise IndexError(

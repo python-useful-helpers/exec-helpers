@@ -144,7 +144,8 @@ class SSHAuth:
         :type port: int
         :param log: Log on generic connection failure
         :type log: bool
-        :raises paramiko.AuthenticationException: Authentication failed.
+        :raises PasswordRequiredException: No password has been set, but required.
+        :raises AuthenticationException: Authentication failed.
         """
         kwargs = {
             'username': self.username,

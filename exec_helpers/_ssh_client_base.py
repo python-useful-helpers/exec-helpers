@@ -129,6 +129,7 @@ class _MemorizedSSH(abc.ABCMeta):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :return: SSH client instance
         :rtype: SSHClientBase
         """
         if (host, port) in cls.__cache:
@@ -218,7 +219,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         ) -> None:
             """Context manager for call commands with sudo.
 
+            :param ssh: connection instance
             :type ssh: SSHClientBase
+            :param enforce: sudo mode for context manager
             :type enforce: typing.Optional[bool]
             """
             self.__ssh = ssh
@@ -249,7 +252,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         ) -> None:
             """Context manager for keepalive management.
 
+            :param ssh: connection instance
             :type ssh: SSHClientBase
+            :param enforce: keepalive mode for context manager
             :type enforce: bool
             :param enforce: Keep connection alive after context manager exit
             """
@@ -526,6 +531,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def keepalive_mode(self, mode: bool) -> None:
         """Persistent keepalive mode change for connection object.
 
+        :param mode: keepalive mode enable/disable
         :type mode: bool
         """
         self.__keepalive_mode = bool(mode)
@@ -548,6 +554,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: typing.Optional[bool]
+        :return: context manager with selected sudo state inside
         :rtype: typing.ContextManager
         """
         return self.__get_sudo(ssh=self, enforce=enforce)
@@ -560,6 +567,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         :param enforce: Enforce keepalive enabled or disabled.
         :type enforce: bool
+        :return: context manager with selected keepalive state inside
         :rtype: typing.ContextManager
 
         .. Note:: Enter and exit ssh context manager is produced as well.
@@ -592,6 +600,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
         :rtype: typing.Tuple[
             paramiko.Channel,
             paramiko.ChannelFile,
@@ -661,15 +672,24 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
+        :param command: executed command (for logs)
         :type command: str
+        :param interface: interface to control execution
         :type interface: paramiko.channel.Channel
+        :param stdout: source for STDOUT read
         :type stdout: typing.Optional[paramiko.ChannelFile]
+        :param stderr: source for STDERR read
         :type stderr: typing.Optional[paramiko.ChannelFile]
+        :param timeout: timeout before stop execution with TimeoutError
         :type timeout: typing.Union[int, float, None]
+        :param verbose: produce log.info records for STDOUT/STDERR
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -776,6 +796,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type timeout: typing.Union[int, float, None]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -851,6 +874,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type expected: typing.Optional[typing.Iterable[]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param kwargs: additional parameters for execute_async call.
+        :type kwargs: typing.Any
         :return: dictionary {(hostname, port): result}
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         :raises ParallelCallProcessError: Unexpected any code at lest on one target
@@ -938,16 +963,21 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def open(self, path: str, mode: str = 'r') -> paramiko.SFTPFile:
         """Open file on remote using SFTP session.
 
+        :param path: filesystem object path
         :type path: str
+        :param mode: open file mode ('t' is not supported)
         :type mode: str
         :return: file.open() stream
+        :rtype: paramiko.SFTPFile
         """
         return self._sftp.open(path, mode)  # pragma: no cover
 
     def exists(self, path: str) -> bool:
         """Check for file existence using SFTP session.
 
+        :param path: filesystem object path
         :type path: str
+        :return: path is valid (object exists)
         :rtype: bool
         """
         try:
@@ -959,7 +989,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def stat(self, path: str) -> paramiko.sftp_attr.SFTPAttributes:
         """Get stat info for path with following symlinks.
 
+        :param path: filesystem object path
         :type path: str
+        :return: stat like information for remote path
         :rtype: paramiko.sftp_attr.SFTPAttributes
         """
         return self._sftp.stat(path)  # pragma: no cover
@@ -983,7 +1015,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def isfile(self, path: str) -> bool:
         """Check, that path is file using SFTP session.
 
+        :param path: remote path to validate
         :type path: str
+        :return: path is file
         :rtype: bool
         """
         try:
@@ -995,7 +1029,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def isdir(self, path: str) -> bool:
         """Check, that path is directory using SFTP session.
 
+        :param path: remote path to validate
         :type path: str
+        :return: path is directory
         :rtype: bool
         """
         try:
