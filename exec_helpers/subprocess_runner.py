@@ -123,7 +123,11 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
+        :raises OSError: exception during process kill (and not regarding to already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionadded:: 1.2.0
@@ -153,7 +157,9 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         result = exec_result.ExecResult(cmd=cmd_for_log)
 
         # pylint: disable=assignment-from-no-return
+        # noinspection PyNoneFunctionAssignment
         stdout_future = poll_stdout()  # type: concurrent.futures.Future
+        # noinspection PyNoneFunctionAssignment
         stderr_future = poll_stderr()  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 
@@ -208,12 +214,16 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
         :rtype: typing.Tuple[
             subprocess.Popen,
             None,
             typing.Optional[typing.IO],
             typing.Optional[typing.IO],
         ]
+        :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
         """

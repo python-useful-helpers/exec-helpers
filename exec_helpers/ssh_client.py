@@ -44,7 +44,7 @@ class SSHClient(SSHClientBase):
         return path.replace(' ', '\ ')
 
     def mkdir(self, path):  # type: (str) -> None
-        """run 'mkdir -p path' on remote.
+        """Run 'mkdir -p path' on remote.
 
         :type path: str
         """
@@ -54,7 +54,7 @@ class SSHClient(SSHClientBase):
         self.execute("mkdir -p {}\n".format(self._path_esc(path)))
 
     def rm_rf(self, path):  # type: (str) -> None
-        """run 'rm -rf path' on remote.
+        """Run 'rm -rf path' on remote.
 
         :type path: str
         """
@@ -99,7 +99,9 @@ class SSHClient(SSHClientBase):
     ):  # type: (...) -> bool
         """Download file(s) to target from destination.
 
+        :param destination: remote path
         :type destination: str
+        :param target: local path
         :type target: str
         :return: downloaded file present on local filesystem
         :rtype: bool
