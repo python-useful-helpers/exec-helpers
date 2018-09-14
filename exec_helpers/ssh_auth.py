@@ -106,7 +106,7 @@ class SSHAuth(object):
 
     @property
     def public_key(self):  # type: () -> typing.Optional[str]
-        """public key for stored private key if presents else None.
+        """Public key for stored private key if presents else None.
 
         :rtype: str
         """
@@ -148,7 +148,8 @@ class SSHAuth(object):
         :type port: int
         :param log: Log on generic connection failure
         :type log: bool
-        :raises paramiko.AuthenticationException: Authentication failed.
+        :raises PasswordRequiredException: No password has been set, but required.
+        :raises AuthenticationException: Authentication failed.
         """
         kwargs = {
             'username': self.username,

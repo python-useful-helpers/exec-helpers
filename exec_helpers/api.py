@@ -51,14 +51,16 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         logger,  # type: logging.Logger
         log_mask_re=None,  # type: typing.Optional[str]
     ):  # type: (...) -> None
-        """ExecHelper global API.
+        """Global ExecHelper API.
 
+        :param logger: logger instance to use
+        :type logger: logging.Logger
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 1.3.5 make API public to use as interface
+        .. versionchanged:: 1.3.5 make API public paramikoto use as interface
         """
         self.__lock = threading.RLock()
         self.__logger = logger
@@ -96,10 +98,13 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     ):  # type: (...) -> str
         """Log command with masking and return parsed cmd.
 
+        :param cmd: command
         :type cmd: str
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :return: masked command
+        :rtype: str
 
         .. versionadded:: 1.2.0
         """
@@ -159,6 +164,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
         :rtype: typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
@@ -195,6 +203,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -217,6 +228,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -274,6 +288,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
@@ -319,6 +336,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code or stderr presents

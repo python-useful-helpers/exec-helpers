@@ -101,6 +101,7 @@ class ExecResult(object):
     def lock(self):  # type: () -> threading.RLock
         """Lock object for thread-safe operation.
 
+        :return: internal lock
         :rtype: threading.RLock
         """
         return self.__lock
@@ -109,6 +110,7 @@ class ExecResult(object):
     def timestamp(self):  # type: () -> typing.Optional[datetime.datetime]
         """Timestamp.
 
+        :return: exit code timestamp
         :rtype: typing.Optional[datetime.datetime]
         """
         return self.__timestamp
@@ -119,7 +121,9 @@ class ExecResult(object):
     ):  # type: (...) -> bytearray
         """Get bytearray from array of bytes blocks.
 
+        :param src: source to process
         :type src: typing.List[bytes]
+        :return: bytearray
         :rtype: bytearray
         """
         return bytearray(b''.join(src))
@@ -128,7 +132,9 @@ class ExecResult(object):
     def _get_str_from_bin(src):  # type: (bytearray) -> str
         """Join data in list to the string, with python 2&3 compatibility.
 
+        :param src: source to process
         :type src: bytearray
+        :return: decoded string
         :rtype: str
         """
         return src.strip().decode(
@@ -140,7 +146,9 @@ class ExecResult(object):
     def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> typing.Text
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
-        :type data: typing.Tuple[bytes]
+        :param data: source to process
+        :type data: typing.Tuple[bytes, ...]
+        :return: brief from source
         :rtype: str
         """
         if len(data) <= 7:
@@ -171,7 +179,7 @@ class ExecResult(object):
     def stdout(self):  # type: () -> typing.Tuple[bytes, ...]
         """Stdout output as list of binaries.
 
-        :rtype: typing.Tuple[bytes]
+        :rtype: typing.Tuple[bytes, ...]
         """
         return self.__stdout
 
@@ -216,6 +224,7 @@ class ExecResult(object):
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+        :raises RuntimeError: Exit code is already received
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -242,6 +251,7 @@ class ExecResult(object):
         :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
+        :raises RuntimeError: Exit code is already received
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -322,6 +332,7 @@ class ExecResult(object):
     def exit_code(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
         """Return(exit) code of command.
 
+        :return: exit code
         :rtype: typing.Union[int, proc_enums.ExitCodes]
         """
         return self.__exit_code
@@ -330,7 +341,11 @@ class ExecResult(object):
     def exit_code(self, new_val):  # type: (typing.Union[int, proc_enums.ExitCodes]) -> None
         """Return(exit) code of command.
 
+        :param new_val: new exit code
         :type new_val: typing.Union[int, proc_enums.ExitCodes]
+        :raises RuntimeError: Exit code is already received
+        :raises TypeError: exit code is not int instance
+
         If valid exit code is set - object became read-only.
         """
         if self.timestamp:
@@ -345,7 +360,9 @@ class ExecResult(object):
     def __deserialize(self, fmt):  # type: (str) -> typing.Any
         """Deserialize stdout as data format.
 
+        :param fmt: format to decode from
         :type fmt: str
+        :return: decoded object
         :rtype: typing.Any
         :raises NotImplementedError: fmt deserialization not implemented
         :raises DeserializeValueError: Not valid source format
@@ -397,7 +414,14 @@ class ExecResult(object):
         ]
 
     def __getitem__(self, item):  # type: (str) -> typing.Any
-        """Dict like get data."""
+        """Dict like get data.
+
+        :param item: key
+        :type item: str
+        :return: item if attribute exists
+        :rtype: typing.Any
+        :raises IndexError: no attribute exists or not allowed to get (not in dir())
+        """
         if item in dir(self):
             return getattr(self, item)
         raise IndexError(
