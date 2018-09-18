@@ -16,6 +16,11 @@
 
 """Python subprocess.Popen wrapper."""
 
+__all__ = (
+    'Subprocess',
+    'SubprocessExecuteAsyncResult'
+)
+
 import abc
 import collections
 import concurrent.futures
@@ -33,6 +38,30 @@ from exec_helpers import exceptions
 from exec_helpers import _log_templates
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
+
+
+class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
+    """Override original NamedTuple with proper typing."""
+
+    @property
+    def interface(self) -> subprocess.Popen:
+        """Override original NamedTuple with proper typing."""
+        return super(SubprocessExecuteAsyncResult, self).interface
+
+    @property
+    def stdin(self) -> typing.Optional[typing.IO]:  # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SubprocessExecuteAsyncResult, self).stdin
+
+    @property
+    def stderr(self) -> typing.Optional[typing.IO]:  # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SubprocessExecuteAsyncResult, self).stderr
+
+    @property
+    def stdout(self) -> typing.Optional[typing.IO]:    # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SubprocessExecuteAsyncResult, self).stdout
 
 
 class SingletonMeta(abc.ABCMeta):
@@ -180,38 +209,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
-    # pylint: disable=function-redefined, unused-argument
-    # noinspection PyMethodOverriding
-    @typing.overload  # type: ignore
-    def execute_async(  # pylint: disable=signature-differs
-        self,
-        command: str,
-        stdin: typing.Union[bytes, str, bytearray],
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Any
-    ) -> typing.Tuple[subprocess.Popen, None, None, None]:
-        """Overload: with stdin."""
-        pass  # pragma: no cover
-
-    @typing.overload  # noqa: F811
     def execute_async(
-        self,
-        command: str,
-        stdin: None = None,
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Any
-    ) -> typing.Tuple[subprocess.Popen, None, typing.IO, typing.IO]:
-        """Overload: no stdin."""
-        pass  # pragma: no cover
-
-    # pylint: enable=unused-argument
-    def execute_async(  # noqa: F811
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
@@ -220,7 +218,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         **kwargs: typing.Any
-    ) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO]]:
+    ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
@@ -239,15 +237,19 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.Tuple[
-            subprocess.Popen,
-            None,
-            typing.Optional[typing.IO],
-            typing.Optional[typing.IO],
-        ]
+        :rtype: typing.NamedTuple(
+                    'SubprocessExecuteAsyncResult',
+                    [
+                        ('interface', subprocess.Popen),
+                        ('stdin', typing.Optional[typing.IO]),
+                        ('stderr', typing.Optional[typing.IO]),
+                        ('stdout', typing.Optional[typing.IO]),
+                    ]
+                )
         :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
+        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -267,7 +269,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             universal_newlines=False,
         )
 
-        if stdin is not None:
+        if stdin is None:
+            process_stdin = process.stdin
+        else:
             if isinstance(stdin, str):
                 stdin = stdin.encode(encoding='utf-8')
             elif isinstance(stdin, bytearray):
@@ -294,6 +298,6 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
                     process.kill()
                     raise
 
-        return process, None, process.stderr, process.stdout
+            process_stdin = None  # type: ignore
 
-    # pylint: enable=function-redefined
+        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)
