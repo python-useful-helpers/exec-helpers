@@ -16,6 +16,11 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
+__all__ = (
+    'SSHClientBase',
+    'SshExecuteAsyncResult',
+)
+
 import abc
 import base64
 import collections
@@ -43,18 +48,33 @@ from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
 from exec_helpers import _log_templates
 
-__all__ = ('SSHClientBase', )
-
 logging.getLogger('paramiko').setLevel(logging.WARNING)
 logging.getLogger('iso8601').setLevel(logging.WARNING)
 
 
-_type_execute_async = typing.Tuple[
-    paramiko.Channel,
-    paramiko.ChannelFile,
-    typing.Optional[paramiko.ChannelFile],
-    typing.Optional[paramiko.ChannelFile]
-]
+class SshExecuteAsyncResult(api.ExecuteAsyncResult):
+    """Override original NamedTuple with proper typing."""
+
+    @property
+    def interface(self) -> paramiko.Channel:
+        """Override original NamedTuple with proper typing."""
+        return super(SshExecuteAsyncResult, self).interface
+
+    @property
+    def stdin(self) -> paramiko.ChannelFile:  # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SshExecuteAsyncResult, self).stdin
+
+    @property
+    def stderr(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SshExecuteAsyncResult, self).stderr
+
+    @property
+    def stdout(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
+        """Override original NamedTuple with proper typing."""
+        return super(SshExecuteAsyncResult, self).stdout
+
 
 CPYTHON = 'CPython' == platform.python_implementation()
 
@@ -584,7 +604,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         **kwargs: typing.Any
-    ) -> _type_execute_async:
+    ) -> SshExecuteAsyncResult:
         """Execute command in async mode and return channel with IO objects.
 
         :param command: Command for execution
@@ -603,16 +623,20 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.Tuple[
-            paramiko.Channel,
-            paramiko.ChannelFile,
-            typing.Optional[paramiko.ChannelFile],
-            typing.Optional[paramiko.ChannelFile],
-        ]
+        :rtype: typing.NamedTuple(
+                    'SshExecuteAsyncResult',
+                    [
+                        ('interface', paramiko.Channel),
+                        ('stdin', paramiko.ChannelFile),
+                        ('stderr', typing.Optional[paramiko.ChannelFile]),
+                        ('stdout', typing.Optional[paramiko.ChannelFile]),
+                    ]
+                )
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
         .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
+        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         """
         cmd_for_log = self._mask_command(
             cmd=command,
@@ -657,7 +681,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             else:
                 self.logger.warning('STDIN Send failed: closed channel')
 
-        return chan, _stdin, stderr, stdout
+        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
     def _exec_command(
         self,
@@ -887,18 +911,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         @threaded.threadpooled  # type: ignore
         def get_result(remote: 'SSHClientBase') -> exec_result.ExecResult:
             """Get result from remote call."""
-            (
-                chan,
-                _,
-                stderr,
-                stdout,
-            ) = remote.execute_async(
-                command,
-                **kwargs
-            )  # type: _type_execute_async
+            async_result = remote.execute_async(command, **kwargs)  # type: SshExecuteAsyncResult
 
-            chan.status_event.wait(timeout)
-            exit_code = chan.recv_exit_status()
+            async_result.interface.status_event.wait(timeout)
+            exit_code = async_result.interface.recv_exit_status()
 
             # pylint: disable=protected-access
             cmd_for_log = remote._mask_command(
@@ -908,11 +924,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             # pylint: enable=protected-access
 
             result = exec_result.ExecResult(cmd=cmd_for_log)
-            result.read_stdout(src=stdout)
-            result.read_stderr(src=stderr)
+            result.read_stdout(src=async_result.stdout)
+            result.read_stderr(src=async_result.stderr)
             result.exit_code = exit_code
 
-            chan.close()
+            async_result.interface.close()
             return result
 
         expected = expected or [proc_enums.ExitCodes.EX_OK]

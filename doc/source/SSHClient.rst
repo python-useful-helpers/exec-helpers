@@ -138,11 +138,12 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :rtype: ``typing.Tuple[paramiko.Channel, paramiko.ChannelFile, typing.Optional[paramiko.ChannelFile], typing.Optional[paramiko.ChannelFile]]``
+        :rtype: SshExecuteAsyncResult
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
         .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
+        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
@@ -388,3 +389,24 @@ API: SSHClient and SSHAuth.
         :param log: Log on generic connection failure
         :type log: ``bool``
         :raises paramiko.AuthenticationException: Authentication failed.
+
+
+.. py:class:: SshExecuteAsyncResult
+
+    Typed NamedTuple
+
+    .. py:attribute:: interface
+
+        ``paramiko.Channel``
+
+    .. py:attribute:: stdin
+
+        ``paramiko.ChannelFile``
+
+    .. py:attribute:: stderr
+
+        ``typing.Optional[paramiko.ChannelFile]``
+
+    .. py:attribute:: stdout
+
+        ``typing.Optional[paramiko.ChannelFile]``

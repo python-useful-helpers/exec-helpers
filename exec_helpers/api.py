@@ -19,6 +19,11 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
+__all__ = (
+    'ExecHelper',
+    'ExecuteAsyncResult',
+)
+
 import abc
 import logging
 import re
@@ -29,6 +34,17 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
+
+
+ExecuteAsyncResult = typing.NamedTuple(
+    'ExecuteAsyncResult',
+    [
+        ('interface', typing.Any),
+        ('stdin', typing.Optional[typing.Any]),
+        ('stderr', typing.Optional[typing.Any]),
+        ('stdout', typing.Optional[typing.Any]),
+    ]
+)
 
 
 class ExecHelper(metaclass=abc.ABCMeta):
@@ -142,7 +158,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         **kwargs: typing.Any
-    ) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]:
+    ) -> ExecuteAsyncResult:
         """Execute command in async mode and return remote interface with IO objects.
 
         :param command: Command for execution
@@ -160,11 +176,20 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
-        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]
+        :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
+        :rtype: typing.NamedTuple(
+                    'ExecuteAsyncResult',
+                    [
+                        ('interface', typing.Any),
+                        ('stdin', typing.Optional[typing.Any]),
+                        ('stderr', typing.Optional[typing.Any]),
+                        ('stdout', typing.Optional[typing.Any]),
+                    ]
+                )
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
+        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         """
         raise NotImplementedError  # pragma: no cover
 
@@ -229,34 +254,25 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        with self.lock:
-            (
-                iface,
-                _,
-                stderr,
-                stdout,
-            ) = self.execute_async(
-                command,
-                verbose=verbose,
-                **kwargs
-            )
+        async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
 
-            result = self._exec_command(
-                command=command,
-                interface=iface,
-                stdout=stdout,
-                stderr=stderr,
-                timeout=timeout,
-                verbose=verbose,
-                **kwargs
-            )
-            message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-            self.logger.log(  # type: ignore
-                level=logging.INFO if verbose else logging.DEBUG,
-                msg=message
-            )
-            return result
+        result = self._exec_command(
+            command=command,
+            interface=async_result.interface,
+            stdout=async_result.stdout,
+            stderr=async_result.stderr,
+            timeout=timeout,
+            verbose=verbose,
+            **kwargs
+        )
+        message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
+        self.logger.log(  # type: ignore
+            level=logging.INFO if verbose else logging.DEBUG,
+            msg=message
+        )
+        return result
 
     def check_call(
         self,
