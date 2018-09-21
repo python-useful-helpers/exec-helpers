@@ -23,10 +23,10 @@ import posixpath
 
 from ._ssh_client_base import SSHClientBase
 
-__all__ = ('SSHClient', )
+__all__ = ("SSHClient",)
 
 logger = logging.getLogger(__name__)
-logging.getLogger('paramiko').setLevel(logging.WARNING)
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
 class SSHClient(SSHClientBase):
@@ -37,7 +37,7 @@ class SSHClient(SSHClientBase):
     @staticmethod
     def _path_esc(path: str) -> str:
         """Escape space character in the path."""
-        return path.replace(' ', '\ ')
+        return path.replace(" ", "\ ")
 
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.
@@ -74,10 +74,7 @@ class SSHClient(SSHClientBase):
             return
 
         for rootdir, _, files in os.walk(source):
-            targetdir = os.path.normpath(
-                os.path.join(
-                    target,
-                    os.path.relpath(rootdir, source))).replace("\\", "/")
+            targetdir = os.path.normpath(os.path.join(target, os.path.relpath(rootdir, source))).replace("\\", "/")
 
             self.mkdir(targetdir)
 
@@ -98,10 +95,7 @@ class SSHClient(SSHClientBase):
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
-        self.logger.debug(
-            "Copying '%s' -> '%s' from remote to local host",
-            destination, target
-        )
+        self.logger.debug("Copying '%s' -> '%s' from remote to local host", destination, target)
 
         if os.path.isdir(target):
             target = posixpath.join(target, os.path.basename(destination))

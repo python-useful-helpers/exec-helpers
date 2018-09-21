@@ -19,10 +19,7 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
-__all__ = (
-    'ExecHelper',
-    'ExecuteAsyncResult',
-)
+__all__ = ("ExecHelper", "ExecuteAsyncResult")
 
 import abc
 import logging
@@ -37,30 +34,22 @@ from exec_helpers import proc_enums
 
 
 ExecuteAsyncResult = typing.NamedTuple(
-    'ExecuteAsyncResult',
+    "ExecuteAsyncResult",
     [
-        ('interface', typing.Any),
-        ('stdin', typing.Optional[typing.Any]),
-        ('stderr', typing.Optional[typing.Any]),
-        ('stdout', typing.Optional[typing.Any]),
-    ]
+        ("interface", typing.Any),
+        ("stdin", typing.Optional[typing.Any]),
+        ("stderr", typing.Optional[typing.Any]),
+        ("stdout", typing.Optional[typing.Any]),
+    ],
 )
 
 
 class ExecHelper(metaclass=abc.ABCMeta):
     """ExecHelper global API."""
 
-    __slots__ = (
-        '__lock',
-        '__logger',
-        'log_mask_re'
-    )
+    __slots__ = ("__lock", "__logger", "log_mask_re")
 
-    def __init__(
-        self,
-        logger: logging.Logger,
-        log_mask_re: typing.Optional[str] = None,
-    ) -> None:
+    def __init__(self, logger: logging.Logger, log_mask_re: typing.Optional[str] = None) -> None:
         """Global ExecHelper API.
 
         :param logger: logger instance to use
@@ -89,7 +78,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         return self.__lock
 
-    def __enter__(self) -> 'ExecHelper':
+    def __enter__(self) -> "ExecHelper":
         """Get context manager.
 
         .. versionchanged:: 1.1.0 lock on enter
@@ -101,11 +90,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """Context manager usage."""
         self.lock.release()
 
-    def _mask_command(
-        self,
-        cmd: str,
-        log_mask_re: typing.Optional[str] = None,
-    ) -> str:
+    def _mask_command(self, cmd: str, log_mask_re: typing.Optional[str] = None) -> str:
         """Log command with masking and return parsed cmd.
 
         :param cmd: command
@@ -118,6 +103,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         .. versionadded:: 1.2.0
         """
+
         def mask(text: str, rules: str) -> str:
             """Mask part of text using rules."""
             indexes = [0]  # Start of the line
@@ -134,9 +120,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
             for idx in range(0, len(indexes) - 2, 2):
                 start = indexes[idx]
                 end = indexes[idx + 1]
-                masked += text[start: end] + '<*masked*>'
+                masked += text[start:end] + "<*masked*>"
 
-            masked += text[indexes[-2]: indexes[-1]]  # final part
+            masked += text[indexes[-2] : indexes[-1]]  # final part
             return masked
 
         cmd = cmd.rstrip()
@@ -268,10 +254,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             **kwargs
         )
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-        self.logger.log(  # type: ignore
-            level=logging.INFO if verbose else logging.DEBUG,
-            msg=message
-        )
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
     def check_call(
@@ -309,20 +292,16 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret['exit_code'] not in expected:
+        if ret["exit_code"] not in expected:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
                 "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                    expected=expected
-                ))
+                    append=error_info + "\n" if error_info else "", result=ret, expected=expected
+                )
+            )
             self.logger.error(message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=expected,
-                )
+                raise exceptions.CalledProcessError(result=ret, expected=expected)
         return ret
 
     def check_stderr(
@@ -356,19 +335,14 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         ret = self.check_call(
-            command, verbose, timeout=timeout,
-            error_info=error_info, raise_on_err=raise_on_err, **kwargs)
-        if ret['stderr']:
+            command, verbose, timeout=timeout, error_info=error_info, raise_on_err=raise_on_err, **kwargs
+        )
+        if ret["stderr"]:
             message = (
                 "{append}Command {result.cmd!r} STDERR while not expected\n"
-                "\texit code: {result.exit_code!s}".format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                ))
+                "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
+            )
             self.logger.error(message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=kwargs.get('expected'),
-                )
+                raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
         return ret
