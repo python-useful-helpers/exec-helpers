@@ -16,6 +16,8 @@ exec-helpers
     :target: https://pypi.python.org/pypi/exec-helpers
 .. image:: https://img.shields.io/github/license/python-useful-helpers/exec-helpers.svg
     :target: https://raw.githubusercontent.com/python-useful-helpers/exec-helpers/master/LICENSE
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
 
 Execution helpers for simplified usage of subprocess and ssh.
 Why another subprocess wrapper and why no clear `paramiko`?

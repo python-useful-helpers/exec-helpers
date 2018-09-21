@@ -57,16 +57,9 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
     .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
     """
 
-    __slots__ = (
-        'result',
-        'timeout',
-    )
+    __slots__ = ('result', 'timeout')
 
-    def __init__(
-        self,
-        result: 'exec_result.ExecResult',
-        timeout: typing.Union[int, float],
-    ) -> None:
+    def __init__(self, result: 'exec_result.ExecResult', timeout: typing.Union[int, float]) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
@@ -76,10 +69,7 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
         """
         self.result = result
         self.timeout = timeout
-        message = _log_templates.CMD_WAIT_ERROR.format(
-            result=result,
-            timeout=timeout
-        )
+        message = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         super(ExecHelperTimeoutError, self).__init__(message)
 
     @property
@@ -101,10 +91,7 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
 class CalledProcessError(ExecCalledProcessError):
     """Exception for error on process calls."""
 
-    __slots__ = (
-        'result',
-        'expected',
-    )
+    __slots__ = ('result', 'expected')
 
     def __init__(
         self,
@@ -128,10 +115,7 @@ class CalledProcessError(ExecCalledProcessError):
             "while expected {expected}\n"
             "\tSTDOUT:\n"
             "{result.stdout_brief}\n"
-            "\tSTDERR:\n{result.stderr_brief}".format(
-                result=self.result,
-                expected=self.expected
-            )
+            "\tSTDERR:\n{result.stderr_brief}".format(result=self.result, expected=self.expected)
         )
         super(CalledProcessError, self).__init__(message)
 
@@ -159,13 +143,7 @@ class CalledProcessError(ExecCalledProcessError):
 class ParallelCallExceptions(ExecCalledProcessError):
     """Exception raised during parallel call as result of exceptions."""
 
-    __slots__ = (
-        'cmd',
-        'exceptions',
-        'errors',
-        'results',
-        'expected'
-    )
+    __slots__ = ('cmd', 'exceptions', 'errors', 'results', 'expected')
 
     def __init__(
         self,
@@ -200,11 +178,9 @@ class ParallelCallExceptions(ExecCalledProcessError):
             "\t{exceptions}".format(
                 self=self,
                 exceptions="\n\t".join(
-                    "{host}:{port} - {exc} ".format(
-                        host=host, port=port, exc=exc
-                    )
+                    "{host}:{port} - {exc} ".format(host=host, port=port, exc=exc)
                     for (host, port), exc in exceptions.items()
-                )
+                ),
             )
         )
         super(ParallelCallExceptions, self).__init__(message)
@@ -213,12 +189,7 @@ class ParallelCallExceptions(ExecCalledProcessError):
 class ParallelCallProcessError(ExecCalledProcessError):
     """Exception during parallel execution."""
 
-    __slots__ = (
-        'cmd',
-        'errors',
-        'results',
-        'expected'
-    )
+    __slots__ = ('cmd', 'errors', 'results', 'expected')
 
     def __init__(
         self,
@@ -251,11 +222,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
             "\t{errors}".format(
                 self=self,
                 errors="\n\t".join(
-                    "{host}:{port} - {code} ".format(
-                        host=host, port=port, code=result.exit_code
-                    )
+                    "{host}:{port} - {code} ".format(host=host, port=port, code=result.exit_code)
                     for (host, port), result in errors.items()
-                )
+                ),
             )
         )
         super(ParallelCallProcessError, self).__init__(message)

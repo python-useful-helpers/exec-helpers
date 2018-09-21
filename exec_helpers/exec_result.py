@@ -27,7 +27,7 @@ import yaml
 from exec_helpers import exceptions  # pylint: disable=cyclic-import
 from exec_helpers import proc_enums
 
-__all__ = ('ExecResult', )
+__all__ = ('ExecResult',)
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,17 @@ class ExecResult:
     """Execution result."""
 
     __slots__ = [
-        '__cmd', '__stdin', '__stdout', '__stderr', '__exit_code',
+        '__cmd',
+        '__stdin',
+        '__stdout',
+        '__stderr',
+        '__exit_code',
         '__timestamp',
-        '__stdout_str', '__stderr_str', '__stdout_brief', '__stderr_brief',
-        '__lock'
+        '__stdout_str',
+        '__stderr_str',
+        '__stdout_brief',
+        '__stderr_brief',
+        '__lock',
     ]
 
     def __init__(
@@ -48,7 +55,7 @@ class ExecResult:
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         stdout: typing.Optional[typing.Iterable[bytes]] = None,
         stderr: typing.Optional[typing.Iterable[bytes]] = None,
-        exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.ExitCodes.EX_INVALID
+        exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.ExitCodes.EX_INVALID,
     ) -> None:
         """Command execution result.
 
@@ -130,10 +137,7 @@ class ExecResult:
         :return: decoded string
         :rtype: str
         """
-        return src.strip().decode(
-            encoding='utf-8',
-            errors='backslashreplace'
-        )
+        return src.strip().decode(encoding='utf-8', errors='backslashreplace')
 
     @classmethod
     def _get_brief(cls, data: typing.Tuple[bytes, ...]) -> str:
@@ -148,9 +152,7 @@ class ExecResult:
             src = data  # type: typing.Tuple[bytes, ...]
         else:
             src = data[:3] + (b'...\n',) + data[-3:]
-        return cls._get_str_from_bin(
-            cls._get_bytearray_from_array(src)
-        )
+        return cls._get_str_from_bin(cls._get_bytearray_from_array(src))
 
     @property
     def cmd(self) -> str:
@@ -186,9 +188,7 @@ class ExecResult:
 
     @staticmethod
     def __poll_stream(
-        src: typing.Iterable[bytes],
-        log: typing.Optional[logging.Logger] = None,
-        verbose: bool = False
+        src: typing.Iterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
         dst = []
         try:
@@ -197,7 +197,7 @@ class ExecResult:
                 if log:
                     log.log(  # type: ignore
                         level=logging.INFO if verbose else logging.DEBUG,
-                        msg=line.decode('utf-8', errors='backslashreplace').rstrip()
+                        msg=line.decode('utf-8', errors='backslashreplace').rstrip(),
                     )
         except IOError:
             pass
@@ -207,7 +207,7 @@ class ExecResult:
         self,
         src: typing.Optional[typing.Iterable] = None,
         log: typing.Optional[logging.Logger] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> None:
         """Read stdout file-like object to stdout.
 
@@ -234,7 +234,7 @@ class ExecResult:
         self,
         src: typing.Optional[typing.Iterable] = None,
         log: typing.Optional[logging.Logger] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> None:
         """Read stderr file-like object to stdout.
 
@@ -366,14 +366,9 @@ class ExecResult:
             elif fmt == 'yaml':
                 return yaml.safe_load(self.stdout_str)
         except Exception:
-            tmpl = (
-                " stdout is not valid {fmt}:\n"
-                '{{stdout!r}}\n'.format(
-                    fmt=fmt))
+            tmpl = " stdout is not valid {fmt}:\n" '{{stdout!r}}\n'.format(fmt=fmt)
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
-            raise exceptions.DeserializeValueError(
-                self.cmd + tmpl.format(stdout=self.stdout_brief)
-            )
+            raise exceptions.DeserializeValueError(self.cmd + tmpl.format(stdout=self.stdout_brief))
         msg = '{fmt} deserialize target is not implemented'.format(fmt=fmt)
         logger.error(msg)
         raise NotImplementedError(msg)
@@ -399,11 +394,19 @@ class ExecResult:
     def __dir__(self) -> typing.List[str]:
         """Override dir for IDE and as source for getitem checks."""
         return [
-            'cmd', 'stdout', 'stderr', 'exit_code',
-            'stdout_bin', 'stderr_bin',
-            'stdout_str', 'stderr_str', 'stdout_brief', 'stderr_brief',
-            'stdout_json', 'stdout_yaml',
-            'lock'
+            'cmd',
+            'stdout',
+            'stderr',
+            'exit_code',
+            'stdout_bin',
+            'stderr_bin',
+            'stdout_str',
+            'stderr_str',
+            'stdout_brief',
+            'stderr_brief',
+            'stdout_json',
+            'stdout_yaml',
+            'lock',
         ]
 
     def __getitem__(self, item: str) -> typing.Any:
@@ -417,23 +420,14 @@ class ExecResult:
         """
         if item in dir(self):
             return getattr(self, item)
-        raise IndexError(
-            '"{item}" not found in {dir}'.format(
-                item=item, dir=dir(self)
-            )
-        )
+        raise IndexError('"{item}" not found in {dir}'.format(item=item, dir=dir(self)))
 
     def __repr__(self) -> str:
         """Representation for debugging."""
         return (
-            '{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, '
-            'exit_code={exit_code!s})'.format(
-                cls=self.__class__.__name__,
-                cmd=self.cmd,
-                stdout=self.stdout,
-                stderr=self.stderr,
-                exit_code=self.exit_code
-            ))
+            '{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, '
+            'exit_code={self.exit_code!s})'.format(cls=self.__class__.__name__, self=self)
+        )
 
     def __str__(self) -> str:
         """Representation for logging."""
@@ -446,7 +440,7 @@ class ExecResult:
                 cmd=self.cmd,
                 stdout_brief=self.stdout_brief,
                 stderr_brief=self.stderr_brief,
-                exit_code=self.exit_code
+                exit_code=self.exit_code,
             )
         )
 
@@ -460,8 +454,4 @@ class ExecResult:
 
     def __hash__(self) -> int:
         """Hash for usage as dict key and in sets."""
-        return hash(
-            (
-                self.__class__, self.cmd, self.stdin, self.stdout, self.stderr,
-                self.exit_code
-            ))
+        return hash((self.__class__, self.cmd, self.stdin, self.stdout, self.stderr, self.exit_code))

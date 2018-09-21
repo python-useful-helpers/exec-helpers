@@ -16,10 +16,7 @@
 
 """Python subprocess.Popen wrapper."""
 
-__all__ = (
-    'Subprocess',
-    'SubprocessExecuteAsyncResult'
-)
+__all__ = ('Subprocess', 'SubprocessExecuteAsyncResult')
 
 import abc
 import collections
@@ -59,7 +56,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super(SubprocessExecuteAsyncResult, self).stderr
 
     @property
-    def stdout(self) -> typing.Optional[typing.IO]:    # type: ignore
+    def stdout(self) -> typing.Optional[typing.IO]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdout
 
@@ -83,10 +80,7 @@ class SingletonMeta(abc.ABCMeta):
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type['SingletonMeta'],
-        name: str,
-        bases: typing.Iterable[typing.Type],
-        **kwargs: typing.Any
+        mcs: typing.Type['SingletonMeta'], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
     ) -> collections.OrderedDict:
         """Metaclass magic for object storage.
 
@@ -149,23 +143,16 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
 
         .. versionadded:: 1.2.0
         """
+
         @threaded.threadpooled  # type: ignore
         def poll_stdout() -> None:
             """Sync stdout poll."""
-            result.read_stdout(
-                src=stdout,
-                log=logger,
-                verbose=verbose
-            )
+            result.read_stdout(src=stdout, log=logger, verbose=verbose)
 
         @threaded.threadpooled  # type: ignore
         def poll_stderr() -> None:
             """Sync stderr poll."""
-            result.read_stderr(
-                src=stderr,
-                log=logger,
-                verbose=verbose
-            )
+            result.read_stderr(src=stderr, log=logger, verbose=verbose)
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
@@ -254,8 +241,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(  # type: ignore
-            level=logging.INFO if verbose else logging.DEBUG,
-            msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
         process = subprocess.Popen(

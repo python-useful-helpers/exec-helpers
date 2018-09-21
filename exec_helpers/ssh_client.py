@@ -23,7 +23,7 @@ import posixpath
 
 from ._ssh_client_base import SSHClientBase
 
-__all__ = ('SSHClient', )
+__all__ = ('SSHClient',)
 
 logger = logging.getLogger(__name__)
 logging.getLogger('paramiko').setLevel(logging.WARNING)
@@ -74,10 +74,7 @@ class SSHClient(SSHClientBase):
             return
 
         for rootdir, _, files in os.walk(source):
-            targetdir = os.path.normpath(
-                os.path.join(
-                    target,
-                    os.path.relpath(rootdir, source))).replace("\\", "/")
+            targetdir = os.path.normpath(os.path.join(target, os.path.relpath(rootdir, source))).replace("\\", "/")
 
             self.mkdir(targetdir)
 
@@ -98,10 +95,7 @@ class SSHClient(SSHClientBase):
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
-        self.logger.debug(
-            "Copying '%s' -> '%s' from remote to local host",
-            destination, target
-        )
+        self.logger.debug("Copying '%s' -> '%s' from remote to local host", destination, target)
 
         if os.path.isdir(target):
             target = posixpath.join(target, os.path.basename(destination))

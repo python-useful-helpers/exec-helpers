@@ -22,7 +22,7 @@ from .exceptions import (
     CalledProcessError,
     ParallelCallProcessError,
     ParallelCallExceptions,
-    ExecHelperTimeoutError
+    ExecHelperTimeoutError,
 )
 
 from .exec_result import ExecResult
@@ -58,7 +58,5 @@ __maintainers__ = {
     'Dennis Dmitriev': 'dis-xcom@gmail.com',
 }
 __url__ = 'https://github.com/python-useful-helpers/exec-helpers'
-__description__ = (
-    "Execution helpers for simplified usage of subprocess and ssh."
-)
+__description__ = "Execution helpers for simplified usage of subprocess and ssh."
 __license__ = "Apache License, Version 2.0"
