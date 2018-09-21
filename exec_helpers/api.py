@@ -122,6 +122,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
                 end = indexes[idx + 1]
                 masked += text[start:end] + "<*masked*>"
 
+            # noinspection PyPep8
             masked += text[indexes[-2] : indexes[-1]]  # final part
             return masked
 
