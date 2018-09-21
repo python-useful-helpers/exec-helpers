@@ -23,10 +23,10 @@ import posixpath
 
 from ._ssh_client_base import SSHClientBase
 
-__all__ = ('SSHClient',)
+__all__ = ("SSHClient",)
 
 logger = logging.getLogger(__name__)
-logging.getLogger('paramiko').setLevel(logging.WARNING)
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
 class SSHClient(SSHClientBase):
@@ -37,7 +37,7 @@ class SSHClient(SSHClientBase):
     @staticmethod
     def _path_esc(path: str) -> str:
         """Escape space character in the path."""
-        return path.replace(' ', '\ ')
+        return path.replace(" ", "\ ")
 
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.

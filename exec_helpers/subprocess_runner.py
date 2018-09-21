@@ -16,7 +16,7 @@
 
 """Python subprocess.Popen wrapper."""
 
-__all__ = ('Subprocess', 'SubprocessExecuteAsyncResult')
+__all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
 import abc
 import collections
@@ -70,7 +70,7 @@ class SingletonMeta(abc.ABCMeta):
     _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
-    def __call__(cls: 'SingletonMeta', *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def __call__(cls: "SingletonMeta", *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """Singleton."""
         with cls._lock:
             if cls not in cls._instances:
@@ -80,7 +80,7 @@ class SingletonMeta(abc.ABCMeta):
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type['SingletonMeta'], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
+        mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
     ) -> collections.OrderedDict:
         """Metaclass magic for object storage.
 
@@ -250,8 +250,8 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
             stdin=subprocess.PIPE,
             shell=True,
-            cwd=kwargs.get('cwd', None),
-            env=kwargs.get('env', None),
+            cwd=kwargs.get("cwd", None),
+            env=kwargs.get("env", None),
             universal_newlines=False,
         )
 
@@ -259,7 +259,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             process_stdin = process.stdin
         else:
             if isinstance(stdin, str):
-                stdin = stdin.encode(encoding='utf-8')
+                stdin = stdin.encode(encoding="utf-8")
             elif isinstance(stdin, bytearray):
                 stdin = bytes(stdin)
             try:
@@ -269,9 +269,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
-                    self.logger.warning('STDIN Send failed: closed PIPE')
+                    self.logger.warning("STDIN Send failed: closed PIPE")
                 elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
-                    self.logger.warning('STDIN Send failed: broken PIPE')
+                    self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
                     process.kill()
                     raise

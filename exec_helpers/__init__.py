@@ -33,30 +33,30 @@ from .ssh_client import SSHClient
 from .subprocess_runner import Subprocess, SubprocessExecuteAsyncResult  # nosec  # Expected
 
 __all__ = (
-    'ExecHelperError',
-    'ExecCalledProcessError',
-    'CalledProcessError',
-    'ParallelCallExceptions',
-    'ParallelCallProcessError',
-    'ExecHelperTimeoutError',
-    'ExecHelper',
-    'SSHClient',
-    'SshExecuteAsyncResult',
-    'SSHAuth',
-    'Subprocess',
-    'SubprocessExecuteAsyncResult',
-    'ExitCodes',
-    'ExecResult',
+    "ExecHelperError",
+    "ExecCalledProcessError",
+    "CalledProcessError",
+    "ParallelCallExceptions",
+    "ParallelCallProcessError",
+    "ExecHelperTimeoutError",
+    "ExecHelper",
+    "SSHClient",
+    "SshExecuteAsyncResult",
+    "SSHAuth",
+    "Subprocess",
+    "SubprocessExecuteAsyncResult",
+    "ExitCodes",
+    "ExecResult",
 )
 
-__version__ = '2.0.2'
+__version__ = "2.0.2"
 __author__ = "Alexey Stepanov"
-__author_email__ = 'penguinolog@gmail.com'
+__author_email__ = "penguinolog@gmail.com"
 __maintainers__ = {
-    'Alexey Stepanov': 'penguinolog@gmail.com',
-    'Antonio Esposito': 'esposito.cloud@gmail.com',
-    'Dennis Dmitriev': 'dis-xcom@gmail.com',
+    "Alexey Stepanov": "penguinolog@gmail.com",
+    "Antonio Esposito": "esposito.cloud@gmail.com",
+    "Dennis Dmitriev": "dis-xcom@gmail.com",
 }
-__url__ = 'https://github.com/python-useful-helpers/exec-helpers'
+__url__ = "https://github.com/python-useful-helpers/exec-helpers"
 __description__ = "Execution helpers for simplified usage of subprocess and ssh."
 __license__ = "Apache License, Version 2.0"

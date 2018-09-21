@@ -22,7 +22,7 @@ Linux signals, Linux & bash return codes.
 import enum
 import typing
 
-__all__ = ('SigNum', 'ExitCodes', 'exit_code_to_enum', 'exit_codes_to_enums')
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums")
 
 
 @enum.unique
