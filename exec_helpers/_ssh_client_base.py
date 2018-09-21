@@ -359,8 +359,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}) for user {self.auth.username}".format(
-            cls=self.__class__.__name__, self=self
+        return "{cls}(host={self.hostname}, port={self.port}) for user {username}".format(
+            cls=self.__class__.__name__, self=self, username=self.auth.username
         )
 
     @property
@@ -827,13 +827,13 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
             # pylint: enable=protected-access
 
-            result = exec_result.ExecResult(cmd=cmd_for_log)
-            result.read_stdout(src=async_result.stdout)
-            result.read_stderr(src=async_result.stderr)
-            result.exit_code = exit_code
+            res = exec_result.ExecResult(cmd=cmd_for_log)
+            res.read_stdout(src=async_result.stdout)
+            res.read_stderr(src=async_result.stderr)
+            res.exit_code = exit_code
 
             async_result.interface.close()
-            return result
+            return res
 
         expected = expected or [proc_enums.ExitCodes.EX_OK]
         expected = proc_enums.exit_codes_to_enums(expected)
