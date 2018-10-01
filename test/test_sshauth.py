@@ -16,16 +16,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 # pylint: disable=no-self-use
 
 import base64
 import contextlib
 import copy
 import io
+import typing
 import unittest
 
 import mock
@@ -41,7 +38,7 @@ def gen_private_keys(amount=1):
 def gen_public_key(private_key=None):
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
-    return '{0} {1}'.format(private_key.get_name(), private_key.get_base64())
+    return "{0} {1}".format(private_key.get_name(), private_key.get_base64())
 
 
 class FakeStream(object):
@@ -55,26 +52,24 @@ class FakeStream(object):
             yield self.__src.pop(0)
 
 
-host = '127.0.0.1'
+host = "127.0.0.1"
 port = 22
-username = 'user'
-password = 'pass'
+username = "user"
+password = "pass"
 private_keys = []
-command = 'ls ~\nline 2\nline 3\nline с кирилицей'
-command_log = u"Executing command:\n{!s}\n".format(command.rstrip())
-stdout_list = [b' \n', b'2\n', b'3\n', b' \n']
-stdout_str = b''.join(stdout_list).strip().decode('utf-8')
-stderr_list = [b' \n', b'0\n', b'1\n', b' \n']
-stderr_str = b''.join(stderr_list).strip().decode('utf-8')
-encoded_cmd = base64.b64encode(
-    "{}\n".format(command).encode('utf-8')
-).decode('utf-8')
+command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command_log = "Executing command:\n{!s}\n".format(command.rstrip())
+stdout_list = [b" \n", b"2\n", b"3\n", b" \n"]
+stdout_str = b"".join(stdout_list).strip().decode("utf-8")
+stderr_list = [b" \n", b"0\n", b"1\n", b" \n"]
+stderr_str = b"".join(stderr_list).strip().decode("utf-8")
+encoded_cmd = base64.b64encode("{}\n".format(command).encode("utf-8")).decode("utf-8")
 
 
 # noinspection PyTypeChecker
 class TestSSHAuth(unittest.TestCase):
     def tearDown(self):
-        with mock.patch('warnings.warn'):
+        with mock.patch("warnings.warn"):
             exec_helpers.SSHClient._clear_cache()
 
     def init_checks(
@@ -83,8 +78,8 @@ class TestSSHAuth(unittest.TestCase):
         password=None,
         key=None,
         keys=None,
-        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
-        passphrase=None,  # type: typing.Optional[str]
+        key_filename: typing.Union[typing.List[str], str, None] = None,
+        passphrase: typing.Optional[str] = None,
     ):
         """shared positive init checks
 
@@ -96,12 +91,7 @@ class TestSSHAuth(unittest.TestCase):
         :type passphrase: typing.Optional[str]
         """
         auth = exec_helpers.SSHAuth(
-            username=username,
-            password=password,
-            key=key,
-            keys=keys,
-            key_filename=key_filename,
-            passphrase=passphrase
+            username=username, password=password, key=key, keys=keys, key_filename=key_filename, passphrase=passphrase
         )
 
         int_keys = [None]
@@ -115,22 +105,15 @@ class TestSSHAuth(unittest.TestCase):
         self.assertEqual(auth.username, username)
         with contextlib.closing(io.StringIO()) as tgt:
             auth.enter_password(tgt)
-            self.assertEqual(tgt.getvalue(), '{}\n'.format(password))
-        self.assertEqual(
-            auth.public_key,
-            gen_public_key(key) if key is not None else None)
+            self.assertEqual(tgt.getvalue(), "{}\n".format(password))
+        self.assertEqual(auth.public_key, gen_public_key(key) if key is not None else None)
 
-        _key = (
-            None if auth.public_key is None else
-            '<private for pub: {}>'.format(auth.public_key)
-        )
+        _key = None if auth.public_key is None else "<private for pub: {}>".format(auth.public_key)
         _keys = []
         for k in int_keys:
             if k == key:
                 continue
-            _keys.append(
-                '<private for pub: {}>'.format(
-                    gen_public_key(k)) if k is not None else None)
+            _keys.append("<private for pub: {}>".format(gen_public_key(k)) if k is not None else None)
 
         self.assertEqual(
             repr(auth),
@@ -141,73 +124,37 @@ class TestSSHAuth(unittest.TestCase):
             "keys={keys}, "
             "key_filename={auth.key_filename!r}, "
             "passphrase=<*masked*>,"
-            ")".format(
-                cls=exec_helpers.SSHAuth.__name__,
-                auth=auth,
-                key=_key,
-                keys=_keys
-            )
+            ")".format(cls=exec_helpers.SSHAuth.__name__, auth=auth, key=_key, keys=_keys),
         )
         self.assertEqual(
-            str(auth),
-            '{cls} for {username}'.format(
-                cls=exec_helpers.SSHAuth.__name__,
-                username=auth.username,
-            )
+            str(auth), "{cls} for {username}".format(cls=exec_helpers.SSHAuth.__name__, username=auth.username)
         )
 
     def test_init_username_only(self):
-        self.init_checks(
-            username=username
-        )
+        self.init_checks(username=username)
 
     def test_init_username_password(self):
-        self.init_checks(
-            username=username,
-            password=password
-        )
+        self.init_checks(username=username, password=password)
 
     def test_init_username_key(self):
-        self.init_checks(
-            username=username,
-            key=gen_private_keys(1).pop()
-        )
+        self.init_checks(username=username, key=gen_private_keys(1).pop())
 
     def test_init_username_password_key(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            key=gen_private_keys(1).pop()
-        )
+        self.init_checks(username=username, password=password, key=gen_private_keys(1).pop())
 
     def test_init_username_password_keys(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            keys=gen_private_keys(2)
-        )
+        self.init_checks(username=username, password=password, keys=gen_private_keys(2))
 
     def test_init_username_password_key_keys(self):
-        self.init_checks(
-            username=username,
-            password=password,
-            key=gen_private_keys(1).pop(),
-            keys=gen_private_keys(2)
-        )
+        self.init_checks(username=username, password=password, key=gen_private_keys(1).pop(), keys=gen_private_keys(2))
 
     def test_equality_copy(self):
         """Equality is calculated using hash, copy=deepcopy."""
-        auth1 = exec_helpers.SSHAuth(
-            username='username',
-        )
+        auth1 = exec_helpers.SSHAuth(username="username")
 
-        auth2 = exec_helpers.SSHAuth(
-            username='username',
-        )
+        auth2 = exec_helpers.SSHAuth(username="username")
 
-        auth3 = exec_helpers.SSHAuth(
-            username='username_differs',
-        )
+        auth3 = exec_helpers.SSHAuth(username="username_differs")
 
         self.assertEqual(auth1, auth2)
         self.assertNotEqual(auth1, auth3)
