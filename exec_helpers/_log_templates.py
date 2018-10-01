@@ -24,8 +24,8 @@ CMD_EXEC = "Executing command:\n{cmd!r}\n"
 
 CMD_WAIT_ERROR = (
     "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
-    '\tSTDOUT:\n'
-    '{result.stdout_brief}\n'
-    '\tSTDERR"\n'
-    '{result.stderr_brief}'
+    "\tSTDOUT:\n"
+    "{result.stdout_brief}\n"
+    "\tSTDERR:\n"
+    "{result.stderr_brief}"
 )

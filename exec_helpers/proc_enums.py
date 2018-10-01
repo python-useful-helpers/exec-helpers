@@ -28,12 +28,7 @@ import typing  # noqa  # pylint: disable=unused-import
 
 import six
 
-__all__ = (
-    'SigNum',
-    'ExitCodes',
-    'exit_code_to_enum',
-    'exit_codes_to_enums',
-)
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums")
 
 
 @enum.unique
@@ -72,11 +67,10 @@ class SigNum(int, enum.Enum):
     SIGPWR = 30  # Power failure restart (System V).
     SIGSYS = 31  # Bad system call.
 
-    def __str__(self):  # type: () -> str
+    def __str__(self):  # type: () -> str  # pragma: no cover
         """Representation for logs."""
-        return "{name}<{value:d}(0x{value:02X})>".format(  # pragma: no cover
-            name=self.name,
-            value=self.value
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
+            self=self
         )
 
 
@@ -152,9 +146,8 @@ class ExitCodes(digit_type, enum.Enum):
 
     def __str__(self):  # type: () -> str
         """Representation for logs."""
-        return "{name}<{value:d}(0x{value:02X})>".format(
-            name=self.name,
-            value=self.value
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
+            self=self
         )
 
 

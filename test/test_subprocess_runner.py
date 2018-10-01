@@ -197,6 +197,7 @@ class TestSubprocessRunner(unittest.TestCase):
     ):
         popen_obj, exp_result = self.prepare_close(popen)
         popen_obj.poll.return_value = None
+        popen_obj.wait.return_value = None
 
         runner = exec_helpers.Subprocess()
 

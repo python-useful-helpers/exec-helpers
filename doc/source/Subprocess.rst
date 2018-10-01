@@ -56,9 +56,11 @@ API: Subprocess
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
-        :rtype: ``typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]``
+        :rtype: SubprocessExecuteAsyncResult
+        :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
+        .. versionchanged:: 1.4.0 Use typed NamedTuple as result
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
@@ -124,3 +126,24 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
+
+
+.. py:class:: SubprocessExecuteAsyncResult
+
+    Typed NamedTuple
+
+    .. py:attribute:: interface
+
+        ``subprocess.Popen``
+
+    .. py:attribute:: stdin
+
+        ``typing.Optional[typing.IO]``
+
+    .. py:attribute:: stderr
+
+        ``typing.Optional[typing.IO]``
+
+    .. py:attribute:: stdout
+
+        ``typing.Optional[typing.IO]``

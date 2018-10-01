@@ -43,11 +43,6 @@ after_success:
 jobs:
   fast_finish: true
   include:
-  - stage: test
-    <<: *python27
-  - stage: test
-    <<: *pypy
-
   - <<: *static_analysis
     name: "PyLint"
     install:
@@ -87,6 +82,11 @@ jobs:
     - pip install --upgrade pydocstyle
     script:
     - pydocstyle exec_helpers
+
+  - stage: test
+    <<: *python27
+  - stage: test
+    <<: *pypy
 
   - stage: deploy
     # This prevents job from appearing in test plan unless commit is tagged:
