@@ -37,6 +37,7 @@ from exec_helpers import _log_templates
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
+# noinspection PyTypeHints
 class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
