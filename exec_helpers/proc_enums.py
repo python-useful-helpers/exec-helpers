@@ -67,9 +67,11 @@ class SigNum(int, enum.Enum):
     SIGPWR = 30  # Power failure restart (System V).
     SIGSYS = 31  # Bad system call.
 
-    def __str__(self):  # type: () -> str
+    def __str__(self):  # type: () -> str  # pragma: no cover
         """Representation for logs."""
-        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)  # pragma: no cover
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
+            self=self
+        )
 
 
 if six.PY3:  # pragma: no cover
@@ -144,7 +146,9 @@ class ExitCodes(digit_type, enum.Enum):
 
     def __str__(self):  # type: () -> str
         """Representation for logs."""
-        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
+            self=self
+        )
 
 
 def exit_code_to_enum(code):  # type: (typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]
