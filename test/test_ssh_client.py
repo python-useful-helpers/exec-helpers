@@ -761,7 +761,7 @@ class TestExecute(unittest.TestCase):
         is_set = mock.Mock(return_value=True)
         chan.status_event.attach_mock(is_set, 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -807,7 +807,7 @@ class TestExecute(unittest.TestCase):
         is_set = mock.Mock(return_value=True)
         chan.status_event.attach_mock(is_set, 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -852,7 +852,7 @@ class TestExecute(unittest.TestCase):
         ) = self.get_patched_execute_async_retval(open_stdout=False)
         chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -896,7 +896,7 @@ class TestExecute(unittest.TestCase):
         ) = self.get_patched_execute_async_retval(open_stderr=False)
         chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -943,7 +943,7 @@ class TestExecute(unittest.TestCase):
         )
         chan.status_event.attach_mock(mock.Mock(return_value=True), 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -987,7 +987,7 @@ class TestExecute(unittest.TestCase):
         is_set = mock.Mock(return_value=True)
         chan.status_event.attach_mock(is_set, 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -1022,7 +1022,7 @@ class TestExecute(unittest.TestCase):
         chan.status_event.attach_mock(is_set, 'is_set')
         chan.status_event.attach_mock(mock.Mock(), 'wait')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -1056,7 +1056,7 @@ class TestExecute(unittest.TestCase):
         is_set = mock.Mock(return_value=True)
         chan.status_event.attach_mock(is_set, 'is_set')
 
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         ssh = self.get_ssh()
 
@@ -1098,7 +1098,7 @@ class TestExecute(unittest.TestCase):
         (
             chan, _stdin, _, stderr, stdout
         ) = self.get_patched_execute_async_retval()
-        execute_async.return_value = chan, _stdin, stderr, stdout
+        execute_async.return_value = exec_helpers.SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
         host2 = '127.0.0.2'
 

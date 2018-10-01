@@ -29,7 +29,7 @@ import logging
 import os
 import subprocess  # nosec  # Expected usage
 import threading
-import typing  # noqa  # pylint: disable=unused-import
+import typing  # noqa: F401  # pylint: disable=unused-import
 
 import six
 import threaded
@@ -42,6 +42,15 @@ from exec_helpers import _log_templates
 logger = logging.getLogger(__name__)  # type: logging.Logger
 # noinspection PyUnresolvedReferences
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
+
+
+class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
+    """Override original NamedTuple with proper typing."""
+
+    @property
+    def interface(self):  # type: () -> subprocess.Popen
+        """Override original NamedTuple with proper typing."""
+        return super(SubprocessExecuteAsyncResult, self).interface
 
 
 class SingletonMeta(abc.ABCMeta):
@@ -78,10 +87,7 @@ class SingletonMeta(abc.ABCMeta):
 class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(
-        self,
-        log_mask_re=None,  # type: typing.Optional[str]
-    ):  # type: (...) -> None
+    def __init__(self, log_mask_re=None):  # type: (typing.Optional[str]) -> None
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -135,21 +141,13 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         @threaded.threadpooled  # type: ignore
         def poll_stdout():  # type: () -> None
             """Sync stdout poll."""
-            result.read_stdout(
-                src=stdout,
-                log=logger,
-                verbose=verbose
-            )
+            result.read_stdout(src=stdout, log=logger, verbose=verbose)
             interface.wait()  # wait for the end of execution
 
         @threaded.threadpooled  # type: ignore
         def poll_stderr():  # type: () -> None
             """Sync stderr poll."""
-            result.read_stderr(
-                src=stderr,
-                log=logger,
-                verbose=verbose
-            )
+            result.read_stderr(src=stderr, log=logger, verbose=verbose)
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
@@ -198,7 +196,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs  # type: typing.Any
-    ):  # type: (...) -> typing.Tuple[subprocess.Popen, None, typing.Optional[typing.IO], typing.Optional[typing.IO], ]
+    ):  # type: (...) -> SubprocessExecuteAsyncResult
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
@@ -217,21 +215,24 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.Tuple[
-            subprocess.Popen,
-            None,
-            typing.Optional[typing.IO],
-            typing.Optional[typing.IO],
-        ]
+        :rtype: typing.NamedTuple(
+                    'SubprocessExecuteAsyncResult',
+                    [
+                        ('interface', subprocess.Popen),
+                        ('stdin', typing.Optional[typing.IO]),
+                        ('stderr', typing.Optional[typing.IO]),
+                        ('stdout', typing.Optional[typing.IO]),
+                    ]
+                )
         :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
+        .. versionchanged:: 1.4.0 Use typed NamedTuple as result
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(  # type: ignore
-            level=logging.INFO if verbose else logging.DEBUG,
-            msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
         process = subprocess.Popen(
@@ -240,14 +241,16 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
             stderr=subprocess.PIPE if open_stderr else devnull,
             stdin=subprocess.PIPE,
             shell=True,
-            cwd=kwargs.get('cwd', None),
-            env=kwargs.get('env', None),
+            cwd=kwargs.get("cwd", None),
+            env=kwargs.get("env", None),
             universal_newlines=False,
         )
 
-        if stdin is not None:
+        if stdin is None:
+            process_stdin = process.stdin
+        else:
             if isinstance(stdin, six.text_type):
-                stdin = stdin.encode(encoding='utf-8')
+                stdin = stdin.encode(encoding="utf-8")
             elif isinstance(stdin, bytearray):
                 stdin = bytes(stdin)
             try:
@@ -257,9 +260,9 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
-                    self.logger.warning('STDIN Send failed: closed PIPE')
+                    self.logger.warning("STDIN Send failed: closed PIPE")
                 elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
-                    self.logger.warning('STDIN Send failed: broken PIPE')
+                    self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
                     process.kill()
                     raise
@@ -272,4 +275,6 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                     process.kill()
                     raise
 
-        return process, None, process.stderr, process.stdout
+            process_stdin = None  # type: ignore
+
+        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)

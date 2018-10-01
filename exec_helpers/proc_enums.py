@@ -28,12 +28,7 @@ import typing  # noqa  # pylint: disable=unused-import
 
 import six
 
-__all__ = (
-    'SigNum',
-    'ExitCodes',
-    'exit_code_to_enum',
-    'exit_codes_to_enums',
-)
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums")
 
 
 @enum.unique
@@ -74,10 +69,7 @@ class SigNum(int, enum.Enum):
 
     def __str__(self):  # type: () -> str
         """Representation for logs."""
-        return "{name}<{value:d}(0x{value:02X})>".format(  # pragma: no cover
-            name=self.name,
-            value=self.value
-        )
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)  # pragma: no cover
 
 
 if six.PY3:  # pragma: no cover
@@ -152,10 +144,7 @@ class ExitCodes(digit_type, enum.Enum):
 
     def __str__(self):  # type: () -> str
         """Representation for logs."""
-        return "{name}<{value:d}(0x{value:02X})>".format(
-            name=self.name,
-            value=self.value
-        )
+        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)
 
 
 def exit_code_to_enum(code):  # type: (typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]

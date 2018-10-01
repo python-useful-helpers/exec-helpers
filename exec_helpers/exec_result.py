@@ -32,7 +32,7 @@ import yaml
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
-__all__ = ('ExecResult', )
+__all__ = ("ExecResult",)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,17 @@ class ExecResult(object):
     """Execution result."""
 
     __slots__ = [
-        '__cmd', '__stdin', '__stdout', '__stderr', '__exit_code',
-        '__timestamp',
-        '__stdout_str', '__stderr_str', '__stdout_brief', '__stderr_brief',
-        '__lock'
+        "__cmd",
+        "__stdin",
+        "__stdout",
+        "__stderr",
+        "__exit_code",
+        "__timestamp",
+        "__stdout_str",
+        "__stderr_str",
+        "__stdout_brief",
+        "__stderr_brief",
+        "__lock",
     ]
 
     def __init__(
@@ -53,7 +60,7 @@ class ExecResult(object):
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
-        exit_code=proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
+        exit_code=proc_enums.ExitCodes.EX_INVALID,  # type: typing.Union[int, proc_enums.ExitCodes]
     ):  # type: (...) -> None
         """Command execution result.
 
@@ -116,9 +123,7 @@ class ExecResult(object):
         return self.__timestamp
 
     @staticmethod
-    def _get_bytearray_from_array(
-        src  # type: typing.Iterable[bytes]
-    ):  # type: (...) -> bytearray
+    def _get_bytearray_from_array(src):  # type: (typing.Iterable[bytes]) -> bytearray
         """Get bytearray from array of bytes blocks.
 
         :param src: source to process
@@ -126,7 +131,7 @@ class ExecResult(object):
         :return: bytearray
         :rtype: bytearray
         """
-        return bytearray(b''.join(src))
+        return bytearray(b"".join(src))
 
     @staticmethod
     def _get_str_from_bin(src):  # type: (bytearray) -> str
@@ -137,10 +142,7 @@ class ExecResult(object):
         :return: decoded string
         :rtype: str
         """
-        return src.strip().decode(
-            encoding='utf-8',
-            errors='backslashreplace'
-        )
+        return src.strip().decode(encoding="utf-8", errors="backslashreplace")
 
     @classmethod
     def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> typing.Text
@@ -154,10 +156,8 @@ class ExecResult(object):
         if len(data) <= 7:
             src = data  # type: typing.Tuple[bytes, ...]
         else:
-            src = data[:3] + (b'...\n',) + data[-3:]
-        return cls._get_str_from_bin(
-            cls._get_bytearray_from_array(src)
-        )
+            src = data[:3] + (b"...\n",) + data[-3:]
+        return cls._get_str_from_bin(cls._get_bytearray_from_array(src))
 
     @property
     def cmd(self):  # type: () -> typing.Text
@@ -195,7 +195,7 @@ class ExecResult(object):
     def __poll_stream(
         src,  # type: typing.Iterable[bytes]
         log=None,  # type: typing.Optional[logging.Logger]
-        verbose=False  # type: bool
+        verbose=False,  # type: bool
     ):  # type: (...) -> typing.List[bytes]
         dst = []
         try:
@@ -204,7 +204,7 @@ class ExecResult(object):
                 if log:
                     log.log(  # type: ignore
                         level=logging.INFO if verbose else logging.DEBUG,
-                        msg=line.decode('utf-8', errors='backslashreplace').rstrip()
+                        msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
         except IOError:
             pass
@@ -214,7 +214,7 @@ class ExecResult(object):
         self,
         src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
-        verbose=False  # type: bool
+        verbose=False,  # type: bool
     ):  # type: (...) -> None
         """Read stdout file-like object to stdout.
 
@@ -231,7 +231,7 @@ class ExecResult(object):
         if not src:
             return
         if self.timestamp:
-            raise RuntimeError('Final exit code received.')
+            raise RuntimeError("Final exit code received.")
 
         with self.lock:
             self.__stdout_str = self.__stdout_brief = None
@@ -241,7 +241,7 @@ class ExecResult(object):
         self,
         src=None,  # type: typing.Optional[typing.Iterable]
         log=None,  # type: typing.Optional[logging.Logger]
-        verbose=False  # type: bool
+        verbose=False,  # type: bool
     ):  # type: (...) -> None
         """Read stderr file-like object to stdout.
 
@@ -258,7 +258,7 @@ class ExecResult(object):
         if not src:
             return
         if self.timestamp:
-            raise RuntimeError('Final exit code received.')
+            raise RuntimeError("Final exit code received.")
 
         with self.lock:
             self.__stderr_str = self.__stderr_brief = None
@@ -349,9 +349,9 @@ class ExecResult(object):
         If valid exit code is set - object became read-only.
         """
         if self.timestamp:
-            raise RuntimeError('Exit code is already received.')
+            raise RuntimeError("Exit code is already received.")
         if not isinstance(new_val, six.integer_types):
-            raise TypeError('Exit code is strictly int')
+            raise TypeError("Exit code is strictly int")
         with self.lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:
@@ -368,20 +368,15 @@ class ExecResult(object):
         :raises DeserializeValueError: Not valid source format
         """
         try:
-            if fmt == 'json':
-                return json.loads(self.stdout_str, encoding='utf-8')
-            elif fmt == 'yaml':
+            if fmt == "json":
+                return json.loads(self.stdout_str, encoding="utf-8")
+            elif fmt == "yaml":
                 return yaml.safe_load(self.stdout_str)
         except Exception:
-            tmpl = (
-                " stdout is not valid {fmt}:\n"
-                '{{stdout!r}}\n'.format(
-                    fmt=fmt))
+            tmpl = " stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))
-            raise exceptions.DeserializeValueError(
-                self.cmd + tmpl.format(stdout=self.stdout_brief)
-            )
-        msg = '{fmt} deserialize target is not implemented'.format(fmt=fmt)
+            raise exceptions.DeserializeValueError(self.cmd + tmpl.format(stdout=self.stdout_brief))
+        msg = "{fmt} deserialize target is not implemented".format(fmt=fmt)
         logger.error(msg)
         raise NotImplementedError(msg)
 
@@ -392,7 +387,7 @@ class ExecResult(object):
         :rtype: typing.Any
         """
         with self.lock:
-            return self.__deserialize(fmt='json')
+            return self.__deserialize(fmt="json")
 
     @property
     def stdout_yaml(self):  # type: () -> typing.Any
@@ -401,16 +396,24 @@ class ExecResult(object):
         :rtype: typing.Any
         """
         with self.lock:
-            return self.__deserialize(fmt='yaml')
+            return self.__deserialize(fmt="yaml")
 
     def __dir__(self):  # type: () -> typing.List[str]
         """Override dir for IDE and as source for getitem checks."""
         return [
-            'cmd', 'stdout', 'stderr', 'exit_code',
-            'stdout_bin', 'stderr_bin',
-            'stdout_str', 'stderr_str', 'stdout_brief', 'stderr_brief',
-            'stdout_json', 'stdout_yaml',
-            'lock'
+            "cmd",
+            "stdout",
+            "stderr",
+            "exit_code",
+            "stdout_bin",
+            "stderr_bin",
+            "stdout_str",
+            "stderr_str",
+            "stdout_brief",
+            "stderr_brief",
+            "stdout_json",
+            "stdout_yaml",
+            "lock",
         ]
 
     def __getitem__(self, item):  # type: (str) -> typing.Any
@@ -424,23 +427,14 @@ class ExecResult(object):
         """
         if item in dir(self):
             return getattr(self, item)
-        raise IndexError(
-            '"{item}" not found in {dir}'.format(
-                item=item, dir=dir(self)
-            )
-        )
+        raise IndexError('"{item}" not found in {dir}'.format(item=item, dir=dir(self)))
 
     def __repr__(self):  # type: () -> str
         """Representation for debugging."""
         return (
-            '{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, '
-            'exit_code={exit_code!s})'.format(
-                cls=self.__class__.__name__,
-                cmd=self.cmd,
-                stdout=self.stdout,
-                stderr=self.stderr,
-                exit_code=self.exit_code
-            ))
+            "{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, "
+            "exit_code={self.exit_code!s})".format(cls=self.__class__.__name__, self=self)
+        )
 
     def __str__(self):  # type: () -> str
         """Representation for logging."""
@@ -448,12 +442,12 @@ class ExecResult(object):
             "{cls}(\n\tcmd={cmd!r},"
             "\n\t stdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
-            '\n\texit_code={exit_code!s}\n)'.format(
+            "\n\texit_code={exit_code!s}\n)".format(
                 cls=self.__class__.__name__,
                 cmd=self.cmd,
                 stdout_brief=self.stdout_brief,
                 stderr_brief=self.stderr_brief,
-                exit_code=self.exit_code
+                exit_code=self.exit_code,
             )
         )
 
@@ -467,8 +461,4 @@ class ExecResult(object):
 
     def __hash__(self):  # type: () -> int
         """Hash for usage as dict key and in sets."""
-        return hash(
-            (
-                self.__class__, self.cmd, self.stdin, self.stdout, self.stderr,
-                self.exit_code
-            ))
+        return hash((self.__class__, self.cmd, self.stdin, self.stdout, self.stderr, self.exit_code))

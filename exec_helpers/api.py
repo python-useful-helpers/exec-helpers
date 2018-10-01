@@ -27,7 +27,7 @@ import abc
 import logging
 import re
 import threading
-import typing  # noqa  # pylint: disable=unused-import
+import typing
 
 import six
 
@@ -37,20 +37,23 @@ from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
 
 
+ExecuteAsyncResult = typing.NamedTuple(
+    "ExecuteAsyncResult",
+    [
+        ("interface", typing.Any),
+        ("stdin", typing.Optional[typing.Any]),
+        ("stderr", typing.Optional[typing.Any]),
+        ("stdout", typing.Optional[typing.Any]),
+    ],
+)
+
+
 class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     """ExecHelper global API."""
 
-    __slots__ = (
-        '__lock',
-        '__logger',
-        'log_mask_re'
-    )
+    __slots__ = ("__lock", "__logger", "log_mask_re")
 
-    def __init__(
-        self,
-        logger,  # type: logging.Logger
-        log_mask_re=None,  # type: typing.Optional[str]
-    ):  # type: (...) -> None
+    def __init__(self, logger, log_mask_re=None):  # type: (logging.Logger, typing.Optional[str]) -> None
         """Global ExecHelper API.
 
         :param logger: logger instance to use
@@ -91,11 +94,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         """Context manager usage."""
         self.lock.release()  # pragma: no cover
 
-    def _mask_command(
-        self,
-        cmd,  # type: str
-        log_mask_re=None,  # type: typing.Optional[str]
-    ):  # type: (...) -> str
+    def _mask_command(self, cmd, log_mask_re=None):  # type: (str, typing.Optional[str]) -> str
         """Log command with masking and return parsed cmd.
 
         :param cmd: command
@@ -124,7 +123,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
             for idx in range(0, len(indexes) - 2, 2):
                 start = indexes[idx]
                 end = indexes[idx + 1]
-                masked += text[start: end] + '<*masked*>'
+                masked += text[start:end] + "<*masked*>"
 
             masked += text[indexes[-2]: indexes[-1]]  # final part
             return masked
@@ -148,7 +147,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         **kwargs  # type: typing.Any
-    ):  # type: (...) -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any,]
+    ):  # type: (...) -> ExecuteAsyncResult
         """Execute command in async mode and return remote interface with IO objects.
 
         :param command: Command for execution
@@ -166,11 +165,20 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :type log_mask_re: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
-        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]
+        :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
+        :rtype: typing.NamedTuple(
+                    'ExecuteAsyncResult',
+                    [
+                        ('interface', typing.Any),
+                        ('stdin', typing.Optional[typing.Any]),
+                        ('stderr', typing.Optional[typing.Any]),
+                        ('stdout', typing.Optional[typing.Any]),
+                    ]
+                )
 
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
+        .. versionchanged:: 1.4.0 Use typed NamedTuple as result
         """
         raise NotImplementedError  # pragma: no cover
 
@@ -235,34 +243,22 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.4.0 Allow parallel calls
         """
-        with self.lock:
-            (
-                iface,
-                _,
-                stderr,
-                stdout,
-            ) = self.execute_async(
-                command,
-                verbose=verbose,
-                **kwargs
-            )
+        async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
 
-            result = self._exec_command(
-                command=command,
-                interface=iface,
-                stdout=stdout,
-                stderr=stderr,
-                timeout=timeout,
-                verbose=verbose,
-                **kwargs
-            )
-            message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-            self.logger.log(  # type: ignore
-                level=logging.INFO if verbose else logging.DEBUG,
-                msg=message
-            )
-            return result
+        result = self._exec_command(
+            command=command,
+            interface=async_result.interface,
+            stdout=async_result.stdout,
+            stderr=async_result.stderr,
+            timeout=timeout,
+            verbose=verbose,
+            **kwargs
+        )
+        message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
+        return result
 
     def check_call(
         self,
@@ -299,20 +295,16 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret['exit_code'] not in expected:
+        if ret.exit_code not in expected:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
                 "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                    expected=expected
-                ))
+                    append=error_info + "\n" if error_info else "", result=ret, expected=expected
+                )
+            )
             self.logger.error(message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=expected,
-                )
+                raise exceptions.CalledProcessError(result=ret, expected=expected)
         return ret
 
     def check_stderr(
@@ -346,19 +338,14 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         ret = self.check_call(
-            command, verbose, timeout=timeout,
-            error_info=error_info, raise_on_err=raise_on_err, **kwargs)
-        if ret['stderr']:
+            command, verbose, timeout=timeout, error_info=error_info, raise_on_err=raise_on_err, **kwargs
+        )
+        if ret.stderr:
             message = (
                 "{append}Command {result.cmd!r} STDERR while not expected\n"
-                "\texit code: {result.exit_code!s}".format(
-                    append=error_info + '\n' if error_info else '',
-                    result=ret,
-                ))
+                "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
+            )
             self.logger.error(message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(
-                    result=ret,
-                    expected=kwargs.get('expected'),
-                )
+                raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
         return ret

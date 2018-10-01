@@ -26,20 +26,17 @@ import typing  # noqa  # pylint: disable=unused-import
 
 import paramiko  # type: ignore
 
-__all__ = ('SSHAuth', )
+__all__ = ("SSHAuth",)
 
 logger = logging.getLogger(__name__)
-logging.getLogger('paramiko').setLevel(logging.WARNING)
-logging.getLogger('iso8601').setLevel(logging.WARNING)
+logging.getLogger("paramiko").setLevel(logging.WARNING)
+logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
 class SSHAuth(object):
     """SSH Authorization object."""
 
-    __slots__ = (
-        '__username', '__password', '__key', '__keys',
-        '__key_filename', '__passphrase'
-    )
+    __slots__ = ("__username", "__password", "__key", "__keys", "__key_filename", "__passphrase")
 
     def __init__(
         self,
@@ -102,7 +99,7 @@ class SSHAuth(object):
         """
         if key is None:
             return None
-        return '{0} {1}'.format(key.get_name(), key.get_base64())
+        return "{0} {1}".format(key.get_name(), key.get_base64())
 
     @property
     def public_key(self):  # type: () -> typing.Optional[str]
@@ -129,7 +126,7 @@ class SSHAuth(object):
         :type tgt: file
         """
         # noinspection PyTypeChecker
-        tgt.write('{}\n'.format(self.__password))
+        tgt.write("{}\n".format(self.__password))
 
     def connect(
         self,
@@ -151,64 +148,56 @@ class SSHAuth(object):
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
-        kwargs = {
-            'username': self.username,
-            'password': self.__password,
-        }  # type: typing.Dict[str, typing.Any]
+        kwargs = {"username": self.username, "password": self.__password}  # type: typing.Dict[str, typing.Any]
         if hostname is not None:
-            kwargs['hostname'] = hostname
-            kwargs['port'] = port
+            kwargs["hostname"] = hostname
+            kwargs["port"] = port
 
         if isinstance(client, paramiko.client.SSHClient):  # pragma: no cover
             # paramiko.transport.Transport still do not allow passphrase and key filename
 
             if self.key_filename is not None:
-                kwargs['key_filename'] = self.key_filename
+                kwargs["key_filename"] = self.key_filename
             if self.__passphrase is not None:
-                kwargs['passphrase'] = self.__passphrase
+                kwargs["passphrase"] = self.__passphrase
 
         keys = [self.__key]
         keys.extend([k for k in self.__keys if k != self.__key])
 
         for key in keys:
-            kwargs['pkey'] = key
+            kwargs["pkey"] = key
             try:
                 client.connect(**kwargs)
                 if self.__key != key:
                     self.__key = key
-                    logger.debug(
-                        'Main key has been updated, public key is: \n'
-                        '{}'.format(self.public_key))
+                    logger.debug("Main key has been updated, public key is: \n{}".format(self.public_key))
                 return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:
-                    logger.exception('No password has been set!')
+                    logger.exception("No password has been set!")
                     raise
                 else:
-                    logger.critical('Unexpected PasswordRequiredException, when password is set!')
+                    logger.critical("Unexpected PasswordRequiredException, when password is set!")
                     raise
-            except (paramiko.AuthenticationException,
-                    paramiko.BadHostKeyException):
+            except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
-        msg = 'Connection using stored authentication info failed!'
+        msg = "Connection using stored authentication info failed!"
         if log:
             logger.exception(msg)
         raise paramiko.AuthenticationException(msg)
 
     def __hash__(self):  # type: () -> int
         """Hash for usage as dict keys and comparison."""
-        return hash((
-            self.__class__,
-            self.username,
-            self.__password,
-            tuple(self.__keys),
+        return hash(
             (
-                tuple(self.key_filename)
-                if isinstance(self.key_filename, list)
-                else self.key_filename
-            ),
-            self.__passphrase
-        ))
+                self.__class__,
+                self.username,
+                self.__password,
+                tuple(self.__keys),
+                (tuple(self.key_filename) if isinstance(self.key_filename, list) else self.key_filename),
+                self.__passphrase,
+            )
+        )
 
     def __eq__(self, other):  # type: (typing.Any) -> bool
         """Comparison helper."""
@@ -221,56 +210,36 @@ class SSHAuth(object):
     def __deepcopy__(self, memo):  # type: (typing.Any) -> SSHAuth
         """Helper for copy.deepcopy."""
         return self.__class__(  # type: ignore
-            username=self.username,
-            password=self.__password,
-            key=self.__key,
-            keys=copy.deepcopy(self.__keys)
+            username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
         )
 
     def __copy__(self):  # type: () -> SSHAuth
         """Copy self."""
         return self.__class__(  # type: ignore
-            username=self.username,
-            password=self.__password,
-            key=self.__key,
-            keys=self.__keys
+            username=self.username, password=self.__password, key=self.__key, keys=self.__keys
         )
 
     def __repr__(self):  # type: (...) -> str
         """Representation for debug purposes."""
-        _key = (
-            None if self.__key is None else
-            '<private for pub: {}>'.format(self.public_key)
-        )
+        _key = None if self.__key is None else "<private for pub: {}>".format(self.public_key)
         _keys = []  # type: typing.List[typing.Union[str, None]]
         for k in self.__keys:
             if k == self.__key:
                 continue
             # noinspection PyTypeChecker
-            _keys.append(
-                '<private for pub: {}>'.format(
-                    self.__get_public_key(key=k)) if k is not None else None)
+            _keys.append("<private for pub: {}>".format(self.__get_public_key(key=k)) if k is not None else None)
 
         return (
-            '{cls}('
-            'username={self.username!r}, '
-            'password=<*masked*>, '
-            'key={key}, '
-            'keys={keys}, '
-            'key_filename={self.key_filename!r}, '
-            'passphrase=<*masked*>,'
-            ')'.format(
-                cls=self.__class__.__name__,
-                self=self,
-                key=_key,
-                keys=_keys)
+            "{cls}("
+            "username={self.username!r}, "
+            "password=<*masked*>, "
+            "key={key}, "
+            "keys={keys}, "
+            "key_filename={self.key_filename!r}, "
+            "passphrase=<*masked*>,"
+            ")".format(cls=self.__class__.__name__, self=self, key=_key, keys=_keys)
         )
 
     def __str__(self):  # type: (...) -> str
         """Representation for debug purposes."""
-        return (
-            '{cls} for {username}'.format(
-                cls=self.__class__.__name__,
-                username=self.username,
-            )
-        )
+        return "{cls} for {self.username}".format(cls=self.__class__.__name__, self=self)
