@@ -25,12 +25,11 @@ from __future__ import unicode_literals
 import base64
 import contextlib
 import copy
+import io
 import unittest
 
 import mock
 import paramiko
-# noinspection PyUnresolvedReferences
-from six.moves import cStringIO
 
 import exec_helpers
 
@@ -114,7 +113,7 @@ class TestSSHAuth(unittest.TestCase):
                     int_keys.append(k)
 
         self.assertEqual(auth.username, username)
-        with contextlib.closing(cStringIO()) as tgt:
+        with contextlib.closing(io.StringIO()) as tgt:
             auth.enter_password(tgt)
             self.assertEqual(tgt.getvalue(), '{}\n'.format(password))
         self.assertEqual(

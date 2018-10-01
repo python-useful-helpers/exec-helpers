@@ -64,17 +64,6 @@ after_success:
 jobs:
   fast_finish: true
   include:
-  - stage: test
-    <<: *python34
-  - stage: test
-    <<: *python35
-  - stage: test
-    <<: *python36
-  - stage: test
-    <<: *python37
-  - stage: test
-    <<: *pypy3
-
   - <<: *static_analysis
     name: "PyLint"
     install:
@@ -99,15 +88,6 @@ jobs:
     script:
     - mypy --strict exec_helpers
 
-  - <<: *test_cythonized
-    <<: *python34
-  - <<: *test_cythonized
-    <<: *python35
-  - <<: *test_cythonized
-    <<: *python36
-  - <<: *test_cythonized
-    <<: *python37
-
   - <<: *code_style_check
     name: "PEP8"
     install:
@@ -122,6 +102,33 @@ jobs:
     - pip install --upgrade pydocstyle
     script:
     - pydocstyle exec_helpers
+  - <<: *code_style_check
+    name: "Black formatting"
+    install:
+    - *upgrade_python_toolset
+    - pip install --upgrade black
+    script:
+    - black --check exec_helpers
+
+  - stage: test
+    <<: *python34
+  - stage: test
+    <<: *python35
+  - stage: test
+    <<: *python36
+  - stage: test
+    <<: *python37
+  - stage: test
+    <<: *pypy3
+
+  - <<: *test_cythonized
+    <<: *python34
+  - <<: *test_cythonized
+    <<: *python35
+  - <<: *test_cythonized
+    <<: *python36
+  - <<: *test_cythonized
+    <<: *python37
 
   - stage: deploy
     # This prevents job from appearing in test plan unless commit is tagged:

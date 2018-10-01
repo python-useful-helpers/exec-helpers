@@ -293,7 +293,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         expected = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret["exit_code"] not in expected:
+        if ret.exit_code not in expected:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
                 "{result.exit_code!s} while expected {expected!s}".format(
@@ -338,7 +338,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         ret = self.check_call(
             command, verbose, timeout=timeout, error_info=error_info, raise_on_err=raise_on_err, **kwargs
         )
-        if ret["stderr"]:
+        if ret.stderr:
             message = (
                 "{append}Command {result.cmd!r} STDERR while not expected\n"
                 "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)

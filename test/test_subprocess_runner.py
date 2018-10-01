@@ -26,7 +26,6 @@ import subprocess
 import unittest
 
 import mock
-import six
 
 import exec_helpers
 from exec_helpers import subprocess_runner
@@ -553,7 +552,6 @@ class TestSubprocessRunner(unittest.TestCase):
             mock.call.close()
         ])
 
-    @unittest.skipIf(six.PY2, 'Not implemented exception')
     def test_007_check_stdin_fail_broken_pipe(
         self,
         popen,  # type: mock.MagicMock
@@ -657,7 +655,6 @@ class TestSubprocessRunner(unittest.TestCase):
             runner.execute_async(print_stdin, stdin=stdin)
         popen_obj.kill.assert_called_once()
 
-    @unittest.skipIf(six.PY2, 'Not implemented exception')
     def test_010_check_stdin_fail_close_pipe(
         self,
         popen,  # type: mock.MagicMock

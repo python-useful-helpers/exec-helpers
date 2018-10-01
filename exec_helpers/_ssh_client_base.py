@@ -49,6 +49,7 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
+# noinspection PyTypeHints
 class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
