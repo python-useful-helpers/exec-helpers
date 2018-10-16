@@ -211,9 +211,7 @@ class SSHAuth:
 
     def __copy__(self) -> "SSHAuth":
         """Copy self."""
-        return self.__class__(
-            username=self.username, password=self.__password, key=self.__key, keys=self.__keys
-        )
+        return self.__class__(username=self.username, password=self.__password, key=self.__key, keys=self.__keys)
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
