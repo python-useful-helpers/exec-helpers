@@ -658,7 +658,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             if stderr and interface.recv_stderr_ready():
                 result.read_stderr(src=stderr, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_pipes(stop: threading.Event) -> None:
             """Polling task for FIFO buffers.
 
@@ -816,7 +816,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call."""
             async_result = remote.execute_async(command, **kwargs)  # type: SshExecuteAsyncResult

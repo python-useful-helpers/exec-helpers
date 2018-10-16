@@ -365,10 +365,14 @@ class ExecResult:
                 return json.loads(self.stdout_str, encoding="utf-8")
             elif fmt == "yaml":
                 return yaml.safe_load(self.stdout_str)
-        except Exception:
-            tmpl = " stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
-            logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
-            raise exceptions.DeserializeValueError(self.cmd + tmpl.format(stdout=self.stdout_brief))
+        except Exception as e:
+            tmpl = "{{self.cmd}} stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
+            logger.exception(tmpl.format(self=self, stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
+
+            raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
+                e.__traceback__
+            ) from e
+
         msg = "{fmt} deserialize target is not implemented".format(fmt=fmt)
         logger.error(msg)
         raise NotImplementedError(msg)
