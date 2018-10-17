@@ -145,12 +145,12 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         .. versionadded:: 1.2.0
         """
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stdout() -> None:
             """Sync stdout poll."""
             result.read_stdout(src=stdout, log=logger, verbose=verbose)
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stderr() -> None:
             """Sync stderr poll."""
             result.read_stderr(src=stderr, log=logger, verbose=verbose)

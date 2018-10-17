@@ -84,7 +84,7 @@ jobs:
     install:
     - *upgrade_python_toolset
     - *install_deps
-    - pip install --upgrade "mypy >= 0.620"
+    - pip install --upgrade "mypy >= 0.641"
     script:
     - mypy --strict exec_helpers
 
