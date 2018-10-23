@@ -23,10 +23,12 @@ import collections
 import concurrent.futures
 import errno
 import logging
+import platform
 import subprocess  # nosec  # Expected usage
 import threading
 import typing
 
+import psutil  # type: ignore
 import threaded
 
 from exec_helpers import api
@@ -35,6 +37,38 @@ from exec_helpers import exceptions
 from exec_helpers import _log_templates
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
+
+
+# Adopt from:
+# https://stackoverflow.com/questions/1230669/subprocess-deleting-child-processes-in-windows
+def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: no cover
+    """Kill process tree.
+
+    :param pid: PID of parent process to kill
+    :type pid: int
+    :param including_parent: kill also parent process
+    :type including_parent: bool
+    """
+    parent = psutil.Process(pid)
+    children = parent.children(recursive=True)
+    for child in children:  # type: psutil.Process
+        child.kill()
+    _, alive = psutil.wait_procs(children, timeout=5)
+    for proc in alive:  # type: psutil.Process
+        proc.kill()  # 2nd shot
+    if including_parent:
+        parent.kill()
+        parent.wait(5)
+
+
+# Subprocess extra arguments.
+# Flags from:
+# https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
+kw = {}  # type: typing.Dict[str, typing.Any]
+if "Windows" == platform.system():  # pragma: no cover
+    kw["creationflags"] = 0x00000200
+else:  # pragma: no cover
+    kw["start_new_session"] = True
 
 
 # noinspection PyTypeHints
@@ -87,7 +121,7 @@ class SingletonMeta(abc.ABCMeta):
 
         .. versionadded:: 1.2.0
         """
-        return collections.OrderedDict()  # pragma: no cover
+        return collections.OrderedDict()
 
 
 class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
@@ -172,7 +206,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         except subprocess.TimeoutExpired:
             exit_code = interface.poll()  # Update exit code
 
-        concurrent.futures.wait([stdout_future, stderr_future], timeout=1)  # Minimal timeout to complete polling
+        concurrent.futures.wait([stdout_future, stderr_future], timeout=0.5)  # Minimal timeout to complete polling
 
         # Process closed?
         if exit_code is not None:
@@ -180,8 +214,9 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             return result
         # Kill not ended process and wait for close
         try:
+            kill_proc_tree(interface.pid, including_parent=False)  # kill -9 for all subprocesses
             interface.kill()  # kill -9
-            concurrent.futures.wait([stdout_future, stderr_future], timeout=5)
+            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.5)
             # Force stop cycle if no exit code after kill
             stdout_future.cancel()
             stderr_future.cancel()
@@ -254,6 +289,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             cwd=kwargs.get("cwd", None),
             env=kwargs.get("env", None),
             universal_newlines=False,
+            **kw
         )
 
         if stdin is None:
@@ -274,6 +310,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
                 elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
+                    kill_proc_tree(process.pid)
                     process.kill()
                     raise
             try:

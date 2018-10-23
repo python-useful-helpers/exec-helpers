@@ -116,7 +116,7 @@ class _MemorizedSSH(abc.ABCMeta):
 
         .. versionadded:: 1.2.0
         """
-        return collections.OrderedDict()  # pragma: no cover
+        return collections.OrderedDict()
 
     def __call__(  # type: ignore
         cls: "_MemorizedSSH",
