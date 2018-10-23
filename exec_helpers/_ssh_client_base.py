@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 import abc
 import base64
-import collections
+
 # noinspection PyCompatibility
 import concurrent.futures
 import copy
@@ -97,19 +97,6 @@ class _MemorizedSSH(abc.ABCMeta):
     """
 
     __cache = {}  # type: typing.Dict[typing.Tuple[str, int], SSHClientBase]
-
-    @classmethod
-    def __prepare__(
-        mcs,  # type: typing.Type[_MemorizedSSH]
-        name,  # type: str
-        bases,  # type: typing.Iterable[typing.Type]
-        **kwargs  # type: typing.Any
-    ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()  # pragma: no cover
 
     def __call__(  # type: ignore
         cls,  # type: _MemorizedSSH
@@ -650,7 +637,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             if stderr and interface.recv_stderr_ready():
                 result.read_stderr(src=stderr, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_pipes(stop,):  # type: (threading.Event) -> None
             """Polling task for FIFO buffers.
 
@@ -807,7 +794,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def get_result(remote):  # type: (SSHClientBase) -> exec_result.ExecResult
             """Get result from remote call."""
             async_result = remote.execute_async(command, **kwargs)  # type: SshExecuteAsyncResult

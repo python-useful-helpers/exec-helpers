@@ -21,17 +21,19 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import abc
-import collections
+
 # noinspection PyCompatibility
 import concurrent.futures
 import errno
 import logging
 import os
+import platform
 import subprocess  # nosec  # Expected usage
 import threading
 import typing  # noqa: F401  # pylint: disable=unused-import
 
 import six
+import psutil  # type: ignore
 import threaded
 
 from exec_helpers import api
@@ -44,6 +46,39 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 devnull = open(os.devnull)  # subprocess.DEVNULL is py3.3+
 
 
+# Adopt from:
+# https://stackoverflow.com/questions/1230669/subprocess-deleting-child-processes-in-windows
+def kill_proc_tree(pid, including_parent=True):  # type: (int, bool) -> None  # pragma: no cover
+    """Kill process tree.
+
+    :param pid: PID of parent process to kill
+    :type pid: int
+    :param including_parent: kill also parent process
+    :type including_parent: bool
+    """
+    parent = psutil.Process(pid)
+    children = parent.children(recursive=True)
+    for child in children:  # type: psutil.Process
+        child.kill()
+    _, alive = psutil.wait_procs(children, timeout=5)
+    for proc in alive:  # type: psutil.Process
+        proc.kill()  # 2nd shot
+    if including_parent:
+        parent.kill()
+        parent.wait(5)
+
+
+# Subprocess extra arguments.
+# Flags from:
+# https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
+kw = {}  # type: typing.Dict[str, typing.Any]
+if "Windows" == platform.system():  # pragma: no cover
+    kw["creationflags"] = 0x00000200
+else:  # pragma: no cover
+    kw["preexec_fn"] = os.setsid
+
+
+# noinspection PyTypeHints
 class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
@@ -69,19 +104,6 @@ class SingletonMeta(abc.ABCMeta):
                 # noinspection PySuperArguments
                 cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
-
-    @classmethod
-    def __prepare__(
-        mcs,
-        name,  # type: str
-        bases,  # type: typing.Iterable[typing.Type]
-        **kwargs  # type: typing.Any
-    ):  # type: (...) -> collections.OrderedDict  # pylint: disable=unused-argument
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()  # pragma: no cover
 
 
 class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
@@ -138,16 +160,23 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         """
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stdout():  # type: () -> None
             """Sync stdout poll."""
             result.read_stdout(src=stdout, log=logger, verbose=verbose)
             interface.wait()  # wait for the end of execution
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stderr():  # type: () -> None
             """Sync stderr poll."""
             result.read_stderr(src=stderr, log=logger, verbose=verbose)
+
+        def close_streams():  # type: () -> None
+            """Enforce FIFO closure."""
+            if stdout is not None and not stdout.closed:
+                stdout.close()
+            if stderr is not None and not stderr.closed:
+                stderr.close()
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
@@ -167,11 +196,13 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         # Process closed?
         if exit_code is not None:
             result.exit_code = exit_code
+            close_streams()
             return result
         # Kill not ended process and wait for close
         try:
+            kill_proc_tree(interface.pid, including_parent=False)  # kill -9 for all subprocesses
             interface.kill()  # kill -9
-            concurrent.futures.wait([stdout_future, stderr_future], timeout=5)
+            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.5)
             # Force stop cycle if no exit code after kill
             stdout_future.cancel()
             stderr_future.cancel()
@@ -182,6 +213,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 result.exit_code = exit_code
                 return result
             raise  # Some other error
+        finally:
+            close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         logger.debug(wait_err_msg)
@@ -244,6 +277,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
             cwd=kwargs.get("cwd", None),
             env=kwargs.get("env", None),
             universal_newlines=False,
+            **kw
         )
 
         if stdin is None:
@@ -264,6 +298,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
+                    kill_proc_tree(process.pid)
                     process.kill()
                     raise
             try:
