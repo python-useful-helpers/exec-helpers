@@ -138,7 +138,7 @@ def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, E
     """Convert exit code to enum if possible."""
     if isinstance(code, int) and code in ExitCodes.__members__.values():
         return ExitCodes(code)
-    return code
+    return code  # pragma: no cover
 
 
 def exit_codes_to_enums(
