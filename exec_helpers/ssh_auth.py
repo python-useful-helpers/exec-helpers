@@ -209,15 +209,13 @@ class SSHAuth(object):
 
     def __deepcopy__(self, memo):  # type: (typing.Any) -> SSHAuth
         """Helper for copy.deepcopy."""
-        return self.__class__(  # type: ignore
+        return self.__class__(
             username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
         )
 
     def __copy__(self):  # type: () -> SSHAuth
         """Copy self."""
-        return self.__class__(  # type: ignore
-            username=self.username, password=self.__password, key=self.__key, keys=self.__keys
-        )
+        return self.__class__(username=self.username, password=self.__password, key=self.__key, keys=self.__keys)
 
     def __repr__(self):  # type: (...) -> str
         """Representation for debug purposes."""

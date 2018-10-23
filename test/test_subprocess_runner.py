@@ -22,6 +22,8 @@ from __future__ import unicode_literals
 
 import errno
 import logging
+import os
+import platform
 import subprocess
 import unittest
 
@@ -49,8 +51,19 @@ class FakeFileStream(object):
         return hash(tuple(self.__src))
 
 
-@mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
-@mock.patch('subprocess.Popen', autospec=True, name='subprocess.Popen')
+# Subprocess extra arguments.
+# Flags from:
+# https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
+kw = {}
+if 'Windows' == platform.system():
+    kw['creationflags'] = 0x00000200
+else:
+    kw["preexec_fn"] = os.setsid
+
+
+@mock.patch("psutil.Process", autospec=True)
+@mock.patch("exec_helpers.subprocess_runner.logger", autospec=True)
+@mock.patch("subprocess.Popen", autospec=True, name="subprocess.Popen")
 class TestSubprocessRunner(unittest.TestCase):
     def setUp(self):
         subprocess_runner.SingletonMeta._instances.clear()
@@ -108,7 +121,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_001_call(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):  # type: (...) -> None
         popen_obj, exp_result = self.prepare_close(popen)
 
@@ -127,6 +141,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -145,7 +160,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_002_call_verbose(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):  # type: (...) -> None
         popen_obj, _ = self.prepare_close(popen)
 
@@ -166,7 +182,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_003_context_manager(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         popen_obj, exp_result = self.prepare_close(popen)
 
@@ -193,7 +209,7 @@ class TestSubprocessRunner(unittest.TestCase):
         self,
         _,  # type: mock.MagicMock
         popen,  # type: mock.MagicMock
-        __  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):
         popen_obj, exp_result = self.prepare_close(popen)
         popen_obj.poll.return_value = None
@@ -222,13 +238,15 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
     def test_005_execute_no_stdout(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):
         popen_obj, exp_result = self.prepare_close(popen, open_stdout=False)
 
@@ -247,6 +265,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess_runner.devnull,
                 universal_newlines=False,
+                **kw
             ),
         ))
         logger.assert_has_calls(
@@ -269,7 +288,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_006_execute_no_stderr(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):
         popen_obj, exp_result = self.prepare_close(popen, open_stderr=False)
 
@@ -288,6 +308,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
         logger.assert_has_calls(
@@ -311,7 +332,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_007_execute_no_stdout_stderr(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):
         popen_obj, exp_result = self.prepare_close(
             popen,
@@ -334,6 +356,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess_runner.devnull,
                 universal_newlines=False,
+                **kw
             ),
         ))
         logger.assert_has_calls(
@@ -351,7 +374,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_008_execute_mask_global(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
@@ -381,6 +405,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -400,7 +425,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_009_execute_mask_local(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):
         cmd = "USE='secret=secret_pass' do task"
         log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
@@ -428,6 +454,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
         self.assertEqual(
@@ -445,7 +472,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_004_check_stdin_str(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         stdin = u'this is a line'
 
@@ -470,6 +497,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -481,7 +509,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_005_check_stdin_bytes(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         stdin = b'this is a line'
 
@@ -506,6 +534,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -517,7 +546,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_006_check_stdin_bytearray(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         stdin = bytearray(b'this is a line')
 
@@ -542,6 +571,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -553,7 +583,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_008_check_stdin_fail_closed_win(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):  # type: (...) -> None
         stdin = b'this is a line'
 
@@ -581,6 +612,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -593,7 +625,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_009_check_stdin_fail_write(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         stdin = b'this is a line'
 
@@ -615,7 +647,8 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_011_check_stdin_fail_close_pipe_win(
         self,
         popen,  # type: mock.MagicMock
-        logger  # type: mock.MagicMock
+        logger,  # type: mock.MagicMock
+        *args
     ):  # type: (...) -> None
         stdin = b'this is a line'
 
@@ -643,6 +676,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -655,7 +689,7 @@ class TestSubprocessRunner(unittest.TestCase):
     def test_012_check_stdin_fail_close(
         self,
         popen,  # type: mock.MagicMock
-        _  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
     ):  # type: (...) -> None
         stdin = b'this is a line'
 
@@ -679,7 +713,7 @@ class TestSubprocessRunner(unittest.TestCase):
         self,
         _,  # type: mock.MagicMock
         popen,  # type: mock.MagicMock
-        __  # type: mock.MagicMock
+        *args  # type: mock.MagicMock
 
     ):
         popen_obj, exp_result = self.prepare_close(popen, ec=exec_helpers.ExitCodes.EX_INVALID)
@@ -704,6 +738,7 @@ class TestSubprocessRunner(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 universal_newlines=False,
+                **kw
             ),
         ))
 
@@ -711,7 +746,7 @@ class TestSubprocessRunner(unittest.TestCase):
 @mock.patch('exec_helpers.subprocess_runner.logger', autospec=True)
 @mock.patch('exec_helpers.subprocess_runner.Subprocess.execute')
 class TestSubprocessRunnerHelpers(unittest.TestCase):
-    def test_001_check_call(self, execute, logger):
+    def test_001_check_call(self, execute, *args):
         exit_code = 0
         return_value = exec_helpers.ExecResult(
             cmd=command,
@@ -745,7 +780,7 @@ class TestSubprocessRunnerHelpers(unittest.TestCase):
             runner.check_call(command=command, verbose=verbose, timeout=None)
         execute.assert_called_once_with(command, verbose, None)
 
-    def test_002_check_call_expected(self, execute, logger):
+    def test_002_check_call_expected(self, execute, *args):
         exit_code = 0
         return_value = exec_helpers.ExecResult(
             cmd=command,
