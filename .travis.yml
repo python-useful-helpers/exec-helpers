@@ -3,7 +3,7 @@ language: python
 os: linux
 install:
 - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
-- pip install --upgrade pytest pytest-sugar
+- pip install --upgrade pytest pytest-mock pytest-sugar
 - &install_deps pip install -r CI_REQUIREMENTS.txt
 - pip install --upgrade pytest-cov coveralls
 

@@ -43,15 +43,16 @@ class ExecResult(object):
     __slots__ = [
         "__cmd",
         "__stdin",
-        "__stdout",
-        "__stderr",
+        "_stdout",
+        "_stderr",
         "__exit_code",
         "__timestamp",
-        "__stdout_str",
-        "__stderr_str",
-        "__stdout_brief",
-        "__stderr_brief",
-        "__lock",
+        "_stdout_str",
+        "_stderr_str",
+        "_stdout_brief",
+        "_stderr_brief",
+        "__stdout_lock",
+        "__stderr_lock",
     ]
 
     def __init__(
@@ -75,7 +76,8 @@ class ExecResult(object):
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, proc_enums.ExitCodes]
         """
-        self.__lock = threading.RLock()
+        self.__stdout_lock = threading.RLock()
+        self.__stderr_lock = threading.RLock()
 
         self.__cmd = cmd
         if isinstance(stdin, six.binary_type):
@@ -85,33 +87,46 @@ class ExecResult(object):
         self.__stdin = stdin  # type: typing.Optional[typing.Text]
 
         if stdout is not None:
-            self.__stdout = tuple(stdout)  # type: typing.Tuple[bytes, ...]
+            self._stdout = tuple(stdout)  # type: typing.Tuple[bytes, ...]
         else:
-            self.__stdout = ()
+            self._stdout = ()
 
         if stderr is not None:
-            self.__stderr = tuple(stderr)  # type: typing.Tuple[bytes, ...]
+            self._stderr = tuple(stderr)  # type: typing.Tuple[bytes, ...]
         else:
-            self.__stderr = ()
+            self._stderr = ()
 
         self.__exit_code = proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
         self.__timestamp = None
         self.exit_code = exit_code
 
         # By default is none:
-        self.__stdout_str = None
-        self.__stderr_str = None
-        self.__stdout_brief = None
-        self.__stderr_brief = None
+        self._stdout_str = None
+        self._stderr_str = None
+        self._stdout_brief = None
+        self._stderr_brief = None
 
     @property
-    def lock(self):  # type: () -> threading.RLock
+    def stdout_lock(self):  # type: () -> threading.RLock
         """Lock object for thread-safe operation.
 
-        :return: internal lock
+        :return: internal lock for stdout
         :rtype: threading.RLock
+
+        .. versionadded:: 1.9.0
         """
-        return self.__lock
+        return self.__stdout_lock
+
+    @property
+    def stderr_lock(self):  # type: () -> threading.RLock
+        """Lock object for thread-safe operation.
+
+        :return: internal lock for stderr
+        :rtype: threading.RLock
+
+        .. versionadded:: 1.9.0
+        """
+        return self.__stderr_lock
 
     @property
     def timestamp(self):  # type: () -> typing.Optional[datetime.datetime]
@@ -181,7 +196,7 @@ class ExecResult(object):
 
         :rtype: typing.Tuple[bytes, ...]
         """
-        return self.__stdout
+        return self._stdout
 
     @property
     def stderr(self):  # type: () -> typing.Tuple[bytes, ...]
@@ -189,10 +204,10 @@ class ExecResult(object):
 
         :rtype: typing.Tuple[bytes, ...]
         """
-        return self.__stderr
+        return self._stderr
 
     @staticmethod
-    def __poll_stream(
+    def _poll_stream(
         src,  # type: typing.Iterable[bytes]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False,  # type: bool
@@ -233,9 +248,9 @@ class ExecResult(object):
         if self.timestamp:
             raise RuntimeError("Final exit code received.")
 
-        with self.lock:
-            self.__stdout_str = self.__stdout_brief = None
-            self.__stdout += tuple(self.__poll_stream(src, log, verbose))
+        with self.stdout_lock:
+            self._stdout_str = self._stdout_brief = None
+            self._stdout += tuple(self._poll_stream(src, log, verbose))
 
     def read_stderr(
         self,
@@ -260,9 +275,9 @@ class ExecResult(object):
         if self.timestamp:
             raise RuntimeError("Final exit code received.")
 
-        with self.lock:
-            self.__stderr_str = self.__stderr_brief = None
-            self.__stderr += tuple(self.__poll_stream(src, log, verbose))
+        with self.stderr_lock:
+            self._stderr_str = self._stderr_brief = None
+            self._stderr += tuple(self._poll_stream(src, log, verbose))
 
     @property
     def stdout_bin(self):  # type: () -> bytearray
@@ -272,7 +287,7 @@ class ExecResult(object):
         and for debug purposes we can use this as data source.
         :rtype: bytearray
         """
-        with self.lock:
+        with self.stdout_lock:
             return self._get_bytearray_from_array(self.stdout)
 
     @property
@@ -281,7 +296,7 @@ class ExecResult(object):
 
         :rtype: bytearray
         """
-        with self.lock:
+        with self.stderr_lock:
             return self._get_bytearray_from_array(self.stderr)
 
     @property
@@ -290,10 +305,10 @@ class ExecResult(object):
 
         :rtype: str
         """
-        with self.lock:
-            if self.__stdout_str is None:
-                self.__stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
-            return self.__stdout_str  # type: ignore
+        with self.stdout_lock:
+            if self._stdout_str is None:
+                self._stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
+            return self._stdout_str  # type: ignore
 
     @property
     def stderr_str(self):  # type: () -> typing.Text
@@ -301,10 +316,10 @@ class ExecResult(object):
 
         :rtype: str
         """
-        with self.lock:
-            if self.__stderr_str is None:
-                self.__stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
-            return self.__stderr_str  # type: ignore
+        with self.stderr_lock:
+            if self._stderr_str is None:
+                self._stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
+            return self._stderr_str  # type: ignore
 
     @property
     def stdout_brief(self):  # type: () -> typing.Text
@@ -312,10 +327,10 @@ class ExecResult(object):
 
         :rtype: str
         """
-        with self.lock:
-            if self.__stdout_brief is None:
-                self.__stdout_brief = self._get_brief(self.stdout)  # type: ignore
-            return self.__stdout_brief  # type: ignore
+        with self.stdout_lock:
+            if self._stdout_brief is None:
+                self._stdout_brief = self._get_brief(self.stdout)  # type: ignore
+            return self._stdout_brief  # type: ignore
 
     @property
     def stderr_brief(self):  # type: () -> typing.Text
@@ -323,10 +338,10 @@ class ExecResult(object):
 
         :rtype: str
         """
-        with self.lock:
-            if self.__stderr_brief is None:
-                self.__stderr_brief = self._get_brief(self.stderr)  # type: ignore
-            return self.__stderr_brief  # type: ignore
+        with self.stderr_lock:
+            if self._stderr_brief is None:
+                self._stderr_brief = self._get_brief(self.stderr)  # type: ignore
+            return self._stderr_brief  # type: ignore
 
     @property
     def exit_code(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
@@ -350,9 +365,9 @@ class ExecResult(object):
         """
         if self.timestamp:
             raise RuntimeError("Exit code is already received.")
-        if not isinstance(new_val, six.integer_types):
-            raise TypeError("Exit code is strictly int")
-        with self.lock:
+        if not isinstance(new_val, (six.integer_types, proc_enums.ExitCodes)):
+            raise TypeError("Exit code is strictly int, got {!r}".format(new_val))
+        with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:
                 self.__timestamp = datetime.datetime.utcnow()  # type: ignore
@@ -386,7 +401,7 @@ class ExecResult(object):
 
         :rtype: typing.Any
         """
-        with self.lock:
+        with self.stdout_lock:
             return self.__deserialize(fmt="json")
 
     @property
@@ -395,7 +410,7 @@ class ExecResult(object):
 
         :rtype: typing.Any
         """
-        with self.lock:
+        with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
 
     def __dir__(self):  # type: () -> typing.List[str]

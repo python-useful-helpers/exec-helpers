@@ -6,7 +6,7 @@
 .pytest_cache/*
 
 ### Generated code
-/exec_helpers/*.c
+/exec_helpers/**/*.c
 
 ### TortoiseGit template
 # Project-level settings

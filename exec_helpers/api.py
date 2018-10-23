@@ -186,9 +186,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     def _exec_command(
         self,
         command,  # type: str
-        interface,  # type: typing.Any
-        stdout,  # type: typing.Any
-        stderr,  # type: typing.Any
+        async_result,  # type: ExecuteAsyncResult
         timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
@@ -198,12 +196,8 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
         :param command: Command for execution
         :type command: str
-        :param interface: Control interface
-        :type interface: typing.Any
-        :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Any
-        :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Any
+        :param async_result: execute_async result
+        :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
@@ -248,13 +242,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
 
         result = self._exec_command(
-            command=command,
-            interface=async_result.interface,
-            stdout=async_result.stdout,
-            stderr=async_result.stderr,
-            timeout=timeout,
-            verbose=verbose,
-            **kwargs
+            command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
@@ -302,7 +290,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
                     append=error_info + "\n" if error_info else "", result=ret, expected=expected
                 )
             )
-            self.logger.error(message)
+            self.logger.error(msg=message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(result=ret, expected=expected)
         return ret
@@ -342,10 +330,10 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         )
         if ret.stderr:
             message = (
-                "{append}Command {result.cmd!r} STDERR while not expected\n"
+                "{append}Command {result.cmd!r} output contains STDERR while not expected\n"
                 "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
             )
-            self.logger.error(message)
+            self.logger.error(msg=message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
         return ret
