@@ -171,6 +171,13 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
             """Sync stderr poll."""
             result.read_stderr(src=stderr, log=logger, verbose=verbose)
 
+        def close_streams():  # type: () -> None
+            """Enforce FIFO closure."""
+            if stdout is not None and not stdout.closed:
+                stdout.close()
+            if stderr is not None and not stderr.closed:
+                stderr.close()
+
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -189,6 +196,7 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
         # Process closed?
         if exit_code is not None:
             result.exit_code = exit_code
+            close_streams()
             return result
         # Kill not ended process and wait for close
         try:
@@ -205,6 +213,8 @@ class Subprocess(six.with_metaclass(SingletonMeta, api.ExecHelper)):
                 result.exit_code = exit_code
                 return result
             raise  # Some other error
+        finally:
+            close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         logger.debug(wait_err_msg)

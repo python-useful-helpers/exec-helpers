@@ -42,6 +42,7 @@ print_stdin = 'read line; echo "$line"'
 class FakeFileStream(object):
     def __init__(self, *args):
         self.__src = list(args)
+        self.closed = False
 
     def __iter__(self):
         for _ in range(len(self.__src)):
@@ -49,6 +50,9 @@ class FakeFileStream(object):
 
     def fileno(self):
         return hash(tuple(self.__src))
+
+    def close(self):
+        self.closed = True
 
 
 # Subprocess extra arguments.
