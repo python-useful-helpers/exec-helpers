@@ -21,6 +21,7 @@ import json
 import logging
 import threading
 import typing
+import warnings
 
 import yaml
 
@@ -30,6 +31,38 @@ from exec_helpers import proc_enums
 __all__ = ("ExecResult",)
 
 logger = logging.getLogger(__name__)
+
+
+class MultipleRLock:  # pragma: no cover
+    """Handle multiple locks together."""
+
+    __slots__ = ("__locks",)
+
+    def __init__(self, *locks: threading.RLock) -> None:
+        """Multiple locks handler.
+
+        .. note:: temporary class during transition to separate locks.
+        """
+        self.__locks = locks
+
+    def acquire(self, blocking: bool = True) -> None:
+        """Acquire locks.
+
+        .. note:: Timeout is not supported.
+        """
+        for lock in self.__locks:
+            lock.acquire(blocking=blocking)
+
+    __enter__ = acquire
+
+    def release(self) -> None:
+        """Release locks."""
+        for lock in self.__locks:
+            lock.release()
+
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        """Context manager usage."""
+        self.release()
 
 
 class ExecResult:
@@ -47,6 +80,8 @@ class ExecResult:
         "__stdout_brief",
         "__stderr_brief",
         "__lock",
+        "__stdout_lock",
+        "__stderr_lock",
     ]
 
     def __init__(
@@ -70,7 +105,9 @@ class ExecResult:
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, proc_enums.ExitCodes]
         """
-        self.__lock = threading.RLock()
+        self.__stdout_lock = threading.RLock()
+        self.__stderr_lock = threading.RLock()
+        self.__lock = MultipleRLock(self.stdout_lock, self.stderr_lock)
 
         self.__cmd = cmd
         if isinstance(stdin, bytes):
@@ -100,13 +137,41 @@ class ExecResult:
         self.__stderr_brief = None
 
     @property
-    def lock(self) -> threading.RLock:
+    def lock(self) -> MultipleRLock:  # pragma: no cover
+        """Composite lock for stdout and stderr.
+
+        :return: Composite from stdout_lock and stderr_lock
+        :rtype: MultipleRLock
+
+        .. versionchanged:: 2.2.0 Deprecated
+        """
+        warnings.warn(
+            "ExecResult.lock is deprecated and will be removed at version 3. Use stdout_lock and stderr_lock instead.",
+            DeprecationWarning,
+        )
+        return self.__lock
+
+    @property
+    def stdout_lock(self) -> threading.RLock:
         """Lock object for thread-safe operation.
 
-        :return: internal lock
+        :return: internal lock for stdout
         :rtype: threading.RLock
+
+        .. versionadded:: 2.2.0
         """
-        return self.__lock
+        return self.__stdout_lock
+
+    @property
+    def stderr_lock(self) -> threading.RLock:
+        """Lock object for thread-safe operation.
+
+        :return: internal lock for stderr
+        :rtype: threading.RLock
+
+        .. versionadded:: 2.2.0
+        """
+        return self.__stderr_lock
 
     @property
     def timestamp(self) -> typing.Optional[datetime.datetime]:
@@ -226,7 +291,7 @@ class ExecResult:
         if self.timestamp:
             raise RuntimeError("Final exit code received.")
 
-        with self.lock:
+        with self.stdout_lock:
             self.__stdout_str = self.__stdout_brief = None
             self.__stdout += tuple(self.__poll_stream(src, log, verbose))
 
@@ -253,7 +318,7 @@ class ExecResult:
         if self.timestamp:
             raise RuntimeError("Final exit code received.")
 
-        with self.lock:
+        with self.stderr_lock:
             self.__stderr_str = self.__stderr_brief = None
             self.__stderr += tuple(self.__poll_stream(src, log, verbose))
 
@@ -265,7 +330,7 @@ class ExecResult:
         and for debug purposes we can use this as data source.
         :rtype: bytearray
         """
-        with self.lock:
+        with self.stdout_lock:
             return self._get_bytearray_from_array(self.stdout)
 
     @property
@@ -274,7 +339,7 @@ class ExecResult:
 
         :rtype: bytearray
         """
-        with self.lock:
+        with self.stderr_lock:
             return self._get_bytearray_from_array(self.stderr)
 
     @property
@@ -283,7 +348,7 @@ class ExecResult:
 
         :rtype: str
         """
-        with self.lock:
+        with self.stdout_lock:
             if self.__stdout_str is None:
                 self.__stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
             return self.__stdout_str  # type: ignore
@@ -294,7 +359,7 @@ class ExecResult:
 
         :rtype: str
         """
-        with self.lock:
+        with self.stderr_lock:
             if self.__stderr_str is None:
                 self.__stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
             return self.__stderr_str  # type: ignore
@@ -305,7 +370,7 @@ class ExecResult:
 
         :rtype: str
         """
-        with self.lock:
+        with self.stdout_lock:
             if self.__stdout_brief is None:
                 self.__stdout_brief = self._get_brief(self.stdout)  # type: ignore
             return self.__stdout_brief  # type: ignore
@@ -316,7 +381,7 @@ class ExecResult:
 
         :rtype: str
         """
-        with self.lock:
+        with self.stderr_lock:
             if self.__stderr_brief is None:
                 self.__stderr_brief = self._get_brief(self.stderr)  # type: ignore
             return self.__stderr_brief  # type: ignore
@@ -345,7 +410,7 @@ class ExecResult:
             raise RuntimeError("Exit code is already received.")
         if not isinstance(new_val, int):
             raise TypeError("Exit code is strictly int, received: {code!r}".format(code=new_val))
-        with self.lock:
+        with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:
                 self.__timestamp = datetime.datetime.utcnow()  # type: ignore
@@ -383,7 +448,7 @@ class ExecResult:
 
         :rtype: typing.Any
         """
-        with self.lock:
+        with self.stdout_lock:
             return self.__deserialize(fmt="json")
 
     @property
@@ -392,7 +457,7 @@ class ExecResult:
 
         :rtype: typing.Any
         """
-        with self.lock:
+        with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
 
     def __dir__(self) -> typing.List[str]:
