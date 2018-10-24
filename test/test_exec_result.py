@@ -153,7 +153,7 @@ class TestExecResult(unittest.TestCase):
     @mock.patch("exec_helpers.exec_result.logger", autospec=True)
     def test_wrong_result(self, logger):
         """Test logging exception if stdout if not a correct json"""
-        cmd = "ls -la | awk '{print $1\}'"
+        cmd = r"ls -la | awk '{print $1\}'"
         result = exec_helpers.ExecResult(cmd=cmd)
         with self.assertRaises(exec_helpers.ExecHelperError):
             # noinspection PyStatementEffect
