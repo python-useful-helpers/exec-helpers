@@ -614,12 +614,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         return SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
 
-    def _exec_command(
+    def _exec_command(  # type: ignore
         self,
         command: str,
-        interface: paramiko.channel.Channel,
-        stdout: typing.Optional[paramiko.ChannelFile],
-        stderr: typing.Optional[paramiko.ChannelFile],
+        async_result: SshExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
@@ -629,12 +627,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         :param command: executed command (for logs)
         :type command: str
-        :param interface: interface to control execution
-        :type interface: paramiko.channel.Channel
-        :param stdout: source for STDOUT read
-        :type stdout: typing.Optional[paramiko.ChannelFile]
-        :param stderr: source for STDERR read
-        :type stderr: typing.Optional[paramiko.ChannelFile]
+        :param async_result: execute_async result
+        :type async_result: SshExecuteAsyncResult
         :param timeout: timeout before stop execution with TimeoutError
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce log.info records for STDOUT/STDERR
@@ -653,10 +647,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         def poll_streams() -> None:
             """Poll FIFO buffers if data available."""
-            if stdout and interface.recv_ready():
-                result.read_stdout(src=stdout, log=self.logger, verbose=verbose)
-            if stderr and interface.recv_stderr_ready():
-                result.read_stderr(src=stderr, log=self.logger, verbose=verbose)
+            if async_result.stdout and async_result.interface.recv_ready():
+                result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
+            if async_result.stderr and async_result.interface.recv_stderr_ready():
+                result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
         @threaded.threadpooled
         def poll_pipes(stop: threading.Event) -> None:
@@ -666,13 +660,13 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             """
             while not stop.is_set():
                 time.sleep(0.1)
-                if stdout or stderr:
+                if async_result.stdout or async_result.stderr:
                     poll_streams()
 
-                if interface.status_event.is_set():
-                    result.read_stdout(src=stdout, log=self.logger, verbose=verbose)
-                    result.read_stderr(src=stderr, log=self.logger, verbose=verbose)
-                    result.exit_code = interface.exit_status
+                if async_result.interface.status_event.is_set():
+                    result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
+                    result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
+                    result.exit_code = async_result.interface.exit_status
 
                     stop.set()
 
@@ -680,7 +674,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
 
         stop_event = threading.Event()
 
@@ -693,11 +687,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         # Process closed?
         if stop_event.is_set():
-            interface.close()
+            async_result.interface.close()
             return result
 
         stop_event.set()
-        interface.close()
+        async_result.interface.close()
         future.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
@@ -774,9 +768,15 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
+        async_result = SshExecuteAsyncResult(interface=channel, stdin=None, stdout=stdout, stderr=stderr)
+
         # noinspection PyDictCreation
         result = self._exec_command(
-            command, channel, stdout, stderr, timeout, verbose=verbose, log_mask_re=kwargs.get("log_mask_re", None)
+            command,
+            async_result=async_result,
+            timeout=timeout,
+            verbose=verbose,
+            log_mask_re=kwargs.get("log_mask_re", None),
         )
 
         intermediate_channel.close()

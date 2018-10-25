@@ -54,13 +54,20 @@ def _extension(modpath):
 
 
 requires_optimization = [
+    _extension("exec_helpers.async_api.api"),
+    _extension("exec_helpers.async_api.exec_result"),
+    _extension("exec_helpers.async_api.subprocess_runner"),
+
+    _extension("exec_helpers._log_templates"),
+    _extension("exec_helpers._ssh_client_base"),
+    _extension("exec_helpers._subprocess_helpers"),
+
     _extension("exec_helpers.api"),
     _extension("exec_helpers.constants"),
-    _extension("exec_helpers._log_templates"),
     _extension("exec_helpers.exceptions"),
     _extension("exec_helpers.exec_result"),
+    _extension("exec_helpers.metaclasses"),
     _extension("exec_helpers.proc_enums"),
-    _extension("exec_helpers._ssh_client_base"),
     _extension("exec_helpers.ssh_auth"),
     _extension("exec_helpers.ssh_client"),
     _extension("exec_helpers.subprocess_runner"),
@@ -68,6 +75,7 @@ requires_optimization = [
 
 if "win32" != sys.platform:
     requires_optimization.append(_extension("exec_helpers.__init__"))
+    requires_optimization.append(_extension("exec_helpers.async_api.__init__"))
 
 # noinspection PyCallingNonCallable
 ext_modules = (
@@ -233,7 +241,7 @@ setup_args = dict(
     long_description=long_description,
     classifiers=classifiers,
     keywords=keywords,
-    python_requires=">=3.4",
+    python_requires=">=3.5",
     # While setuptools cannot deal with pre-installed incompatible versions,
     # setting a lower bound is not harmful - it makes error messages cleaner. DO
     # NOT set an upper bound on setuptools, as that will lead to uninstallable

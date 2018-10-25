@@ -6,7 +6,7 @@ API: ExecResult
 .. py:module:: exec_helpers
 .. py:currentmodule:: exec_helpers
 
-.. py:class:: ExecResult(object)
+.. py:class:: ExecResult()
 
     Command execution result.
 
@@ -27,6 +27,7 @@ API: ExecResult
 
         ``threading.RLock``
         Lock object for thread-safe operation.
+
         .. versionadded:: 2.2.0
 
     .. py:attribute:: stderr_lock

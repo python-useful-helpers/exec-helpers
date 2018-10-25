@@ -1,5 +1,4 @@
 #    Copyright 2018 Alexey Stepanov aka penguinolog.
-
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,178 +12,58 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""ExecHelpers global API.
+"""Async API.
 
-.. versionadded:: 1.2.0
-.. versionchanged:: 1.3.5 make API public to use as interface
+.. versionadded:: 3.0.0
 """
 
-__all__ = ("ExecHelper", "ExecuteAsyncResult")
+__all__ = ("ExecHelper",)
 
 import abc
+import asyncio
 import logging
-import re
-import threading
 import typing
 
+from exec_helpers import api
 from exec_helpers import constants
-from exec_helpers import exceptions
 from exec_helpers import exec_result
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
 
-ExecuteAsyncResult = typing.NamedTuple(
-    "ExecuteAsyncResult",
-    [
-        ("interface", typing.Any),
-        ("stdin", typing.Optional[typing.Any]),
-        ("stderr", typing.Optional[typing.Any]),
-        ("stdout", typing.Optional[typing.Any]),
-    ],
-)
+class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
+    """Subprocess helper with timeouts and lock-free FIFO."""
 
-
-class ExecHelper(metaclass=abc.ABCMeta):
-    """ExecHelper global API."""
-
-    __slots__ = ("__lock", "__logger", "log_mask_re")
+    __slots__ = ("__alock",)
 
     def __init__(self, logger: logging.Logger, log_mask_re: typing.Optional[str] = None) -> None:
-        """Global ExecHelper API.
+        """Subprocess helper with timeouts and lock-free FIFO.
 
         :param logger: logger instance to use
         :type logger: logging.Logger
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 1.3.5 make API public paramikoto use as interface
         """
-        self.__lock = threading.RLock()
-        self.__logger = logger
-        self.log_mask_re = log_mask_re
+        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
+        self.__alock = None  # type: typing.Optional[asyncio.Lock]
 
-    @property
-    def logger(self) -> logging.Logger:
-        """Instance logger access."""
-        return self.__logger
-
-    @property
-    def lock(self) -> threading.RLock:
-        """Lock.
-
-        :rtype: threading.RLock
-        """
-        return self.__lock
-
-    def __enter__(self) -> "ExecHelper":
-        """Get context manager.
-
-        .. versionchanged:: 1.1.0 lock on enter
-        """
-        self.lock.acquire()
+    async def __aenter__(self) -> "ExecHelper":
+        """Async context manager."""
+        if self.__alock is None:
+            self.__alock = asyncio.Lock()
+        await self.__alock.acquire()
         return self
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:  # pragma: no cover
-        """Context manager usage."""
-        self.lock.release()
-
-    def _mask_command(self, cmd: str, log_mask_re: typing.Optional[str] = None) -> str:
-        """Log command with masking and return parsed cmd.
-
-        :param cmd: command
-        :type cmd: str
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-        :return: masked command
-        :rtype: str
-
-        .. versionadded:: 1.2.0
-        """
-
-        def mask(text: str, rules: str) -> str:
-            """Mask part of text using rules."""
-            indexes = [0]  # Start of the line
-
-            # places to exclude
-            for match in re.finditer(rules, text):
-                for idx, _ in enumerate(match.groups()):
-                    indexes.extend(match.span(idx + 1))
-            indexes.append(len(text))  # End
-
-            masked = ""
-
-            # Replace inserts
-            for idx in range(0, len(indexes) - 2, 2):
-                start = indexes[idx]
-                end = indexes[idx + 1]
-                masked += text[start:end] + "<*masked*>"
-
-            # noinspection PyPep8
-            masked += text[indexes[-2] : indexes[-1]]  # final part
-            return masked
-
-        cmd = cmd.rstrip()
-
-        if self.log_mask_re:
-            cmd = mask(cmd, self.log_mask_re)
-        if log_mask_re:
-            cmd = mask(cmd, log_mask_re)
-
-        return cmd
+    async def __aexit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        """Async context manager."""
+        self.__alock.release()  # type: ignore
 
     @abc.abstractmethod
-    def execute_async(
+    async def _exec_command(  # type: ignore
         self,
         command: str,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Any
-    ) -> ExecuteAsyncResult:
-        """Execute command in async mode and return remote interface with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param verbose: produce verbose log record on command call
-        :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
-        :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.NamedTuple(
-                    'ExecuteAsyncResult',
-                    [
-                        ('interface', typing.Any),
-                        ('stdin', typing.Optional[typing.Any]),
-                        ('stderr', typing.Optional[typing.Any]),
-                        ('stdout', typing.Optional[typing.Any]),
-                    ]
-                )
-
-        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
-        .. versionchanged:: 1.2.0 stdin data
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        """
-        raise NotImplementedError  # pragma: no cover
-
-    @abc.abstractmethod
-    def _exec_command(
-        self,
-        command: str,
-        async_result: ExecuteAsyncResult,
+        async_result: api.ExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
@@ -194,8 +73,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         :param command: Command for execution
         :type command: str
-        :param async_result: execute_async result
-        :type async_result: SubprocessExecuteAsyncResult
+        :param interface: Control interface
+        :type interface: typing.Any
+        :param stdout: STDOUT pipe or file-like object
+        :type stdout: typing.Optional[asyncio.StreamReader]
+        :param stderr: STDERR pipe or file-like object
+        :type stderr: typing.Optional[asyncio.StreamReader]
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
@@ -207,13 +90,54 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type kwargs: typing.Any
         :return: Execution result
         :rtype: ExecResult
+        :raises OSError: exception during process kill (and not regarding to already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
-
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         raise NotImplementedError  # pragma: no cover
 
-    def execute(
+    @abc.abstractmethod
+    async def execute_async(  # type: ignore
+        self,
+        command: str,
+        stdin: typing.Union[str, bytes, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        verbose: bool = False,
+        log_mask_re: typing.Optional[str] = None,
+        **kwargs: typing.Any
+    ) -> api.ExecuteAsyncResult:
+        """Execute command in async mode and return Popen with IO objects.
+
+        :param command: Command for execution
+        :type command: str
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[str, bytes, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
+        :rtype: typing.NamedTuple(
+                    'ExecuteAsyncResult',
+                    [
+                        ('interface', typing.Any),
+                        ('stdin', typing.Optional[typing.Any]),
+                        ('stderr', typing.Optional[typing.Any]),
+                        ('stdout', typing.Optional[typing.Any]),
+                    ]
+                )
+        :raises OSError: impossible to process STDIN
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    async def execute(  # type: ignore
         self,
         command: str,
         verbose: bool = False,
@@ -233,20 +157,17 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
+        async_result = await self.execute_async(command, verbose=verbose, **kwargs)
 
-        result = self._exec_command(
+        result = await self._exec_command(
             command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
-    def check_call(
+    async def check_call(  # type: ignore
         self,
         command: str,
         verbose: bool = False,
@@ -276,11 +197,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
         expected = proc_enums.exit_codes_to_enums(expected)
-        ret = self.execute(command, verbose, timeout, **kwargs)
+        ret = await self.execute(command, verbose, timeout, **kwargs)
         if ret.exit_code not in expected:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
@@ -293,7 +212,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
                 raise exceptions.CalledProcessError(result=ret, expected=expected)
         return ret
 
-    def check_stderr(
+    async def check_stderr(  # type: ignore
         self,
         command: str,
         verbose: bool = False,
@@ -320,10 +239,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code or stderr presents
-
-        .. versionchanged:: 1.2.0 default timeout 1 hour
         """
-        ret = self.check_call(
+        ret = await self.check_call(
             command, verbose, timeout=timeout, error_info=error_info, raise_on_err=raise_on_err, **kwargs
         )
         if ret.stderr:
