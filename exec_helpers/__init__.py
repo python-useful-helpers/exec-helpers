@@ -25,11 +25,11 @@ from .exceptions import (
     ExecHelperTimeoutError,
 )
 
-from .exec_result import ExecResult
 from .api import ExecHelper
+from .exec_result import ExecResult
 from .ssh_auth import SSHAuth
-from ._ssh_client_base import SshExecuteAsyncResult
 from .ssh_client import SSHClient
+from ._ssh_client_base import SshExecuteAsyncResult
 from .subprocess_runner import Subprocess, SubprocessExecuteAsyncResult  # nosec  # Expected
 
 __all__ = (
@@ -49,7 +49,7 @@ __all__ = (
     "ExecResult",
 )
 
-__version__ = "2.2.0"
+__version__ = "2.9.0"
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"
 __maintainers__ = {

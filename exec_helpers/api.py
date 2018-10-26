@@ -184,9 +184,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
     def _exec_command(
         self,
         command: str,
-        interface: typing.Any,
-        stdout: typing.Any,
-        stderr: typing.Any,
+        async_result: ExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
@@ -196,12 +194,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         :param command: Command for execution
         :type command: str
-        :param interface: Control interface
-        :type interface: typing.Any
-        :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Any
-        :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Any
+        :param async_result: execute_async result
+        :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
@@ -246,13 +240,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
 
         result = self._exec_command(
-            command=command,
-            interface=async_result.interface,
-            stdout=async_result.stdout,
-            stderr=async_result.stderr,
-            timeout=timeout,
-            verbose=verbose,
-            **kwargs
+            command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
@@ -300,7 +288,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
                     append=error_info + "\n" if error_info else "", result=ret, expected=expected
                 )
             )
-            self.logger.error(message)
+            self.logger.error(msg=message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(result=ret, expected=expected)
         return ret
@@ -340,10 +328,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         )
         if ret.stderr:
             message = (
-                "{append}Command {result.cmd!r} STDERR while not expected\n"
+                "{append}Command {result.cmd!r} output contains STDERR while not expected\n"
                 "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
             )
-            self.logger.error(message)
+            self.logger.error(msg=message)
             if raise_on_err:
                 raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
         return ret

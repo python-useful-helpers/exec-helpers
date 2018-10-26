@@ -325,7 +325,7 @@ API: SSHClient and SSHAuth.
         :rtype: ``bool``
 
 
-.. py:class:: SSHAuth(object)
+.. py:class:: SSHAuth()
 
     SSH credentials object.
 

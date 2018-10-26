@@ -1,5 +1,3 @@
-# coding=utf-8
-
 #    Copyright 2018 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
@@ -18,30 +16,43 @@
 
 # pylint: disable=no-self-use
 
-import base64
 import contextlib
 import copy
 import io
 import typing
-import unittest
 
-import mock
 import paramiko
+import pytest
 
 import exec_helpers
 
 
-def gen_private_keys(amount=1):
+def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
     return [paramiko.RSAKey.generate(1024) for _ in range(amount)]
 
 
-def gen_public_key(private_key=None):
+def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
     return "{0} {1}".format(private_key.get_name(), private_key.get_base64())
 
 
-class FakeStream(object):
+def get_internal_keys(
+    key: typing.Optional[paramiko.RSAKey] = None,
+    keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+    **kwargs
+):
+    int_keys = [None]
+    if key is not None:
+        int_keys.append(key)
+    if keys is not None:
+        for k in keys:
+            if k not in int_keys:
+                int_keys.append(k)
+    return int_keys
+
+
+class FakeStream:
     def __init__(self, *args):
         self.__src = list(args)
 
@@ -52,113 +63,89 @@ class FakeStream(object):
             yield self.__src.pop(0)
 
 
-host = "127.0.0.1"
-port = 22
 username = "user"
 password = "pass"
-private_keys = []
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
-command_log = "Executing command:\n{!s}\n".format(command.rstrip())
-stdout_list = [b" \n", b"2\n", b"3\n", b" \n"]
-stdout_str = b"".join(stdout_list).strip().decode("utf-8")
-stderr_list = [b" \n", b"0\n", b"1\n", b" \n"]
-stderr_str = b"".join(stderr_list).strip().decode("utf-8")
-encoded_cmd = base64.b64encode("{}\n".format(command).encode("utf-8")).decode("utf-8")
 
 
-# noinspection PyTypeChecker
-class TestSSHAuth(unittest.TestCase):
-    def tearDown(self):
-        with mock.patch("warnings.warn"):
-            exec_helpers.SSHClient._clear_cache()
+configs = {
+    "username_only": dict(username=username),
+    "username_password": dict(username=username, password=password),
+    "username_key": dict(username=username, key=gen_private_keys(1).pop()),
+    "username_password_key": dict(username=username, password=password, key=gen_private_keys(1).pop()),
+    "username_password_keys": dict(username=username, password=password, keys=gen_private_keys(2)),
+    "username_password_key_keys": dict(
+        username=username, password=password, key=gen_private_keys(1).pop(), keys=gen_private_keys(2)
+    ),
+}
 
-    def init_checks(
-        self,
-        username=None,
-        password=None,
-        key=None,
-        keys=None,
-        key_filename: typing.Union[typing.List[str], str, None] = None,
-        passphrase: typing.Optional[str] = None,
-    ):
-        """shared positive init checks
 
-        :type username: str
-        :type password: str
-        :type key: paramiko.RSAKey
-        :type keys: list
-        :type key_filename: typing.Union[typing.List[str], str, None]
-        :type passphrase: typing.Optional[str]
-        """
-        auth = exec_helpers.SSHAuth(
-            username=username, password=password, key=key, keys=keys, key_filename=key_filename, passphrase=passphrase
+def pytest_generate_tests(metafunc):
+    if "run_parameters" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "run_parameters",
+            [
+                "username_only",
+                "username_password",
+                "username_key",
+                "username_password_key",
+                "username_password_keys",
+                "username_password_key_keys",
+            ],
+            indirect=True,
         )
 
-        int_keys = [None]
-        if key is not None:
-            int_keys.append(key)
-        if keys is not None:
-            for k in keys:
-                if k not in int_keys:
-                    int_keys.append(k)
 
-        self.assertEqual(auth.username, username)
-        with contextlib.closing(io.StringIO()) as tgt:
-            auth.enter_password(tgt)
-            self.assertEqual(tgt.getvalue(), "{}\n".format(password))
-        self.assertEqual(auth.public_key, gen_public_key(key) if key is not None else None)
+@pytest.fixture
+def run_parameters(request):
+    return configs[request.param]
 
-        _key = None if auth.public_key is None else "<private for pub: {}>".format(auth.public_key)
-        _keys = []
-        for k in int_keys:
-            if k == key:
-                continue
-            _keys.append("<private for pub: {}>".format(gen_public_key(k)) if k is not None else None)
 
-        self.assertEqual(
-            repr(auth),
-            "{cls}("
-            "username={auth.username!r}, "
-            "password=<*masked*>, "
-            "key={key}, "
-            "keys={keys}, "
-            "key_filename={auth.key_filename!r}, "
-            "passphrase=<*masked*>,"
-            ")".format(cls=exec_helpers.SSHAuth.__name__, auth=auth, key=_key, keys=_keys),
-        )
-        self.assertEqual(
-            str(auth), "{cls} for {username}".format(cls=exec_helpers.SSHAuth.__name__, username=auth.username)
-        )
+def test_001_init_checks(run_parameters) -> None:
+    auth = exec_helpers.SSHAuth(**run_parameters)
+    int_keys = get_internal_keys(**run_parameters)
 
-    def test_init_username_only(self):
-        self.init_checks(username=username)
+    assert auth.username == username
+    with contextlib.closing(io.StringIO()) as tgt:
+        auth.enter_password(tgt)
+        assert tgt.getvalue() == "{}\n".format(run_parameters.get("password", None))
 
-    def test_init_username_password(self):
-        self.init_checks(username=username, password=password)
+    key = run_parameters.get("key", None)
+    if key is not None:
+        assert auth.public_key == gen_public_key(key)
+    else:
+        assert auth.public_key is None
 
-    def test_init_username_key(self):
-        self.init_checks(username=username, key=gen_private_keys(1).pop())
+    _key = None if auth.public_key is None else "<private for pub: {}>".format(auth.public_key)
+    _keys = []
+    for k in int_keys:
+        if k == key:
+            continue
+        _keys.append("<private for pub: {}>".format(gen_public_key(k)) if k is not None else None)
 
-    def test_init_username_password_key(self):
-        self.init_checks(username=username, password=password, key=gen_private_keys(1).pop())
+    assert repr(auth) == (
+        "{cls}("
+        "username={auth.username!r}, "
+        "password=<*masked*>, "
+        "key={key}, "
+        "keys={keys}, "
+        "key_filename={auth.key_filename!r}, "
+        "passphrase=<*masked*>,"
+        ")".format(cls=exec_helpers.SSHAuth.__name__, auth=auth, key=_key, keys=_keys)
+    )
+    assert str(auth) == "{cls} for {username}".format(cls=exec_helpers.SSHAuth.__name__, username=auth.username)
 
-    def test_init_username_password_keys(self):
-        self.init_checks(username=username, password=password, keys=gen_private_keys(2))
 
-    def test_init_username_password_key_keys(self):
-        self.init_checks(username=username, password=password, key=gen_private_keys(1).pop(), keys=gen_private_keys(2))
+def test_002_equality_copy():
+    """Equality is calculated using hash, copy=deepcopy."""
+    auth1 = exec_helpers.SSHAuth(username="username")
 
-    def test_equality_copy(self):
-        """Equality is calculated using hash, copy=deepcopy."""
-        auth1 = exec_helpers.SSHAuth(username="username")
+    auth2 = exec_helpers.SSHAuth(username="username")
 
-        auth2 = exec_helpers.SSHAuth(username="username")
+    auth3 = exec_helpers.SSHAuth(username="username_differs")
 
-        auth3 = exec_helpers.SSHAuth(username="username_differs")
-
-        self.assertEqual(auth1, auth2)
-        self.assertNotEqual(auth1, auth3)
-        self.assertEqual(auth3, copy.copy(auth3))
-        self.assertIsNot(auth3, copy.copy(auth3))
-        self.assertEqual(auth3, copy.deepcopy(auth3))
-        self.assertIsNot(auth3, copy.deepcopy(auth3))
+    assert auth1 == auth2
+    assert auth1 != auth3
+    assert auth3 == copy.copy(auth3)
+    assert auth3 is not copy.copy(auth3)
+    assert auth3 == copy.deepcopy(auth3)
+    assert auth3 is not copy.deepcopy(auth3)

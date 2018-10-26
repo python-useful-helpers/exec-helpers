@@ -18,57 +18,22 @@
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
-import abc
-import collections
 import concurrent.futures
 import errno
 import logging
-import platform
 import subprocess  # nosec  # Expected usage
-import threading
 import typing
 
-import psutil  # type: ignore
 import threaded
 
 from exec_helpers import api
 from exec_helpers import exec_result
 from exec_helpers import exceptions
+from exec_helpers import metaclasses  # pylint: disable=unused-import
 from exec_helpers import _log_templates
+from exec_helpers import _subprocess_helpers
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
-
-
-# Adopt from:
-# https://stackoverflow.com/questions/1230669/subprocess-deleting-child-processes-in-windows
-def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: no cover
-    """Kill process tree.
-
-    :param pid: PID of parent process to kill
-    :type pid: int
-    :param including_parent: kill also parent process
-    :type including_parent: bool
-    """
-    parent = psutil.Process(pid)
-    children = parent.children(recursive=True)
-    for child in children:  # type: psutil.Process
-        child.kill()
-    _, alive = psutil.wait_procs(children, timeout=5)
-    for proc in alive:  # type: psutil.Process
-        proc.kill()  # 2nd shot
-    if including_parent:
-        parent.kill()
-        parent.wait(5)
-
-
-# Subprocess extra arguments.
-# Flags from:
-# https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
-kw = {}  # type: typing.Dict[str, typing.Any]
-if "Windows" == platform.system():  # pragma: no cover
-    kw["creationflags"] = 0x00000200
-else:  # pragma: no cover
-    kw["start_new_session"] = True
 
 
 # noinspection PyTypeHints
@@ -96,35 +61,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super(SubprocessExecuteAsyncResult, self).stdout
 
 
-class SingletonMeta(abc.ABCMeta):
-    """Metaclass for Singleton.
-
-    Main goals: not need to implement __new__ in singleton classes
-    """
-
-    _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
-    _lock = threading.RLock()  # type: threading.RLock
-
-    def __call__(cls: "SingletonMeta", *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
-        """Singleton."""
-        with cls._lock:
-            if cls not in cls._instances:
-                # noinspection PySuperArguments
-                cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-    @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
-    ) -> collections.OrderedDict:
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()
-
-
-class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
+class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     def __init__(self, log_mask_re: typing.Optional[str] = None) -> None:
@@ -137,16 +74,14 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
-        self.__process = None
 
-    def _exec_command(
+    def _exec_command(  # type: ignore
         self,
         command: str,
-        interface: subprocess.Popen,
-        stdout: typing.Optional[typing.IO],
-        stderr: typing.Optional[typing.IO],
+        async_result: SubprocessExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
@@ -156,12 +91,8 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
 
         :param command: Command for execution
         :type command: str
-        :param interface: Control interface
-        :type interface: subprocess.Popen
-        :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Optional[typing.IO]
-        :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Optional[typing.IO]
+        :param async_result: execute_async result
+        :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
@@ -182,24 +113,24 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         @threaded.threadpooled
         def poll_stdout() -> None:
             """Sync stdout poll."""
-            result.read_stdout(src=stdout, log=logger, verbose=verbose)
+            result.read_stdout(src=async_result.stdout, log=logger, verbose=verbose)
 
         @threaded.threadpooled
         def poll_stderr() -> None:
             """Sync stderr poll."""
-            result.read_stderr(src=stderr, log=logger, verbose=verbose)
+            result.read_stderr(src=async_result.stderr, log=logger, verbose=verbose)
 
         def close_streams() -> None:
             """Enforce FIFO closure."""
-            if stdout is not None and not stdout.closed:
-                stdout.close()
-            if stderr is not None and not stderr.closed:
-                stderr.close()
+            if async_result.stdout is not None and not async_result.stdout.closed:
+                async_result.stdout.close()
+            if async_result.stderr is not None and not async_result.stderr.closed:
+                async_result.stderr.close()
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -209,33 +140,33 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
         # pylint: enable=assignment-from-no-return
 
         try:
-            exit_code = interface.wait(timeout=timeout)  # Wait real timeout here, it's python 3 only feature
+            exit_code = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
         except subprocess.TimeoutExpired:
-            exit_code = interface.poll()  # Update exit code
-
-        concurrent.futures.wait([stdout_future, stderr_future], timeout=0.5)  # Minimal timeout to complete polling
+            exit_code = async_result.interface.poll()  # Update exit code
 
         # Process closed?
         if exit_code is not None:
+            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
             result.exit_code = exit_code
             close_streams()
             return result
         # Kill not ended process and wait for close
         try:
-            kill_proc_tree(interface.pid, including_parent=False)  # kill -9 for all subprocesses
-            interface.kill()  # kill -9
-            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.5)
+            # kill -9 for all subprocesses
+            _subprocess_helpers.kill_proc_tree(async_result.interface.pid, including_parent=False)
+            async_result.interface.kill()  # kill -9
             # Force stop cycle if no exit code after kill
-            stdout_future.cancel()
-            stderr_future.cancel()
         except OSError:
-            exit_code = interface.poll()
+            exit_code = async_result.interface.poll()
             if exit_code is not None:  # Nothing to kill
                 logger.warning("{!s} has been completed just after timeout: please validate timeout.".format(command))
+                concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
                 result.exit_code = exit_code
                 return result
             raise  # Some other error
         finally:
+            stdout_future.cancel()
+            stderr_future.cancel()
             close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
@@ -299,7 +230,7 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
             cwd=kwargs.get("cwd", None),
             env=kwargs.get("env", None),
             universal_newlines=False,
-            **kw
+            **_subprocess_helpers.subprocess_kw
         )
 
         if stdin is None:
@@ -317,10 +248,10 @@ class Subprocess(api.ExecHelper, metaclass=SingletonMeta):
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
                     self.logger.warning("STDIN Send failed: closed PIPE")
-                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):  # pragma: no cover
+                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
-                    kill_proc_tree(process.pid)
+                    _subprocess_helpers.kill_proc_tree(process.pid)
                     process.kill()
                     raise
             try:

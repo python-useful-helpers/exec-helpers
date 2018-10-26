@@ -1,5 +1,3 @@
-# coding=utf-8
-
 #    Copyright 2018 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
@@ -33,7 +31,7 @@ from exec_helpers import constants
 from exec_helpers import exec_result
 
 
-class FakeStream(object):
+class FakeStream:
     def __init__(self, *args):
         self.__src = list(args)
 
@@ -1286,7 +1284,7 @@ class TestSftp(unittest.TestCase):
         self.assertEqual(result.st_gid, 0)
 
     def test_isfile(self, client, *args):
-        class Attrs(object):
+        class Attrs:
             def __init__(self, mode):
                 self.st_mode = mode
 
@@ -1319,7 +1317,7 @@ class TestSftp(unittest.TestCase):
         lstat.assert_called_once_with(dst)
 
     def test_isdir(self, client, *args):
-        class Attrs(object):
+        class Attrs:
             def __init__(self, mode):
                 self.st_mode = mode
 
