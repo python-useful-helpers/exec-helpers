@@ -44,13 +44,12 @@ Pros:
 
 ::
 
-    Python 3.4
     Python 3.5
     Python 3.6
     Python 3.7
     PyPy3 3.5+
 
-.. note:: For Python 2.7 and PyPy please use versions 1.x.x
+.. note:: For Python 2.7 and PyPy please use versions 1.x.x. For python 3.4 use versions 2.x.x
 
 This package includes:
 
@@ -63,6 +62,9 @@ This package includes:
 
 * `Subprocess` - `subprocess.Popen` wrapper with timeouts, polling and almost the same API, as `SSHClient`
   (except specific flags, like `cwd` for subprocess and `get_tty` for ssh).
+
+* `async_api.Subprocess` - the same, as `Subprocess` helper, but works with asyncio.
+  .. note:: for Windows `ProactorEventLoop` or another non-standard event loop should be used!
 
 * `ExecResult` - class for execution results storage.
   Contains exit code, stdout, stderr and getters for decoding as JSON, YAML, string, bytearray and brief strings (up to 7 lines).
@@ -314,6 +316,23 @@ Kwargs set properties:
 - env - environment variables dict.
 
 .. note:: `shell=true` is always set.
+
+async_api.Subprocess specific
+-----------------------------
+
+All standard methods are coroutines. Async context manager also available.
+
+Example:
+
+.. code-block:: python
+
+    async with helper:
+      result = await helper.execute(
+          command,  # type: str
+          verbose=False,  # type: bool
+          timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+          **kwargs
+      )
 
 Testing
 =======

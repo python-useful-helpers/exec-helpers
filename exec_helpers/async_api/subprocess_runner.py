@@ -1,6 +1,4 @@
 #    Copyright 2018 Alexey Stepanov aka penguinolog.
-
-#    Copyright 2016 Mirantis, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -14,22 +12,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Python subprocess.Popen wrapper."""
+"""Python asyncio.create_subprocess_shell wrapper.
+
+.. versionadded:: 3.0.0
+"""
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
-import concurrent.futures
+import asyncio
 import errno
 import logging
-import subprocess  # nosec  # Expected usage
 import typing
 
-import threaded
-
-from exec_helpers import api
-from exec_helpers import exec_result
+from exec_helpers.async_api import api
+from exec_helpers.async_api import exec_result
 from exec_helpers import exceptions
 from exec_helpers import metaclasses  # pylint: disable=unused-import
+from exec_helpers import subprocess_runner
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 
@@ -37,26 +36,29 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
 # noinspection PyTypeHints
-class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
+class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
+    # pylint: disable=no-member
     @property
-    def interface(self) -> subprocess.Popen:
+    def interface(self) -> asyncio.subprocess.Process:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).interface
 
+    # pylint: enable=no-member
+
     @property
-    def stdin(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdin
 
     @property
-    def stderr(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stderr(self) -> typing.Optional[asyncio.StreamReader]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stderr
 
     @property
-    def stdout(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stdout(self) -> typing.Optional[asyncio.StreamReader]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdout
 
@@ -64,20 +66,20 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(self, log_mask_re: typing.Optional[str] = None) -> None:
+    __slots__ = ()
+
+    def __init__(self, logger: logging.Logger = logger, log_mask_re: typing.Optional[str] = None) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
-        For excluding race-conditions we allow to run 1 command simultaneously
-
+        :param logger: logger instance to use
+        :type logger: logging.Logger
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
-    def _exec_command(  # type: ignore
+    async def _exec_command(  # type: ignore
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
@@ -105,74 +107,52 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
         :rtype: ExecResult
         :raises OSError: exception during process kill (and not regarding to already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
-
-        .. versionadded:: 1.2.0
         """
 
-        @threaded.threadpooled
-        def poll_stdout() -> None:
+        async def poll_stdout() -> None:
             """Sync stdout poll."""
-            result.read_stdout(src=async_result.stdout, log=logger, verbose=verbose)
+            await result.read_stdout(src=async_result.stdout, log=logger, verbose=verbose)
 
-        @threaded.threadpooled
-        def poll_stderr() -> None:
+        async def poll_stderr() -> None:
             """Sync stderr poll."""
-            result.read_stderr(src=async_result.stderr, log=logger, verbose=verbose)
-
-        def close_streams() -> None:
-            """Enforce FIFO closure."""
-            if async_result.stdout is not None and not async_result.stdout.closed:
-                async_result.stdout.close()
-            if async_result.stderr is not None and not async_result.stderr.closed:
-                async_result.stderr.close()
+            await result.read_stderr(src=async_result.stderr, log=logger, verbose=verbose)
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
 
-        # pylint: disable=assignment-from-no-return
-        # noinspection PyNoneFunctionAssignment
-        stdout_future = poll_stdout()  # type: concurrent.futures.Future
-        # noinspection PyNoneFunctionAssignment
-        stderr_future = poll_stderr()  # type: concurrent.futures.Future
-        # pylint: enable=assignment-from-no-return
+        stdout_task = asyncio.ensure_future(poll_stdout())
+        stderr_task = asyncio.ensure_future(poll_stderr())
 
         try:
-            exit_code = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
-        except subprocess.TimeoutExpired:
-            exit_code = async_result.interface.poll()  # Update exit code
-
-        # Process closed?
-        if exit_code is not None:
-            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
+            exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)  # Wait real timeout here
             result.exit_code = exit_code
-            close_streams()
             return result
-        # Kill not ended process and wait for close
-        try:
-            # kill -9 for all subprocesses
-            _subprocess_helpers.kill_proc_tree(async_result.interface.pid, including_parent=False)
-            async_result.interface.kill()  # kill -9
-            # Force stop cycle if no exit code after kill
-        except OSError:
-            exit_code = async_result.interface.poll()
-            if exit_code is not None:  # Nothing to kill
-                logger.warning("{!s} has been completed just after timeout: please validate timeout.".format(command))
-                concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
-                result.exit_code = exit_code
-                return result
-            raise  # Some other error
+        except asyncio.TimeoutError:
+            try:
+                # kill -9 for all subprocesses
+                _subprocess_helpers.kill_proc_tree(async_result.interface.pid, including_parent=False)
+                async_result.interface.kill()  # kill -9
+            except OSError:
+                # Wait for 1 ms: check close
+                exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
+                if exit_code is not None:  # Nothing to kill
+                    logger.warning(
+                        "{!s} has been completed just after timeout: please validate timeout.".format(command)
+                    )
+                    result.exit_code = exit_code
+                    return result
+                raise  # Some other error
         finally:
-            stdout_future.cancel()
-            stderr_future.cancel()
-            close_streams()
+            stdout_task.cancel()
+            stderr_task.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
-    def execute_async(
+    async def execute_async(  # type: ignore
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
@@ -204,15 +184,12 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
                     'SubprocessExecuteAsyncResult',
                     [
                         ('interface', subprocess.Popen),
-                        ('stdin', typing.Optional[typing.IO]),
-                        ('stderr', typing.Optional[typing.IO]),
-                        ('stdout', typing.Optional[typing.IO]),
+                        ('stdin', typing.Optional[asyncio.StreamWriter]),
+                        ('stderr', typing.Optional[asyncio.StreamReader]),
+                        ('stdout', typing.Optional[asyncio.StreamReader]),
                     ]
                 )
         :raises OSError: impossible to process STDIN
-
-        .. versionadded:: 1.2.0
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -220,12 +197,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
-        process = subprocess.Popen(
-            args=[command],
-            stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
-            stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
-            stdin=subprocess.PIPE,
-            shell=True,
+        process = await asyncio.create_subprocess_shell(
+            cmd=command,
+            stdout=asyncio.subprocess.PIPE if open_stdout else asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE if open_stderr else asyncio.subprocess.DEVNULL,
+            stdin=asyncio.subprocess.PIPE,
             cwd=kwargs.get("cwd", None),
             env=kwargs.get("env", None),
             universal_newlines=False,
@@ -240,7 +216,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
             elif isinstance(stdin, bytearray):
                 stdin = bytes(stdin)
             try:
-                process.stdin.write(stdin)
+                process.stdin.write(stdin)  # type: ignore
+                await process.stdin.drain()  # type: ignore
             except OSError as exc:
                 if exc.errno == errno.EINVAL:
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
@@ -254,7 +231,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
                     process.kill()
                     raise
             try:
-                process.stdin.close()
+                process.stdin.close()  # type: ignore
             except OSError as exc:
                 if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
                     pass
@@ -262,6 +239,6 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
                     process.kill()
                     raise
 
-            process_stdin = None  # type: ignore
+            process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)

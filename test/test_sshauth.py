@@ -1,5 +1,3 @@
-# coding=utf-8
-
 #    Copyright 2018 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
@@ -41,7 +39,7 @@ def gen_public_key(private_key=None):
     return "{0} {1}".format(private_key.get_name(), private_key.get_base64())
 
 
-class FakeStream(object):
+class FakeStream:
     def __init__(self, *args):
         self.__src = list(args)
 
