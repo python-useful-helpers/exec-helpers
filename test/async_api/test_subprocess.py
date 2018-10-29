@@ -22,7 +22,6 @@ import mock
 import pytest
 
 import exec_helpers
-from exec_helpers import metaclasses
 from exec_helpers import _subprocess_helpers
 
 # All test coroutines will be treated as marked.
@@ -256,7 +255,6 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
 
 
 async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger, exec_result, run_parameters) -> None:
-    metaclasses.SingletonMeta._instances.clear()  # prepare
     lock = asynctest.CoroutineMock()
     lock.attach_mock(asynctest.CoroutineMock("acquire"), "acquire")
     lock.attach_mock(mock.Mock("release"), "release")
