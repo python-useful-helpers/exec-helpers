@@ -63,7 +63,7 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
         return super(SubprocessExecuteAsyncResult, self).stdout
 
 
-class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
+class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     __slots__ = ()
@@ -76,6 +76,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingletonMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+
+        .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 

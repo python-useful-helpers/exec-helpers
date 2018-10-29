@@ -91,6 +91,16 @@ configs = {
     "stdin_error": dict(ec=(0xDEADBEEF,), stdout=(), stdin="Failed", write=OSError(), expect_exc=OSError),
     "stdin_close_closed": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Stdin", stdin_close=eshutdown_exc),
     "stdin_close_fail": dict(ec=(0xDEADBEEF,), stdout=(), stdin="Failed", stdin_close=OSError(), expect_exc=OSError),
+    "mask_global": dict(
+        command="USE='secret=secret_pass' do task",
+        init_log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
+        masked_cmd="USE='secret=<*masked*>' do task",
+    ),
+    "mask_local": dict(
+        command="USE='secret=secret_pass' do task",
+        log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
+        masked_cmd="USE='secret=<*masked*>' do task",
+    ),
 }
 
 
@@ -112,6 +122,8 @@ def pytest_generate_tests(metafunc):
                 "stdin_error",
                 "stdin_close_closed",
                 "stdin_close_fail",
+                "mask_global",
+                "mask_local",
             ],
             indirect=True,
         )
@@ -131,7 +143,7 @@ def exec_result(run_parameters):
         stdout_res = tuple([elem for elem in run_parameters["stdout"] if isinstance(elem, bytes)])
 
     return exec_helpers.async_api.ExecResult(
-        cmd=command,
+        cmd=run_parameters.get("masked_cmd", command),
         stdin=run_parameters.get("stdin", None),
         stdout=stdout_res,
         stderr=(),
@@ -190,16 +202,24 @@ def logger(mocker):
 
 
 async def test_special_cases(create_subprocess_shell, exec_result, logger, run_parameters) -> None:
-    runner = exec_helpers.async_api.Subprocess()
+    runner = exec_helpers.async_api.Subprocess(log_mask_re=run_parameters.get("init_log_mask_re", None))
     if "expect_exc" not in run_parameters:
         res = await runner.execute(
-            command, stdin=run_parameters.get("stdin", None), verbose=run_parameters.get("verbose", None)
+            command=run_parameters.get("command", command),
+            stdin=run_parameters.get("stdin", None),
+            verbose=run_parameters.get("verbose", None),
+            log_mask_re=run_parameters.get("log_mask_re", None),
         )
         level = logging.INFO if run_parameters.get("verbose", False) else logging.DEBUG
-        assert logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
-        assert logger.mock_calls[-1] == mock.call.log(
-            level=level, msg="Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=res)
+
+        command_for_log = run_parameters.get("masked_cmd", command)
+        command_log = "Executing command:\n{!r}\n".format(command_for_log.rstrip())
+        result_log = "Command {command!r} exit code: {result.exit_code!s}".format(
+            command=command_for_log.rstrip(), result=res
         )
+
+        assert logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
+        assert logger.mock_calls[-1] == mock.call.log(level=level, msg=result_log)
         assert res == exec_result
     else:
         with pytest.raises(run_parameters["expect_exc"]):
