@@ -16,6 +16,7 @@ API: Subprocess
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 1.9.0 Not singleton anymore. Only lock is shared between all instances.
 
     .. py:attribute:: log_mask_re
 

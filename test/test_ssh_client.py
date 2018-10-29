@@ -1559,7 +1559,7 @@ class TestSftp(unittest.TestCase):
             ))
         return ssh, _sftp
 
-    def test_exists(self, client, policy, logger):
+    def test_exists(self, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         lstat = mock.Mock()
         _sftp.attach_mock(lstat, 'lstat')
@@ -1579,7 +1579,7 @@ class TestSftp(unittest.TestCase):
         self.assertFalse(result)
         lstat.assert_called_once_with(dst)
 
-    def test_stat(self, client, policy, logger):
+    def test_stat(self, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         stat = mock.Mock()
         _sftp.attach_mock(stat, 'stat')
@@ -1595,8 +1595,8 @@ class TestSftp(unittest.TestCase):
         self.assertEqual(result.st_uid, 0)
         self.assertEqual(result.st_gid, 0)
 
-    def test_isfile(self, client, policy, logger):
-        class Attrs(object):
+    def test_isfile(self, client, *args):
+        class Attrs:
             def __init__(self, mode):
                 self.st_mode = mode
 
@@ -1628,8 +1628,8 @@ class TestSftp(unittest.TestCase):
         self.assertFalse(result)
         lstat.assert_called_once_with(dst)
 
-    def test_isdir(self, client, policy, logger):
-        class Attrs(object):
+    def test_isdir(self, client, *args):
+        class Attrs:
             def __init__(self, mode):
                 self.st_mode = mode
 
@@ -1662,11 +1662,11 @@ class TestSftp(unittest.TestCase):
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.exists')
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
-    def test_mkdir(self, execute, exists, client, policy, logger):
+    def test_mkdir(self, execute, exists, *args):
         exists.side_effect = [False, True]
 
-        dst = '~/tst dir'
-        escaped_dst = '~/tst\ dir'
+        dst = "~/tst dir"
+        escaped_dst = r"~/tst\ dir"
 
         # noinspection PyTypeChecker
         ssh = exec_helpers.SSHClient(
@@ -1693,7 +1693,7 @@ class TestSftp(unittest.TestCase):
         execute.assert_not_called()
 
     @mock.patch('exec_helpers.ssh_client.SSHClient.execute')
-    def test_rm_rf(self, execute, client, policy, logger):
+    def test_rm_rf(self, execute, *args):
         dst = '~/tst'
 
         # noinspection PyTypeChecker
@@ -1710,7 +1710,7 @@ class TestSftp(unittest.TestCase):
         ssh.rm_rf(dst)
         execute.assert_called_once_with("rm -rf {}".format(dst))
 
-    def test_open(self, client, policy, logger):
+    def test_open(self, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         fopen = mock.Mock(return_value=True)
         _sftp.attach_mock(fopen, 'open')
@@ -1763,7 +1763,7 @@ class TestSftp(unittest.TestCase):
     @mock.patch('exec_helpers.ssh_client.SSHClient.isdir')
     @mock.patch('os.path.isdir', autospec=True)
     def test_upload_file(
-            self, isdir, remote_isdir, client, policy, logger
+            self, isdir, remote_isdir, client, *args
     ):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = False
@@ -1787,7 +1787,7 @@ class TestSftp(unittest.TestCase):
     def test_upload_dir(
             self,
             isdir, remote_isdir, walk, mkdir, exists,
-            client, policy, logger
+            client, *args
     ):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True

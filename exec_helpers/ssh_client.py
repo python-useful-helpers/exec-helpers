@@ -41,7 +41,7 @@ class SSHClient(SSHClientBase):
     @staticmethod
     def _path_esc(path):  # type: (str) -> str
         """Escape space character in the path."""
-        return path.replace(" ", "\ ")
+        return path.replace(" ", r"\ ")
 
     def mkdir(self, path):  # type: (str) -> None
         """Run 'mkdir -p path' on remote.

@@ -1,7 +1,7 @@
 .. ExecResult
 
 API: ExecResult
-===========================
+===============
 
 .. py:module:: exec_helpers
 .. py:currentmodule:: exec_helpers
@@ -23,10 +23,19 @@ API: ExecResult
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, ExitCodes]
 
-    .. py:attribute:: lock
+    .. py:attribute:: stdout_lock
 
         ``threading.RLock``
         Lock object for thread-safe operation.
+
+        .. versionadded:: 1.9.0
+
+    .. py:attribute:: stderr_lock
+
+        ``threading.RLock``
+        Lock object for thread-safe operation.
+
+        .. versionadded:: 1.9.0
 
     .. py:attribute:: timestamp
 
