@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
+import os
 import platform
 
 # pylint: disable=unused-import
@@ -58,4 +59,4 @@ subprocess_kw = {}  # type: typing.Dict[str, typing.Any]
 if "Windows" == platform.system():  # pragma: no cover
     subprocess_kw["creationflags"] = 0x00000200
 else:  # pragma: no cover
-    subprocess_kw["start_new_session"] = True
+    subprocess_kw["preexec_fn"] = os.setsid
