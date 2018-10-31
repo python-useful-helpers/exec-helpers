@@ -465,7 +465,17 @@ class ExecResult:
 
     def __eq__(self, other: typing.Any) -> bool:
         """Comparision."""
-        return hash(self) == hash(other)
+        return (
+            self.__class__ is other.__class__
+            or issubclass(self.__class__, other.__class__)
+            or issubclass(other.__class__, self.__class__)
+        ) and (
+            self.cmd == other.cmd
+            and self.stdin == other.stdin
+            and self.stdout == other.stdout
+            and self.stderr == other.stderr
+            and self.exit_code == other.exit_code
+        )
 
     def __ne__(self, other: typing.Any) -> bool:
         """Comparision."""

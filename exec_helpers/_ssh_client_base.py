@@ -49,6 +49,18 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
+class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
+    """Advanced retry on exceptions."""
+
+    def __init__(
+        self,
+        retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
+        reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
+    ) -> None:
+        """Retry on exceptions, except several types."""
+        super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
+
+
 # noinspection PyTypeHints
 class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
@@ -376,7 +388,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         return self.__ssh
 
     @tenacity.retry(  # type: ignore
-        retry=tenacity.retry_if_exception_type(paramiko.SSHException),
+        retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
         stop=tenacity.stop_after_attempt(3),
         wait=tenacity.wait_fixed(3),
         reraise=True,
