@@ -103,7 +103,3 @@ class ExecResult(exec_result.ExecResult):
         with self.stderr_lock:
             self._stderr_str = self._stderr_brief = None
             self._stderr += tuple(await self._poll_stream(src, log, verbose))
-
-    def __hash__(self) -> int:
-        """Hash for usage as dict key and in sets."""
-        return hash((super(ExecResult, self).__class__, self.cmd, self.stdin, self.stdout, self.stderr, self.exit_code))

@@ -142,7 +142,7 @@ def exec_result(run_parameters):
     else:
         stdout_res = tuple([elem for elem in run_parameters["stdout"] if isinstance(elem, bytes)])
 
-    return exec_helpers.async_api.ExecResult(
+    return exec_helpers.ExecResult(
         cmd=run_parameters.get("masked_cmd", command),
         stdin=run_parameters.get("stdin", None),
         stdout=stdout_res,

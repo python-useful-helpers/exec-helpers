@@ -127,7 +127,7 @@ def run_parameters(request):
 
 @pytest.fixture
 def exec_result(run_parameters):
-    return exec_helpers.async_api.ExecResult(
+    return exec_helpers.ExecResult(
         cmd=command,
         stdin=run_parameters["stdin"],
         stdout=tuple([line for line in run_parameters["stdout"]]) if run_parameters["stdout"] else None,
