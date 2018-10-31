@@ -83,7 +83,7 @@ configs = {
         open_stderr=True,
     ),
     "with_stdin_str": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=u"stdin", open_stdout=True, open_stderr=True
+        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin="stdin", open_stdout=True, open_stderr=True
     ),
     "with_stdin_bytes": dict(
         ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=b"stdin", open_stdout=True, open_stderr=True
@@ -235,7 +235,12 @@ def test_001_execute_async(popen, logger, run_parameters):
 
 def test_002_execute(popen, logger, exec_result, run_parameters):
     runner = exec_helpers.Subprocess()
-    res = runner.execute(command, stdin=run_parameters["stdin"])
+    res = runner.execute(
+        command,
+        stdin=run_parameters["stdin"],
+        open_stdout=run_parameters["open_stdout"],
+        open_stderr=run_parameters["open_stderr"],
+    )
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
     popen().wait.assert_called_once_with()
@@ -317,7 +322,6 @@ def test_007_check_stderr(execute, exec_result, logger):
 def test_008_check_stderr_no_raise(execute, exec_result, logger):
     runner = exec_helpers.Subprocess()
     assert (
-        runner.check_stderr(
-            command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False
-        ) == exec_result
+        runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
+        == exec_result
     )
