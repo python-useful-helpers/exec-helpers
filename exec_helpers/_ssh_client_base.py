@@ -30,7 +30,6 @@ import logging
 import platform
 import stat
 import sys
-import threading
 import time
 import typing  # noqa: F401  # pylint: disable=unused-import
 import warnings
@@ -53,6 +52,18 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("iso8601").setLevel(logging.WARNING)
+
+
+class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
+    """Advanced retry on exceptions."""
+
+    def __init__(
+        self,
+        retry_on,  # type: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
+        reraise,  # type: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
+    ):  # type: (...) -> None
+        """Retry on exceptions, except several types."""
+        super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
 class SshExecuteAsyncResult(api.ExecuteAsyncResult):
@@ -356,7 +367,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         return self.__ssh
 
     @tenacity.retry(  # type: ignore
-        retry=tenacity.retry_if_exception_type(paramiko.SSHException),
+        retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
         stop=tenacity.stop_after_attempt(3),
         wait=tenacity.wait_fixed(3),
         reraise=True,
@@ -587,7 +598,14 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
         if stdin is not None:
             if not _stdin.channel.closed:
-                _stdin.write("{stdin}\n".format(stdin=stdin))
+                if isinstance(stdin, bytes):
+                    stdin_str = stdin.decode("utf-8")
+                elif isinstance(stdin, bytearray):
+                    stdin_str = bytes(stdin).decode("utf-8")
+                else:
+                    stdin_str = stdin
+
+                _stdin.write("{stdin}\n".format(stdin=stdin_str).encode("utf-8"))
                 _stdin.flush()
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
@@ -632,22 +650,16 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
                 result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
         @threaded.threadpooled
-        def poll_pipes(stop,):  # type: (threading.Event) -> None
-            """Polling task for FIFO buffers.
-
-            :type stop: Event
-            """
-            while not stop.is_set():
+        def poll_pipes():  # type: () -> None
+            """Polling task for FIFO buffers."""
+            while not async_result.interface.status_event.is_set():
                 time.sleep(0.1)
                 if async_result.stdout or async_result.stderr:
                     poll_streams()
 
-                if async_result.interface.status_event.is_set():
-                    result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
-                    result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
-                    result.exit_code = async_result.interface.exit_status
-
-                    stop.set()
+            result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
+            result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
+            result.exit_code = async_result.interface.exit_status
 
         # channel.status_event.wait(timeout)
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
@@ -655,22 +667,20 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
 
-        stop_event = threading.Event()
-
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        future = poll_pipes(stop=stop_event)  # type: concurrent.futures.Future
+        future = poll_pipes()  # type: concurrent.futures.Future
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
 
         # Process closed?
-        if stop_event.is_set():
+        if async_result.interface.status_event.is_set():
             async_result.interface.close()
             return result
 
-        stop_event.set()
         async_result.interface.close()
+        async_result.interface.status_event.set()
         future.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
@@ -806,7 +816,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log)
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin", None))
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code
