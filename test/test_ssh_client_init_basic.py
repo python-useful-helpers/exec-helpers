@@ -112,6 +112,12 @@ def ssh_auth_logger(mocker):
     return mocker.patch("exec_helpers.ssh_auth.logger")
 
 
+def teardown_function(function):
+    """Clean-up after tests."""
+    with mock.patch("warnings.warn"):
+        exec_helpers.SSHClient._clear_cache()
+
+
 def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_auth_logger):
     # Helper code
     _ssh = mock.call

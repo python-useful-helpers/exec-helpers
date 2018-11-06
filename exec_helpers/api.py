@@ -86,7 +86,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         self.lock.acquire()
         return self
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:  # pragma: no cover
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         """Context manager usage."""
         self.lock.release()
 
