@@ -236,12 +236,9 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         if stdin is None:
             process_stdin = process.stdin
         else:
-            if isinstance(stdin, str):
-                stdin = stdin.encode(encoding="utf-8")
-            elif isinstance(stdin, bytearray):
-                stdin = bytes(stdin)
+            stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
             try:
-                process.stdin.write(stdin)
+                process.stdin.write(stdin_str)
             except OSError as exc:
                 if exc.errno == errno.EINVAL:
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
