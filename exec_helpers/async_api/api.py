@@ -198,18 +198,18 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
         """
-        expected = proc_enums.exit_codes_to_enums(expected)
+        expected_codes = proc_enums.exit_codes_to_enums(expected)
         ret = await self.execute(command, verbose, timeout, **kwargs)
-        if ret.exit_code not in expected:
+        if ret.exit_code not in expected_codes:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
                 "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + "\n" if error_info else "", result=ret, expected=expected
+                    append=error_info + "\n" if error_info else "", result=ret, expected=expected_codes
                 )
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=expected)
+                raise exceptions.CalledProcessError(result=ret, expected=expected_codes)
         return ret
 
     async def check_stderr(  # type: ignore

@@ -181,3 +181,24 @@ def test_03_execute_get_pty(ssh, ssh_transport_channel) -> None:
     target = "127.0.0.2"
     ssh.execute_through_host(target, command, get_pty=True)
     ssh_transport_channel.get_pty.assert_called_with(term="vt100", width=80, height=24, width_pixels=0, height_pixels=0)
+
+
+def test_04_execute_use_stdin(ssh, chan_makefile) -> None:
+    target = "127.0.0.2"
+    cmd = 'read line; echo "$line"'
+    stdin = "test"
+    res = ssh.execute_through_host(target, cmd, stdin=stdin, get_pty=True)
+    assert res.stdin == stdin
+    chan_makefile.stdin.write.assert_called_once_with(stdin.encode("utf-8"))
+    chan_makefile.stdin.flush.assert_called_once()
+
+
+def test_05_execute_closed_stdin(ssh, ssh_transport_channel, get_logger) -> None:
+    target = "127.0.0.2"
+    cmd = 'read line; echo "$line"'
+    stdin = "test"
+    ssh_transport_channel.closed = True
+
+    ssh.execute_through_host(target, cmd, stdin=stdin, get_pty=True)
+    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log.warning.assert_called_once_with("STDIN Send failed: closed channel")
