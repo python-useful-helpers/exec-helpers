@@ -342,7 +342,7 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     assert res.stdin.channel == res.interface
 
     if stdin:
-        res.stdin.write.assert_called_with("{stdin}\n".format(stdin=stdin).encode("utf-8"))
+        res.stdin.write.assert_called_with(stdin.encode("utf-8"))
         res.stdin.flush.assert_called_once()
     log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
     log.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)

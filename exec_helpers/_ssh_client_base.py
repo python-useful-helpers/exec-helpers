@@ -598,14 +598,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
         if stdin is not None:
             if not _stdin.channel.closed:
-                if isinstance(stdin, bytes):
-                    stdin_str = stdin.decode("utf-8")
-                elif isinstance(stdin, bytearray):
-                    stdin_str = bytes(stdin).decode("utf-8")
-                else:
-                    stdin_str = stdin
+                stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
 
-                _stdin.write("{stdin}\n".format(stdin=stdin_str).encode("utf-8"))
+                _stdin.write(stdin_str)
                 _stdin.flush()
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
@@ -752,12 +747,23 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             )
 
         # Make proxy objects for read
-        stdout = channel.makefile("rb")
-        stderr = channel.makefile_stderr("rb")
+        _stdin = channel.makefile("wb")  # type: paramiko.ChannelFile
+        stdout = channel.makefile("rb")  # type: paramiko.ChannelFile
+        stderr = channel.makefile_stderr("rb")  # type: paramiko.ChannelFile
 
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
-        async_result = SshExecuteAsyncResult(interface=channel, stdin=None, stdout=stdout, stderr=stderr)
+        stdin = kwargs.get("stdin", None)
+        if stdin is not None:
+            if not _stdin.channel.closed:
+                stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
+
+                _stdin.write(stdin_str)
+                _stdin.flush()
+            else:
+                self.logger.warning("STDIN Send failed: closed channel")
+
+        async_result = SshExecuteAsyncResult(interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr)
 
         # noinspection PyDictCreation
         result = self._exec_command(
@@ -766,6 +772,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             timeout=timeout,
             verbose=verbose,
             log_mask_re=kwargs.get("log_mask_re", None),
+            stdin=stdin,
         )
 
         intermediate_channel.close()
