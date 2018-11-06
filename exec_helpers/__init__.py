@@ -49,7 +49,7 @@ __all__ = (
     "ExecResult",
 )
 
-__version__ = "2.9.1"
+__version__ = "2.9.2"
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"
 __maintainers__ = {
