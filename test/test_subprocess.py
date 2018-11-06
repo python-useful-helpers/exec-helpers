@@ -228,7 +228,12 @@ def test_001_execute_async(popen, logger, run_parameters) -> None:
 
 def test_002_execute(popen, logger, exec_result, run_parameters) -> None:
     runner = exec_helpers.Subprocess()
-    res = runner.execute(command, stdin=run_parameters["stdin"])
+    res = runner.execute(
+        command,
+        stdin=run_parameters["stdin"],
+        open_stdout=run_parameters["open_stdout"],
+        open_stderr=run_parameters["open_stderr"],
+    )
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
     popen().wait.assert_called_once_with(timeout=default_timeout)
