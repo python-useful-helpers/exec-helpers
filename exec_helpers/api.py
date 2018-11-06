@@ -59,7 +59,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 1.3.5 make API public paramikoto use as interface
+        .. versionchanged:: 1.3.5 make API public to use as interface
         """
         self.__lock = threading.RLock()
         self.__logger = logger
@@ -279,18 +279,18 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         """
-        expected = proc_enums.exit_codes_to_enums(expected)
+        expected_codes = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret.exit_code not in expected:
+        if ret.exit_code not in expected_codes:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
                 "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + "\n" if error_info else "", result=ret, expected=expected
+                    append=error_info + "\n" if error_info else "", result=ret, expected=expected_codes
                 )
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=expected)
+                raise exceptions.CalledProcessError(result=ret, expected=expected_codes)
         return ret
 
     def check_stderr(
@@ -335,3 +335,21 @@ class ExecHelper(metaclass=abc.ABCMeta):
             if raise_on_err:
                 raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
         return ret
+
+    @staticmethod
+    def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
+        """Get bytes string from string/bytes/bytearray union.
+
+        :return: Byte string
+        :rtype: bytes
+        :raises TypeError: unexpected source type.
+        """
+        if isinstance(src, bytes):
+            return src
+        if isinstance(src, bytearray):
+            return bytes(src)
+        if isinstance(src, str):
+            return src.encode("utf-8")
+        raise TypeError(  # pragma: no cover
+            "{!r} has unexpected type: not conform to Union[str, bytes, bytearray]".format(src)
+        )

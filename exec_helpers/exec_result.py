@@ -376,9 +376,9 @@ class ExecResult:
         :raises DeserializeValueError: Not valid source format
         """
         try:
-            if fmt == "json":  # pylint: disable=no-else-return
+            if fmt == "json":
                 return json.loads(self.stdout_str, encoding="utf-8")
-            elif fmt == "yaml":
+            if fmt == "yaml":
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
             tmpl = "{{self.cmd}} stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
