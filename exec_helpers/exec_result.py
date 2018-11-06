@@ -385,7 +385,7 @@ class ExecResult(object):
         try:
             if fmt == "json":
                 return json.loads(self.stdout_str, encoding="utf-8")
-            elif fmt == "yaml":
+            if fmt == "yaml":
                 return yaml.safe_load(self.stdout_str)
         except Exception:
             tmpl = " stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
