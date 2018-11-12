@@ -58,15 +58,6 @@ jobs:
     - pip install --upgrade bandit
     script:
     - bandit -r exec_helpers
-  - <<: *static_analysis
-    <<: *python37
-    name: "MyPy"
-    install:
-    - *upgrade_python_toolset
-    - *install_deps
-    - pip install --upgrade "mypy >= 0.620"
-    script:
-    - mypy --strict exec_helpers
 
   - <<: *code_style_check
     name: "PEP8"
