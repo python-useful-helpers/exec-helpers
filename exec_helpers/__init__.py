@@ -14,6 +14,8 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
+import pkg_resources
+
 from .proc_enums import ExitCodes
 
 from .exceptions import (
@@ -49,7 +51,17 @@ __all__ = (
     "ExecResult",
 )
 
-__version__ = "2.9.2"
+try:
+    __version__ = pkg_resources.get_distribution(__name__).version
+except pkg_resources.DistributionNotFound:
+    # package is not installed, try to get from SCM
+    try:
+        import setuptools_scm  # type: ignore
+
+        __version__ = setuptools_scm.get_version()
+    except ImportError:
+        pass
+
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"
 __maintainers__ = {
