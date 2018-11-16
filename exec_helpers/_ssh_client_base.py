@@ -53,8 +53,8 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
 
     def __init__(
         self,
-        retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
-        reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
+        retry_on: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
+        reraise: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
     ) -> None:
         """Retry on exceptions, except several types."""
         super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
