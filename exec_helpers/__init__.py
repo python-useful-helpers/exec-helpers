@@ -56,6 +56,7 @@ try:
 except pkg_resources.DistributionNotFound:
     # package is not installed, try to get from SCM
     try:
+        # noinspection PyPackageRequirements,PyUnresolvedReferences
         import setuptools_scm  # type: ignore
 
         __version__ = setuptools_scm.get_version()
