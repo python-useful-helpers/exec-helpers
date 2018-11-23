@@ -539,7 +539,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         return self.__get_keepalive(ssh=self, enforce=enforce)
 
-    def execute_async(
+    def execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
@@ -547,6 +547,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
         **kwargs: typing.Any
     ) -> SshExecuteAsyncResult:
         """Execute command in async mode and return channel with IO objects.
@@ -564,6 +568,12 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -581,6 +591,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 stdin data
         .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
+        .. versionchanged:: 2.9.3 Expose pty options as optional keyword-only arguments
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -590,15 +601,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         chan = self._ssh.get_transport().open_session()
 
-        if kwargs.get("get_pty", False):
+        if get_pty:
             # Open PTY
-            chan.get_pty(
-                term="vt100",
-                width=kwargs.get("width", 80),
-                height=kwargs.get("height", 24),
-                width_pixels=0,
-                height_pixels=0,
-            )
+            chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
         _stdin = chan.makefile("wb")  # type: paramiko.ChannelFile
         stdout = chan.makefile("rb") if open_stdout else None
@@ -634,6 +639,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -649,6 +656,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -681,7 +690,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -711,7 +720,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         target_port: int = 22,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        *,
         get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command on remote host through currently connected host.
@@ -730,6 +742,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type timeout: typing.Union[int, float, None]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -738,6 +754,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 2.9.3 Expose pty options as optional keyword-only arguments
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
         self.logger.log(  # type: ignore
@@ -759,13 +776,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         channel = transport.open_session()
         if get_pty:
             # Open PTY
-            channel.get_pty(
-                term="vt100",
-                width=kwargs.get("width", 80),
-                height=kwargs.get("height", 24),
-                width_pixels=0,
-                height_pixels=0,
-            )
+            channel.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
         # Make proxy objects for read
         _stdin = channel.makefile("wb")  # type: paramiko.ChannelFile
@@ -808,6 +819,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         expected: typing.Optional[typing.Iterable[int]] = None,
         raise_on_err: bool = True,
+        *,
+        exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
@@ -822,6 +835,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type expected: typing.Optional[typing.Iterable[]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError
+        :type exception_class: typing.Type[exceptions.ParallelCallProcessError]
         :param kwargs: additional parameters for execute_async call.
         :type kwargs: typing.Any
         :return: dictionary {(hostname, port): result}
@@ -831,6 +846,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 2.9.3 Exception class can be substituted
         """
 
         @threaded.threadpooled
@@ -880,7 +896,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptions(command, raised_exceptions, errors, results, expected=expected)
         if errors and raise_on_err:
-            raise exceptions.ParallelCallProcessError(command, errors, results, expected=expected)
+            raise exception_class(command, errors, results, expected=expected)
         return results
 
     def open(self, path: str, mode: str = "r") -> paramiko.SFTPFile:

@@ -144,6 +144,8 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         error_info=None,  # type: typing.Optional[str]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
         raise_on_err=True,  # type: bool
+        # Keyword only:
+        exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
         **kwargs
     )
 
@@ -155,6 +157,9 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
+        # Keyword only:
+        expected=None,  # typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]]
+        exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
     )
 
 If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `**kwargs` with flags `open_stdout=False` and `open_stderr=False`.
@@ -203,7 +208,7 @@ SSHClient specific
 ------------------
 
 SSHClient commands support get_pty flag, which enables PTY open on remote side.
-PTY width and height can be set via kwargs, dimensions in pixels are always 0x0.
+PTY width and height can be set via keyword arguments, dimensions in pixels are always 0x0.
 
 Possible to call commands in parallel on multiple hosts if it's not produce huge output:
 
@@ -214,7 +219,9 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
         command,  # type: str
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         expected=None,  # type: typing.Optional[typing.Iterable[int]]
-        raise_on_err=True  # type: bool
+        raise_on_err=True,  # type: bool
+        # Keyword only:
+        exception_class=ParallelCallProcessError  # typing.Type[ParallelCallProcessError]
     )
     results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
 
@@ -232,7 +239,10 @@ For execute through SSH host can be used `execute_through_host` method:
         target_port=22,  # type: int
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         verbose=False,  # type: bool
+        # Keyword only:
         get_pty=False,  # type: bool
+        width=80,  # type: int
+        height=24  # type: int
     )
 
 Where hostname is a target hostname, auth is an alternate credentials for target host.
@@ -307,7 +317,7 @@ Additional (non-standard) helpers:
 
 Subprocess specific
 -------------------
-Kwargs set properties:
+Keyword arguments:
 
 - cwd - working directory.
 - env - environment variables dict.
