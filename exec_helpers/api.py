@@ -188,6 +188,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -203,6 +205,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -254,6 +258,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         error_info: typing.Optional[str] = None,
         expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]] = None,
         raise_on_err: bool = True,
+        *,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -270,6 +276,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -278,6 +286,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
         """
         expected_codes = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)
@@ -290,7 +299,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=expected_codes)
+                raise exception_class(result=ret, expected=expected_codes)
         return ret
 
     def check_stderr(
@@ -300,6 +309,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
+        *,
+        expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]] = None,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
@@ -314,6 +326,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -322,9 +338,17 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :raises CalledProcessError: Unexpected exit code or stderr presents
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
         """
         ret = self.check_call(
-            command, verbose, timeout=timeout, error_info=error_info, raise_on_err=raise_on_err, **kwargs
+            command,
+            verbose,
+            timeout=timeout,
+            error_info=error_info,
+            raise_on_err=raise_on_err,
+            expected=expected,
+            exception_class=exception_class,
+            **kwargs
         )
         if ret.stderr:
             message = (
@@ -333,7 +357,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
+                raise exception_class(result=ret, expected=expected)
         return ret
 
     @staticmethod

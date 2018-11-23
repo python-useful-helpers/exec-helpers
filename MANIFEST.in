@@ -2,9 +2,10 @@ include *.rst LICENSE requirements.txt
 global-exclude *.c
 exclude Makefile
 prune tools
-exclude .travis.yml appveyor.yml
+exclude .travis.yml appveyor.yml azure-pipelines.yml
 exclude tox.ini pytest.ini .coveragerc
 prune test
 prune .github
+prune .azure_pipelines
 prune docs
 exclude CODEOWNERS CODE_OF_CONDUCT.md _config.yml

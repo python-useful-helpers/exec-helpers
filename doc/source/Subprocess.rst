@@ -8,15 +8,18 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
-    .. py:method:: __init__(logger, log_mask_re=None)
+    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"))
 
         ExecHelper global API.
 
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param logger: logger instance to use
+        :type logger: logging.Logger
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
+        .. versionchanged:: 3.2.0 Logger can be enforced.
 
     .. py:attribute:: log_mask_re
 
@@ -40,7 +43,7 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 release lock on exit
 
-    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
+    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, cwd=None, env=None, **kwargs)
 
         Execute command in async mode and return Popen with IO objects.
 
@@ -57,11 +60,16 @@ API: Subprocess
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :rtype: SubprocessExecuteAsyncResult
         :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
+        .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
@@ -82,7 +90,7 @@ API: Subprocess
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 stdin data
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, *, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
 
@@ -98,14 +106,17 @@ API: Subprocess
         :type expected: ``typing.Optional[typing.Iterable[int]]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=None, exception_class=CalledProcessError, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -119,14 +130,17 @@ API: Subprocess
         :type error_info: ``typing.Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]]
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code or stderr presents
 
-        .. note:: expected return codes can be overridden via kwargs.
-
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
 
 
 .. py:class:: SubprocessExecuteAsyncResult
