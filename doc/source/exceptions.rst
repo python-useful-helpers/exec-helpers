@@ -100,7 +100,47 @@ API: exceptions
         ``str``
         stdout string or brief string
 
-.. py:exception:: ParallelCallExceptions(ExecCalledProcessError)
+.. py:exception:: ParallelCallProcessError(ExecCalledProcessError)
+
+    Exception during parallel execution.
+
+    .. py:method:: __init__(command, errors, results, expected=None, )
+
+        :param command: command
+        :type command: ``str``
+        :param errors: results with errors
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param results: all results
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param expected: expected return codes
+        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
+
+        .. versionchanged:: 1.0 - fixed inheritance
+
+    .. py:attribute:: cmd
+
+        ``str``
+        command
+
+    .. py:attribute:: errors
+
+        results with errors
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+
+    .. py:attribute:: results
+
+        all results
+
+        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+
+    .. py:attribute:: expected
+
+        expected return codes
+
+        :rtype: typing.List[typing.Union[int, ExitCodes]]
+
+.. py:exception:: ParallelCallExceptions(ParallelCallProcessError)
 
     Exception raised during parallel call as result of exceptions.
 
@@ -128,46 +168,6 @@ API: exceptions
 
         ``typing.Dict[typing.Tuple[str, int], Exception]``
         Exception on connections
-
-    .. py:attribute:: errors
-
-        results with errors
-
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
-
-    .. py:attribute:: results
-
-        all results
-
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
-
-    .. py:attribute:: expected
-
-        expected return codes
-
-        :rtype: typing.List[typing.Union[int, ExitCodes]]
-
-.. py:exception:: ParallelCallProcessError(ExecCalledProcessError)
-
-    Exception during parallel execution.
-
-    .. py:method:: __init__(command, errors, results, expected=None, )
-
-        :param command: command
-        :type command: ``str``
-        :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
-
-        .. versionchanged:: 1.0 - fixed inheritance
-
-    .. py:attribute:: cmd
-
-        ``str``
-        command
 
     .. py:attribute:: errors
 

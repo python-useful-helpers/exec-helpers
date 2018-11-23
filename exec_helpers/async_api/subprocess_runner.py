@@ -32,8 +32,6 @@ from exec_helpers import subprocess_runner
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
-
 
 # noinspection PyTypeHints,PyTypeChecker
 class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResult):
@@ -68,16 +66,19 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
     __slots__ = ()
 
-    def __init__(self, logger: logging.Logger = logger, log_mask_re: typing.Optional[str] = None) -> None:
+    def __init__(
+        self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger = logging.getLogger(__name__)
+    ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
-        :param logger: logger instance to use
-        :type logger: logging.Logger
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param logger: logger instance to use
+        :type logger: logging.Logger
 
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
+        .. versionchanged:: 3.2.0 Logger can be enforced.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
@@ -88,6 +89,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -103,6 +106,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -113,16 +118,16 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         async def poll_stdout() -> None:
             """Sync stdout poll."""
-            await result.read_stdout(src=async_result.stdout, log=logger, verbose=verbose)
+            await result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
 
         async def poll_stderr() -> None:
             """Sync stderr poll."""
-            await result.read_stderr(src=async_result.stderr, log=logger, verbose=verbose)
+            await result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
 
         stdout_task = asyncio.ensure_future(poll_stdout())
         stderr_task = asyncio.ensure_future(poll_stderr())
@@ -140,7 +145,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                 # Wait for 1 ms: check close
                 exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
                 if exit_code is not None:  # Nothing to kill
-                    logger.warning(
+                    self.logger.warning(
                         "{!s} has been completed just after timeout: please validate timeout.".format(command)
                     )
                     result.exit_code = exit_code
@@ -151,9 +156,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             stderr_task.cancel()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
-        logger.debug(wait_err_msg)
+        self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    # pylint: disable=arguments-differ
     async def execute_async(  # type: ignore
         self,
         command: str,
@@ -162,6 +168,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: typing.Optional[
+            typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
+        ] = None,
         **kwargs: typing.Any
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -179,6 +190,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -204,8 +219,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             stdout=asyncio.subprocess.PIPE if open_stdout else asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE if open_stderr else asyncio.subprocess.DEVNULL,
             stdin=asyncio.subprocess.PIPE,
-            cwd=kwargs.get("cwd", None),
-            env=kwargs.get("env", None),
+            cwd=cwd,
+            env=env,
             universal_newlines=False,
             **_subprocess_helpers.subprocess_kw
         )
@@ -244,3 +259,5 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)
+
+    # pylint: enable=arguments-differ

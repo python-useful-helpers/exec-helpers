@@ -33,8 +33,6 @@ from exec_helpers import metaclasses  # pylint: disable=unused-import
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
-
 
 # noinspection PyTypeHints
 class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
@@ -64,7 +62,9 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(self, log_mask_re: typing.Optional[str] = None) -> None:
+    def __init__(
+        self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger = logging.getLogger(__name__)
+    ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -72,9 +72,12 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param logger: logger instance to use
+        :type logger: logging.Logger
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
+        .. versionchanged:: 3.2.0 Logger can be enforced.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
@@ -85,6 +88,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         timeout: typing.Union[int, float, None],
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -100,6 +105,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -130,7 +137,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -183,7 +190,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
-    def execute_async(
+    def execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
@@ -191,6 +198,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: typing.Optional[
+            typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
+        ] = None,
         **kwargs: typing.Any
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -208,6 +220,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -224,6 +240,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         .. versionadded:: 1.2.0
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
+        .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -237,8 +254,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
             stdin=subprocess.PIPE,
             shell=True,
-            cwd=kwargs.get("cwd", None),
-            env=kwargs.get("env", None),
+            cwd=cwd,
+            env=env,
             universal_newlines=False,
             **_subprocess_helpers.subprocess_kw
         )

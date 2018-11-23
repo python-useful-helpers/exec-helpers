@@ -29,13 +29,12 @@ import os.path
 import shutil
 import sys
 
+import setuptools
 try:
     # noinspection PyPackageRequirements
     from Cython.Build import cythonize
 except ImportError:
     cythonize = None
-
-import setuptools
 
 with open(os.path.join(os.path.dirname(__file__), "exec_helpers", "__init__.py")) as f:
     source = f.read()
