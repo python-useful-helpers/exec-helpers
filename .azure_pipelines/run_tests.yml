@@ -42,7 +42,7 @@ jobs:
     displayName: Build and install
 
   - script: |
-      pip install pytest pytest-sugar
+      pip install asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar
 
       pytest -vvv --junitxml=unit_result.xml test
     displayName: PyTest
