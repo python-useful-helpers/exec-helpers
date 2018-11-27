@@ -134,7 +134,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         except asyncio.TimeoutError:
             try:
                 # kill -9 for all subprocesses
-                _subprocess_helpers.kill_proc_tree(async_result.interface.pid, including_parent=False)
+                _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
                 async_result.interface.kill()  # kill -9
             except OSError:
                 # Wait for 1 ms: check close
