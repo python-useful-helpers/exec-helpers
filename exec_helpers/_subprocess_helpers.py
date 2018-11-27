@@ -40,15 +40,27 @@ def kill_proc_tree(pid, including_parent=True):  # type:(int, bool) -> None  # p
     :param including_parent: kill also parent process
     :type including_parent: bool
     """
+    def safe_stop(proc, kill=False):  # type: (psutil.Process, bool) -> None
+        """Do not crash on already stopped process."""
+        try:
+            if kill:
+                proc.kill()
+            proc.terminate()
+        except psutil.NoSuchProcess:
+            pass
+
     parent = psutil.Process(pid)
     children = parent.children(recursive=True)
     for child in children:  # type: psutil.Process
-        child.kill()
+        safe_stop(child)  # SIGTERM to allow cleanup
     _, alive = psutil.wait_procs(children, timeout=5)
-    for proc in alive:  # type: psutil.Process
-        proc.kill()  # 2nd shot
+    for child in alive:  # type: psutil.Process
+        safe_stop(child, kill=True)  # 2nd shot: SIGKILL
     if including_parent:
-        parent.kill()
+        safe_stop(parent)  # SIGTERM to allow cleanup
+        _, alive = psutil.wait_procs((parent,), timeout=5)
+        if alive:
+            safe_stop(parent, kill=True)  # 2nd shot: SIGKILL
         parent.wait(5)
 
 
