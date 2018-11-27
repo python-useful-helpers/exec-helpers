@@ -113,12 +113,12 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         @threaded.threadpooled
         def poll_stdout() -> None:
             """Sync stdout poll."""
-            result.read_stdout(src=async_result.stdout, log=logger, verbose=verbose)
+            result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
 
         @threaded.threadpooled
         def poll_stderr() -> None:
             """Sync stderr poll."""
-            result.read_stderr(src=async_result.stderr, log=logger, verbose=verbose)
+            result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
         def close_streams() -> None:
             """Enforce FIFO closure."""
@@ -153,13 +153,15 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         # Kill not ended process and wait for close
         try:
             # kill -9 for all subprocesses
-            _subprocess_helpers.kill_proc_tree(async_result.interface.pid, including_parent=False)
+            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             async_result.interface.kill()  # kill -9
             # Force stop cycle if no exit code after kill
         except OSError:
             exit_code = async_result.interface.poll()
             if exit_code is not None:  # Nothing to kill
-                logger.warning("{!s} has been completed just after timeout: please validate timeout.".format(command))
+                self.logger.warning(
+                    "{!s} has been completed just after timeout: please validate timeout.".format(command)
+                )
                 concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
                 result.exit_code = exit_code
                 return result
@@ -167,10 +169,18 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
+            _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
+            if not_done:
+                if async_result.interface.returncode:
+                    self.logger.critical(
+                        "Process {!s} was closed with exit code {!s}, but FIFO buffers are still open".format(
+                            command, async_result.interface.returncode
+                        )
+                    )
             close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
-        logger.debug(wait_err_msg)
+        self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
     def execute_async(
