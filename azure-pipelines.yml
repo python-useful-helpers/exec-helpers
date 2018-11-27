@@ -26,18 +26,12 @@ jobs:
     displayName: 'PyLint'
 
 - template: .azure_pipelines/run_tests.yml
-  parameters: {name: 'Python_34', python: '3.4', architecture: 'x64', kind: 'native'}
-- template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_35', python: '3.5', architecture: 'x64', kind: 'native'}
 - template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_36', python: '3.6', architecture: 'x64', kind: 'native'}
 - template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_37', python: '3.7', architecture: 'x64', kind: 'native'}
 
-- template: .azure_pipelines/run_tests.yml
-  parameters: {name: 'Python_34', python: '3.4', architecture: 'x64', kind: 'cython'}
-- template: .azure_pipelines/run_tests.yml
-  parameters: {name: 'Python_34', python: '3.4', architecture: 'x86', kind: 'cython'}
 - template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_35', python: '3.5', architecture: 'x64', kind: 'cython'}
 - template: .azure_pipelines/run_tests.yml
