@@ -40,7 +40,6 @@ def kill_proc_tree(pid, including_parent=True):  # type:(int, bool) -> None  # p
     :param including_parent: kill also parent process
     :type including_parent: bool
     """
-
     def safe_stop(proc, kill=False):  # type: (psutil.Process, bool) -> None
         """Do not crash on already stopped process."""
         try:
