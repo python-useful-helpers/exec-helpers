@@ -53,13 +53,10 @@ jobs:
 
 - job: 'Build_and_deploy'
   dependsOn:
-  - Python_34_x64_native
   - Python_35_x64_native
   - Python_36_x64_native
   - Python_37_x64_native
 
-  - Python_34_x64_cython
-  - Python_34_x86_cython
   - Python_35_x64_cython
   - Python_35_x86_cython
   - Python_36_x64_cython
@@ -72,11 +69,6 @@ jobs:
   strategy:
     maxParallel: 6
     matrix:
-      Python34_x64:
-        python.version: '3.4'
-      Python34_x86:
-        python.version: '3.4'
-        python.architecture: 'x86'
       Python35_x64:
         python.version: '3.5'
       Python35_x86:
