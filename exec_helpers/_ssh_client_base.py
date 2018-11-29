@@ -637,6 +637,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
+
         def poll_streams():  # type: () -> None
             """Poll FIFO buffers if data available."""
             if async_result.stdout and async_result.interface.recv_ready():
@@ -811,6 +812,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
+
         @threaded.threadpooled
         def get_result(remote):  # type: (SSHClientBase) -> exec_result.ExecResult
             """Get result from remote call."""
@@ -858,7 +860,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptions(command, raised_exceptions, errors, results, expected=expected)
         if errors and raise_on_err:
-            raise exceptions.ParallelCallProcessError(command, errors, results, expected=expected)
+            raise kwargs.get("exception_class", exceptions.ParallelCallProcessError)(
+                command, errors, results, expected=expected
+            )
         return results
 
     def open(self, path, mode="r"):  # type: (str, str) -> paramiko.SFTPFile
