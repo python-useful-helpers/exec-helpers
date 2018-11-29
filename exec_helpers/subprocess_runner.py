@@ -101,6 +101,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         """
+
         @threaded.threadpooled
         def poll_stdout():  # type: () -> None
             """Sync stdout poll."""
@@ -149,7 +150,8 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
             exit_code = async_result.interface.poll()
             if exit_code is not None:  # Nothing to kill
                 self.logger.warning(
-                    "{!s} has been completed just after timeout: please validate timeout.".format(command))
+                    "{!s} has been completed just after timeout: please validate timeout.".format(command)
+                )
                 concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
                 result.exit_code = exit_code
                 return result
@@ -157,13 +159,12 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
-            _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=5)
+            _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
             if not_done:
-                exit_code = async_result.interface.poll()
-                if exit_code:
+                if async_result.interface.returncode:
                     self.logger.critical(
                         "Process {!s} was closed with exit code {!s}, but FIFO buffers are still open".format(
-                            command, exit_code
+                            command, async_result.interface.returncode
                         )
                     )
             close_streams()

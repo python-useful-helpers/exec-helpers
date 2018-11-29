@@ -20,8 +20,10 @@ __all__ = ("SingletonMeta",)
 
 import abc
 import threading
+
 # pylint: disable=unused-import
 import typing  # noqa: F401
+
 # pylint: enable=unused-import
 
 

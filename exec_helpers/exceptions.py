@@ -71,10 +71,10 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        self.result = result
-        self.timeout = timeout
         message = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         super(ExecHelperTimeoutError, self).__init__(message)
+        self.result = result
+        self.timeout = timeout
 
     @property
     def cmd(self):  # type: () -> str
@@ -100,14 +100,14 @@ class CalledProcessError(ExecCalledProcessError):
     def __init__(
         self,
         result,  # type: exec_result.ExecResult
-        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        expected=None,  # type: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
     ):  # type: (...) -> None
         """Exception for error on process calls.
 
         :param result: execution result
         :type result: exec_result.ExecResult
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
 
         .. versionchanged:: 1.1.1 - provide full result
         """
@@ -144,52 +144,6 @@ class CalledProcessError(ExecCalledProcessError):
         return self.result.stderr_str
 
 
-class ParallelCallExceptions(ExecCalledProcessError):
-    """Exception raised during parallel call as result of exceptions."""
-
-    __slots__ = ("cmd", "exceptions", "errors", "results", "expected")
-
-    def __init__(
-        self,
-        command,  # type: str
-        exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
-        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-    ):  # type: (...) -> None
-        """Exception raised during parallel call as result of exceptions.
-
-        :param command: command
-        :type command: str
-        :param exceptions: Exceptions on connections
-        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
-        :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
-        """
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
-        self.expected = proc_enums.exit_codes_to_enums(expected)
-        self.cmd = command
-        self.exceptions = exceptions
-        self.errors = errors
-        self.results = results
-        message = (
-            "Command {self.cmd!r} "
-            "during execution raised exceptions: \n"
-            "\t{exceptions}".format(
-                self=self,
-                exceptions="\n\t".join(
-                    "{host}:{port} - {exc} ".format(host=host, port=port, exc=exc)
-                    for (host, port), exc in exceptions.items()
-                ),
-            )
-        )
-        super(ParallelCallExceptions, self).__init__(message)
-
-
 class ParallelCallProcessError(ExecCalledProcessError):
     """Exception during parallel execution."""
 
@@ -201,8 +155,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
         errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        **kwargs  # type: typing.Any
     ):  # type: (...) -> None
-        """Exception during parallel execution.
+        """Exception raised during parallel call as result of exceptions.
 
         :param command: command
         :type command: str
@@ -212,19 +167,18 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
         :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :keyword _message: error message override
         """
         expected = expected or [proc_enums.ExitCodes.EX_OK]
-        self.expected = proc_enums.exit_codes_to_enums(expected)
-        self.cmd = command
-        self.errors = errors
-        self.results = results
-        message = (
-            "Command {self.cmd!r} "
+        prep_expected = proc_enums.exit_codes_to_enums(expected)
+        message = kwargs.get("_message", None) or (
+            "Command {cmd!r} "
             "returned unexpected exit codes on several hosts\n"
-            "Expected: {self.expected}\n"
+            "Expected: {expected}\n"
             "Got:\n"
             "\t{errors}".format(
-                self=self,
+                cmd=command,
+                expected=prep_expected,
                 errors="\n\t".join(
                     "{host}:{port} - {code} ".format(host=host, port=port, code=result.exit_code)
                     for (host, port), result in errors.items()
@@ -232,3 +186,55 @@ class ParallelCallProcessError(ExecCalledProcessError):
             )
         )
         super(ParallelCallProcessError, self).__init__(message)
+        self.cmd = command
+        self.errors = errors
+        self.results = results
+        self.expected = prep_expected
+
+
+class ParallelCallExceptions(ParallelCallProcessError):
+    """Exception raised during parallel call as result of exceptions."""
+
+    __slots__ = ("cmd", "exceptions")
+
+    def __init__(
+        self,
+        command,  # type: str
+        exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
+        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        expected=None,  # type: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        **kwargs  # type: typing.Any
+    ):  # type: (...) -> None
+        """Exception during parallel execution.
+
+        :param command: command
+        :type command: str
+        :param exceptions: Exceptions on connections
+        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
+        :param errors: results with errors
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param results: all results
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param expected: expected return codes
+        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :keyword _message: error message override
+        """
+        expected = expected or [proc_enums.ExitCodes.EX_OK]
+        prep_expected = proc_enums.exit_codes_to_enums(expected)
+        message = kwargs.get("_message", None) or (
+            "Command {cmd!r} "
+            "during execution raised exceptions: \n"
+            "\t{exceptions}".format(
+                cmd=command,
+                exceptions="\n\t".join(
+                    "{host}:{port} - {exc} ".format(host=host, port=port, exc=exc)
+                    for (host, port), exc in exceptions.items()
+                ),
+            )
+        )
+        super(ParallelCallExceptions, self).__init__(
+            command=command, errors=errors, results=results, expected=prep_expected, _message=message
+        )
+        self.cmd = command
+        self.exceptions = exceptions

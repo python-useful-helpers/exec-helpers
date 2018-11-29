@@ -107,6 +107,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
         .. versionadded:: 1.2.0
         """
+
         def mask(text, rules):  # type: (str, str) -> str
             """Mask part of text using rules."""
             indexes = [0]  # Start of the line
@@ -125,7 +126,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
                 end = indexes[idx + 1]
                 masked += text[start:end] + "<*masked*>"
 
-            masked += text[indexes[-2]: indexes[-1]]  # final part
+            masked += text[indexes[-2] : indexes[-1]]  # final part
             return masked
 
         cmd = cmd.rstrip()
@@ -292,7 +293,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=expected_codes)
+                raise kwargs.get("exception_class", exceptions.CalledProcessError)(result=ret, expected=expected_codes)
         return ret
 
     def check_stderr(
@@ -335,7 +336,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exceptions.CalledProcessError(result=ret, expected=kwargs.get("expected"))
+                raise kwargs.get("exception_class", exceptions.CalledProcessError)(
+                    result=ret, expected=kwargs.get("expected")
+                )
         return ret
 
     @staticmethod
