@@ -317,3 +317,16 @@ def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
         runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
         == exec_result
     )
+
+
+def test_009_call(popen, logger, exec_result, run_parameters) -> None:
+    runner = exec_helpers.Subprocess()
+    res = runner(
+        command,
+        stdin=run_parameters["stdin"],
+        open_stdout=run_parameters["open_stdout"],
+        open_stderr=run_parameters["open_stderr"],
+    )
+    assert isinstance(res, exec_helpers.ExecResult)
+    assert res == exec_result
+    popen().wait.assert_called_once_with(timeout=default_timeout)
