@@ -249,6 +249,31 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
+    def __call__(
+        self,
+        command,  # type: str
+        verbose=False,  # type: bool
+        timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
+        **kwargs
+    ):  # type: (...) -> exec_result.ExecResult
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionadded:: 1.9.7
+        """
+        return self.execute(command=command, verbose=verbose, timeout=timeout, **kwargs)
+
     def check_call(
         self,
         command,  # type: str

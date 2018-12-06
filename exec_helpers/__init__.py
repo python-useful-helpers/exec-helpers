@@ -53,9 +53,9 @@ __all__ = (
     "ExecResult",
 )
 
-try:
+try:  # pragma: no cover
     __version__ = pkg_resources.get_distribution(__name__).version
-except pkg_resources.DistributionNotFound:
+except pkg_resources.DistributionNotFound:  # pragma: no cover
     # package is not installed, try to get from SCM
     try:
         # noinspection PyPackageRequirements,PyUnresolvedReferences
