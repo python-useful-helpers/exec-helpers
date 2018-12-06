@@ -171,6 +171,31 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
+    async def __call__(  # type: ignore
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        **kwargs: typing.Any
+    ) -> exec_result.ExecResult:
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionadded:: 3.3.0
+        """
+        return await self.execute(command=command, verbose=verbose, timeout=timeout, **kwargs)
+
     async def check_call(  # type: ignore
         self,
         command: str,
