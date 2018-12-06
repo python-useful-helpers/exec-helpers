@@ -167,6 +167,15 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
     )
 
+.. code-block:: python
+
+    result = helper(  # Lazy way: instances are callable and uses `execute`.
+        command,  # type: str
+        verbose=False,  # type: bool
+        timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+        **kwargs
+    )
+
 If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `**kwargs` with flags `open_stdout=False` and `open_stderr=False`.
 
 The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.

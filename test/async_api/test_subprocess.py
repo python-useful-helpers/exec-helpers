@@ -343,3 +343,13 @@ async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
         )
         == exec_result
     )
+
+
+async def test_009_call(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
+    runner = exec_helpers.async_api.Subprocess()
+    res = await runner(command, stdin=run_parameters["stdin"])
+    assert isinstance(res, exec_helpers.async_api.ExecResult)
+    assert res == exec_result
+    assert logger.mock_calls[-1] == mock.call.log(
+        level=logging.DEBUG, msg="Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=res)
+    )

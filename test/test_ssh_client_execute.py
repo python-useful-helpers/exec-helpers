@@ -506,3 +506,24 @@ def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, ru
         )
     )
     assert results == {(host, port): exec_result, (host2, port): exec_result}
+
+
+def test_011_call(ssh, ssh_transport_channel, exec_result, run_parameters) -> None:
+    kwargs = {}
+    if "get_pty" in run_parameters:
+        kwargs["get_pty"] = run_parameters["get_pty"]
+    if "width" in run_parameters:
+        kwargs["width"] = run_parameters["width"]
+    if "height" in run_parameters:
+        kwargs["height"] = run_parameters["height"]
+
+    res = ssh(
+        command,
+        stdin=run_parameters["stdin"],
+        open_stdout=run_parameters["open_stdout"],
+        open_stderr=run_parameters["open_stderr"],
+        **kwargs
+    )
+    assert isinstance(res, exec_helpers.ExecResult)
+    assert res == exec_result
+    ssh_transport_channel.assert_has_calls((mock.call.status_event.is_set(),))

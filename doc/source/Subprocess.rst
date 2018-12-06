@@ -90,6 +90,22 @@ API: Subprocess
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 stdin data
 
+    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, **kwargs)
+
+        Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: ``str``
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: ``bool``
+        :param timeout: Timeout for command execution.
+        :type timeout: ``typing.Union[int, float, None]``
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. note:: stdin channel is closed after the input processing
+        .. versionadded:: 3.3.0
+
     .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, *, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
