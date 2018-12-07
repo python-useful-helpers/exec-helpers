@@ -148,7 +148,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
             # Force stop cycle if no exit code after kill
         except OSError:
             exit_code = async_result.interface.poll()
-            if exit_code is not None:  # Nothing to kill
+            if exit_code is not None and exit_code not in {-9, -15}:  # Nothing to kill
                 self.logger.warning(
                     "{!s} has been completed just after timeout: please validate timeout.".format(command)
                 )
