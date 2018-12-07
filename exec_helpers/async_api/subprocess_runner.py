@@ -137,20 +137,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             result.exit_code = exit_code
             return result
         except asyncio.TimeoutError:
-            try:
-                # kill -9 for all subprocesses
-                _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
+            # kill -9 for all subprocesses
+            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
+            exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
+            if exit_code is None:
                 async_result.interface.kill()  # kill -9
-            except OSError:
-                # Wait for 1 ms: check close
-                exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
-                if exit_code is not None:  # Nothing to kill
-                    self.logger.warning(
-                        "{!s} has been completed just after timeout: please validate timeout.".format(command)
-                    )
-                    result.exit_code = exit_code
-                    return result
-                raise  # Some other error
         finally:
             stdout_task.cancel()
             stderr_task.cancel()

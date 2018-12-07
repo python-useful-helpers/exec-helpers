@@ -148,31 +148,15 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         try:
             exit_code = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
-        except subprocess.TimeoutExpired:
-            exit_code = async_result.interface.poll()  # Update exit code
-
-        # Process closed?
-        if exit_code is not None:
             concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
             result.exit_code = exit_code
-            close_streams()
             return result
-        # Kill not ended process and wait for close
-        try:
+        except subprocess.TimeoutExpired:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            async_result.interface.kill()  # kill -9
-            # Force stop cycle if no exit code after kill
-        except OSError:
             exit_code = async_result.interface.poll()
-            if exit_code is not None and exit_code not in {-9, -15}:  # Nothing to kill
-                self.logger.warning(
-                    "{!s} has been completed just after timeout: please validate timeout.".format(command)
-                )
-                concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
-                result.exit_code = exit_code
-                return result
-            raise  # Some other error
+            if exit_code is None:
+                async_result.interface.kill()  # kill -9
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
@@ -188,7 +172,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     def execute_async(  # pylint: disable=arguments-differ
         self,

@@ -76,13 +76,10 @@ configs = {
     "no_stdout": dict(),
     "IOError_on_stdout_read": dict(stdout=(b" \n", b"2\n", IOError())),
     "TimeoutError": dict(
-        ec=(timeout_expired_exc,), poll=(None, None, None,), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError
-    ),
-    "TimeoutError_closed": dict(
-        ec=(timeout_expired_exc, 0), poll=(None, 0), stdout=(b" \n", b"2\n", b"3\n", b" \n"), kill=(OSError(),)
+        ec=(timeout_expired_exc,), poll=(None,), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError
     ),
     "TimeoutError_no_kill": dict(
-        ec=(timeout_expired_exc,), poll=(None, None, None,), stdout=(), kill=(OSError(),), expect_exc=OSError
+        ec=(timeout_expired_exc,), poll=(None,), stdout=(), kill=(OSError(),), expect_exc=OSError
     ),
     "stdin_closed_PIPE_windows": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=einval_exc),
     "stdin_broken_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=epipe_exc),
@@ -113,7 +110,6 @@ def pytest_generate_tests(metafunc):
                 "no_stdout",
                 "IOError_on_stdout_read",
                 "TimeoutError",
-                "TimeoutError_closed",
                 "TimeoutError_no_kill",
                 "stdin_closed_PIPE_windows",
                 "stdin_broken_PIPE",
