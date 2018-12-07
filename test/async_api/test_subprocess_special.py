@@ -80,10 +80,7 @@ configs = {
     "positive_verbose": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), verbose=True),
     "no_stdout": dict(),
     "IOError_on_stdout_read": dict(stdout=(b" \n", b"2\n", IOError())),
-    "TimeoutError": dict(ec=(asyncio.TimeoutError(),), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError),
-    "TimeoutError_closed": dict(
-        ec=(asyncio.TimeoutError(), 0), stdout=(b" \n", b"2\n", b"3\n", b" \n"), kill=(OSError(),)
-    ),
+    "TimeoutError": dict(ec=(asyncio.TimeoutError(), None), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError),
     "TimeoutError_no_kill": dict(ec=(asyncio.TimeoutError(), None), stdout=(), kill=(OSError(),), expect_exc=OSError),
     "stdin_closed_PIPE_windows": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=einval_exc),
     "stdin_broken_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=epipe_exc),
@@ -114,7 +111,6 @@ def pytest_generate_tests(metafunc):
                 "no_stdout",
                 "IOError_on_stdout_read",
                 "TimeoutError",
-                "TimeoutError_closed",
                 "TimeoutError_no_kill",
                 "stdin_closed_PIPE_windows",
                 "stdin_broken_PIPE",
