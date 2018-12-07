@@ -106,9 +106,9 @@ def test_001_init_checks(run_parameters):
     int_keys = get_internal_keys(**run_parameters)
 
     assert auth.username == username
-    with contextlib.closing(io.StringIO()) as tgt:
+    with contextlib.closing(io.BytesIO()) as tgt:
         auth.enter_password(tgt)
-        assert tgt.getvalue() == "{}\n".format(run_parameters.get("password", None))
+        assert tgt.getvalue() == "{}\n".format(run_parameters.get("password", "")).encode("utf-8")
 
     key = run_parameters.get("key", None)
     if key is not None:

@@ -127,9 +127,9 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        stdout_future = poll_stdout()  # type: concurrent.futures.Future
+        stdout_future = poll_stdout()
         # noinspection PyNoneFunctionAssignment
-        stderr_future = poll_stderr()  # type: concurrent.futures.Future
+        stderr_future = poll_stderr()
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([stdout_future, stderr_future], timeout=timeout)  # Wait real timeout here

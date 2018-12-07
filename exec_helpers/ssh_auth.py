@@ -117,7 +117,7 @@ class SSHAuth(object):
         """
         return copy.deepcopy(self.__key_filename)
 
-    def enter_password(self, tgt):  # type: (typing.IO) -> None
+    def enter_password(self, tgt):  # type: (typing.BinaryIO) -> None
         """Enter password to STDIN.
 
         Note: required for 'sudo' call
@@ -126,7 +126,7 @@ class SSHAuth(object):
         :type tgt: file
         """
         # noinspection PyTypeChecker
-        tgt.write("{}\n".format(self.__password))
+        tgt.write("{}\n".format(self.__password if self.__password is not None else "").encode("utf-8"))
 
     def connect(
         self,

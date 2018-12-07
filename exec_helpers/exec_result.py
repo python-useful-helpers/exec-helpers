@@ -227,7 +227,7 @@ class ExecResult(object):
 
     def read_stdout(
         self,
-        src=None,  # type: typing.Optional[typing.Iterable]
+        src=None,  # type: typing.Optional[typing.Iterable[bytes]]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False,  # type: bool
     ):  # type: (...) -> None
@@ -254,7 +254,7 @@ class ExecResult(object):
 
     def read_stderr(
         self,
-        src=None,  # type: typing.Optional[typing.Iterable]
+        src=None,  # type: typing.Optional[typing.Iterable[bytes]]
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False,  # type: bool
     ):  # type: (...) -> None

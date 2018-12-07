@@ -33,7 +33,7 @@ class SingletonMeta(abc.ABCMeta):
     Main goals: not need to implement __new__ in singleton classes
     """
 
-    _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
+    _instances = {}  # type: typing.Dict[type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
     def __call__(cls, *args, **kwargs):  # type: (SingletonMeta, typing.Any, typing.Any) -> typing.Any
@@ -57,7 +57,7 @@ class SingleLock(abc.ABCMeta):
 
     def __new__(  # pylint: disable=arguments-differ
         mcs, name, bases, namespace, **kwargs
-    ):  # type: (str, typing.Tuple[type, ...], typing.Dict[str, typing.Any], typing.Any) -> typing.Type
+    ):  # type: (str, typing.Tuple[type, ...], typing.Dict[str, typing.Any], typing.Any) -> "SingleLock"
         """Create lock property for class instances."""
         namespace["lock"] = property(fget=lambda self: self.__class__.lock)
         return super(SingleLock, mcs).__new__(mcs, name, bases, namespace, **kwargs)  # type: ignore

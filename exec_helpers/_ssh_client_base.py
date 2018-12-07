@@ -496,7 +496,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
             self.__connect()
 
-    def sudo(self, enforce=None):  # type: (typing.Optional[bool]) -> typing.ContextManager
+    def sudo(self, enforce=None):  # type: (typing.Optional[bool]) -> typing.ContextManager[None]
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -506,7 +506,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         return self.__get_sudo(ssh=self, enforce=enforce)
 
-    def keepalive(self, enforce=True):  # type: (bool) -> typing.ContextManager
+    def keepalive(self, enforce=True):  # type: (bool) -> typing.ContextManager[None]
         """Call contextmanager with keepalive mode change.
 
         :param enforce: Enforce keepalive enabled or disabled.
@@ -665,7 +665,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        future = poll_pipes()  # type: concurrent.futures.Future
+        future = poll_pipes()
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
@@ -841,14 +841,12 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         errors = {}
         raised_exceptions = {}
 
-        (_, not_done) = concurrent.futures.wait(
-            list(futures.values()), timeout=timeout
-        )  # type: typing.Set[concurrent.futures.Future], typing.Set[concurrent.futures.Future]
+        _, not_done = concurrent.futures.wait(list(futures.values()), timeout=timeout)
 
         for fut in not_done:  # pragma: no cover
             fut.cancel()
 
-        for (remote, future) in futures.items():  # type: SSHClientBase, concurrent.futures.Future
+        for (remote, future) in futures.items():
             try:
                 result = future.result()
                 results[(remote.hostname, remote.port)] = result
