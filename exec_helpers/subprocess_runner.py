@@ -172,7 +172,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     def execute_async(  # pylint: disable=arguments-differ
         self,
