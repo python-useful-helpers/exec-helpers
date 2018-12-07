@@ -27,7 +27,7 @@ class SingletonMeta(abc.ABCMeta):
     Main goals: not need to implement __new__ in singleton classes
     """
 
-    _instances = {}  # type: typing.Dict[typing.Type, typing.Any]
+    _instances = {}  # type: typing.Dict[type, typing.Any]
     _lock = threading.RLock()  # type: threading.RLock
 
     def __call__(cls: "SingletonMeta", *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
@@ -40,8 +40,8 @@ class SingletonMeta(abc.ABCMeta):
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
-    ) -> collections.OrderedDict:
+        mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
+    ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0
@@ -58,8 +58,12 @@ class SingleLock(abc.ABCMeta):
         cls.__lock = threading.RLock()
 
     def __new__(
-        mcs, name: str, bases: typing.Tuple[type, ...], namespace: typing.Dict[str, typing.Any], **kwargs: typing.Any
-    ) -> typing.Type:
+        mcs: typing.Type["SingleLock"],
+        name: str,
+        bases: typing.Tuple[type, ...],
+        namespace: typing.Dict[str, typing.Any],
+        **kwargs: typing.Any
+    ) -> "SingleLock":
         """Create lock property for class instances."""
         namespace["lock"] = property(fget=lambda self: self.__class__.lock)
         return super().__new__(mcs, name, bases, namespace, **kwargs)  # type: ignore
@@ -71,8 +75,8 @@ class SingleLock(abc.ABCMeta):
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["SingleLock"], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
-    ) -> collections.OrderedDict:
+        mcs: typing.Type["SingleLock"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
+    ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0

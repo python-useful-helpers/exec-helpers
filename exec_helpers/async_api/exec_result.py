@@ -52,7 +52,7 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stdout(  # type: ignore
         self,
-        src: typing.Optional[typing.AsyncIterable] = None,
+        src: typing.Optional[typing.AsyncIterable[bytes]] = None,
         log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:
@@ -79,7 +79,7 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stderr(  # type: ignore
         self,
-        src: typing.Optional[typing.AsyncIterable] = None,
+        src: typing.Optional[typing.AsyncIterable[bytes]] = None,
         log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:

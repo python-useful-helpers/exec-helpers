@@ -220,7 +220,7 @@ class ExecResult:
 
     def read_stdout(
         self,
-        src: typing.Optional[typing.Iterable] = None,
+        src: typing.Optional[typing.Iterable[bytes]] = None,
         log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:
@@ -247,7 +247,7 @@ class ExecResult:
 
     def read_stderr(
         self,
-        src: typing.Optional[typing.Iterable] = None,
+        src: typing.Optional[typing.Iterable[bytes]] = None,
         log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:
