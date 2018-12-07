@@ -141,9 +141,9 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        stdout_future = poll_stdout()  # type: concurrent.futures.Future
+        stdout_future = poll_stdout()
         # noinspection PyNoneFunctionAssignment
-        stderr_future = poll_stderr()  # type: concurrent.futures.Future
+        stderr_future = poll_stderr()
         # pylint: enable=assignment-from-no-return
 
         try:

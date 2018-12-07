@@ -121,8 +121,8 @@ class _MemorizedSSH(abc.ABCMeta):
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["_MemorizedSSH"], name: str, bases: typing.Iterable[typing.Type], **kwargs: typing.Any
-    ) -> collections.OrderedDict:
+        mcs: typing.Type["_MemorizedSSH"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
+    ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.
 
         .. versionadded:: 1.2.0
@@ -516,7 +516,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
             self.__connect()
 
-    def sudo(self, enforce: typing.Optional[bool] = None) -> "typing.ContextManager":
+    def sudo(self, enforce: typing.Optional[bool] = None) -> "typing.ContextManager[None]":
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -526,7 +526,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         return self.__get_sudo(ssh=self, enforce=enforce)
 
-    def keepalive(self, enforce: bool = True) -> "typing.ContextManager":
+    def keepalive(self, enforce: bool = True) -> "typing.ContextManager[None]":
         """Call contextmanager with keepalive mode change.
 
         :param enforce: Enforce keepalive enabled or disabled.
@@ -694,7 +694,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        future = poll_pipes()  # type: concurrent.futures.Future
+        future = poll_pipes()
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
@@ -877,14 +877,12 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         errors = {}
         raised_exceptions = {}
 
-        (_, not_done) = concurrent.futures.wait(
-            list(futures.values()), timeout=timeout
-        )  # type: typing.Set[concurrent.futures.Future], typing.Set[concurrent.futures.Future]
+        _, not_done = concurrent.futures.wait(list(futures.values()), timeout=timeout)
 
         for fut in not_done:  # pragma: no cover
             fut.cancel()
 
-        for (remote, future) in futures.items():  # type: SSHClientBase, concurrent.futures.Future
+        for (remote, future) in futures.items():
             try:
                 result = future.result()
                 results[(remote.hostname, remote.port)] = result
