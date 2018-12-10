@@ -55,7 +55,7 @@ class ExecCalledProcessError(ExecHelperError):
     __slots__ = ()
 
 
-class ExecHelperTimeutProcessError(ExecCalledProcessError):
+class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     """Timeout based errors."""
 
     __slots__ = ("result", "timeout")
@@ -75,7 +75,7 @@ class ExecHelperTimeutProcessError(ExecCalledProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        super(ExecHelperTimeutProcessError, self).__init__(message)
+        super(ExecHelperTimeoutProcessError, self).__init__(message)
         self.result = result
         self.timeout = timeout
 
@@ -95,7 +95,7 @@ class ExecHelperTimeutProcessError(ExecCalledProcessError):
         return self.result.stderr_str
 
 
-class ExecHelperNoKillError(ExecHelperTimeutProcessError):
+class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
     """Impossible to kill process.
 
     .. versionadded:: 1.10.0
@@ -115,7 +115,7 @@ class ExecHelperNoKillError(ExecHelperTimeutProcessError):
         super(ExecHelperNoKillError, self).__init__(message, result=result, timeout=timeout)
 
 
-class ExecHelperTimeoutError(ExecHelperTimeutProcessError):
+class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
     """Execution timeout.
 
     .. versionchanged:: 1.3.0 provide full result and timeout inside.
