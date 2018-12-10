@@ -21,6 +21,7 @@ import mock
 import pytest
 
 import exec_helpers
+from exec_helpers import proc_enums
 from exec_helpers import _subprocess_helpers
 
 # All test coroutines will be treated as marked.
@@ -263,7 +264,7 @@ def test_004_check_call(execute, exec_result, logger) -> None:
         assert exc.stdout == exec_result.stdout_str
         assert exc.stderr == exec_result.stderr_str
         assert exc.result == exec_result
-        assert exc.expected == [exec_helpers.ExitCodes.EX_OK]
+        assert exc.expected == proc_enums.EXPECTED
 
         assert logger.mock_calls[-1] == mock.call.error(
             msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
@@ -280,7 +281,7 @@ def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
         assert logger.mock_calls[-1] == mock.call.error(
             msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=res, expected=[exec_helpers.ExitCodes.EX_OK]
+                result=res, expected=proc_enums.EXPECTED
             )
         )
 

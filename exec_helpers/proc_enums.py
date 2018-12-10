@@ -20,9 +20,10 @@ Linux signals, Linux & bash return codes.
 """
 
 import enum
+import sys
 import typing
 
-__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums")
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")
 
 
 @enum.unique
@@ -96,46 +97,86 @@ class ExitCodes(int, enum.Enum):
     EX_NOEXEC = 126  # If a command is found but is not executable
     EX_NOCMD = 127  # If a command is not found
 
-    # Signal exits:
-    EX_SIGHUP = 128 + SigNum.SIGHUP
-    EX_SIGINT = 128 + SigNum.SIGINT
-    EX_SIGQUIT = 128 + SigNum.SIGQUIT
-    EX_SIGILL = 128 + SigNum.SIGILL
-    EX_SIGTRAP = 128 + SigNum.SIGTRAP
-    EX_SIGABRT = 128 + SigNum.SIGABRT
-    EX_SIGBUS = 128 + SigNum.SIGBUS
-    EX_SIGFPE = 128 + SigNum.SIGFPE
-    EX_SIGKILL = 128 + SigNum.SIGKILL
-    EX_SIGUSR1 = 128 + SigNum.SIGUSR1
-    EX_SIGSEGV = 128 + SigNum.SIGSEGV
-    EX_SIGUSR2 = 128 + SigNum.SIGUSR2
-    EX_SIGPIPE = 128 + SigNum.SIGPIPE
-    EX_SIGALRM = 128 + SigNum.SIGALRM
-    EX_SIGTERM = 128 + SigNum.SIGTERM
-    EX_SIGSTKFLT = 128 + SigNum.SIGSTKFLT
-    EX_SIGCHLD = 128 + SigNum.SIGCHLD
-    EX_SIGCONT = 128 + SigNum.SIGCONT
-    EX_SIGSTOP = 128 + SigNum.SIGSTOP
-    EX_SIGTSTP = 128 + SigNum.SIGTSTP
-    EX_SIGTTIN = 128 + SigNum.SIGTTIN
-    EX_SIGTTOU = 128 + SigNum.SIGTTOU
-    EX_SIGURG = 128 + SigNum.SIGURG
-    EX_SIGXCPU = 128 + SigNum.SIGXCPU
-    EX_SIGXFSZ = 128 + SigNum.SIGXFSZ
-    EX_SIGVTALRM = 128 + SigNum.SIGVTALRM
-    EX_SIGPROF = 128 + SigNum.SIGPROF
-    EX_SIGWINCH = 128 + SigNum.SIGWINCH
-    EX_SIGPOLL = 128 + SigNum.SIGPOLL
-    EX_SIGPWR = 128 + SigNum.SIGPWR
-    EX_SIGSYS = 128 + SigNum.SIGSYS
+    # Signal exits
+
+    EX_SIGHUP = -SigNum.SIGHUP
+    EX_SIGINT = -SigNum.SIGINT
+    EX_SIGQUIT = -SigNum.SIGQUIT
+    EX_SIGILL = -SigNum.SIGILL
+    EX_SIGTRAP = -SigNum.SIGTRAP
+    EX_SIGABRT = -SigNum.SIGABRT
+    EX_SIGBUS = -SigNum.SIGBUS
+    EX_SIGFPE = -SigNum.SIGFPE
+    EX_SIGKILL = -SigNum.SIGKILL
+    EX_SIGUSR1 = -SigNum.SIGUSR1
+    EX_SIGSEGV = -SigNum.SIGSEGV
+    EX_SIGUSR2 = -SigNum.SIGUSR2
+    EX_SIGPIPE = -SigNum.SIGPIPE
+    EX_SIGALRM = -SigNum.SIGALRM
+    EX_SIGTERM = -SigNum.SIGTERM
+    EX_SIGSTKFLT = -SigNum.SIGSTKFLT
+    EX_SIGCHLD = -SigNum.SIGCHLD
+    EX_SIGCONT = -SigNum.SIGCONT
+    EX_SIGSTOP = -SigNum.SIGSTOP
+    EX_SIGTSTP = -SigNum.SIGTSTP
+    EX_SIGTTIN = -SigNum.SIGTTIN
+    EX_SIGTTOU = -SigNum.SIGTTOU
+    EX_SIGURG = -SigNum.SIGURG
+    EX_SIGXCPU = -SigNum.SIGXCPU
+    EX_SIGXFSZ = -SigNum.SIGXFSZ
+    EX_SIGVTALRM = -SigNum.SIGVTALRM
+    EX_SIGPROF = -SigNum.SIGPROF
+    EX_SIGWINCH = -SigNum.SIGWINCH
+    EX_SIGPOLL = -SigNum.SIGPOLL
+    EX_SIGPWR = -SigNum.SIGPWR
+    EX_SIGSYS = -SigNum.SIGSYS
+
+    # Signal exits shell:
+    SH_EX_SIGHUP = 128 + SigNum.SIGHUP
+    SH_EX_SIGINT = 128 + SigNum.SIGINT
+    SH_EX_SIGQUIT = 128 + SigNum.SIGQUIT
+    SH_EX_SIGILL = 128 + SigNum.SIGILL
+    SH_EX_SIGTRAP = 128 + SigNum.SIGTRAP
+    SH_EX_SIGABRT = 128 + SigNum.SIGABRT
+    SH_EX_SIGBUS = 128 + SigNum.SIGBUS
+    SH_EX_SIGFPE = 128 + SigNum.SIGFPE
+    SH_EX_SIGKILL = 128 + SigNum.SIGKILL
+    SH_EX_SIGUSR1 = 128 + SigNum.SIGUSR1
+    SH_EX_SIGSEGV = 128 + SigNum.SIGSEGV
+    SH_EX_SIGUSR2 = 128 + SigNum.SIGUSR2
+    SH_EX_SIGPIPE = 128 + SigNum.SIGPIPE
+    SH_EX_SIGALRM = 128 + SigNum.SIGALRM
+    SH_EX_SIGTERM = 128 + SigNum.SIGTERM
+    SH_EX_SIGSTKFLT = 128 + SigNum.SIGSTKFLT
+    SH_EX_SIGCHLD = 128 + SigNum.SIGCHLD
+    SH_EX_SIGCONT = 128 + SigNum.SIGCONT
+    SH_EX_SIGSTOP = 128 + SigNum.SIGSTOP
+    SH_EX_SIGTSTP = 128 + SigNum.SIGTSTP
+    SH_EX_SIGTTIN = 128 + SigNum.SIGTTIN
+    SH_EX_SIGTTOU = 128 + SigNum.SIGTTOU
+    SH_EX_SIGURG = 128 + SigNum.SIGURG
+    SH_EX_SIGXCPU = 128 + SigNum.SIGXCPU
+    SH_EX_SIGXFSZ = 128 + SigNum.SIGXFSZ
+    SH_EX_SIGVTALRM = 128 + SigNum.SIGVTALRM
+    SH_EX_SIGPROF = 128 + SigNum.SIGPROF
+    SH_EX_SIGWINCH = 128 + SigNum.SIGWINCH
+    SH_EX_SIGPOLL = 128 + SigNum.SIGPOLL
+    SH_EX_SIGPWR = 128 + SigNum.SIGPWR
+    SH_EX_SIGSYS = 128 + SigNum.SIGSYS
 
     def __str__(self) -> str:
         """Representation for logs."""
         return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)
 
 
+EXPECTED = (0,) if "win32" == sys.platform else (ExitCodes.EX_OK,)
+INVALID = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
+
+
 def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]:
     """Convert exit code to enum if possible."""
+    if "win32" == sys.platform:
+        return int(code)
     if isinstance(code, int) and code in ExitCodes.__members__.values():
         return ExitCodes(code)
     return code  # pragma: no cover
@@ -143,8 +184,8 @@ def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, E
 
 def exit_codes_to_enums(
     codes: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]] = None
-) -> typing.List[typing.Union[int, ExitCodes]]:
+) -> typing.Iterable[typing.Union[int, ExitCodes]]:
     """Convert integer exit codes to enums."""
     if codes is None:
-        return [ExitCodes.EX_OK]
-    return [exit_code_to_enum(code) for code in codes]
+        return EXPECTED
+    return tuple(exit_code_to_enum(code) for code in codes)

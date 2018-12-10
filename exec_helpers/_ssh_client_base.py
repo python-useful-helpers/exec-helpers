@@ -817,7 +817,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         remotes: typing.Iterable["SSHClientBase"],
         command: str,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        expected: typing.Optional[typing.Iterable[int]] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
         raise_on_err: bool = True,
         *,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
@@ -832,7 +832,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Optional[typing.Iterable[]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError
@@ -847,6 +847,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
 
         @threaded.threadpooled
@@ -869,7 +870,6 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             async_result.interface.close()
             return res
 
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
         expected = proc_enums.exit_codes_to_enums(expected)
 
         futures = {remote: get_result(remote) for remote in set(remotes)}  # Use distinct remotes
