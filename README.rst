@@ -231,7 +231,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
         remotes,  # type: typing.Iterable[SSHClient]
         command,  # type: str
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
-        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         # Keyword only:
         exception_class=ParallelCallProcessError  # typing.Type[ParallelCallProcessError]
