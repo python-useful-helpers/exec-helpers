@@ -14,10 +14,11 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
-import sys
 import typing
 
 import pkg_resources
+
+from .proc_enums import ExitCodes
 
 from .exceptions import (
     ExecHelperError,
@@ -37,9 +38,6 @@ from ._ssh_client_base import SshExecuteAsyncResult
 from .subprocess_runner import Subprocess, SubprocessExecuteAsyncResult  # nosec  # Expected
 from . import async_api
 
-if "win32" != sys.platform:
-    from .proc_enums import ExitCodes
-
 __all__ = (
     "ExecHelperError",
     "ExecCalledProcessError",
@@ -54,12 +52,10 @@ __all__ = (
     "SSHAuth",
     "Subprocess",
     "SubprocessExecuteAsyncResult",
+    "ExitCodes",
     "ExecResult",
     "async_api",
 )  # type: typing.Tuple[str, ...]
-
-if "win32" != sys.platform:
-    __all__ += ("ExitCodes",)
 
 try:  # pragma: no cover
     __version__ = pkg_resources.get_distribution(__name__).version
