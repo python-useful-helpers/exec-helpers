@@ -189,7 +189,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         command: str,
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.List[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
         *,
         _message: typing.Optional[str] = None
     ) -> None:
@@ -202,7 +202,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param _message: message override
         :type _message: typing.Optional[str]
 
@@ -241,7 +241,7 @@ class ParallelCallExceptions(ParallelCallProcessError):
         exceptions: typing.Dict[typing.Tuple[str, int], Exception],
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.List[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
         *,
         _message: typing.Optional[str] = None
     ) -> None:
@@ -256,7 +256,7 @@ class ParallelCallExceptions(ParallelCallProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.List[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param _message: message override
         :type _message: typing.Optional[str]
 

@@ -15,6 +15,7 @@
 """Execution helpers for simplified usage of subprocess and ssh."""
 
 import sys
+import typing
 
 import pkg_resources
 
@@ -55,7 +56,7 @@ __all__ = (
     "SubprocessExecuteAsyncResult",
     "ExecResult",
     "async_api",
-)
+)  # type: typing.Tuple[str, ...]
 
 if "win32" != sys.platform:
     __all__ += ("ExitCodes",)
