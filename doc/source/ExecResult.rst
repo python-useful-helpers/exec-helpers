@@ -10,7 +10,7 @@ API: ExecResult
 
     Command execution result.
 
-    .. py:method:: __init__(cmd, stdin=None, stdout=None, stderr=None, exit_code=ExitCodes.EX_INVALID)
+    .. py:method:: __init__(cmd, stdin=None, stdout=None, stderr=None, exit_code=0xDEADBEEF)
 
         :param cmd: command
         :type cmd: ``str``
