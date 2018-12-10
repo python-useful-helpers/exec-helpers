@@ -40,12 +40,12 @@ class SSHAuth(object):
 
     def __init__(
         self,
-        username=None,  # type: typing.Optional[str]
-        password=None,  # type: typing.Optional[str]
+        username=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+        password=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         key=None,  # type: typing.Optional[paramiko.RSAKey]
         keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         key_filename=None,  # type: typing.Union[typing.List[str], str, None]
-        passphrase=None,  # type: typing.Optional[str]
+        passphrase=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
     ):  # type: (...) -> None
         """SSH credentials object.
 
@@ -84,7 +84,7 @@ class SSHAuth(object):
         self.__passphrase = passphrase
 
     @property
-    def username(self):  # type: () -> typing.Optional[str]
+    def username(self):  # type: () -> typing.Optional[typing.Union[str, typing.Text]]
         """Username for auth.
 
         :rtype: str
@@ -92,7 +92,7 @@ class SSHAuth(object):
         return self.__username
 
     @staticmethod
-    def __get_public_key(key):  # type: (typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]
+    def __get_public_key(key):  # type: (typing.Union[paramiko.RSAKey, None]) -> typing.Optional[typing.Text]
         """Internal method for get public key from private.
 
         :type key: paramiko.RSAKey
@@ -102,7 +102,7 @@ class SSHAuth(object):
         return "{0} {1}".format(key.get_name(), key.get_base64())
 
     @property
-    def public_key(self):  # type: () -> typing.Optional[str]
+    def public_key(self):  # type: () -> typing.Optional[typing.Text]
         """Public key for stored private key if presents else None.
 
         :rtype: str
@@ -131,7 +131,7 @@ class SSHAuth(object):
     def connect(
         self,
         client,  # type: typing.Union[paramiko.SSHClient, paramiko.Transport]
-        hostname=None,  # type: typing.Optional[str]
+        hostname=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         port=22,  # type: int
         log=True,  # type: bool
     ):  # type: (...) -> None

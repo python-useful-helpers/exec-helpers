@@ -98,7 +98,7 @@ API: Subprocess
         .. note:: stdin channel is closed after the input processing
         .. versionadded:: 1.9.7
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, **kwargs)
 
         Execute command and check for return code.
 
@@ -111,7 +111,7 @@ API: Subprocess
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param expected: expected return codes (0 by default)
-        :type expected: ``typing.Optional[typing.Iterable[int]]``
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :rtype: ExecResult
@@ -120,6 +120,8 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 1.11.0 Expected is not optional, defaults os dependent
 
     .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
 
@@ -143,6 +145,7 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
 
 
 .. py:class:: SubprocessExecuteAsyncResult
@@ -164,3 +167,9 @@ API: Subprocess
     .. py:attribute:: stdout
 
         ``typing.Optional[typing.IO]``
+
+    .. py:attribute:: started
+
+        ``datetime.datetime``
+
+        .. versionadded:: 2.11.0

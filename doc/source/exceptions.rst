@@ -18,21 +18,11 @@ API: exceptions
 
     Base class for process call errors.
 
-.. py:exception:: ExecHelperTimeoutError(ExecCalledProcessError)
+class ExecHelperTimeoutProcessError(ExecCalledProcessError):
+    
+    Timeout based errors.
 
-    Execution timeout.
-
-    .. versionchanged:: 1.3.0 provide full result and timeout inside.
-    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
-
-    .. py:method:: __init__(self, result, timeout)
-
-        Exception for error on process calls.
-
-        :param result: execution result
-        :type result: exec_result.ExecResult
-        :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+    .. versionadded:: 2.11.0
 
     .. py:attribute:: timeout
 
@@ -54,18 +44,54 @@ API: exceptions
         ``typing.Text``
         stdout string or brief string
 
+
+.. py:exception:: ExecHelperNoKillError(ExecHelperTimeoutProcessError)
+    
+    Impossible to kill process.
+
+    .. versionadded:: 2.11.0
+
+    .. py:method:: __init__(self, result, timeout)
+        
+        Exception for error on process calls.
+
+        :param result: execution result
+        :type result: ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+
+
+.. py:exception:: ExecHelperTimeoutError(ExecHelperTimeoutProcessError)
+
+    Execution timeout.
+
+    .. versionchanged:: 1.3.0 provide full result and timeout inside.
+    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
+
+    .. py:method:: __init__(self, result, timeout)
+
+        Exception for error on process calls.
+
+        :param result: execution result
+        :type result: ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+
+
 .. py:exception:: CalledProcessError(ExecCalledProcessError)
 
     Exception for error on process calls.
 
     .. versionchanged:: 1.1.1 - provide full result
 
-    .. py:method:: __init__(result, expected=None)
+    .. py:method:: __init__(result, expected=(0,))
 
         :param result: execution result
         :type result: ExecResult
-        :param returncode: return code
-        :type returncode: typing.Union[int, ExitCodes]
+        :param expected: expected return codes
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+
+        .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
 
     .. py:attribute:: result
 
@@ -104,7 +130,7 @@ API: exceptions
 
     Exception during parallel execution.
 
-    .. py:method:: __init__(command, errors, results, expected=None, )
+    .. py:method:: __init__(command, errors, results, expected=(0,), )
 
         :param command: command
         :type command: ``str``
@@ -113,9 +139,10 @@ API: exceptions
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
 
         .. versionchanged:: 1.0 - fixed inheritance
+        .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
 
     .. py:attribute:: cmd
 
@@ -144,7 +171,7 @@ API: exceptions
 
     Exception raised during parallel call as result of exceptions.
 
-    .. py:method:: __init__(command, exceptions, errors, results, expected=None, )
+    .. py:method:: __init__(command, exceptions, errors, results, expected=(0,), )
 
         :param command: command
         :type command: ``str``
@@ -155,9 +182,10 @@ API: exceptions
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.List[typing.Union[int, ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
 
         .. versionchanged:: 1.0 - fixed inheritance
+        .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
 
     .. py:attribute:: cmd
 

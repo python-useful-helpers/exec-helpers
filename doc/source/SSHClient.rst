@@ -175,7 +175,7 @@ API: SSHClient and SSHAuth.
 
         .. versionadded:: 1.9.7
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=None, raise_on_err=True, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, **kwargs)
 
         Execute command and check for return code.
 
@@ -188,7 +188,7 @@ API: SSHClient and SSHAuth.
         :param error_info: Text for error details, if fail happens
         :type error_info: ``typing.Optional[str]``
         :param expected: expected return codes (0 by default)
-        :type expected: ``typing.Optional[typing.Iterable[int]]``
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :rtype: ExecResult
@@ -196,6 +196,8 @@ API: SSHClient and SSHAuth.
         :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 1.11.0 Expected is not optional, defaults os dependent
 
     .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
 
@@ -240,8 +242,9 @@ API: SSHClient and SSHAuth.
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
 
-    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=None, raise_on_err=True, **kwargs)
+    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, **kwargs)
 
         Execute command on multiple remotes in async mode.
 
@@ -252,7 +255,7 @@ API: SSHClient and SSHAuth.
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Union[int, float, None]``
         :param expected: expected return codes (0 by default)
-        :type expected: ``typing.Optional[typing.Iterable[]]``
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :return: dictionary {(hostname, port): result}
@@ -261,6 +264,8 @@ API: SSHClient and SSHAuth.
         :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 1.11.0 Expected is not optional, defaults os dependent
 
     .. py:method:: open(path, mode='r')
 
@@ -425,3 +430,9 @@ API: SSHClient and SSHAuth.
     .. py:attribute:: stdout
 
         ``typing.Optional[paramiko.ChannelFile]``
+
+    .. py:attribute:: started
+
+        ``datetime.datetime``
+
+        .. versionadded:: 2.11.0

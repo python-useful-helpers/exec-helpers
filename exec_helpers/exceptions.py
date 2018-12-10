@@ -61,11 +61,8 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     __slots__ = ("result", "timeout")
 
     def __init__(
-        self,
-        message,  # type: str,
-        result,  # type: exec_result.ExecResult
-        timeout  # type: typing.Union[int, float]
-    ):  # type: (...) -> None
+        self, message, result, timeout
+    ):  # type: (typing.Union[str, typing.Text], exec_result.ExecResult, typing.Union[int, float]) -> None
         """Exception for error on process calls.
 
         :param message: exception message
@@ -80,7 +77,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         self.timeout = timeout
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self):  # type: () -> typing.Union[str, typing.Text]
         """Failed command."""
         return self.result.cmd
 
@@ -173,7 +170,7 @@ class CalledProcessError(ExecCalledProcessError):
         return self.result.exit_code
 
     @property
-    def cmd(self):  # type: () -> str
+    def cmd(self):  # type: () -> typing.Union[str, typing.Text]
         """Failed command."""
         return self.result.cmd
 
@@ -195,9 +192,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
 
     def __init__(
         self,
-        command,  # type: str
-        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        command,  # type: typing.Union[str, typing.Text]
+        errors,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
+        results,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
         expected=(proc_enums.EXPECTED,),  # type: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> None
@@ -245,10 +242,10 @@ class ParallelCallExceptions(ParallelCallProcessError):
 
     def __init__(
         self,
-        command,  # type: str
-        exceptions,  # type: typing.Dict[typing.Tuple[str, int], Exception]
-        errors,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
-        results,  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+        command,  # type: typing.Union[str, typing.Text]
+        exceptions,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], Exception]
+        errors,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
+        results,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
         expected=(proc_enums.EXPECTED,),  # type: typing.List[typing.Union[int, proc_enums.ExitCodes]]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> None

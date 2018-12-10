@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 
 # noinspection PyCompatibility
 import concurrent.futures
+import datetime
 import errno
 import logging
 import os
@@ -56,7 +57,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(self, log_mask_re=None):  # type: (typing.Optional[str]) -> None
+    def __init__(self, log_mask_re=None):  # type: (typing.Optional[typing.Text]) -> None
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -72,11 +73,11 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
     def _exec_command(  # type: ignore
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         async_result,  # type: SubprocessExecuteAsyncResult
         timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
@@ -124,7 +125,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"), started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -141,12 +142,12 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
             if exit_code is not None:
                 result.exit_code = exit_code
                 return result
-            else:
-                # kill -9 for all subprocesses
-                _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-                exit_code = async_result.interface.poll()
-                if exit_code is None:
-                    raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
+            # kill -9 for all subprocesses
+            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
+            exit_code = async_result.interface.poll()
+            if exit_code is None:
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
+            result.exit_code = exit_code
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
@@ -158,20 +159,22 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
                             command, async_result.interface.returncode
                         )
                     )
+            result.set_timestamp()
             close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    # noinspection PyMethodOverriding
     def execute_async(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         stdin=None,  # type: typing.Union[str, bytes, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> SubprocessExecuteAsyncResult
         """Execute command in async mode and return Popen with IO objects.
@@ -199,6 +202,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
                         ('stdin', typing.Optional[typing.IO]),
                         ('stderr', typing.Optional[typing.IO]),
                         ('stdout', typing.Optional[typing.IO]),
+                        ("started", datetime.datetime),
                     ]
                 )
         :raises OSError: impossible to process STDIN
@@ -211,6 +215,8 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
+
+        started = datetime.datetime.utcnow()
 
         process = subprocess.Popen(
             args=[command],
@@ -253,4 +259,4 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
             process_stdin = None  # type: ignore
 
-        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)
+        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)

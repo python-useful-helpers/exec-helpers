@@ -53,15 +53,17 @@ class ExecResult(object):
         "_stderr_brief",
         "__stdout_lock",
         "__stderr_lock",
+        "__started",
     ]
 
     def __init__(
         self,
-        cmd,  # type: str
+        cmd,  # type: typing.Union[str, typing.Text]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
         exit_code=proc_enums.INVALID,  # type: typing.Union[int, proc_enums.ExitCodes]
+        started=None,  # type: typing.Optional[datetime.datetime]
     ):  # type: (...) -> None
         """Command execution result.
 
@@ -75,6 +77,8 @@ class ExecResult(object):
         :type stderr: typing.Optional[typing.Iterable[bytes]]
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, proc_enums.ExitCodes]
+        :param started: Timestamp of command start
+        :type started: typing.Optional[datetime.datetime]
         """
         self.__stdout_lock = threading.RLock()
         self.__stderr_lock = threading.RLock()
@@ -97,8 +101,10 @@ class ExecResult(object):
             self._stderr = ()
 
         self.__exit_code = proc_enums.INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
-        self.__timestamp = None
+        self.__timestamp = None  # type: typing.Optional[datetime.datetime]
         self.exit_code = exit_code
+
+        self.__started = started  # type: typing.Optional[datetime.datetime]
 
         # By default is none:
         self._stdout_str = None
@@ -137,6 +143,16 @@ class ExecResult(object):
         """
         return self.__timestamp
 
+    def set_timestamp(self):  # type: () -> None
+        """Set timestamp if empty.
+
+        This will block future object changes.
+
+        .. versionadded:: 1.11.0
+        """
+        if self.timestamp is None:
+            self.__timestamp = datetime.datetime.utcnow()
+
     @staticmethod
     def _get_bytearray_from_array(src):  # type: (typing.Iterable[bytes]) -> bytearray
         """Get bytearray from array of bytes blocks.
@@ -149,7 +165,7 @@ class ExecResult(object):
         return bytearray(b"".join(src))
 
     @staticmethod
-    def _get_str_from_bin(src):  # type: (bytearray) -> str
+    def _get_str_from_bin(src):  # type: (bytearray) -> typing.Text
         """Join data in list to the string, with python 2&3 compatibility.
 
         :param src: source to process
@@ -370,9 +386,17 @@ class ExecResult(object):
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()  # type: ignore
+                self.__timestamp = datetime.datetime.utcnow()
 
-    def __deserialize(self, fmt):  # type: (str) -> typing.Any
+    @property
+    def started(self):  # type: () -> typing.Optional[datetime.datetime]
+        """Timestamp of command start.
+
+        .. versionadded:: 1.11.0
+        """
+        return self.__started
+
+    def __deserialize(self, fmt):  # type: (typing.Text) -> typing.Any
         """Deserialize stdout as data format.
 
         :param fmt: format to decode from
@@ -413,7 +437,7 @@ class ExecResult(object):
         with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
 
-    def __dir__(self):  # type: () -> typing.List[str]
+    def __dir__(self):  # type: () -> typing.List[typing.Text]
         """Override dir for IDE and as source for getitem checks."""
         return [
             "cmd",
@@ -431,7 +455,7 @@ class ExecResult(object):
             "lock",
         ]
 
-    def __getitem__(self, item):  # type: (str) -> typing.Any
+    def __getitem__(self, item):  # type: (typing.Union[str, typing.Text]) -> typing.Any
         """Dict like get data.
 
         :param item: key
@@ -446,23 +470,42 @@ class ExecResult(object):
 
     def __repr__(self):  # type: () -> str
         """Representation for debugging."""
+        if self.started:
+            started = ", started={self.started},\n".format(self=self)
+        else:
+            started = ""
         return (
             "{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, "
-            "exit_code={self.exit_code!s})".format(cls=self.__class__.__name__, self=self)
+            "exit_code={self.exit_code!s}{started},)".format(cls=self.__class__.__name__, self=self, started=started)
         )
 
     def __str__(self):  # type: () -> str
         """Representation for logging."""
+        if self.started:
+            started = "\tstarted={started},\n".format(started=self.started.strftime("%Y-%m-%d %H:%M:%S"))
+            if self.timestamp:
+                _spent = (self.timestamp - self.started).seconds
+                spent = "\tspent={hours:02d}:{minutes:02d}:{seconds:02d},\n".format(
+                    hours=_spent // (60 * 60), minutes=_spent // 60, seconds=_spent % 60
+                )
+            else:
+                spent = ""
+        else:
+            started = ""
+            spent = ""
         return (
             "{cls}(\n\tcmd={cmd!r},"
             "\n\t stdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
-            "\n\texit_code={exit_code!s}\n)".format(
+            "\n\texit_code={exit_code!s},"
+            "\n{started}{spent})".format(
                 cls=self.__class__.__name__,
                 cmd=self.cmd,
                 stdout_brief=self.stdout_brief,
                 stderr_brief=self.stderr_brief,
                 exit_code=self.exit_code,
+                started=started,
+                spent=spent,
             )
         )
 

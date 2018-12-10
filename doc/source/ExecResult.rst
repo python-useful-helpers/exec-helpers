@@ -10,7 +10,7 @@ API: ExecResult
 
     Command execution result.
 
-    .. py:method:: __init__(cmd, stdin=None, stdout=None, stderr=None, exit_code=ExitCodes.EX_INVALID)
+    .. py:method:: __init__(cmd, stdin=None, stdout=None, stderr=None, exit_code=0xDEADBEEF, *, started=None)
 
         :param cmd: command
         :type cmd: ``str``
@@ -22,6 +22,8 @@ API: ExecResult
         :type stderr: ``typing.Optional[typing.Iterable[bytes]]``
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, ExitCodes]
+        :param started: Timestamp of command start
+        :type started: typing.Optional[datetime.datetime]
 
     .. py:attribute:: stdout_lock
 
@@ -41,6 +43,14 @@ API: ExecResult
 
         ``typing.Optional(datetime.datetime)``
         Timestamp
+
+    .. py:method:: set_timestamp()
+
+        Set timestamp if empty.
+
+        This will block future object changes.
+
+        .. versionadded:: 2.11.0
 
     .. py:attribute:: cmd
 
@@ -97,6 +107,13 @@ API: ExecResult
         Return(exit) code of command.
 
         :rtype: typing.Union[int, ExitCodes]
+
+    .. py:attribute:: started
+
+        ``datetime.datetime``
+        Timestamp of command start.
+
+        .. versionadded:: 2.11.0
 
     .. py:attribute:: stdout_json
 
