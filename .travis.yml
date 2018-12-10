@@ -86,13 +86,13 @@ jobs:
     - pip install --upgrade flake8
     script:
     - flake8
-  - <<: *code_style_check
-    name: "PEP257"
-    install:
-    - *upgrade_python_toolset
-    - pip install --upgrade pydocstyle
-    script:
-    - pydocstyle -v exec_helpers
+#  - <<: *code_style_check
+#    name: "PEP257"
+#    install:
+#    - *upgrade_python_toolset
+#    - pip install --upgrade pydocstyle
+#    script:
+#    - pydocstyle -v exec_helpers
 #  - <<: *code_style_check
 #    <<: *python37
 #    name: "Black formatting"
