@@ -22,6 +22,7 @@
 __all__ = ("ExecHelper", "ExecuteAsyncResult")
 
 import abc
+import datetime
 import logging
 import re
 import threading
@@ -40,6 +41,7 @@ ExecuteAsyncResult = typing.NamedTuple(
         ("stdin", typing.Optional[typing.Any]),
         ("stderr", typing.Optional[typing.Any]),
         ("stdout", typing.Optional[typing.Any]),
+        ("started", datetime.datetime),
     ],
 )
 
@@ -171,6 +173,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
                         ('stdin', typing.Optional[typing.Any]),
                         ('stderr', typing.Optional[typing.Any]),
                         ('stdout', typing.Optional[typing.Any]),
+                        ("started", datetime.datetime),
                     ]
                 )
 

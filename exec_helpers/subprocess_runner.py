@@ -19,6 +19,7 @@
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
 import concurrent.futures
+import datetime
 import errno
 import logging
 import subprocess  # nosec  # Expected usage
@@ -138,7 +139,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         # Store command with hidden data
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -158,6 +159,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             exit_code = async_result.interface.poll()
             if exit_code is None:
                 raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
+            result.exit_code = exit_code
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
@@ -169,12 +171,14 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                             command, async_result.interface.returncode
                         )
                     )
+            result.set_timestamp()
             close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    # noinspection PyMethodOverriding
     def execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
@@ -219,6 +223,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                         ('stdin', typing.Optional[typing.IO]),
                         ('stderr', typing.Optional[typing.IO]),
                         ('stdout', typing.Optional[typing.IO]),
+                        ("started", datetime.datetime),
                     ]
                 )
         :raises OSError: impossible to process STDIN
@@ -232,6 +237,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
+
+        started = datetime.datetime.utcnow()
 
         process = subprocess.Popen(
             args=[command],
@@ -274,4 +281,4 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
             process_stdin = None  # type: ignore
 
-        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)
+        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
