@@ -56,7 +56,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         Exception for error on process calls.
 
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
 
@@ -73,7 +73,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         Exception for error on process calls.
 
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
 
