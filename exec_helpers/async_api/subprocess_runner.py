@@ -141,7 +141,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_code is None:
-                async_result.interface.kill()  # kill -9
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
         finally:
             stdout_task.cancel()
             stderr_task.cancel()

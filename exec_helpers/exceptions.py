@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 __all__ = (
     "ExecHelperError",
+    "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
     "ExecCalledProcessError",
     "CalledProcessError",
@@ -50,25 +51,22 @@ class ExecCalledProcessError(ExecHelperError):
     __slots__ = ()
 
 
-class ExecHelperTimeoutError(ExecCalledProcessError):
-    """Execution timeout.
-
-    .. versionchanged:: 1.3.0 provide full result and timeout inside.
-    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
-    """
+class ExecHelperTimeutProcessError(ExecCalledProcessError):
+    """Timeout based errors."""
 
     __slots__ = ("result", "timeout")
 
-    def __init__(self, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+    def __init__(self, message: str, *, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
         """Exception for error on process calls.
 
+        :param message: exception message
+        :type message: str
         :param result: execution result
         :type result: exec_result.ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        message = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
-        super(ExecHelperTimeoutError, self).__init__(message)
+        super(ExecHelperTimeutProcessError, self).__init__(message)
         self.result = result
         self.timeout = timeout
 
@@ -88,6 +86,47 @@ class ExecHelperTimeoutError(ExecCalledProcessError):
         return self.result.stderr_str
 
 
+class ExecHelperNoKillError(ExecHelperTimeutProcessError):
+    """Impossible to kill process.
+
+    .. versionadded:: 3.4.0
+    """
+
+    __slots__ = ()
+
+    def __init__(self, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+        """Exception for error on process calls.
+
+        :param result: execution result
+        :type result: exec_result.ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+        """
+        message = _log_templates.CMD_KILL_ERROR.format(result=result, timeout=timeout)
+        super(ExecHelperNoKillError, self).__init__(message, result=result, timeout=timeout)
+
+
+class ExecHelperTimeoutError(ExecHelperTimeutProcessError):
+    """Execution timeout.
+
+    .. versionchanged:: 1.3.0 provide full result and timeout inside.
+    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
+    """
+
+    __slots__ = ()
+
+    def __init__(self, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+        """Exception for error on process calls.
+
+        :param result: execution result
+        :type result: exec_result.ExecResult
+        :param timeout: timeout for command
+        :type timeout: typing.Union[int, float]
+        """
+        message = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        super(ExecHelperTimeoutError, self).__init__(message, result=result, timeout=timeout)
+
+
 class CalledProcessError(ExecCalledProcessError):
     """Exception for error on process calls."""
 
@@ -96,19 +135,19 @@ class CalledProcessError(ExecCalledProcessError):
     def __init__(
         self,
         result: "exec_result.ExecResult",
-        expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
     ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
         :type result: exec_result.ExecResult
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
 
         .. versionchanged:: 1.1.1 - provide full result
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
         self.result = result
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
         self.expected = proc_enums.exit_codes_to_enums(expected)
         message = (
             "Command {result.cmd!r} returned exit code {result.exit_code} "
@@ -150,7 +189,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         command: str,
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         *,
         _message: typing.Optional[str] = None
     ) -> None:
@@ -163,11 +202,12 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param _message: message override
         :type _message: typing.Optional[str]
+
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
         prep_expected = proc_enums.exit_codes_to_enums(expected)
         message = _message or (
             "Command {cmd!r} "
@@ -201,7 +241,7 @@ class ParallelCallExceptions(ParallelCallProcessError):
         exceptions: typing.Dict[typing.Tuple[str, int], Exception],
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         *,
         _message: typing.Optional[str] = None
     ) -> None:
@@ -216,11 +256,12 @@ class ParallelCallExceptions(ParallelCallProcessError):
         :param results: all results
         :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Optional[typing.List[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param _message: message override
         :type _message: typing.Optional[str]
+
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
         prep_expected = proc_enums.exit_codes_to_enums(expected)
         message = _message or (
             "Command {cmd!r} "

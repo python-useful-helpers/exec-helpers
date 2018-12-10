@@ -80,8 +80,10 @@ configs = {
     "positive_verbose": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), verbose=True),
     "no_stdout": dict(),
     "IOError_on_stdout_read": dict(stdout=(b" \n", b"2\n", IOError())),
-    "TimeoutError": dict(ec=(asyncio.TimeoutError(), None), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError),
-    "TimeoutError_no_kill": dict(ec=(asyncio.TimeoutError(), None), stdout=(), kill=(OSError(),), expect_exc=OSError),
+    "TimeoutError": dict(ec=(asyncio.TimeoutError(), -9), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError),
+    "TimeoutError_no_kill": dict(
+        ec=(asyncio.TimeoutError(), None), stdout=(), expect_exc=exec_helpers.ExecHelperNoKillError
+    ),
     "stdin_closed_PIPE_windows": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=einval_exc),
     "stdin_broken_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=epipe_exc),
     "stdin_closed_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=eshutdown_exc),
@@ -183,8 +185,6 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
 
         proc.attach_mock(asynctest.CoroutineMock(side_effect=run_parameters.get("ec", (0,))), "wait")
         proc.configure_mock(returncode=(0,))
-
-        proc.attach_mock(mock.Mock(side_effect=run_parameters.get("kill", None)), "kill")
 
         monkeypatch.setattr(asyncio, "create_subprocess_shell", run_shell)
         return run_shell
