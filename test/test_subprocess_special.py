@@ -76,10 +76,10 @@ configs = {
     "no_stdout": dict(),
     "IOError_on_stdout_read": dict(stdout=(b" \n", b"2\n", IOError())),
     "TimeoutError": dict(
-        ec=(timeout_expired_exc,), poll=(None,), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError
+        ec=(timeout_expired_exc,), poll=(-9,), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError
     ),
     "TimeoutError_no_kill": dict(
-        ec=(timeout_expired_exc,), poll=(None,), stdout=(), kill=(OSError(),), expect_exc=OSError
+        ec=(timeout_expired_exc,), poll=(None,), stdout=(), expect_exc=exec_helpers.ExecHelperNoKillError
     ),
     "stdin_closed_PIPE_windows": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=einval_exc),
     "stdin_broken_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=epipe_exc),
@@ -182,7 +182,6 @@ def create_subprocess_shell(mocker, run_parameters):
         proc.attach_mock(mock.Mock(side_effect=run_parameters.get("poll", (0,))), "poll")
         proc.configure_mock(returncode=(0,))
 
-        proc.attach_mock(mock.Mock(side_effect=run_parameters.get("kill", None)), "kill")
         return run_shell
 
     return create_mock(**run_parameters)
