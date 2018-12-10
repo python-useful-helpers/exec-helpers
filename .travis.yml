@@ -98,7 +98,7 @@ jobs:
     - *upgrade_python_toolset
     - pip install --upgrade pydocstyle
     script:
-    - pydocstyle exec_helpers
+    - pydocstyle -v exec_helpers
 #  - <<: *code_style_check
 #    name: "Black formatting"
 #    install:

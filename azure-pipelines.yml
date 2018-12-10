@@ -7,8 +7,6 @@ jobs:
 - job: 'PyLint'
   pool:
     vmIMage: 'VS2017-Win2016'
-  strategy:
-    maxParallel: 1
   steps:
   - task: UsePythonVersion@0
     inputs:
@@ -24,6 +22,33 @@ jobs:
       pip install -U pylint
       pylint -f msvs exec_helpers
     displayName: 'PyLint'
+
+- job: 'MyPy'
+  pool:
+    vmIMage: 'VS2017-Win2016'
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7'
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -U setuptools
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
+
+  - script: |
+      pip install -U mypy
+      mypy --strict --junit-xml=mypy_result.xml exec_helpers
+    displayName: 'MyPy'
+
+  - task: PublishTestResults@2
+      displayName: publish test results via junit
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: "JUnit"
+        testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/mypy_result.xml') }}
+        testRunTitle: 'MyPy'
 
 - template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_35', python: '3.5', architecture: 'x64', kind: 'native'}
