@@ -169,7 +169,7 @@ class ExitCodes(int, enum.Enum):
         return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)
 
 
-EXPECTED = (0,) if "win32" == sys.platform else (ExitCodes.EX_OK,)
+EXPECTED = 0 if "win32" == sys.platform else ExitCodes.EX_OK
 INVALID = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
 
 

@@ -817,7 +817,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         remotes: typing.Iterable["SSHClientBase"],
         command: str,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,

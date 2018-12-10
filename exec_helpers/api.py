@@ -281,7 +281,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
@@ -336,7 +336,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:

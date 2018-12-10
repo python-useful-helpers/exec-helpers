@@ -135,7 +135,7 @@ class CalledProcessError(ExecCalledProcessError):
     def __init__(
         self,
         result: "exec_result.ExecResult",
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
     ) -> None:
         """Exception for error on process calls.
 
@@ -189,7 +189,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         command: str,
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         *,
         _message: typing.Optional[str] = None
     ) -> None:
@@ -241,7 +241,7 @@ class ParallelCallExceptions(ParallelCallProcessError):
         exceptions: typing.Dict[typing.Tuple[str, int], Exception],
         errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
         results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = proc_enums.EXPECTED,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         *,
         _message: typing.Optional[str] = None
     ) -> None:

@@ -408,7 +408,7 @@ def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
         assert exc.stdout == exec_result.stdout_str
         assert exc.stderr == exec_result.stderr_str
         assert exc.result == exec_result
-        assert exc.expected == proc_enums.EXPECTED
+        assert exc.expected == (proc_enums.EXPECTED,)
 
         assert log.mock_calls[-1] == mock.call.error(
             msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
@@ -428,7 +428,7 @@ def test_005_check_call_no_raise(ssh, exec_result, get_logger, mocker) -> None:
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
         assert log.mock_calls[-1] == mock.call.error(
             msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=res, expected=proc_enums.EXPECTED
+                result=res, expected=(proc_enums.EXPECTED,)
             )
         )
 
@@ -490,7 +490,7 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
             exec_helpers.SSHClient.execute_together(remotes=remotes, command=command)
         exc = e.value  # type: exec_helpers.ParallelCallProcessError
         assert exc.cmd == command
-        assert exc.expected == proc_enums.EXPECTED
+        assert exc.expected == (proc_enums.EXPECTED,)
         assert exc.results == {(host, port): exec_result, (host2, port): exec_result}
 
 
