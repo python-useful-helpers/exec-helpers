@@ -23,13 +23,13 @@ jobs:
       pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
     displayName: 'PyLint'
 
-  - task: PublishTestResults@2
-    displayName: publish test results via junit
-    condition: succeededOrFailed()
-    inputs:
-      testResultsFormat: "PyLint"
-      testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/pylint_result.xml') }}
-      testRunTitle: 'MyPy'
+#  - task: PublishTestResults@2
+#    displayName: publish test results via junit
+#    condition: succeededOrFailed()
+#    inputs:
+#      testResultsFormat: "PyLint"
+#      testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/pylint_result.xml') }}
+#      testRunTitle: 'MyPy'
 
 - job: 'MyPy'
   pool:
