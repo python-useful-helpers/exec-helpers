@@ -22,6 +22,14 @@ from __future__ import unicode_literals
 
 CMD_EXEC = "Executing command:\n{cmd!r}\n"
 
+CMD_KILL_ERROR = (
+    "Wait for {result.cmd!r} during {timeout!s}s: no return code and no response on SIGTERM + SIGKILL signals!\n"
+    "\tSTDOUT:\n"
+    "{result.stdout_brief}\n"
+    "\tSTDERR:\n"
+    "{result.stderr_brief}"
+)
+
 CMD_WAIT_ERROR = (
     "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
     "\tSTDOUT:\n"

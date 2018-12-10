@@ -280,7 +280,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         verbose=False,  # type: bool
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
-        expected=None,  # type: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
+        expected=(proc_enums.EXPECTED,),  # type: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         raise_on_err=True,  # type: bool
         **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
@@ -295,7 +295,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Optional[typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param kwargs: additional parameters for call.
@@ -306,6 +306,8 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :raises CalledProcessError: Unexpected exit code
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 1.10.0 Expected is not optional, defaults os dependent
         """
         expected_codes = proc_enums.exit_codes_to_enums(expected)
         ret = self.execute(command, verbose, timeout, **kwargs)

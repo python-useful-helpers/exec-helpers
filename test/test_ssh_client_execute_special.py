@@ -26,6 +26,7 @@ import mock
 import pytest
 
 import exec_helpers
+from exec_helpers import proc_enums
 
 
 class FakeFileStream(object):
@@ -157,7 +158,7 @@ def test_001_mask_command(ssh, get_logger):
     log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
     masked_cmd = "USE='secret=<*masked*>' do task"
     cmd_log = "Executing command:\n{!r}\n".format(masked_cmd)
-    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, exec_helpers.ExitCodes.EX_OK)
+    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, proc_enums.EXPECTED)
 
     log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
     res = ssh.execute(cmd, log_mask_re=log_mask_re)
@@ -171,7 +172,7 @@ def test_002_mask_command_global(ssh, get_logger):
     log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
     masked_cmd = "USE='secret=<*masked*>' do task"
     cmd_log = "Executing command:\n{!r}\n".format(masked_cmd)
-    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, exec_helpers.ExitCodes.EX_OK)
+    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, proc_enums.EXPECTED)
 
     log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
 
@@ -184,7 +185,7 @@ def test_002_mask_command_global(ssh, get_logger):
 
 def test_003_execute_verbose(ssh, get_logger):
     cmd_log = "Executing command:\n{!r}\n".format(command)
-    done_log = "Command {!r} exit code: {!s}".format(command, exec_helpers.ExitCodes.EX_OK)
+    done_log = "Command {!r} exit code: {!s}".format(command, proc_enums.EXPECTED)
 
     log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
     ssh.execute(command, verbose=True)

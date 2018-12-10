@@ -110,7 +110,6 @@ Context manager is available, connection is closed and lock is released on exit 
 Subprocess
 ----------
 
-No initialization required.
 Context manager is available, subprocess is killed and lock is released on exit from context.
 
 Base methods
@@ -138,7 +137,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         error_info=None,  # type: typing.Optional[str]
-        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         **kwargs
     )

@@ -786,7 +786,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         remotes,  # type: typing.Iterable[SSHClientBase]
         command,  # type: str
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
-        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        expected=(proc_enums.EXPECTED,),  # type: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         raise_on_err=True,  # type: bool
         **kwargs  # type: typing.Any
     ):  # type: (...) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
@@ -799,7 +799,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Optional[typing.Iterable[]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param kwargs: additional parameters for execute_async call.
@@ -811,6 +811,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 1.10.0 Expected is not optional, defaults os dependent
         """
 
         @threaded.threadpooled
@@ -833,7 +835,6 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             async_result.interface.close()
             return res
 
-        expected = expected or [proc_enums.ExitCodes.EX_OK]
         expected = proc_enums.exit_codes_to_enums(expected)
 
         futures = {remote: get_result(remote) for remote in set(remotes)}  # Use distinct remotes

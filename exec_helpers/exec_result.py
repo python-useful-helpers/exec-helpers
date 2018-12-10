@@ -61,7 +61,7 @@ class ExecResult(object):
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         stdout=None,  # type: typing.Optional[typing.Iterable[bytes]]
         stderr=None,  # type: typing.Optional[typing.Iterable[bytes]]
-        exit_code=proc_enums.ExitCodes.EX_INVALID,  # type: typing.Union[int, proc_enums.ExitCodes]
+        exit_code=proc_enums.INVALID,  # type: typing.Union[int, proc_enums.ExitCodes]
     ):  # type: (...) -> None
         """Command execution result.
 
@@ -96,7 +96,7 @@ class ExecResult(object):
         else:
             self._stderr = ()
 
-        self.__exit_code = proc_enums.ExitCodes.EX_INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
+        self.__exit_code = proc_enums.INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
         self.__timestamp = None
         self.exit_code = exit_code
 
@@ -369,7 +369,7 @@ class ExecResult(object):
             raise TypeError("Exit code is strictly int, got {!r}".format(new_val))
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
-            if self.__exit_code != proc_enums.ExitCodes.EX_INVALID:
+            if self.__exit_code != proc_enums.INVALID:
                 self.__timestamp = datetime.datetime.utcnow()  # type: ignore
 
     def __deserialize(self, fmt):  # type: (str) -> typing.Any

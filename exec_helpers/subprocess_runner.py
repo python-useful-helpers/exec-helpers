@@ -97,6 +97,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         :return: Execution result
         :rtype: ExecResult
         :raises OSError: exception during process kill (and not regarding to already closed process)
+        :raises ExecHelperNoKillError: Process not dies on SIGTERM & SIGKILL
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionadded:: 1.2.0
@@ -145,7 +146,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
                 _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
                 exit_code = async_result.interface.poll()
                 if exit_code is None:
-                    async_result.interface.kill()  # kill -9
+                    raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
         finally:
             stdout_future.cancel()
             stderr_future.cancel()

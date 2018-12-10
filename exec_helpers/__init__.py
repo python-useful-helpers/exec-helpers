@@ -16,6 +16,8 @@
 
 from __future__ import absolute_import
 
+import typing
+
 import pkg_resources
 
 from .proc_enums import ExitCodes
@@ -26,6 +28,7 @@ from .exceptions import (
     CalledProcessError,
     ParallelCallProcessError,
     ParallelCallExceptions,
+    ExecHelperNoKillError,
     ExecHelperTimeoutError,
 )
 
@@ -42,6 +45,7 @@ __all__ = (
     "CalledProcessError",
     "ParallelCallExceptions",
     "ParallelCallProcessError",
+    "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
     "ExecHelper",
     "SSHClient",
@@ -51,7 +55,7 @@ __all__ = (
     "SubprocessExecuteAsyncResult",
     "ExitCodes",
     "ExecResult",
-)
+)  # type: typing.Tuple[str, ...]
 
 try:  # pragma: no cover
     __version__ = pkg_resources.get_distribution(__name__).version

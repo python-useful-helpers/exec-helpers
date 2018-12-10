@@ -25,6 +25,7 @@ import unittest
 import mock
 
 import exec_helpers
+from exec_helpers import proc_enums
 
 
 cmd = "ls -la | awk '{print $1}'"
@@ -62,7 +63,7 @@ class TestExecResult(unittest.TestCase):
                 cmd=cmd,
                 stdout=(),
                 stderr=(),
-                exit_code=exec_helpers.ExitCodes.EX_INVALID,
+                exit_code=proc_enums.INVALID,
             ),
         )
         self.assertEqual(
@@ -75,7 +76,7 @@ class TestExecResult(unittest.TestCase):
                 cmd=cmd,
                 stdout_brief="",
                 stderr_brief="",
-                exit_code=exec_helpers.ExitCodes.EX_INVALID,
+                exit_code=proc_enums.INVALID,
             ),
         )
 
@@ -100,7 +101,7 @@ class TestExecResult(unittest.TestCase):
         self.assertIsNone(result["stdout_yaml"])
 
         self.assertEqual(
-            hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), exec_helpers.ExitCodes.EX_INVALID))
+            hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID))
         )
 
     @mock.patch("exec_helpers.exec_result.logger", autospec=True)
