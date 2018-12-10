@@ -39,11 +39,11 @@ class SSHClient(SSHClientBase):
     __slots__ = ()
 
     @staticmethod
-    def _path_esc(path):  # type: (str) -> str
+    def _path_esc(path):  # type: (typing.Union[str, typing.Text]) -> typing.Union[str, typing.Text]
         """Escape space character in the path."""
         return path.replace(" ", r"\ ")
 
-    def mkdir(self, path):  # type: (str) -> None
+    def mkdir(self, path):  # type: (typing.Union[str, typing.Text]) -> None
         """Run 'mkdir -p path' on remote.
 
         :type path: str
@@ -53,7 +53,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute("mkdir -p {}\n".format(self._path_esc(path)))
 
-    def rm_rf(self, path):  # type: (str) -> None
+    def rm_rf(self, path):  # type: (typing.Union[str, typing.Text]) -> None
         """Run 'rm -rf path' on remote.
 
         :type path: str
@@ -61,7 +61,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute("rm -rf {}".format(self._path_esc(path)))
 
-    def upload(self, source, target):  # type: (str, str) -> None
+    def upload(self, source, target):  # type: (typing.Union[str, typing.Text], typing.Union[str, typing.Text]) -> None
         """Upload file(s) from source to target using SFTP session.
 
         :type source: str
@@ -89,7 +89,9 @@ class SSHClient(SSHClientBase):
                     self._sftp.unlink(remote_path)
                 self._sftp.put(local_path, remote_path)
 
-    def download(self, destination, target):  # type: (str, str) -> bool
+    def download(
+        self, destination, target
+    ):  # type: (typing.Union[str, typing.Text], typing.Union[str, typing.Text]) -> bool
         """Download file(s) to target from destination.
 
         :param destination: remote path

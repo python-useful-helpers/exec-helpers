@@ -37,7 +37,7 @@ Pros:
 * Open Source: https://github.com/python-useful-helpers/exec-helpers
 * PyPI packaged: https://pypi.python.org/pypi/exec-helpers
 * Self-documented code: docstrings with types in comments
-* Tested: see bages on top
+* Tested: see badges on top
 * Support multiple Python versions:
 
 ::
@@ -45,7 +45,7 @@ Pros:
     Python 2.7
     PyPy
 
-.. note:: Update to version 2.0+ for usage with python 3.4+. This version is for legacy python and no new features are planned.
+.. note:: Pythons: For Python 3.4 use versions 2.x.x, python 3.5+ use versions 3.x.x, python 3.6+ use versions 4+
 
 This package includes:
 
@@ -96,7 +96,7 @@ Creation from scratch:
     )
 
 Key is a main connection key (always tried first) and keys are alternate keys.
-Key filename is afilename or list of filenames with keys, which should be loaded.
+Key filename is a filename or list of filenames with keys, which should be loaded.
 Passphrase is an alternate password for keys, if it differs from main password.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
@@ -217,7 +217,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
         remotes,  # type: typing.Iterable[SSHClient]
         command,  # type: str
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
-        expected=None,  # type: typing.Optional[typing.Iterable[int]]
+        expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
         raise_on_err=True  # type: bool
     )
     results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]

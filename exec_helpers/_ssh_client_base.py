@@ -26,6 +26,7 @@ import base64
 # noinspection PyCompatibility
 import concurrent.futures
 import copy
+import datetime
 import logging
 import platform
 import stat
@@ -107,14 +108,14 @@ class _MemorizedSSH(abc.ABCMeta):
       duplicates is possible.
     """
 
-    __cache = {}  # type: typing.Dict[typing.Tuple[str, int], SSHClientBase]
+    __cache = {}  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], SSHClientBase]
 
     def __call__(  # type: ignore
         cls,  # type: _MemorizedSSH
-        host,  # type: str
+        host,  # type: typing.Union[str, typing.Text]
         port=22,  # type: int
-        username=None,  # type: typing.Optional[str]
-        password=None,  # type: typing.Optional[str]
+        username=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+        password=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         verbose=True,  # type: bool
@@ -257,10 +258,10 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
     def __init__(
         self,
-        host,  # type: str
+        host,  # type: typing.Union[str, typing.Text]
         port=22,  # type: int
-        username=None,  # type: typing.Optional[str]
-        password=None,  # type: typing.Optional[str]
+        username=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+        password=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         verbose=True,  # type: bool
@@ -320,7 +321,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         return self.__auth
 
     @property
-    def hostname(self):  # type: () -> str
+    def hostname(self):  # type: () -> typing.Union[str, typing.Text]
         """Connected remote host name.
 
         :rtype: str
@@ -349,11 +350,15 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             cls=self.__class__.__name__, self=self
         )
 
-    def __str__(self):  # type: () -> str  # pragma: no cover
+    def __unicode__(self):  # type: () -> typing.Text  # pragma: no cover
         """Representation for debug purposes."""
         return "{cls}(host={self.hostname}, port={self.port}) for user {username}".format(
             cls=self.__class__.__name__, self=self, username=self.auth.username
         )
+
+    def __str__(self):  # type: () -> str  # pragma: no cover
+        """Representation for debug purposes."""
+        return self.__unicode__().encode("utf-8")
 
     @property
     def _ssh(self):  # type: () -> paramiko.SSHClient
@@ -519,14 +524,15 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         return self.__get_keepalive(ssh=self, enforce=enforce)
 
+    # noinspection PyMethodOverriding
     def execute_async(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> SshExecuteAsyncResult
         """Execute command in async mode and return channel with IO objects.
@@ -554,6 +560,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
                         ('stdin', paramiko.ChannelFile),
                         ('stderr', typing.Optional[paramiko.ChannelFile]),
                         ('stdout', typing.Optional[paramiko.ChannelFile]),
+                        ("started", datetime.datetime),
                     ]
                 )
 
@@ -581,10 +588,11 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             )
 
         _stdin = chan.makefile("wb")  # type: paramiko.ChannelFile
-        stdout = chan.makefile("rb") if open_stdout else None
+        stdout = chan.makefile("rb")  # type: paramiko.ChannelFile
         stderr = chan.makefile_stderr("rb") if open_stderr else None
 
         cmd = "{command}\n".format(command=command)
+        started = datetime.datetime.utcnow()
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
             cmd = 'sudo -S bash -c \'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)
@@ -605,15 +613,21 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
+        if open_stdout:
+            res_stdout = stdout
+        else:
+            stdout.close()
+            res_stdout = None
+
+        return SshExecuteAsyncResult(interface=chan, stdin=_stdin, stderr=stderr, stdout=res_stdout, started=started)
 
     def _exec_command(  # type: ignore
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         async_result,  # type: SshExecuteAsyncResult
         timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
@@ -661,7 +675,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"))
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin"), started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -679,14 +693,17 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         async_result.interface.status_event.set()
         future.cancel()
 
+        concurrent.futures.wait([future], 0.001)
+        result.set_timestamp()
+
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     def execute_through_host(
         self,
-        hostname,  # type: str
-        command,  # type: str
+        hostname,  # type: typing.Union[str, typing.Text]
+        command,  # type: typing.Union[str, typing.Text]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         target_port=22,  # type: int
         verbose=False,  # type: bool
@@ -752,6 +769,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         stdout = channel.makefile("rb")  # type: paramiko.ChannelFile
         stderr = channel.makefile_stderr("rb")  # type: paramiko.ChannelFile
 
+        started = datetime.datetime.utcnow()
+
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
         stdin = kwargs.get("stdin", None)
@@ -764,7 +783,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        async_result = SshExecuteAsyncResult(interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr)
+        async_result = SshExecuteAsyncResult(
+            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started
+        )
 
         # noinspection PyDictCreation
         result = self._exec_command(
@@ -784,7 +805,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
     def execute_together(
         cls,
         remotes,  # type: typing.Iterable[SSHClientBase]
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         expected=(proc_enums.EXPECTED,),  # type: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         raise_on_err=True,  # type: bool
@@ -827,7 +848,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin", None))
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin", None), started=async_result.started)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code
@@ -864,7 +885,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             )
         return results
 
-    def open(self, path, mode="r"):  # type: (str, str) -> paramiko.SFTPFile
+    def open(
+        self, path, mode="r"
+    ):  # type: (typing.Union[str, typing.Text], typing.Union[str, typing.Text]) -> paramiko.SFTPFile
         """Open file on remote using SFTP session.
 
         :param path: filesystem object path
@@ -876,7 +899,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         return self._sftp.open(path, mode)  # pragma: no cover
 
-    def exists(self, path):  # type: (str) -> bool
+    def exists(self, path):  # type: (typing.Union[str, typing.Text]) -> bool
         """Check for file existence using SFTP session.
 
         :param path: filesystem object path
@@ -890,7 +913,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         except IOError:
             return False
 
-    def stat(self, path):  # type: (str) -> paramiko.sftp_attr.SFTPAttributes
+    def stat(self, path):  # type: (typing.Union[str, typing.Text]) -> paramiko.sftp_attr.SFTPAttributes
         """Get stat info for path with following symlinks.
 
         :param path: filesystem object path
@@ -900,7 +923,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         return self._sftp.stat(path)  # pragma: no cover
 
-    def utime(self, path, times=None):  # type: (str, typing.Optional[typing.Tuple[int, int]]) -> None
+    def utime(
+        self, path, times=None
+    ):  # type: (typing.Union[str, typing.Text], typing.Optional[typing.Tuple[int, int]]) -> None
         """Set atime, mtime.
 
         :param path: filesystem object path
@@ -912,7 +937,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         return self._sftp.utime(path, times)  # type: ignore  # pragma: no cover
 
-    def isfile(self, path):  # type: (str) -> bool
+    def isfile(self, path):  # type: (typing.Union[str, typing.Text]) -> bool
         """Check, that path is file using SFTP session.
 
         :param path: remote path to validate
@@ -926,7 +951,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         except IOError:
             return False
 
-    def isdir(self, path):  # type: (str) -> bool
+    def isdir(self, path):  # type: (typing.Union[str, typing.Text]) -> bool
         """Check, that path is directory using SFTP session.
 
         :param path: remote path to validate

@@ -17,6 +17,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import datetime
 import logging
 import typing  # noqa: F401
 
@@ -249,7 +250,7 @@ def execute_async(mocker, run_parameters):
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
         return exec_helpers.SshExecuteAsyncResult(
-            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part
+            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
         )
 
     return mocker.patch(
@@ -291,7 +292,10 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     assert isinstance(res, exec_helpers.SshExecuteAsyncResult)
     assert res.interface is ssh_transport_channel
     assert res.stdin is chan_makefile.stdin
-    assert res.stdout is chan_makefile.stdout
+    if open_stdout:
+        assert res.stdout is chan_makefile.stdout
+    else:
+        assert res.stdout is None
 
     paramiko_ssh_client.assert_has_calls(
         (

@@ -24,6 +24,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import abc
+import datetime
 import logging
 import re
 import threading
@@ -44,6 +45,7 @@ ExecuteAsyncResult = typing.NamedTuple(
         ("stdin", typing.Optional[typing.Any]),
         ("stderr", typing.Optional[typing.Any]),
         ("stdout", typing.Optional[typing.Any]),
+        ("started", datetime.datetime),
     ],
 )
 
@@ -53,7 +55,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
     __slots__ = ("__lock", "__logger", "log_mask_re")
 
-    def __init__(self, logger, log_mask_re=None):  # type: (logging.Logger, typing.Optional[str]) -> None
+    def __init__(self, logger, log_mask_re=None):  # type: (logging.Logger, typing.Optional[typing.Text]) -> None
         """Global ExecHelper API.
 
         :param logger: logger instance to use
@@ -94,7 +96,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         """Context manager usage."""
         self.lock.release()  # pragma: no cover
 
-    def _mask_command(self, cmd, log_mask_re=None):  # type: (str, typing.Optional[str]) -> str
+    def _mask_command(
+        self, cmd, log_mask_re=None
+    ):  # type: (typing.Union[str, typing.Text], typing.Optional[typing.Text]) -> str
         """Log command with masking and return parsed cmd.
 
         :param cmd: command
@@ -108,7 +112,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         .. versionadded:: 1.2.0
         """
 
-        def mask(text, rules):  # type: (str, str) -> str
+        def mask(text, rules):  # type: (str, typing.Text) -> str
             """Mask part of text using rules."""
             indexes = [0]  # Start of the line
 
@@ -141,12 +145,12 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     @abc.abstractmethod
     def execute_async(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> ExecuteAsyncResult
         """Execute command in async mode and return remote interface with IO objects.
@@ -174,6 +178,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
                         ('stdin', typing.Optional[typing.Any]),
                         ('stderr', typing.Optional[typing.Any]),
                         ('stdout', typing.Optional[typing.Any]),
+                        ("started", datetime.datetime),
                     ]
                 )
 
@@ -186,11 +191,11 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     @abc.abstractmethod
     def _exec_command(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         async_result,  # type: ExecuteAsyncResult
         timeout,  # type: typing.Union[int, float, None]
         verbose=False,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
         """Get exit status from channel with timeout.
@@ -218,7 +223,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
     def execute(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         verbose=False,  # type: bool
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         **kwargs  # type: typing.Any
@@ -251,7 +256,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
     def __call__(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         verbose=False,  # type: bool
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
         **kwargs
@@ -276,10 +281,10 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
     def check_call(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         verbose=False,  # type: bool
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
-        error_info=None,  # type: typing.Optional[str]
+        error_info=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         expected=(proc_enums.EXPECTED,),  # type: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         raise_on_err=True,  # type: bool
         **kwargs  # type: typing.Any
@@ -325,10 +330,10 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
     def check_stderr(
         self,
-        command,  # type: str
+        command,  # type: typing.Union[str, typing.Text]
         verbose=False,  # type: bool
         timeout=constants.DEFAULT_TIMEOUT,  # type: typing.Union[int, float, None]
-        error_info=None,  # type: typing.Optional[str]
+        error_info=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         raise_on_err=True,  # type: bool
         **kwargs  # type: typing.Any
     ):  # type: (...) -> exec_result.ExecResult
