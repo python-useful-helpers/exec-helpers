@@ -23,6 +23,7 @@ import base64
 import collections
 import concurrent.futures
 import copy
+import datetime
 import logging
 import platform
 import stat
@@ -539,6 +540,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         return self.__get_keepalive(ssh=self, enforce=enforce)
 
+    # noinspection PyMethodOverriding
     def execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
@@ -584,6 +586,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                         ('stdin', paramiko.ChannelFile),
                         ('stderr', typing.Optional[paramiko.ChannelFile]),
                         ('stdout', typing.Optional[paramiko.ChannelFile]),
+                        ("started", datetime.datetime),
                     ]
                 )
 
@@ -606,10 +609,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
         _stdin = chan.makefile("wb")  # type: paramiko.ChannelFile
-        stdout = chan.makefile("rb") if open_stdout else None
+        stdout = chan.makefile("rb")  # type: paramiko.ChannelFile
         stderr = chan.makefile_stderr("rb") if open_stderr else None
 
         cmd = "{command}\n".format(command=command)
+        started = datetime.datetime.utcnow()
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
             cmd = 'sudo -S bash -c \'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)
@@ -630,7 +634,13 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
+        if open_stdout:
+            res_stdout = stdout
+        else:
+            stdout.close()
+            res_stdout = None
+
+        return SshExecuteAsyncResult(interface=chan, stdin=_stdin, stderr=stderr, stdout=res_stdout, started=started)
 
     def _exec_command(  # type: ignore
         self,
@@ -690,7 +700,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -708,6 +718,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         async_result.interface.status_event.set()
         future.cancel()
 
+        concurrent.futures.wait([future], 0.001)
+        result.set_timestamp()
+
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
@@ -721,10 +734,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        log_mask_re: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
-        height: int = 24,
-        **kwargs: typing.Any
+        height: int = 24
     ) -> exec_result.ExecResult:
         """Execute command on remote host through currently connected host.
 
@@ -740,14 +754,17 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
         :param width: PTY width
         :type width: int
         :param height: PTY height
         :type height: int
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
         :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
@@ -755,8 +772,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 2.9.3 Expose pty options as optional keyword-only arguments
+        .. versionchanged:: 2.11.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
+        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
@@ -783,9 +801,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stdout = channel.makefile("rb")  # type: paramiko.ChannelFile
         stderr = channel.makefile_stderr("rb")  # type: paramiko.ChannelFile
 
+        started = datetime.datetime.utcnow()
+
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
-        stdin = kwargs.get("stdin", None)
         if stdin is not None:
             if not _stdin.channel.closed:
                 stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
@@ -795,16 +814,12 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        async_result = SshExecuteAsyncResult(interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr)
+        async_result = SshExecuteAsyncResult(
+            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started)
 
         # noinspection PyDictCreation
         result = self._exec_command(
-            command,
-            async_result=async_result,
-            timeout=timeout,
-            verbose=verbose,
-            log_mask_re=kwargs.get("log_mask_re", None),
-            stdin=stdin,
+            command, async_result=async_result, timeout=timeout, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin
         )
 
         intermediate_channel.close()
@@ -820,6 +835,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        log_mask_re: typing.Optional[str] = None,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
@@ -835,6 +852,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError
         :type exception_class: typing.Type[exceptions.ParallelCallProcessError]
         :param kwargs: additional parameters for execute_async call.
@@ -848,12 +870,15 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 2.9.3 Exception class can be substituted
         .. versionchanged:: 2.10.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 2.11.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
 
         @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call."""
-            async_result = remote.execute_async(command, **kwargs)  # type: SshExecuteAsyncResult
+            async_result = remote.execute_async(
+                command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
+            )
 
             async_result.interface.status_event.wait(timeout)
             exit_code = async_result.interface.recv_exit_status()
@@ -862,7 +887,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin", None))
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code
