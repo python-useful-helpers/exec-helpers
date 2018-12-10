@@ -1,6 +1,7 @@
 ### Test results
 /*_result*.xml
 /report.html
+/mypy_report/*
 /assets/*
 .cache/*
 .pytest_cache/*

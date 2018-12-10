@@ -72,7 +72,7 @@ jobs:
     - *upgrade_python_toolset
     - pip install --upgrade pydocstyle
     script:
-    - pydocstyle exec_helpers
+    - pydocstyle -v exec_helpers
 
   - stage: test
     <<: *python27
