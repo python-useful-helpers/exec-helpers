@@ -43,12 +43,12 @@ jobs:
     displayName: 'MyPy'
 
   - task: PublishTestResults@2
-      displayName: publish test results via junit
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: "JUnit"
-        testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/mypy_result.xml') }}
-        testRunTitle: 'MyPy'
+    displayName: publish test results via junit
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: "JUnit"
+      testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/mypy_result.xml') }}
+      testRunTitle: 'MyPy'
 
 - template: .azure_pipelines/run_tests.yml
   parameters: {name: 'Python_35', python: '3.5', architecture: 'x64', kind: 'native'}
