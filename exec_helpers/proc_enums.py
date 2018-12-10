@@ -187,5 +187,5 @@ def exit_codes_to_enums(
 ) -> typing.Iterable[typing.Union[int, ExitCodes]]:
     """Convert integer exit codes to enums."""
     if codes is None:
-        return EXPECTED
+        return (EXPECTED,)
     return tuple(exit_code_to_enum(code) for code in codes)
