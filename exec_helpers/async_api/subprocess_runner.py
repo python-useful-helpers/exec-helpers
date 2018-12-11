@@ -142,7 +142,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_code is None:
                 raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
-            result.exit_code = result
+            result.exit_code = exit_code
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
