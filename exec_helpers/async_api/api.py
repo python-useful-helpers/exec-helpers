@@ -75,12 +75,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
 
         :param command: Command for execution
         :type command: str
-        :param interface: Control interface
-        :type interface: typing.Any
-        :param stdout: STDOUT pipe or file-like object
-        :type stdout: typing.Optional[asyncio.StreamReader]
-        :param stderr: STDERR pipe or file-like object
-        :type stderr: typing.Optional[asyncio.StreamReader]
+        :param async_result: execute_async result
+        :type async_result: ExecuteAsyncResult
         :param timeout: Timeout for command execution
         :type timeout: typing.Union[int, float, None]
         :param verbose: produce verbose log record on command call
