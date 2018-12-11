@@ -158,6 +158,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             exit_code = async_result.interface.poll()
             if exit_code is None:
                 raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
+            result.exit_code = exit_code
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
