@@ -23,6 +23,7 @@ import base64
 import collections
 import concurrent.futures
 import copy
+import datetime
 import logging
 import platform
 import stat
@@ -539,6 +540,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         return self.__get_keepalive(ssh=self, enforce=enforce)
 
+    # noinspection PyMethodOverriding
     def execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
@@ -584,6 +586,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                         ('stdin', paramiko.ChannelFile),
                         ('stderr', typing.Optional[paramiko.ChannelFile]),
                         ('stdout', typing.Optional[paramiko.ChannelFile]),
+                        ("started", datetime.datetime),
                     ]
                 )
 
@@ -610,6 +613,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stderr = chan.makefile_stderr("rb") if open_stderr else None
 
         cmd = "{command}\n".format(command=command)
+        started = datetime.datetime.utcnow()
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
             cmd = 'sudo -S bash -c \'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)
@@ -630,7 +634,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout)
+        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout, started)
 
     def _exec_command(  # type: ignore
         self,
@@ -783,6 +787,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stdout = channel.makefile("rb")  # type: paramiko.ChannelFile
         stderr = channel.makefile_stderr("rb")  # type: paramiko.ChannelFile
 
+        started = datetime.datetime.utcnow()
+
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
         stdin = kwargs.get("stdin", None)
@@ -795,7 +801,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        async_result = SshExecuteAsyncResult(interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr)
+        async_result = SshExecuteAsyncResult(
+            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started)
 
         # noinspection PyDictCreation
         result = self._exec_command(

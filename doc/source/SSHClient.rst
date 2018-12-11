@@ -451,3 +451,9 @@ API: SSHClient and SSHAuth.
     .. py:attribute:: stdout
 
         ``typing.Optional[paramiko.ChannelFile]``
+
+    .. py:attribute:: started
+
+        ``datetime.datetime``
+
+        .. versionadded:: 3.4.1

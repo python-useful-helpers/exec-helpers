@@ -131,6 +131,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
                         ('stdin', typing.Optional[typing.Any]),
                         ('stderr', typing.Optional[typing.Any]),
                         ('stdout', typing.Optional[typing.Any]),
+                        ("started", datetime.datetime),
                     ]
                 )
         :raises OSError: impossible to process STDIN
