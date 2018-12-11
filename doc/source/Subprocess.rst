@@ -180,3 +180,9 @@ API: Subprocess
     .. py:attribute:: stdout
 
         ``typing.Optional[typing.IO]``
+
+    .. py:attribute:: started
+
+        ``datetime.datetime``
+
+        .. versionadded:: 3.4.1

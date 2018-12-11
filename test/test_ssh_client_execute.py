@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import logging
 import typing
 
@@ -246,7 +247,7 @@ def execute_async(mocker, run_parameters):
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
         return exec_helpers.SshExecuteAsyncResult(
-            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part
+            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
         )
 
     return mocker.patch(

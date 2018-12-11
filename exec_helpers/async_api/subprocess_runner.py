@@ -20,6 +20,7 @@
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
 import asyncio
+import datetime
 import errno
 import logging
 import typing
@@ -152,6 +153,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     # pylint: disable=arguments-differ
+    # noinspection PyMethodOverriding
     async def execute_async(  # type: ignore
         self,
         command: str,
@@ -196,6 +198,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                         ('stdin', typing.Optional[asyncio.StreamWriter]),
                         ('stderr', typing.Optional[asyncio.StreamReader]),
                         ('stdout', typing.Optional[asyncio.StreamReader]),
+                        ("started", datetime.datetime),
                     ]
                 )
         :raises OSError: impossible to process STDIN
@@ -205,6 +208,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
+
+        started = datetime.datetime.utcnow()
 
         process = await asyncio.create_subprocess_shell(
             cmd=command,
@@ -250,6 +255,6 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
             process_stdin = None
 
-        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout)
+        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
 
     # pylint: enable=arguments-differ
