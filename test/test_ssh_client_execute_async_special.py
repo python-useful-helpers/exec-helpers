@@ -89,7 +89,7 @@ def chan_makefile():
                 self.stdout = FakeFileStream(*stdout_src)
                 self.stdout.channel = self.channel
                 return self.stdout
-            raise ValueError("Unexpected flags: {!r}".format(flags))
+            raise ValueError(f"Unexpected flags: {flags!r}")
 
     return MkFile()
 
@@ -144,7 +144,7 @@ def test_001_execute_async_sudo(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command("sudo -S bash -c '" 'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)),
+            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
         )
     )
 
@@ -157,7 +157,7 @@ def test_002_execute_async_with_sudo_enforce(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command("sudo -S bash -c '" 'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)),
+            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
         )
     )
 
@@ -167,9 +167,7 @@ def test_003_execute_async_with_no_sudo_enforce(ssh, ssh_transport_channel):
 
     with ssh.sudo(enforce=False):
         ssh.execute_async(command)
-    ssh_transport_channel.assert_has_calls(
-        (mock.call.makefile_stderr("rb"), mock.call.exec_command("{}\n".format(command)))
-    )
+    ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))
 
 
 def test_004_execute_async_with_sudo_none_enforce(ssh, ssh_transport_channel):
@@ -177,9 +175,7 @@ def test_004_execute_async_with_sudo_none_enforce(ssh, ssh_transport_channel):
 
     with ssh.sudo():
         ssh.execute_async(command)
-    ssh_transport_channel.assert_has_calls(
-        (mock.call.makefile_stderr("rb"), mock.call.exec_command("{}\n".format(command)))
-    )
+    ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))
 
 
 def test_005_execute_async_sudo_password(ssh, ssh_transport_channel, mocker):
@@ -191,7 +187,7 @@ def test_005_execute_async_sudo_password(ssh, ssh_transport_channel, mocker):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command("sudo -S bash -c '" 'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)),
+            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
         )
     )
 
@@ -251,5 +247,5 @@ def test_010_check_stdin_closed(paramiko_ssh_client, chan_makefile, auto_add_pol
     ssh = exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
     ssh.execute_async(command=print_stdin, stdin=stdin_val)
 
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     log.warning.assert_called_once_with("STDIN Send failed: closed channel")

@@ -64,8 +64,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 1.3.5 make API public to use as interface
         """
         self.__lock = threading.RLock()
-        self.__logger = logger
-        self.log_mask_re = log_mask_re
+        self.__logger: logging.Logger = logger
+        self.log_mask_re: typing.Optional[str] = log_mask_re
 
     @property
     def logger(self) -> logging.Logger:
@@ -108,7 +108,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         def mask(text: str, rules: str) -> str:
             """Mask part of text using rules."""
-            indexes = [0]  # Start of the line
+            indexes: typing.List[int] = [0]  # Start of the line
+            masked: str = ""
 
             # places to exclude
             for match in re.finditer(rules, text):
@@ -116,26 +117,24 @@ class ExecHelper(metaclass=abc.ABCMeta):
                     indexes.extend(match.span(idx + 1))
             indexes.append(len(text))  # End
 
-            masked = ""
-
             # Replace inserts
             for idx in range(0, len(indexes) - 2, 2):
-                start = indexes[idx]
-                end = indexes[idx + 1]
+                start: int = indexes[idx]
+                end: int = indexes[idx + 1]
                 masked += text[start:end] + "<*masked*>"
 
             # noinspection PyPep8
             masked += text[indexes[-2] : indexes[-1]]  # final part
             return masked
 
-        cmd = cmd.rstrip()
+        result: str = cmd.rstrip()
 
-        if self.log_mask_re:
-            cmd = mask(cmd, self.log_mask_re)
-        if log_mask_re:
-            cmd = mask(cmd, log_mask_re)
+        if self.log_mask_re is not None:
+            result = mask(result, self.log_mask_re)
+        if log_mask_re is not None:
+            result = mask(result, log_mask_re)
 
-        return cmd
+        return result
 
     @abc.abstractmethod
     def execute_async(
@@ -146,7 +145,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> ExecuteAsyncResult:
         """Execute command in async mode and return remote interface with IO objects.
 
@@ -193,7 +192,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         log_mask_re: typing.Optional[str] = None,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -225,7 +224,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
@@ -244,12 +243,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
+        async_result: ExecuteAsyncResult = self.execute_async(command, verbose=verbose, **kwargs)
 
-        result = self._exec_command(
+        result: exec_result.ExecResult = self._exec_command(
             command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )
-        message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
+        message = f"Command {result.cmd!r} exit code: {result.exit_code!s}"
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
@@ -258,7 +257,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
@@ -288,7 +287,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         raise_on_err: bool = True,
         *,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
@@ -317,19 +316,20 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes = proc_enums.exit_codes_to_enums(expected)
-        ret = self.execute(command, verbose, timeout, **kwargs)
-        if ret.exit_code not in expected_codes:
+        expected_codes: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
+            expected
+        )
+        result: exec_result.ExecResult = self.execute(command, verbose, timeout, **kwargs)
+        append: str = error_info + "\n" if error_info else ""
+        if result.exit_code not in expected_codes:
             message = (
-                "{append}Command {result.cmd!r} returned exit code "
-                "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + "\n" if error_info else "", result=ret, expected=expected_codes
-                )
+                f"{append}Command {result.cmd!r} returned exit code {result.exit_code!s} "
+                f"while expected {expected_codes!s}"
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exception_class(result=ret, expected=expected_codes)
-        return ret
+                raise exception_class(result=result, expected=expected_codes)
+        return result
 
     def check_stderr(
         self,
@@ -341,7 +341,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         *,
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
@@ -370,7 +370,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        ret = self.check_call(
+        result: exec_result.ExecResult = self.check_call(
             command,
             verbose,
             timeout=timeout,
@@ -378,17 +378,18 @@ class ExecHelper(metaclass=abc.ABCMeta):
             raise_on_err=raise_on_err,
             expected=expected,
             exception_class=exception_class,
-            **kwargs
+            **kwargs,
         )
-        if ret.stderr:
+        append: str = error_info + "\n" if error_info else ""
+        if result.stderr:
             message = (
-                "{append}Command {result.cmd!r} output contains STDERR while not expected\n"
-                "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
+                f"{append}Command {result.cmd!r} output contains STDERR while not expected\n"
+                f"\texit code: {result.exit_code!s}"
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exception_class(result=ret, expected=expected)
-        return ret
+                raise exception_class(result=result, expected=expected)
+        return result
 
     @staticmethod
     def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
@@ -404,6 +405,4 @@ class ExecHelper(metaclass=abc.ABCMeta):
             return bytes(src)
         if isinstance(src, str):
             return src.encode("utf-8")
-        raise TypeError(  # pragma: no cover
-            "{!r} has unexpected type: not conform to Union[str, bytes, bytearray]".format(src)
-        )
+        raise TypeError(f"{src!r} has unexpected type: not conform to Union[str, bytes, bytearray]")  # pragma: no cover

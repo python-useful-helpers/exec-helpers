@@ -16,6 +16,8 @@
 
 """Execution result."""
 
+__all__ = ("ExecResult",)
+
 import datetime
 import json
 import logging
@@ -26,8 +28,6 @@ import yaml
 
 from exec_helpers import exceptions  # pylint: disable=cyclic-import
 from exec_helpers import proc_enums
-
-__all__ = ("ExecResult",)
 
 logger = logging.getLogger(__name__)
 
@@ -74,32 +74,33 @@ class ExecResult:
         self.__stdout_lock = threading.RLock()
         self.__stderr_lock = threading.RLock()
 
-        self.__cmd = cmd
+        self.__cmd: str = cmd
         if isinstance(stdin, bytes):
-            stdin = self._get_str_from_bin(bytearray(stdin))
+            self.__stdin: typing.Optional[str] = self._get_str_from_bin(bytearray(stdin))
         elif isinstance(stdin, bytearray):
-            stdin = self._get_str_from_bin(stdin)
-        self.__stdin = stdin  # type: typing.Optional[str]
+            self.__stdin = self._get_str_from_bin(stdin)
+        else:
+            self.__stdin = stdin
 
         if stdout is not None:
-            self._stdout = tuple(stdout)  # type: typing.Tuple[bytes, ...]
+            self._stdout: typing.Tuple[bytes, ...] = tuple(stdout)
         else:
             self._stdout = ()
 
         if stderr is not None:
-            self._stderr = tuple(stderr)  # type: typing.Tuple[bytes, ...]
+            self._stderr: typing.Tuple[bytes, ...] = tuple(stderr)
         else:
             self._stderr = ()
 
-        self.__exit_code = proc_enums.INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
-        self.__timestamp = None
+        self.__exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID
+        self.__timestamp: typing.Optional[datetime.datetime] = None
         self.exit_code = exit_code
 
         # By default is none:
-        self._stdout_str = None
-        self._stderr_str = None
-        self._stdout_brief = None
-        self._stderr_brief = None
+        self._stdout_str: typing.Optional[str] = None
+        self._stderr_str: typing.Optional[str] = None
+        self._stdout_brief: typing.Optional[str] = None
+        self._stderr_brief: typing.Optional[str] = None
 
     @property
     def stdout_lock(self) -> threading.RLock:
@@ -164,7 +165,7 @@ class ExecResult:
         :rtype: str
         """
         if len(data) <= 7:
-            src = data  # type: typing.Tuple[bytes, ...]
+            src: typing.Tuple[bytes, ...] = data
         else:
             src = data[:3] + (b"...\n",) + data[-3:]
         return cls._get_str_from_bin(cls._get_bytearray_from_array(src))
@@ -205,7 +206,7 @@ class ExecResult:
     def _poll_stream(
         src: typing.Iterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
-        dst = []
+        dst: typing.List[bytes] = []
         try:
             for line in src:
                 dst.append(line)
@@ -300,8 +301,8 @@ class ExecResult:
         """
         with self.stdout_lock:
             if self._stdout_str is None:
-                self._stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
-            return self._stdout_str  # type: ignore
+                self._stdout_str = self._get_str_from_bin(self.stdout_bin)
+            return self._stdout_str
 
     @property
     def stderr_str(self) -> str:
@@ -311,8 +312,8 @@ class ExecResult:
         """
         with self.stderr_lock:
             if self._stderr_str is None:
-                self._stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
-            return self._stderr_str  # type: ignore
+                self._stderr_str = self._get_str_from_bin(self.stderr_bin)
+            return self._stderr_str
 
     @property
     def stdout_brief(self) -> str:
@@ -322,8 +323,8 @@ class ExecResult:
         """
         with self.stdout_lock:
             if self._stdout_brief is None:
-                self._stdout_brief = self._get_brief(self.stdout)  # type: ignore
-            return self._stdout_brief  # type: ignore
+                self._stdout_brief = self._get_brief(self.stdout)
+            return self._stdout_brief
 
     @property
     def stderr_brief(self) -> str:
@@ -333,8 +334,8 @@ class ExecResult:
         """
         with self.stderr_lock:
             if self._stderr_brief is None:
-                self._stderr_brief = self._get_brief(self.stderr)  # type: ignore
-            return self._stderr_brief  # type: ignore
+                self._stderr_brief = self._get_brief(self.stderr)
+            return self._stderr_brief
 
     @property
     def exit_code(self) -> typing.Union[int, proc_enums.ExitCodes]:
@@ -359,11 +360,11 @@ class ExecResult:
         if self.timestamp:
             raise RuntimeError("Exit code is already received.")
         if not isinstance(new_val, int):
-            raise TypeError("Exit code is strictly int, received: {code!r}".format(code=new_val))
+            raise TypeError(f"Exit code is strictly int, received: {new_val!r}")
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()  # type: ignore
+                self.__timestamp = datetime.datetime.utcnow()
 
     def __deserialize(self, fmt: str) -> typing.Any:
         """Deserialize stdout as data format.
@@ -381,14 +382,14 @@ class ExecResult:
             if fmt == "yaml":
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
-            tmpl = "{{self.cmd}} stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
+            tmpl: str = "{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n".format(fmt=fmt)
             logger.exception(tmpl.format(self=self, stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
 
             raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
                 e.__traceback__
             ) from e
 
-        msg = "{fmt} deserialize target is not implemented".format(fmt=fmt)
+        msg = f"{fmt} deserialize target is not implemented"
         logger.error(msg)
         raise NotImplementedError(msg)
 

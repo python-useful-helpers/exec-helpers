@@ -46,7 +46,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         """
         super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
-        self.__alock = None  # type: typing.Optional[asyncio.Lock]
+        self.__alock: typing.Optional[asyncio.Lock] = None
 
     async def __aenter__(self) -> "ExecHelper":
         """Async context manager."""
@@ -69,7 +69,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         log_mask_re: typing.Optional[str] = None,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -104,7 +104,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> api.ExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
 
@@ -143,7 +143,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
@@ -159,12 +159,12 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
-        async_result = await self.execute_async(command, verbose=verbose, **kwargs)
+        async_result: api.ExecuteAsyncResult = await self.execute_async(command, verbose=verbose, **kwargs)
 
-        result = await self._exec_command(
+        result: exec_result.ExecResult = await self._exec_command(
             command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )
-        message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
+        message: str = f"Command {result.cmd!r} exit code: {result.exit_code!s}"
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result
 
@@ -173,7 +173,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
@@ -203,7 +203,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         raise_on_err: bool = True,
         *,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
@@ -230,19 +230,20 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes = proc_enums.exit_codes_to_enums(expected)
-        ret = await self.execute(command, verbose, timeout, **kwargs)
-        if ret.exit_code not in expected_codes:
+        expected_codes: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
+            expected
+        )
+        result: exec_result.ExecResult = await self.execute(command, verbose, timeout, **kwargs)
+        append: str = error_info + "\n" if error_info else ""
+        if result.exit_code not in expected_codes:
             message = (
-                "{append}Command {result.cmd!r} returned exit code "
-                "{result.exit_code!s} while expected {expected!s}".format(
-                    append=error_info + "\n" if error_info else "", result=ret, expected=expected_codes
-                )
+                f"{append}Command {result.cmd!r} returned exit code "
+                f"{result.exit_code!s} while expected {expected_codes!s}"
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exception_class(result=ret, expected=expected_codes)
-        return ret
+                raise exception_class(result=result, expected=expected_codes)
+        return result
 
     async def check_stderr(  # type: ignore
         self,
@@ -254,7 +255,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         *,
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
@@ -281,7 +282,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        ret = await self.check_call(
+        result: exec_result.ExecResult = await self.check_call(
             command,
             verbose,
             timeout=timeout,
@@ -289,14 +290,15 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             raise_on_err=raise_on_err,
             expected=expected,
             exception_class=exception_class,
-            **kwargs
+            **kwargs,
         )
-        if ret.stderr:
+        append: str = error_info + "\n" if error_info else ""
+        if result.stderr:
             message = (
-                "{append}Command {result.cmd!r} output contains STDERR while not expected\n"
-                "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=ret)
+                f"{append}Command {result.cmd!r} output contains STDERR while not expected\n"
+                f"\texit code: {result.exit_code!s}"
             )
             self.logger.error(msg=message)
             if raise_on_err:
-                raise exception_class(result=ret, expected=expected)
-        return ret
+                raise exception_class(result=result, expected=expected)
+        return result

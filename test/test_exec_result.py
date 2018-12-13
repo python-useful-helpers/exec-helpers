@@ -55,11 +55,7 @@ class TestExecResult(unittest.TestCase):
             repr(result),
             "{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, "
             "exit_code={exit_code!s})".format(
-                cls=exec_helpers.ExecResult.__name__,
-                cmd=cmd,
-                stdout=(),
-                stderr=(),
-                exit_code=proc_enums.INVALID,
+                cls=exec_helpers.ExecResult.__name__, cmd=cmd, stdout=(), stderr=(), exit_code=proc_enums.INVALID
             ),
         )
         self.assertEqual(
@@ -83,18 +79,10 @@ class TestExecResult(unittest.TestCase):
         with self.assertRaises(exec_helpers.ExecHelperError):
             # noinspection PyStatementEffect
             result["stdout_json"]  # pylint: disable=pointless-statement
-        logger.assert_has_calls(
-            (
-                mock.call.exception(
-                    "{cmd} stdout is not valid json:\n" "{stdout_str!r}\n".format(cmd=cmd, stdout_str="")
-                ),
-            )
-        )
+        logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
         self.assertIsNone(result["stdout_yaml"])
 
-        self.assertEqual(
-            hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID))
-        )
+        self.assertEqual(hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)))
 
     @mock.patch("exec_helpers.exec_result.logger", autospec=True)
     def test_not_implemented(self, logger):
@@ -159,13 +147,7 @@ class TestExecResult(unittest.TestCase):
         with self.assertRaises(exec_helpers.ExecHelperError):
             # noinspection PyStatementEffect
             result.stdout_json  # pylint: disable=pointless-statement
-        logger.assert_has_calls(
-            (
-                mock.call.exception(
-                    "{cmd} stdout is not valid json:\n" "{stdout_str!r}\n".format(cmd=cmd, stdout_str="")
-                ),
-            )
-        )
+        logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
         self.assertIsNone(result["stdout_yaml"])
 
     def test_not_equal(self):

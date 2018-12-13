@@ -8,20 +8,14 @@ install:
 - pip install --upgrade pytest-cov coveralls
 
 _python:
-- &python35
-  name: "Python 3.5"
-  python: 3.5
 - &python36
   name: "Python 3.6"
-  python: 3.6
+  python: "3.6"
 - &python37
   name: "Python 3.7"
-  python: 3.7
+  python: "3.7"
   dist: xenial
   sudo: true
-- &pypy3
-  name: "PyPy3"
-  python: pypy3.5
 
 _helpers:
 - &install_cython pip install --upgrade Cython
@@ -99,25 +93,19 @@ jobs:
 #    - pip install --upgrade pydocstyle
 #    script:
 #    - pydocstyle -v exec_helpers
-#  - <<: *code_style_check
-#    name: "Black formatting"
-#    install:
-#    - *upgrade_python_toolset
-#    - pip install --upgrade black
-#    script:
-#    - black --check exec_helpers
+  - <<: *code_style_check
+    name: "Black formatting"
+    install:
+    - *upgrade_python_toolset
+    - pip install --upgrade black
+    script:
+    - black --check exec_helpers
 
-  - stage: test
-    <<: *python35
   - stage: test
     <<: *python36
   - stage: test
     <<: *python37
-  - stage: test
-    <<: *pypy3
 
-  - <<: *test_cythonized
-    <<: *python35
   - <<: *test_cythonized
     <<: *python36
   - <<: *test_cythonized
@@ -127,16 +115,16 @@ jobs:
     # This prevents job from appearing in test plan unless commit is tagged:
     if: tag IS present
     # Run on pypy to build not cythonized wheel
-    <<: *pypy3
+    <<: *python37
     name: Build universal and cythonized bdist_wheel. Deploy bdist and sdist.
     services:
     - docker
     install:
     - *upgrade_python_toolset
+    - *install_deps
     script:
     - ./tools/run_docker.sh "exec_helpers"
     before_deploy:
-    - pip install -r build_requirements.txt
     - *build_package
     deploy:
     - provider: pypi

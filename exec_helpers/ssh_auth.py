@@ -16,13 +16,13 @@
 
 """SSH client credentials class."""
 
+__all__ = ("SSHAuth",)
+
 import copy
 import logging
 import typing
 
 import paramiko  # type: ignore
-
-__all__ = ("SSHAuth",)
 
 logger = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -65,10 +65,10 @@ class SSHAuth:
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
         """
-        self.__username = username
-        self.__password = password
-        self.__key = key
-        self.__keys = [None]
+        self.__username: typing.Optional[str] = username
+        self.__password: typing.Optional[str] = password
+        self.__key: typing.Optional[paramiko.RSAKey] = key
+        self.__keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [None]
         if key is not None:
             # noinspection PyTypeChecker
             self.__keys.append(key)
@@ -76,8 +76,8 @@ class SSHAuth:
             for k in keys:
                 if k not in self.__keys:
                     self.__keys.append(k)
-        self.__key_filename = key_filename
-        self.__passphrase = passphrase
+        self.__key_filename: typing.Union[typing.List[str], str, None] = key_filename
+        self.__passphrase: typing.Optional[str] = passphrase
 
     @property
     def username(self) -> typing.Optional[str]:
@@ -144,7 +144,7 @@ class SSHAuth:
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
-        kwargs = {"username": self.username, "password": self.__password}  # type: typing.Dict[str, typing.Any]
+        kwargs: typing.Dict[str, typing.Any] = {"username": self.username, "password": self.__password}
         if hostname is not None:
             kwargs["hostname"] = hostname
             kwargs["port"] = port
@@ -157,7 +157,7 @@ class SSHAuth:
             if self.__passphrase is not None:
                 kwargs["passphrase"] = self.__passphrase
 
-        keys = [self.__key]
+        keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [self.__key]
         keys.extend([k for k in self.__keys if k != self.__key])
 
         for key in keys:
@@ -166,7 +166,7 @@ class SSHAuth:
                 client.connect(**kwargs)
                 if self.__key != key:
                     self.__key = key
-                    logger.debug("Main key has been updated, public key is: \n{}".format(self.public_key))
+                    logger.debug("Main key has been updated, public key is: \n%s", self.public_key)
                 return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:
@@ -177,7 +177,7 @@ class SSHAuth:
                     raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
-        msg = "Connection using stored authentication info failed!"
+        msg: str = "Connection using stored authentication info failed!"
         if log:
             logger.exception(msg)
         raise paramiko.AuthenticationException(msg)
@@ -215,8 +215,8 @@ class SSHAuth:
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        _key = None if self.__key is None else "<private for pub: {}>".format(self.public_key)
-        _keys = []  # type: typing.List[typing.Union[str, None]]
+        _key: typing.Optional[str] = None if self.__key is None else f"<private for pub: {self.public_key}>"
+        _keys: typing.List[typing.Union[str, None]] = []
         for k in self.__keys:
             if k == self.__key:
                 continue

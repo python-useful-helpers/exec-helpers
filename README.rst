@@ -46,12 +46,10 @@ Pros:
 
 ::
 
-    Python 3.5
     Python 3.6
     Python 3.7
-    PyPy3 3.5+
 
-.. note:: For Python 2.7 and PyPy please use versions 1.x.x. For python 3.4 use versions 2.x.x
+.. note:: Old pythons: For Python 2.7 and PyPy use versions 1.x.x, python 3.4 use versions 2.x.x, python 3.5 and PyPy 3.5 use versions 3.x.x
 
 This package includes:
 
@@ -125,13 +123,13 @@ Base methods
 ------------
 Main methods are `execute`, `check_call` and `check_stderr` for simple executing, executing and checking return code
 and executing, checking return code and checking for empty stderr output.
-This methods are almost the same for `SSHCleint` and `Subprocess`, except specific flags.
+This methods are almost the same for `SSHClient` and `Subprocess`, except specific flags.
 
 .. note:: By default ALL methods have timeout 1 hour, infinite waiting can be enabled, but it's special case.
 
 .. code-block:: python
 
-    result = helper.execute(
+    result: ExecResult = helper.execute(
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
@@ -141,7 +139,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
 
 .. code-block:: python
 
-    result = helper.check_call(
+    result: ExecResult = helper.check_call(
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
@@ -155,7 +153,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
 
 .. code-block:: python
 
-    result = helper.check_stderr(
+    result: ExecResult = helper.check_stderr(
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
@@ -168,7 +166,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
 
 .. code-block:: python
 
-    result = helper(  # Lazy way: instances are callable and uses `execute`.
+    result: ExecResult = helper(  # Lazy way: instances are callable and uses `execute`.
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
@@ -185,7 +183,7 @@ All regex matched groups will be replaced by `'<*masked*>'`.
 
 .. code-block:: python
 
-    result = helper.execute(
+    result: ExecResult = helper.execute(
         command="AUTH='top_secret_key'; run command",  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: typing.Optional[int]
@@ -227,13 +225,15 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 
 .. code-block:: python
 
-    results = SSHClient.execute_together(
+    results: Dict[Tuple[str, int], ExecResult] = SSHClient.execute_together(
         remotes,  # type: typing.Iterable[SSHClient]
         command,  # type: str
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         # Keyword only:
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        log_mask_re=None,  # type: typing.Optional[str]
         exception_class=ParallelCallProcessError  # typing.Type[ParallelCallProcessError]
     )
     results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
@@ -245,7 +245,7 @@ For execute through SSH host can be used `execute_through_host` method:
 
 .. code-block:: python
 
-    result = client.execute_through_host(
+    result: ExecResult = client.execute_through_host(
         hostname,  # type: str
         command,  # type: str
         auth=None,  # type: typing.Optional[SSHAuth]
@@ -253,6 +253,8 @@ For execute through SSH host can be used `execute_through_host` method:
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         verbose=False,  # type: bool
         # Keyword only:
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        log_mask_re=None,  # type: typing.Optional[str]
         get_pty=False,  # type: bool
         width=80,  # type: int
         height=24  # type: int
@@ -347,7 +349,7 @@ Example:
 .. code-block:: python
 
     async with helper:
-      result = await helper.execute(
+      result: ExecResult = await helper.execute(
           command,  # type: str
           verbose=False,  # type: bool
           timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]

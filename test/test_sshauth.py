@@ -38,7 +38,7 @@ def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
 def get_internal_keys(
     key: typing.Optional[paramiko.RSAKey] = None,
     keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
-    **kwargs
+    **kwargs,
 ):
     int_keys = [None]
     if key is not None:
@@ -113,7 +113,7 @@ def test_001_init_checks(run_parameters) -> None:
     else:
         assert auth.public_key is None
 
-    _key = None if auth.public_key is None else "<private for pub: {}>".format(auth.public_key)
+    _key = None if auth.public_key is None else f"<private for pub: {auth.public_key}>"
     _keys = []
     for k in int_keys:
         if k == key:
