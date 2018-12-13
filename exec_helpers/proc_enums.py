@@ -19,11 +19,11 @@
 Linux signals, Linux & bash return codes.
 """
 
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")
+
 import enum
 import sys
 import typing
-
-__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")
 
 
 @enum.unique
@@ -64,7 +64,7 @@ class SigNum(enum.IntEnum):
 
     def __str__(self) -> str:
         """Representation for logs."""
-        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)  # pragma: no cover
+        return f"{self.name}<{self.value:d}(0x{self.value:02X})>"  # pragma: no cover
 
 
 @enum.unique
@@ -166,11 +166,11 @@ class ExitCodes(int, enum.Enum):
 
     def __str__(self) -> str:
         """Representation for logs."""
-        return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(self=self)
+        return f"{self.name}<{self.value:d}(0x{self.value:02X})>"
 
 
-EXPECTED = 0 if "win32" == sys.platform else ExitCodes.EX_OK
-INVALID = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
+EXPECTED: typing.Union[int, ExitCodes] = 0 if "win32" == sys.platform else ExitCodes.EX_OK
+INVALID: typing.Union[int, ExitCodes] = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
 
 
 def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]:
@@ -184,8 +184,9 @@ def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, E
 
 def exit_codes_to_enums(
     codes: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]] = None
-) -> typing.Iterable[typing.Union[int, ExitCodes]]:
+) -> typing.Tuple[typing.Union[int, ExitCodes], ...]:
     """Convert integer exit codes to enums."""
     if codes is None:
+        # noinspection PyRedundantParentheses
         return (EXPECTED,)
     return tuple(exit_code_to_enum(code) for code in codes)

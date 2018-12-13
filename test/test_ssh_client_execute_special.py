@@ -93,7 +93,7 @@ def chan_makefile():
                 self.stdout = FakeFileStream(*stdout_src)
                 self.stdout.channel = self.channel
                 return self.stdout
-            raise ValueError("Unexpected flags: {!r}".format(flags))
+            raise ValueError(f"Unexpected flags: {flags!r}")
 
     return MkFile()
 
@@ -152,10 +152,10 @@ def test_001_mask_command(ssh, get_logger) -> None:
     cmd = "USE='secret=secret_pass' do task"
     log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
     masked_cmd = "USE='secret=<*masked*>' do task"
-    cmd_log = "Executing command:\n{!r}\n".format(masked_cmd)
-    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, proc_enums.EXPECTED)
+    cmd_log = f"Executing command:\n{masked_cmd!r}\n"
+    done_log = f"Command {masked_cmd!r} exit code: {proc_enums.EXPECTED!s}"
 
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     res = ssh.execute(cmd, log_mask_re=log_mask_re)
     assert res.cmd == masked_cmd
     assert log.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=cmd_log)
@@ -166,10 +166,10 @@ def test_002_mask_command_global(ssh, get_logger) -> None:
     cmd = "USE='secret=secret_pass' do task"
     log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
     masked_cmd = "USE='secret=<*masked*>' do task"
-    cmd_log = "Executing command:\n{!r}\n".format(masked_cmd)
-    done_log = "Command {!r} exit code: {!s}".format(masked_cmd, proc_enums.EXPECTED)
+    cmd_log = f"Executing command:\n{masked_cmd!r}\n"
+    done_log = f"Command {masked_cmd!r} exit code: {proc_enums.EXPECTED!s}"
 
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
 
     ssh.log_mask_re = log_mask_re
     res = ssh.execute(cmd)
@@ -179,10 +179,10 @@ def test_002_mask_command_global(ssh, get_logger) -> None:
 
 
 def test_003_execute_verbose(ssh, get_logger) -> None:
-    cmd_log = "Executing command:\n{!r}\n".format(command)
-    done_log = "Command {!r} exit code: {!s}".format(command, proc_enums.EXPECTED)
+    cmd_log = f"Executing command:\n{command!r}\n"
+    done_log = f"Command {command!r} exit code: {proc_enums.EXPECTED!s}"
 
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     ssh.execute(command, verbose=True)
 
     assert log.mock_calls[0] == mock.call.log(level=logging.INFO, msg=cmd_log)
@@ -199,7 +199,7 @@ def test_005_execute_timeout_fail(ssh, ssh_transport_channel, exec_result) -> No
     ssh_transport_channel.status_event = threading.Event()
     with pytest.raises(exec_helpers.ExecHelperTimeoutError) as e:
         ssh.execute(command, timeout=0.01)
-    exc = e.value  # type: exec_helpers.ExecHelperTimeoutError
+    exc: exec_helpers.ExecHelperTimeoutError = e.value
     assert exc.timeout == 0.01
     assert exc.cmd == command
     assert exc.stdout == exec_result.stdout_str
@@ -212,7 +212,7 @@ def test_006_execute_together_exceptions(ssh, ssh2, mocker) -> None:
 
     with pytest.raises(exec_helpers.ParallelCallExceptions) as e:
         ssh.execute_together(remotes=remotes, command=command)
-    exc = e.value  # type: exec_helpers.ParallelCallExceptions
+    exc: exec_helpers.ParallelCallExceptions = e.value
     assert list(sorted(exc.exceptions)) == [(host, port), (host2, port)]
     for exception in exc.exceptions.values():
         assert isinstance(exception, RuntimeError)

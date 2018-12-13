@@ -16,14 +16,14 @@
 
 """SSH client helper based on Paramiko. Extended API helpers."""
 
+__all__ = ("SSHClient",)
+
 import logging
 import os
 import posixpath
 
 
 from ._ssh_client_base import SSHClientBase
-
-__all__ = ("SSHClient",)
 
 logger = logging.getLogger(__name__)
 
@@ -73,13 +73,13 @@ class SSHClient(SSHClientBase):
             return
 
         for rootdir, _, files in os.walk(source):
-            targetdir = os.path.normpath(os.path.join(target, os.path.relpath(rootdir, source))).replace("\\", "/")
+            targetdir: str = os.path.normpath(os.path.join(target, os.path.relpath(rootdir, source))).replace("\\", "/")
 
             self.mkdir(targetdir)
 
             for entry in files:
-                local_path = os.path.normpath(os.path.join(rootdir, entry))
-                remote_path = posixpath.join(targetdir, entry)
+                local_path: str = os.path.normpath(os.path.join(rootdir, entry))
+                remote_path: str = posixpath.join(targetdir, entry)
                 if self.exists(remote_path):
                     self._sftp.unlink(remote_path)
                 self._sftp.put(local_path, remote_path)

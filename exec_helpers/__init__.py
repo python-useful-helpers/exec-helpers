@@ -14,7 +14,24 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
-import typing
+__all__ = (
+    "ExecHelperError",
+    "ExecCalledProcessError",
+    "CalledProcessError",
+    "ParallelCallExceptions",
+    "ParallelCallProcessError",
+    "ExecHelperNoKillError",
+    "ExecHelperTimeoutError",
+    "ExecHelper",
+    "SSHClient",
+    "SshExecuteAsyncResult",
+    "SSHAuth",
+    "Subprocess",
+    "SubprocessExecuteAsyncResult",
+    "ExitCodes",
+    "ExecResult",
+    "async_api",
+)
 
 import pkg_resources
 
@@ -38,27 +55,8 @@ from ._ssh_client_base import SshExecuteAsyncResult
 from .subprocess_runner import Subprocess, SubprocessExecuteAsyncResult  # nosec  # Expected
 from . import async_api
 
-__all__ = (
-    "ExecHelperError",
-    "ExecCalledProcessError",
-    "CalledProcessError",
-    "ParallelCallExceptions",
-    "ParallelCallProcessError",
-    "ExecHelperNoKillError",
-    "ExecHelperTimeoutError",
-    "ExecHelper",
-    "SSHClient",
-    "SshExecuteAsyncResult",
-    "SSHAuth",
-    "Subprocess",
-    "SubprocessExecuteAsyncResult",
-    "ExitCodes",
-    "ExecResult",
-    "async_api",
-)  # type: typing.Tuple[str, ...]
-
 try:  # pragma: no cover
-    __version__ = pkg_resources.get_distribution(__name__).version
+    __version__: str = pkg_resources.get_distribution(__name__).version
 except pkg_resources.DistributionNotFound:  # pragma: no cover
     # package is not installed, try to get from SCM
     try:

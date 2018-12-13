@@ -145,7 +145,7 @@ def popen(mocker, run_parameters):
         ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
         stdout: typing.Optional[typing.Tuple] = None,
         stderr: typing.Optional[typing.Tuple] = None,
-        **kwargs
+        **kwargs,
     ):
         """Parametrized code."""
         proc = mock.Mock()
@@ -218,7 +218,7 @@ def test_001_execute_async(popen, logger, run_parameters) -> None:
         cwd=run_parameters.get("cwd", None),
         env=run_parameters.get("env", None),
         universal_newlines=False,
-        **_subprocess_helpers.subprocess_kw
+        **_subprocess_helpers.subprocess_kw,
     )
 
     if stdin is not None:
@@ -258,7 +258,7 @@ def test_004_check_call(execute, exec_result, logger) -> None:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             runner.check_call(command, stdin=exec_result.stdin)
 
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
         assert exc.stdout == exec_result.stdout_str
@@ -267,9 +267,8 @@ def test_004_check_call(execute, exec_result, logger) -> None:
         assert exc.expected == (proc_enums.EXPECTED,)
 
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=exc.result, expected=exc.expected
-            )
+            msg=f"Command {exc.result.cmd!r} returned exit code {exc.result.exit_code!s} "
+            f"while expected {exc.expected!r}"
         )
 
 
@@ -279,10 +278,9 @@ def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
     assert res == exec_result
 
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
+        expected = (proc_enums.EXPECTED,)
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=res, expected=(proc_enums.EXPECTED,)
-            )
+            msg=f"Command {res.cmd!r} returned exit code {res.exit_code!s} while expected {expected!r}"
         )
 
 
@@ -298,7 +296,7 @@ def test_007_check_stderr(execute, exec_result, logger) -> None:
     else:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code])
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.result == exec_result
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
@@ -307,8 +305,8 @@ def test_007_check_stderr(execute, exec_result, logger) -> None:
         assert exc.result == exec_result
 
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} output contains STDERR while not expected\n"
-            "\texit code: {result.exit_code!s}".format(result=exc.result)
+            msg=f"Command {exc.result.cmd!r} output contains STDERR while not expected\n"
+            f"\texit code: {exc.result.exit_code!s}"
         )
 
 

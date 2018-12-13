@@ -91,7 +91,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         log_mask_re: typing.Optional[str] = None,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -137,29 +137,29 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                 async_result.stderr.close()
 
         # Store command with hidden data
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        stdout_future = poll_stdout()
+        stdout_future: "concurrent.futures.Future[None]" = poll_stdout()
         # noinspection PyNoneFunctionAssignment
-        stderr_future = poll_stderr()
+        stderr_future: "concurrent.futures.Future[None]" = poll_stderr()
         # pylint: enable=assignment-from-no-return
 
         try:
-            exit_code = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
+            exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
             concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
             result.exit_code = exit_code
             return result
         except subprocess.TimeoutExpired:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_code = async_result.interface.poll()
-            if exit_code is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
-            result.exit_code = exit_code
+            exit_signal: typing.Optional[int] = async_result.interface.poll()
+            if exit_signal is None:
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+            result.exit_code = exit_signal
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
@@ -167,13 +167,12 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             if not_done:
                 if async_result.interface.returncode:
                     self.logger.critical(
-                        "Process {!s} was closed with exit code {!s}, but FIFO buffers are still open".format(
-                            command, async_result.interface.returncode
-                        )
+                        f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
+                        f"but FIFO buffers are still open"
                     )
             close_streams()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
@@ -191,7 +190,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         env: typing.Optional[
             typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
         ] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
 
@@ -231,7 +230,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
@@ -248,13 +247,13 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             cwd=cwd,
             env=env,
             universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw
+            **_subprocess_helpers.subprocess_kw,
         )
 
         if stdin is None:
-            process_stdin = process.stdin
+            process_stdin: typing.Optional[typing.IO[typing.Any]] = process.stdin
         else:
-            stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
+            stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
             try:
                 process.stdin.write(stdin_str)
             except OSError as exc:
@@ -278,6 +277,6 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                     process.kill()
                     raise
 
-            process_stdin = None  # type: ignore
+            process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)

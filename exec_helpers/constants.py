@@ -14,9 +14,9 @@
 
 """Global constants."""
 
-MINUTE = 60
-HOUR = 60 * MINUTE
+MINUTE: int = 60
+HOUR: int = 60 * MINUTE
 
 
 # Default command timeout
-DEFAULT_TIMEOUT = 1 * HOUR
+DEFAULT_TIMEOUT: int = 1 * HOUR

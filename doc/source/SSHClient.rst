@@ -233,7 +233,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=1*60*60, *, get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=1*60*60, *, stdin=None, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -249,6 +249,11 @@ API: SSHClient and SSHAuth.
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Union[int, float, None]``
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param get_pty: open PTY on target machine
         :type get_pty: ``bool``
         :param width: PTY width
@@ -261,9 +266,9 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
 
-    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, exception_class=ParallelCallProcessError, **kwargs)
+    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, stdin=None, log_mask_re="", exception_class=ParallelCallProcessError, **kwargs)
 
         Execute command on multiple remotes in async mode.
 
@@ -277,6 +282,11 @@ API: SSHClient and SSHAuth.
         :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception to raise on error. Mandatory subclass of ParallelCallProcessError
         :type exception_class: typing.Type[ParallelCallProcessError]
         :return: dictionary {(hostname, port): result}
@@ -287,6 +297,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
 
     .. py:method:: open(path, mode='r')
 

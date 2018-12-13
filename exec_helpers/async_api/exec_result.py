@@ -17,13 +17,13 @@
 .. versionadded:: 3.0.0
 """
 
+__all__ = ("ExecResult",)
+
 import logging
 import typing
 
 
 from exec_helpers import exec_result
-
-__all__ = ("ExecResult",)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class ExecResult(exec_result.ExecResult):
     async def _poll_stream(  # type: ignore
         src: typing.AsyncIterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
-        dst = []
+        dst: typing.List[bytes] = []
         try:
             async for line in src:
                 dst.append(line)

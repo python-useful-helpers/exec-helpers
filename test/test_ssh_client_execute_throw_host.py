@@ -89,7 +89,7 @@ def chan_makefile():
                 self.stdout = FakeFileStream(*stdout_src)
                 self.stdout.channel = self.channel
                 return self.stdout
-            raise ValueError("Unexpected flags: {!r}".format(flags))
+            raise ValueError(f"Unexpected flags: {flags!r}")
 
     return MkFile()
 
@@ -200,5 +200,5 @@ def test_05_execute_closed_stdin(ssh, ssh_transport_channel, get_logger) -> None
     ssh_transport_channel.closed = True
 
     ssh.execute_through_host(target, cmd, stdin=stdin, get_pty=True)
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     log.warning.assert_called_once_with("STDIN Send failed: closed channel")

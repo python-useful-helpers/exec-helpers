@@ -17,11 +17,7 @@
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
 import platform
-
-# pylint: disable=unused-import
-import typing  # noqa: F401
-
-# pylint: enable=unused-import
+import typing
 
 import psutil  # type: ignore
 
@@ -47,7 +43,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
             pass
 
     parent = psutil.Process(pid)
-    children = parent.children(recursive=True)
+    children: typing.List[psutil.Process] = parent.children(recursive=True)
     for child in children:  # type: psutil.Process
         safe_stop(child)  # SIGTERM to allow cleanup
     _, alive = psutil.wait_procs(children, timeout=1)
@@ -64,7 +60,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 # Subprocess extra arguments.
 # Flags from:
 # https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
-subprocess_kw = {}  # type: typing.Dict[str, typing.Any]
+subprocess_kw: typing.Dict[str, typing.Any] = {}
 if "Windows" == platform.system():  # pragma: no cover
     subprocess_kw["creationflags"] = 0x00000200
 else:  # pragma: no cover

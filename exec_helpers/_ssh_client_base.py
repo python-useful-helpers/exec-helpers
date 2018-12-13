@@ -118,7 +118,7 @@ class _MemorizedSSH(abc.ABCMeta):
       duplicates is possible.
     """
 
-    __cache = {}  # type: typing.Dict[typing.Tuple[str, int], SSHClientBase]
+    __cache: typing.Dict[typing.Tuple[str, int], "SSHClientBase"] = {}
 
     @classmethod
     def __prepare__(  # pylint: disable=unused-argument
@@ -164,7 +164,7 @@ class _MemorizedSSH(abc.ABCMeta):
             if auth is None:
                 auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
             if hash((cls, host, port, auth)) == hash(cls.__cache[key]):
-                ssh = cls.__cache[key]
+                ssh: "SSHClientBase" = cls.__cache[key]
                 # noinspection PyBroadException
                 try:
                     ssh.execute("cd ~", timeout=5)
@@ -232,9 +232,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             :param enforce: sudo mode for context manager
             :type enforce: typing.Optional[bool]
             """
-            self.__ssh = ssh
-            self.__sudo_status = ssh.sudo_mode
-            self.__enforce = enforce
+            self.__ssh: "SSHClientBase" = ssh
+            self.__sudo_status: bool = ssh.sudo_mode
+            self.__enforce: typing.Optional[bool] = enforce
 
         def __enter__(self) -> None:
             self.__sudo_status = self.__ssh.sudo_mode
@@ -258,9 +258,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             :type enforce: bool
             :param enforce: Keep connection alive after context manager exit
             """
-            self.__ssh = ssh
-            self.__keepalive_status = ssh.keepalive_mode
-            self.__enforce = enforce
+            self.__ssh: "SSHClientBase" = ssh
+            self.__keepalive_status: bool = ssh.keepalive_mode
+            self.__enforce: typing.Optional[bool] = enforce
 
         def __enter__(self) -> None:
             self.__keepalive_status = self.__ssh.keepalive_mode
@@ -306,19 +306,19 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+            logger=logging.getLogger(self.__class__.__name__).getChild(f"{host}:{port}")
         )
 
-        self.__hostname = host
-        self.__port = port
+        self.__hostname: str = host
+        self.__port: int = port
 
         self.__sudo_mode = False
         self.__keepalive_mode = True
-        self.__verbose = verbose
+        self.__verbose: bool = verbose
 
         self.__ssh = paramiko.SSHClient()
         self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.__sftp = None
+        self.__sftp: typing.Optional[paramiko.SFTPClient] = None
 
         if auth is None:
             self.__auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
@@ -460,7 +460,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         try:
             self.__ssh.close()
         except BaseException as e:  # pragma: no cover
-            self.logger.debug("Exception in {self!s} destructor call: {exc}".format(self=self, exc=e))
+            self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
@@ -553,7 +553,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> SshExecuteAsyncResult:
         """Execute command in async mode and return channel with IO objects.
 
@@ -596,27 +596,27 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
-        chan = self._ssh.get_transport().open_session()
+        chan: paramiko.Channel = self._ssh.get_transport().open_session()
 
         if get_pty:
             # Open PTY
             chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
-        _stdin = chan.makefile("wb")  # type: paramiko.ChannelFile
-        stdout = chan.makefile("rb") if open_stdout else None
-        stderr = chan.makefile_stderr("rb") if open_stderr else None
+        _stdin: paramiko.ChannelFile = chan.makefile("wb")
+        stdout: paramiko.ChannelFile = chan.makefile("rb")
+        stderr: typing.Optional[paramiko.ChannelFile] = chan.makefile_stderr("rb") if open_stderr else None
 
-        cmd = "{command}\n".format(command=command)
+        cmd = f"{command}\n"
         started = datetime.datetime.utcnow()
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
-            cmd = 'sudo -S bash -c \'eval "$(base64 -d <(echo "{0}"))"\''.format(encoded_cmd)
+            cmd = f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
                 # noinspection PyTypeChecker
@@ -627,14 +627,20 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         if stdin is not None:
             if not _stdin.channel.closed:
-                stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
+                stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
 
                 _stdin.write(stdin_str)
                 _stdin.flush()
             else:
                 self.logger.warning("STDIN Send failed: closed channel")
 
-        return SshExecuteAsyncResult(chan, _stdin, stderr, stdout, started)
+        if open_stdout:
+            res_stdout = stdout
+        else:
+            stdout.close()
+            res_stdout = None
+
+        return SshExecuteAsyncResult(interface=chan, stdin=_stdin, stderr=stderr, stdout=res_stdout, started=started)
 
     def _exec_command(  # type: ignore
         self,
@@ -645,7 +651,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         log_mask_re: typing.Optional[str] = None,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
@@ -691,14 +697,14 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             result.exit_code = async_result.interface.exit_status
 
         # channel.status_event.wait(timeout)
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        future = poll_pipes()
+        future: "concurrent.futures.Future[None]" = poll_pipes()
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
@@ -712,7 +718,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         async_result.interface.status_event.set()
         future.cancel()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
@@ -725,10 +731,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        log_mask_re: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
-        **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command on remote host through currently connected host.
 
@@ -744,14 +751,17 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param get_pty: open PTY on target machine
         :type get_pty: bool
         :param width: PTY width
         :type width: int
         :param height: PTY height
         :type height: int
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
         :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
@@ -759,8 +769,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
@@ -777,24 +788,23 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         auth.connect(transport)
 
         # open ssh session
-        channel = transport.open_session()
+        channel: paramiko.Channel = transport.open_session()
         if get_pty:
             # Open PTY
             channel.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
         # Make proxy objects for read
-        _stdin = channel.makefile("wb")  # type: paramiko.ChannelFile
-        stdout = channel.makefile("rb")  # type: paramiko.ChannelFile
-        stderr = channel.makefile_stderr("rb")  # type: paramiko.ChannelFile
+        _stdin: paramiko.ChannelFile = channel.makefile("wb")
+        stdout: paramiko.ChannelFile = channel.makefile("rb")
+        stderr: paramiko.ChannelFile = channel.makefile_stderr("rb")
 
         started = datetime.datetime.utcnow()
 
         channel.exec_command(command)  # nosec  # Sanitize on caller side
 
-        stdin = kwargs.get("stdin", None)
         if stdin is not None:
             if not _stdin.channel.closed:
-                stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
+                stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
 
                 _stdin.write(stdin_str)
                 _stdin.flush()
@@ -802,16 +812,12 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                 self.logger.warning("STDIN Send failed: closed channel")
 
         async_result = SshExecuteAsyncResult(
-            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started)
+            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started
+        )
 
         # noinspection PyDictCreation
-        result = self._exec_command(
-            command,
-            async_result=async_result,
-            timeout=timeout,
-            verbose=verbose,
-            log_mask_re=kwargs.get("log_mask_re", None),
-            stdin=stdin,
+        result: exec_result.ExecResult = self._exec_command(
+            command, async_result=async_result, timeout=timeout, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin
         )
 
         intermediate_channel.close()
@@ -827,8 +833,10 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        log_mask_re: typing.Optional[str] = None,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
 
@@ -842,6 +850,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError
         :type exception_class: typing.Type[exceptions.ParallelCallProcessError]
         :param kwargs: additional parameters for execute_async call.
@@ -855,21 +868,24 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
 
         @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call."""
-            async_result = remote.execute_async(command, **kwargs)  # type: SshExecuteAsyncResult
+            async_result: SshExecuteAsyncResult = remote.execute_async(
+                command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
+            )
 
             async_result.interface.status_event.wait(timeout)
             exit_code = async_result.interface.recv_exit_status()
 
             # pylint: disable=protected-access
-            cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
+            cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=kwargs.get("stdin", None))
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code
@@ -877,12 +893,16 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             async_result.interface.close()
             return res
 
-        expected = proc_enums.exit_codes_to_enums(expected)
+        prep_expected: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
+            expected
+        )
 
-        futures = {remote: get_result(remote) for remote in set(remotes)}  # Use distinct remotes
-        results = {}
-        errors = {}
-        raised_exceptions = {}
+        futures: typing.Dict["SSHClientBase", "concurrent.futures.Future[exec_result.ExecResult]"] = {
+            remote: get_result(remote) for remote in set(remotes)
+        }  # Use distinct remotes
+        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
+        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
+        raised_exceptions: typing.Dict[typing.Tuple[str, int], Exception] = {}
 
         _, not_done = concurrent.futures.wait(list(futures.values()), timeout=timeout)
 
@@ -893,15 +913,15 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             try:
                 result = future.result()
                 results[(remote.hostname, remote.port)] = result
-                if result.exit_code not in expected:
+                if result.exit_code not in prep_expected:
                     errors[(remote.hostname, remote.port)] = result
             except Exception as e:
                 raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise
-            raise exceptions.ParallelCallExceptions(command, raised_exceptions, errors, results, expected=expected)
+            raise exceptions.ParallelCallExceptions(command, raised_exceptions, errors, results, expected=prep_expected)
         if errors and raise_on_err:
-            raise exception_class(command, errors, results, expected=expected)
+            raise exception_class(command, errors, results, expected=prep_expected)
         return results
 
     def open(self, path: str, mode: str = "r") -> paramiko.SFTPFile:
@@ -961,7 +981,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :rtype: bool
         """
         try:
-            attrs = self._sftp.lstat(path)
+            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(path)
             return attrs.st_mode & stat.S_IFREG != 0  # type: ignore
         except IOError:
             return False
@@ -975,7 +995,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :rtype: bool
         """
         try:
-            attrs = self._sftp.lstat(path)
+            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(path)
             return attrs.st_mode & stat.S_IFDIR != 0  # type: ignore
         except IOError:
             return False

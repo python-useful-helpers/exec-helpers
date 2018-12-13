@@ -173,7 +173,7 @@ def chan_makefile(run_parameters):
             elif "rb" == flags:
                 self.stdout = FakeFileStream(*run_parameters["stdout"])
                 return self.stdout
-            raise ValueError("Unexpected flags: {!r}".format(flags))
+            raise ValueError(f"Unexpected flags: {flags!r}")
 
     return MkFile()
 
@@ -289,7 +289,10 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     assert isinstance(res, exec_helpers.SshExecuteAsyncResult)
     assert res.interface is ssh_transport_channel
     assert res.stdin is chan_makefile.stdin
-    assert res.stdout is chan_makefile.stdout
+    if open_stdout:
+        assert res.stdout is chan_makefile.stdout
+    else:
+        assert res.stdout is None
 
     paramiko_ssh_client.assert_has_calls(
         (
@@ -313,7 +316,7 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
         )
     if open_stderr:
         transport_calls.append(mock.call.makefile_stderr("rb"))
-    transport_calls.append(mock.call.exec_command("{}\n".format(command)))
+    transport_calls.append(mock.call.exec_command(f"{command}\n"))
 
     ssh_transport_channel.assert_has_calls(transport_calls)
 
@@ -343,7 +346,7 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     if stdin:
         res.stdin.write.assert_called_with(stdin.encode("utf-8"))
         res.stdin.flush.assert_called_once()
-    log = get_logger(ssh.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     log.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
 
 
@@ -361,7 +364,7 @@ def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters) ->
         stdin=run_parameters["stdin"],
         open_stdout=run_parameters["open_stdout"],
         open_stderr=run_parameters["open_stderr"],
-        **kwargs
+        **kwargs,
     )
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
@@ -384,7 +387,7 @@ def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
                 stdin=run_parameters["stdin"],
                 open_stdout=run_parameters["open_stdout"],
                 open_stderr=run_parameters["open_stderr"],
-                **kwargs
+                **kwargs,
             )
         lock.acquire_assert_called_once()
         lock.release_assert_called_once()
@@ -395,7 +398,7 @@ def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
 def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
     mocker.patch("exec_helpers.ssh_client.SSHClient.execute", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild("{host}:{port}".format(host=host, port=port))
+    log = ssh_logger.getChild(f"{host}:{port}")
 
     if exec_result.exit_code == exec_helpers.ExitCodes.EX_OK:
         assert ssh.check_call(command, stdin=exec_result.stdin) == exec_result
@@ -403,7 +406,7 @@ def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             ssh.check_call(command, stdin=exec_result.stdin)
 
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
         assert exc.stdout == exec_result.stdout_str
@@ -412,25 +415,23 @@ def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
         assert exc.expected == (proc_enums.EXPECTED,)
 
         assert log.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=exc.result, expected=exc.expected
-            )
+            msg=f"Command {exc.result.cmd!r} returned exit code {exc.result.exit_code!s} "
+            f"while expected {exc.expected!r}"
         )
 
 
 def test_005_check_call_no_raise(ssh, exec_result, get_logger, mocker) -> None:
     mocker.patch("exec_helpers.ssh_client.SSHClient.execute", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild("{host}:{port}".format(host=host, port=port))
+    log = ssh_logger.getChild(f"{host}:{port}")
 
     res = ssh.check_call(command, stdin=exec_result.stdin, raise_on_err=False)
     assert res == exec_result
+    expected = (proc_enums.EXPECTED,)
 
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
         assert log.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=res, expected=(proc_enums.EXPECTED,)
-            )
+            msg=f"Command {res.cmd!r} returned exit code {res.exit_code!s} while expected {expected!r}"
         )
 
 
@@ -442,14 +443,14 @@ def test_006_check_call_expect(ssh, exec_result, mocker) -> None:
 def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
     mocker.patch("exec_helpers.ssh_client.SSHClient.check_call", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild("{host}:{port}".format(host=host, port=port))
+    log = ssh_logger.getChild(f"{host}:{port}")
 
     if not exec_result.stderr:
         assert ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
     else:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code])
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.result == exec_result
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
@@ -458,8 +459,8 @@ def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
         assert exc.result == exec_result
 
         assert log.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} output contains STDERR while not expected\n"
-            "\texit code: {result.exit_code!s}".format(result=exc.result)
+            msg=f"Command {exc.result.cmd!r} output contains STDERR while not expected\n"
+            f"\texit code: {exc.result.exit_code!s}"
         )
 
 
@@ -481,15 +482,15 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
         )
         execute_async.assert_has_calls(
             (
-                mock.call(command, stdin=run_parameters.get("stdin", None)),
-                mock.call(command, stdin=run_parameters.get("stdin", None)),
+                mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
+                mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
             )
         )
         assert results == {(host, port): exec_result, (host2, port): exec_result}
     else:
         with pytest.raises(exec_helpers.ParallelCallProcessError) as e:
             exec_helpers.SSHClient.execute_together(remotes=remotes, command=command)
-        exc = e.value  # type: exec_helpers.ParallelCallProcessError
+        exc: exec_helpers.ParallelCallProcessError = e.value
         assert exc.cmd == command
         assert exc.expected == (proc_enums.EXPECTED,)
         assert exc.results == {(host, port): exec_result, (host2, port): exec_result}
@@ -503,8 +504,8 @@ def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, ru
     )
     execute_async.assert_has_calls(
         (
-            mock.call(command, stdin=run_parameters.get("stdin", None)),
-            mock.call(command, stdin=run_parameters.get("stdin", None)),
+            mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
+            mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
         )
     )
     assert results == {(host, port): exec_result, (host2, port): exec_result}
@@ -524,7 +525,7 @@ def test_011_call(ssh, ssh_transport_channel, exec_result, run_parameters) -> No
         stdin=run_parameters["stdin"],
         open_stdout=run_parameters["open_stdout"],
         open_stderr=run_parameters["open_stderr"],
-        **kwargs
+        **kwargs,
     )
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result

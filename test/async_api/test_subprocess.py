@@ -155,7 +155,7 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         stdout: typing.Optional[typing.Tuple] = None,
         stderr: typing.Optional[typing.Tuple] = None,
         stdin: typing.Optional[typing.Union[str, bytes, bytearray]] = None,
-        **kwargs
+        **kwargs,
     ):
         """Parametrized code."""
         proc = asynctest.CoroutineMock()
@@ -236,7 +236,7 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
         cwd=run_parameters.get("cwd", None),
         env=run_parameters.get("env", None),
         universal_newlines=False,
-        **_subprocess_helpers.subprocess_kw
+        **_subprocess_helpers.subprocess_kw,
     )
 
     if stdin is not None:
@@ -251,7 +251,7 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
     assert isinstance(res, exec_helpers.async_api.ExecResult)
     assert res == exec_result
     assert logger.mock_calls[-1] == mock.call.log(
-        level=logging.DEBUG, msg="Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=res)
+        level=logging.DEBUG, msg=f"Command {res.cmd!r} exit code: {res.exit_code!s}"
     )
 
 
@@ -279,7 +279,7 @@ async def test_004_check_call(execute, exec_result, logger) -> None:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             await runner.check_call(command, stdin=exec_result.stdin)
 
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
         assert exc.stdout == exec_result.stdout_str
@@ -288,9 +288,8 @@ async def test_004_check_call(execute, exec_result, logger) -> None:
         assert exc.expected == (proc_enums.EXPECTED,)
 
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=exc.result, expected=exc.expected
-            )
+            msg=f"Command {exc.result.cmd!r} returned exit code {exc.result.exit_code!s}"
+            f" while expected {exc.expected!r}"
         )
 
 
@@ -298,12 +297,11 @@ async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
     runner = exec_helpers.async_api.Subprocess()
     res = await runner.check_call(command, stdin=exec_result.stdin, raise_on_err=False)
     assert res == exec_result
+    expected = (proc_enums.EXPECTED,)
 
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} returned exit code {result.exit_code!s} while expected {expected!r}".format(
-                result=res, expected=(proc_enums.EXPECTED,)
-            )
+            msg=f"Command {res.cmd!r} returned exit code {res.exit_code!s} while expected {expected!r}"
         )
 
 
@@ -322,7 +320,7 @@ async def test_007_check_stderr(execute, exec_result, logger) -> None:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
             await runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code])
 
-        exc = e.value  # type: exec_helpers.CalledProcessError
+        exc: exec_helpers.CalledProcessError = e.value
         assert exc.result == exec_result
         assert exc.cmd == exec_result.cmd
         assert exc.returncode == exec_result.exit_code
@@ -331,8 +329,8 @@ async def test_007_check_stderr(execute, exec_result, logger) -> None:
         assert exc.result == exec_result
 
         assert logger.mock_calls[-1] == mock.call.error(
-            msg="Command {result.cmd!r} output contains STDERR while not expected\n"
-            "\texit code: {result.exit_code!s}".format(result=exc.result)
+            msg=f"Command {exc.result.cmd!r} output contains STDERR while not expected\n"
+            f"\texit code: {exc.result.exit_code!s}"
         )
 
 
@@ -352,5 +350,5 @@ async def test_009_call(create_subprocess_shell, logger, exec_result, run_parame
     assert isinstance(res, exec_helpers.async_api.ExecResult)
     assert res == exec_result
     assert logger.mock_calls[-1] == mock.call.log(
-        level=logging.DEBUG, msg="Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=res)
+        level=logging.DEBUG, msg=f"Command {res.cmd!r} exit code: {res.exit_code!s}"
     )

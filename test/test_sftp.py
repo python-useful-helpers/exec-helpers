@@ -173,7 +173,7 @@ class TestSftp(unittest.TestCase):
         # noinspection PyTypeChecker
         ssh.mkdir(dst)
         exists.assert_called_once_with(dst)
-        execute.assert_called_once_with("mkdir -p {}\n".format(escaped_dst))
+        execute.assert_called_once_with(f"mkdir -p {escaped_dst}\n")
 
         # Path exists
         exists.reset_mock()
@@ -196,7 +196,7 @@ class TestSftp(unittest.TestCase):
         # Path not exists
         # noinspection PyTypeChecker
         ssh.rm_rf(dst)
-        execute.assert_called_once_with("rm -rf {}".format(dst))
+        execute.assert_called_once_with(f"rm -rf {dst}")
 
     def test_open(self, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
