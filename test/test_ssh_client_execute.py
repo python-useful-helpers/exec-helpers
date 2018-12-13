@@ -289,7 +289,10 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     assert isinstance(res, exec_helpers.SshExecuteAsyncResult)
     assert res.interface is ssh_transport_channel
     assert res.stdin is chan_makefile.stdin
-    assert res.stdout is chan_makefile.stdout
+    if open_stdout:
+        assert res.stdout is chan_makefile.stdout
+    else:
+        assert res.stdout is None
 
     paramiko_ssh_client.assert_has_calls(
         (
@@ -481,8 +484,8 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
         )
         execute_async.assert_has_calls(
             (
-                mock.call(command, stdin=run_parameters.get("stdin", None)),
-                mock.call(command, stdin=run_parameters.get("stdin", None)),
+                mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
+                mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
             )
         )
         assert results == {(host, port): exec_result, (host2, port): exec_result}
@@ -503,8 +506,8 @@ def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, ru
     )
     execute_async.assert_has_calls(
         (
-            mock.call(command, stdin=run_parameters.get("stdin", None)),
-            mock.call(command, stdin=run_parameters.get("stdin", None)),
+            mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
+            mock.call(command, stdin=run_parameters.get("stdin", None), log_mask_re=None),
         )
     )
     assert results == {(host, port): exec_result, (host2, port): exec_result}
