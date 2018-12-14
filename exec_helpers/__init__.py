@@ -56,7 +56,7 @@ from .subprocess_runner import Subprocess, SubprocessExecuteAsyncResult  # nosec
 from . import async_api
 
 try:  # pragma: no cover
-    __version__: str = pkg_resources.get_distribution(__name__).version
+    __version__ = pkg_resources.get_distribution(__name__).version  # type: str
 except pkg_resources.DistributionNotFound:  # pragma: no cover
     # package is not installed, try to get from SCM
     try:
