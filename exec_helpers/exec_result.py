@@ -58,6 +58,7 @@ class ExecResult:
         stdout: typing.Optional[typing.Iterable[bytes]] = None,
         stderr: typing.Optional[typing.Iterable[bytes]] = None,
         exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID,
+        *,
         started: typing.Optional[datetime.datetime] = None,
     ) -> None:
         """Command execution result.
