@@ -144,7 +144,7 @@ class ExecResult:
 
         This will block future object changes.
 
-        .. versionadded:: 4.0.0
+        .. versionadded:: 3.5.0
         """
         if self.timestamp is None:
             self.__timestamp = datetime.datetime.utcnow()
@@ -386,7 +386,7 @@ class ExecResult:
     def started(self) -> typing.Optional[datetime.datetime]:
         """Timestamp of command start.
 
-        .. versionadded:: 4.0.0
+        .. versionadded:: 3.5.0
         """
         return self.__started
 
