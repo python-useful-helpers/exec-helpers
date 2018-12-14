@@ -95,7 +95,7 @@ class SSHAuth:
         """
         if key is None:
             return None
-        return "{0} {1}".format(key.get_name(), key.get_base64())
+        return f"{key.get_name()} {key.get_base64()}"
 
     @property
     def public_key(self) -> typing.Optional[str]:
@@ -221,19 +221,19 @@ class SSHAuth:
             if k == self.__key:
                 continue
             # noinspection PyTypeChecker
-            _keys.append("<private for pub: {}>".format(self.__get_public_key(key=k)) if k is not None else None)
+            _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
 
         return (
-            "{cls}("
-            "username={self.username!r}, "
-            "password=<*masked*>, "
-            "key={key}, "
-            "keys={keys}, "
-            "key_filename={self.key_filename!r}, "
-            "passphrase=<*masked*>,"
-            ")".format(cls=self.__class__.__name__, self=self, key=_key, keys=_keys)
+            f"{self.__class__.__name__}("
+            f"username={self.username!r}, "
+            f"password=<*masked*>, "
+            f"key={_key}, "
+            f"keys={_keys}, "
+            f"key_filename={self.key_filename!r}, "
+            f"passphrase=<*masked*>,"
+            f")"
         )
 
     def __str__(self) -> str:
         """Representation for debug purposes."""
-        return "{cls} for {self.username}".format(cls=self.__class__.__name__, self=self)
+        return f"{self.__class__.__name__} for {self.username}"

@@ -46,7 +46,7 @@ class SSHClient(SSHClientBase):
         if self.exists(path):
             return
         # noinspection PyTypeChecker
-        self.execute("mkdir -p {}\n".format(self._path_esc(path)))
+        self.execute(f"mkdir -p {self._path_esc(path)}\n")
 
     def rm_rf(self, path: str) -> None:
         """Run 'rm -rf path' on remote.
@@ -54,7 +54,7 @@ class SSHClient(SSHClientBase):
         :type path: str
         """
         # noinspection PyTypeChecker
-        self.execute("rm -rf {}".format(self._path_esc(path)))
+        self.execute(f"rm -rf {self._path_esc(path)}")
 
     def upload(self, source: str, target: str) -> None:
         """Upload file(s) from source to target using SFTP session.

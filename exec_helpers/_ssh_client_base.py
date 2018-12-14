@@ -366,15 +366,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}, auth={self.auth!r})".format(
-            cls=self.__class__.__name__, self=self
-        )
+        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth={self.auth!r})"
 
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}) for user {username}".format(
-            cls=self.__class__.__name__, self=self, username=self.auth.username
-        )
+        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) " f"for user {self.auth.username}"
 
     @property
     def _ssh(self) -> paramiko.SSHClient:
@@ -700,7 +696,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -885,7 +881,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code

@@ -32,7 +32,7 @@ def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
 def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
-    return "{0} {1}".format(private_key.get_name(), private_key.get_base64())
+    return f"{private_key.get_name()} {private_key.get_base64()}"
 
 
 def get_internal_keys(
@@ -105,7 +105,7 @@ def test_001_init_checks(run_parameters) -> None:
     assert auth.username == username
     with contextlib.closing(io.BytesIO()) as tgt:
         auth.enter_password(tgt)
-        assert tgt.getvalue() == "{}\n".format(run_parameters.get("password", "")).encode("utf-8")
+        assert tgt.getvalue() == f"{run_parameters.get('password', '')}\n".encode("utf-8")
 
     key = run_parameters.get("key", None)
     if key is not None:
@@ -118,7 +118,7 @@ def test_001_init_checks(run_parameters) -> None:
     for k in int_keys:
         if k == key:
             continue
-        _keys.append("<private for pub: {}>".format(gen_public_key(k)) if k is not None else None)
+        _keys.append(f"<private for pub: {gen_public_key(k)}>" if k is not None else None)
 
     assert repr(auth) == (
         "{cls}("
@@ -130,7 +130,7 @@ def test_001_init_checks(run_parameters) -> None:
         "passphrase=<*masked*>,"
         ")".format(cls=exec_helpers.SSHAuth.__name__, auth=auth, key=_key, keys=_keys)
     )
-    assert str(auth) == "{cls} for {username}".format(cls=exec_helpers.SSHAuth.__name__, username=auth.username)
+    assert str(auth) == f"{exec_helpers.SSHAuth.__name__} for {auth.username}"
 
 
 def test_002_equality_copy():

@@ -27,7 +27,7 @@ from exec_helpers import _subprocess_helpers
 # All test coroutines will be treated as marked.
 
 command = "ls ~\nline 2\nline 3\nline с кирилицей"
-command_log = "Executing command:\n{!r}\n".format(command.rstrip())
+command_log = f"Executing command:\n{command.rstrip()!r}\n"
 
 print_stdin = 'read line; echo "$line"'
 default_timeout = 60 * 60  # 1 hour

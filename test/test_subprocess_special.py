@@ -204,7 +204,7 @@ def test_special_cases(create_subprocess_shell, exec_result, logger, run_paramet
         level = logging.INFO if run_parameters.get("verbose", False) else logging.DEBUG
 
         command_for_log = run_parameters.get("masked_cmd", command)
-        command_log = "Executing command:\n{!r}\n".format(command_for_log.rstrip())
+        command_log = f"Executing command:\n{command_for_log.rstrip()!r}\n"
         result_log = "Command {command!r} exit code: {result.exit_code!s}".format(
             command=command_for_log.rstrip(), result=res
         )

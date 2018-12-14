@@ -48,6 +48,7 @@ class ExecResult:
         "_stderr_brief",
         "__stdout_lock",
         "__stderr_lock",
+        "__started",
     ]
 
     def __init__(
@@ -57,6 +58,8 @@ class ExecResult:
         stdout: typing.Optional[typing.Iterable[bytes]] = None,
         stderr: typing.Optional[typing.Iterable[bytes]] = None,
         exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID,
+        *,
+        started: typing.Optional[datetime.datetime] = None,
     ) -> None:
         """Command execution result.
 
@@ -70,6 +73,8 @@ class ExecResult:
         :type stderr: typing.Optional[typing.Iterable[bytes]]
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: typing.Union[int, proc_enums.ExitCodes]
+        :param started: Timestamp of command start
+        :type started: typing.Optional[datetime.datetime]
         """
         self.__stdout_lock = threading.RLock()
         self.__stderr_lock = threading.RLock()
@@ -95,6 +100,8 @@ class ExecResult:
         self.__exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID
         self.__timestamp: typing.Optional[datetime.datetime] = None
         self.exit_code = exit_code
+
+        self.__started: typing.Optional[datetime.datetime] = started
 
         # By default is none:
         self._stdout_str: typing.Optional[str] = None
@@ -366,6 +373,14 @@ class ExecResult:
             if self.__exit_code != proc_enums.INVALID:
                 self.__timestamp = datetime.datetime.utcnow()
 
+    @property
+    def started(self) -> typing.Optional[datetime.datetime]:
+        """Timestamp of command start.
+
+        .. versionadded:: 4.0.0
+        """
+        return self.__started
+
     def __deserialize(self, fmt: str) -> typing.Any:
         """Deserialize stdout as data format.
 
@@ -440,28 +455,34 @@ class ExecResult:
         """
         if item in dir(self):
             return getattr(self, item)
-        raise IndexError('"{item}" not found in {dir}'.format(item=item, dir=dir(self)))
+        raise IndexError(f'"{item}" not found in {dir(self)}')
 
     def __repr__(self) -> str:
         """Representation for debugging."""
+        if self.started:
+            started = f", started={self.started},\n"
+        else:
+            started = ""
         return (
-            "{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, "
-            "exit_code={self.exit_code!s})".format(cls=self.__class__.__name__, self=self)
+            f"{self.__class__.__name__}("
+            f"cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, exit_code={self.exit_code!s}{started},)"
         )
 
     def __str__(self) -> str:
         """Representation for logging."""
+        if self.started:
+            started = f"\tstarted={self.started.strftime('%Y-%m-%d %H:%M:%S')},\n"
+        else:
+            started = ""
         return (
-            "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
-            "\n\texit_code={exit_code!s}\n)".format(
-                cls=self.__class__.__name__,
-                cmd=self.cmd,
-                stdout_brief=self.stdout_brief,
-                stderr_brief=self.stderr_brief,
-                exit_code=self.exit_code,
-            )
+            f"{self.__class__.__name__}(\n"
+            f"\tcmd={self.cmd!r},\n"
+            f"\t stdout=\n"
+            f"{self.stdout_brief!r},\n"
+            f"\tstderr=\n"
+            f"{self.stderr_brief!r}, \n"
+            f"\texit_code={self.exit_code!s},\n"
+            f"{started})"
         )
 
     def __eq__(self, other: typing.Any) -> bool:
