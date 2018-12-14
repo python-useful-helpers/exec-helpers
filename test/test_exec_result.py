@@ -208,6 +208,7 @@ class TestExecResult(unittest.TestCase):
     def test_started(self):
         started = datetime.datetime.utcnow()
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
+        spent = (result.timestamp - started).seconds
         self.assertIs(result.started, started)
         self.assertEqual(
             str(result),
@@ -215,12 +216,15 @@ class TestExecResult(unittest.TestCase):
             "\n\t stdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
             "\n\texit_code={exit_code!s},"
-            "\n\tstarted={started},\n)".format(
+            "\n\tstarted={started},"
+            "\n\tspent={spent},"
+            "\n)".format(
                 cls=exec_helpers.ExecResult.__name__,
                 cmd=cmd,
                 stdout_brief="",
                 stderr_brief="",
                 exit_code=proc_enums.EXPECTED,
-                started=started.strftime('%Y-%m-%d %H:%M:%S')
+                started=started.strftime("%Y-%m-%d %H:%M:%S"),
+                spent=f"{spent // (60 * 60):02d}:{spent // 60:02d}:{spent % 60:02d}",
             ),
         )
