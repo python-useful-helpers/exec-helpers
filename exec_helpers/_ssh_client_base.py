@@ -700,7 +700,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         # Store command with hidden data
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
@@ -884,7 +884,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             cmd_for_log = remote._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
             # pylint: enable=protected-access
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
             res.exit_code = exit_code
