@@ -170,6 +170,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                         f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
                         f"but FIFO buffers are still open"
                     )
+            result.set_timestamp()
             close_streams()
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)

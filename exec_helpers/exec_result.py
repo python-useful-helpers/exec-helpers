@@ -140,6 +140,16 @@ class ExecResult:
         """
         return self.__timestamp
 
+    def set_timestamp(self) -> None:
+        """Set timestamp if empty.
+
+        This will block future object changes.
+
+        .. versionadded:: 4.0.0
+        """
+        if self.timestamp is None:
+            self.__timestamp = datetime.datetime.utcnow()
+
     @staticmethod
     def _get_bytearray_from_array(src: typing.Iterable[bytes]) -> bytearray:
         """Get bytearray from array of bytes blocks.
@@ -472,8 +482,14 @@ class ExecResult:
         """Representation for logging."""
         if self.started:
             started = f"\tstarted={self.started.strftime('%Y-%m-%d %H:%M:%S')},\n"
+            if self.timestamp:
+                _spent = (self.timestamp - self.started).seconds
+                spent = f"\tspent={_spent // (60 * 60):02d}:{_spent // 60:02d}:{_spent % 60:02d},\n"
+            else:
+                spent = ""
         else:
             started = ""
+            spent = ""
         return (
             f"{self.__class__.__name__}(\n"
             f"\tcmd={self.cmd!r},\n"
@@ -482,7 +498,7 @@ class ExecResult:
             f"\tstderr=\n"
             f"{self.stderr_brief!r}, \n"
             f"\texit_code={self.exit_code!s},\n"
-            f"{started})"
+            f"{started}{spent})"
         )
 
     def __eq__(self, other: typing.Any) -> bool:

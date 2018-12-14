@@ -44,6 +44,14 @@ API: ExecResult
         ``typing.Optional(datetime.datetime)``
         Timestamp
 
+    .. py:method:: set_timestamp()
+
+        Set timestamp if empty.
+
+        This will block future object changes.
+
+        .. versionadded:: 4.0.0
+
     .. py:attribute:: cmd
 
         ``str``
