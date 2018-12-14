@@ -97,7 +97,7 @@ class ExecResult:
             self._stderr = ()
 
         self.__exit_code = proc_enums.INVALID  # type: typing.Union[int, proc_enums.ExitCodes]
-        self.__timestamp = None
+        self.__timestamp = None  # type: typing.Optional[datetime.datetime]
         self.exit_code = exit_code
 
         self.__started = started  # type: typing.Optional[datetime.datetime]
@@ -138,6 +138,16 @@ class ExecResult:
         :rtype: typing.Optional[datetime.datetime]
         """
         return self.__timestamp
+
+    def set_timestamp(self) -> None:
+        """Set timestamp if empty.
+
+        This will block future object changes.
+
+        .. versionadded:: 4.0.0
+        """
+        if self.timestamp is None:
+            self.__timestamp = datetime.datetime.utcnow()
 
     @staticmethod
     def _get_bytearray_from_array(src: typing.Iterable[bytes]) -> bytearray:
@@ -370,7 +380,7 @@ class ExecResult:
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()  # type: ignore
+                self.__timestamp = datetime.datetime.utcnow()
 
     @property
     def started(self) -> typing.Optional[datetime.datetime]:
@@ -471,20 +481,31 @@ class ExecResult:
         """Representation for logging."""
         if self.started:
             started = "\tstarted={started},\n".format(started=self.started.strftime('%Y-%m-%d %H:%M:%S'))
+            if self.timestamp:
+                _spent = (self.timestamp - self.started).seconds
+                spent = "\tspent={hours:02d}:{minutes:02d}:{seconds:02d},\n".format(
+                    hours=_spent // (60 * 60),
+                    minutes=_spent // 60,
+                    seconds=_spent % 60
+                )
+            else:
+                spent = ""
         else:
             started = ""
+            spent = ""
         return (
             "{cls}(\n\tcmd={cmd!r},"
             "\n\t stdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
             "\n\texit_code={exit_code!s},"
-            "\n{started})".format(
+            "\n{started}{spent})".format(
                 cls=self.__class__.__name__,
                 cmd=self.cmd,
                 stdout_brief=self.stdout_brief,
                 stderr_brief=self.stderr_brief,
                 exit_code=self.exit_code,
-                started=started
+                started=started,
+                spent=spent
             )
         )
 

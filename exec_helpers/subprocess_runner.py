@@ -171,6 +171,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                             command, async_result.interface.returncode
                         )
                     )
+            result.set_timestamp()
             close_streams()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)

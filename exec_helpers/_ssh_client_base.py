@@ -718,6 +718,9 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         async_result.interface.status_event.set()
         future.cancel()
 
+        concurrent.futures.wait([future], 0.001)
+        result.set_timestamp()
+
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
