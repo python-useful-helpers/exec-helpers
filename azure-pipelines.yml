@@ -86,6 +86,10 @@ jobs:
 
   - Python_35_x64_cython
   - Python_35_x86_cython
+  - Python_36_x64_cython
+  - Python_36_x86_cython
+  - Python_37_x64_cython
+  - Python_37_x86_cython
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   pool:
     vmIMage: 'VS2017-Win2016'
