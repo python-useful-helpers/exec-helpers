@@ -128,7 +128,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         # Store command with hidden data
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin)
+        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         stdout_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stdout())
         stderr_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stderr())
