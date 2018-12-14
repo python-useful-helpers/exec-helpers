@@ -147,6 +147,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
+            result.set_timestamp()
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
