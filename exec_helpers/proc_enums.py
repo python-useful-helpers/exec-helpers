@@ -173,13 +173,13 @@ EXPECTED: typing.Union[int, ExitCodes] = 0 if "win32" == sys.platform else ExitC
 INVALID: typing.Union[int, ExitCodes] = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
 
 
-def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]:
+def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]:  # pragma: no cover
     """Convert exit code to enum if possible."""
     if "win32" == sys.platform:
         return int(code)
     if isinstance(code, int) and code in ExitCodes.__members__.values():
         return ExitCodes(code)
-    return code  # pragma: no cover
+    return code
 
 
 def exit_codes_to_enums(

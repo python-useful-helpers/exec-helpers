@@ -32,7 +32,7 @@ def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
 def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
-    return "{0} {1}".format(private_key.get_name(), private_key.get_base64())
+    return f"{private_key.get_name()} {private_key.get_base64()}"
 
 
 class FakeStream:

@@ -454,7 +454,7 @@ class ExecResult:
         """
         if item in dir(self):
             return getattr(self, item)
-        raise IndexError('"{item}" not found in {dir}'.format(item=item, dir=dir(self)))
+        raise IndexError(f'"{item}" not found in {dir(self)}')
 
     def __repr__(self) -> str:
         """Representation for debugging."""

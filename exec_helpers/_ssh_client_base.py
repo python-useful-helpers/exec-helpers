@@ -366,15 +366,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}, auth={self.auth!r})".format(
-            cls=self.__class__.__name__, self=self
-        )
+        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth={self.auth!r})"
 
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}) for user {username}".format(
-            cls=self.__class__.__name__, self=self, username=self.auth.username
-        )
+        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) " f"for user {self.auth.username}"
 
     @property
     def _ssh(self) -> paramiko.SSHClient:
