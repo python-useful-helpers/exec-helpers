@@ -41,7 +41,7 @@ Pros:
 * Open Source: https://github.com/python-useful-helpers/exec-helpers
 * PyPI packaged: https://pypi.python.org/pypi/exec-helpers
 * Self-documented code: docstrings with types in comments
-* Tested: see bages on top
+* Tested: see badges on top
 * Support multiple Python versions:
 
 ::
@@ -178,7 +178,7 @@ If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `
 The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.
 Implementation specific flags are always set via kwargs.
 
-If required to mask part of command from logging, `log_mask_re` attribute can be set global over instance or providden with command.
+If required to mask part of command from logging, `log_mask_re` attribute can be set global over instance or provided with command.
 All regex matched groups will be replaced by `'<*masked*>'`.
 
 .. code-block:: python
