@@ -53,14 +53,13 @@ after_success:
 - coveralls
 
 jobs:
-  fast_finish: true
   include:
   - <<: *static_analysis
     name: "PyLint"
     install:
     - *upgrade_python_toolset
     - *install_deps
-    - pip install --upgrade "pylint >= 2.1"
+    - pip install --upgrade "pylint >= 2.2"
     script:
     - pylint exec_helpers
   - <<: *static_analysis
@@ -75,7 +74,7 @@ jobs:
     install:
     - *upgrade_python_toolset
     - *install_deps
-    - pip install --upgrade "mypy >= 0.650"
+    - pip install --upgrade "mypy >= 0.660"
     script:
     - mypy --strict exec_helpers
 

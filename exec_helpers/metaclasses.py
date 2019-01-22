@@ -16,7 +16,6 @@
 __all__ = ("SingletonMeta",)
 
 import abc
-import collections
 import threading
 import typing
 
@@ -37,16 +36,6 @@ class SingletonMeta(abc.ABCMeta):
                 # noinspection PySuperArguments
                 cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
-
-    @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
-    ) -> "collections.OrderedDict[str, typing.Any]":
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()
 
 
 class SingleLock(abc.ABCMeta):
@@ -72,13 +61,3 @@ class SingleLock(abc.ABCMeta):
     def lock(cls) -> threading.RLock:
         """Lock property for class."""
         return cls.__lock
-
-    @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["SingleLock"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
-    ) -> "collections.OrderedDict[str, typing.Any]":
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()

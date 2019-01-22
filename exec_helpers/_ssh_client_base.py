@@ -20,7 +20,6 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 
 import abc
 import base64
-import collections
 import concurrent.futures
 import copy
 import datetime
@@ -119,16 +118,6 @@ class _MemorizedSSH(abc.ABCMeta):
     """
 
     __cache: typing.Dict[typing.Tuple[str, int], "SSHClientBase"] = {}
-
-    @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
-        mcs: typing.Type["_MemorizedSSH"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
-    ) -> "collections.OrderedDict[str, typing.Any]":
-        """Metaclass magic for object storage.
-
-        .. versionadded:: 1.2.0
-        """
-        return collections.OrderedDict()
 
     def __call__(  # type: ignore
         cls: "_MemorizedSSH",
