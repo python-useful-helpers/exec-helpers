@@ -57,7 +57,7 @@ class SingleLock(abc.ABCMeta):
         super(SingleLock, cls).__init__(name, bases, namespace)
         cls.__lock = threading.RLock()
 
-    def __new__(
+    def __new__(  # pylint: disable=arguments-differ
         mcs: typing.Type["SingleLock"],
         name: str,
         bases: typing.Tuple[type, ...],
