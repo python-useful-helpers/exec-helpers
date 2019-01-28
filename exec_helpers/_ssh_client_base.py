@@ -121,7 +121,7 @@ class _MemorizedSSH(abc.ABCMeta):
     __cache = {}  # type: typing.Dict[typing.Tuple[str, int], SSHClientBase]
 
     @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
+    def __prepare__(  # type: ignore  # pylint: disable=unused-argument
         mcs: typing.Type["_MemorizedSSH"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
     ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.

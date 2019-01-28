@@ -137,29 +137,30 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                 async_result.stderr.close()
 
         # Store command with hidden data
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        stdout_future = poll_stdout()
+        stdout_future = poll_stdout()  # type: concurrent.futures.Future[None]
         # noinspection PyNoneFunctionAssignment
-        stderr_future = poll_stderr()
+        stderr_future = poll_stderr()  # type: concurrent.futures.Future[None]
         # pylint: enable=assignment-from-no-return
 
         try:
-            exit_code = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
+            # Wait real timeout here
+            exit_code = async_result.interface.wait(timeout=timeout)  # type: int
             concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
             result.exit_code = exit_code
             return result
         except subprocess.TimeoutExpired:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_code = async_result.interface.poll()
-            if exit_code is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
-            result.exit_code = exit_code
+            exit_signal = async_result.interface.poll()  # type: typing.Optional[int]
+            if exit_signal is None:
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+            result.exit_code = exit_signal
         finally:
             stdout_future.cancel()
             stderr_future.cancel()
@@ -174,7 +175,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             result.set_timestamp()
             close_streams()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)  # type: str
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
@@ -232,7 +233,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
@@ -253,7 +254,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         )
 
         if stdin is None:
-            process_stdin = process.stdin
+            process_stdin = process.stdin  # type: typing.Optional[typing.IO[typing.Any]]
         else:
             stdin_str = self._string_bytes_bytearray_as_bytes(stdin)
             try:
@@ -279,6 +280,6 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                     process.kill()
                     raise
 
-            process_stdin = None  # type: ignore
+            process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)

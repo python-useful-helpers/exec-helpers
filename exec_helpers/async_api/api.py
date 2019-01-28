@@ -159,11 +159,11 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
-        async_result = await self.execute_async(command, verbose=verbose, **kwargs)
+        async_result = await self.execute_async(command, verbose=verbose, **kwargs)  # type: api.ExecuteAsyncResult
 
         result = await self._exec_command(
             command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
-        )
+        )  # type: exec_result.ExecResult
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
         return result

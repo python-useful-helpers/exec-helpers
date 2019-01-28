@@ -16,13 +16,13 @@
 
 """SSH client credentials class."""
 
+__all__ = ("SSHAuth",)
+
 import copy
 import logging
 import typing
 
 import paramiko  # type: ignore
-
-__all__ = ("SSHAuth",)
 
 logger = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -68,7 +68,7 @@ class SSHAuth:
         self.__username = username
         self.__password = password
         self.__key = key
-        self.__keys = [None]
+        self.__keys = [None]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
         if key is not None:
             # noinspection PyTypeChecker
             self.__keys.append(key)
@@ -157,7 +157,7 @@ class SSHAuth:
             if self.__passphrase is not None:
                 kwargs["passphrase"] = self.__passphrase
 
-        keys = [self.__key]
+        keys = [self.__key]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
         keys.extend([k for k in self.__keys if k != self.__key])
 
         for key in keys:
@@ -166,7 +166,7 @@ class SSHAuth:
                 client.connect(**kwargs)
                 if self.__key != key:
                     self.__key = key
-                    logger.debug("Main key has been updated, public key is: \n{}".format(self.public_key))
+                    logger.debug("Main key has been updated, public key is: \n%s", self.public_key)
                 return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:

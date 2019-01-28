@@ -14,14 +14,6 @@
 
 """Package specific exceptions."""
 
-import typing
-
-from exec_helpers import proc_enums
-from exec_helpers import _log_templates
-
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
-
 __all__ = (
     "ExecHelperError",
     "ExecHelperNoKillError",
@@ -31,6 +23,14 @@ __all__ = (
     "ParallelCallProcessError",
     "ParallelCallExceptions",
 )
+
+import typing
+
+from exec_helpers import proc_enums
+from exec_helpers import _log_templates
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
 
 
 class ExecHelperError(Exception):

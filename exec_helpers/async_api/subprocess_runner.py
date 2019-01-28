@@ -126,30 +126,33 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             await result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
         # Store command with hidden data
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        stdout_task = asyncio.ensure_future(poll_stdout())
-        stderr_task = asyncio.ensure_future(poll_stderr())
+        stdout_task = asyncio.ensure_future(poll_stdout())  # type: asyncio.Future[None]
+        stderr_task = asyncio.ensure_future(poll_stderr())  # type: asyncio.Future[None]
 
         try:
-            exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)  # Wait real timeout here
+            # Wait real timeout here
+            exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)  # type: int
             result.exit_code = exit_code
             return result
         except asyncio.TimeoutError:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_code = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
-            if exit_code is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)
-            result.exit_code = exit_code
+            exit_signal = await asyncio.wait_for(
+                async_result.interface.wait(), timeout=0.001
+            )  # type: typing.Optional[int]
+            if exit_signal is None:
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+            result.exit_code = exit_signal
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
             result.set_timestamp()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)  # type: str
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
@@ -195,7 +198,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :rtype: typing.NamedTuple(
                     'SubprocessExecuteAsyncResult',
                     [
-                        ('interface', subprocess.Popen),
+                        ('interface', asyncio.subprocess.Process),
                         ('stdin', typing.Optional[asyncio.StreamWriter]),
                         ('stderr', typing.Optional[asyncio.StreamReader]),
                         ('stdout', typing.Optional[asyncio.StreamReader]),
@@ -204,7 +207,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
                 )
         :raises OSError: impossible to process STDIN
         """
-        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
         self.logger.log(  # type: ignore
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
