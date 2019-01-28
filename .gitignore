@@ -5,7 +5,7 @@
 /assets/*
 .cache/*
 .pytest_cache/*
-
+/pip-wheel-metadata
 ### Generated code
 /exec_helpers/**/*.c
 
