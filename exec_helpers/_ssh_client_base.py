@@ -67,6 +67,7 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
         super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
+# noinspection PyTypeHints
 class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 

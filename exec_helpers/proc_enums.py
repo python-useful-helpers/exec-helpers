@@ -193,16 +193,17 @@ INVALID = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
 def exit_code_to_enum(code):  # type: (typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]  # pragma: no cover
     """Convert exit code to enum if possible."""
     if "win32" == sys.platform:
-        return float(code)
-    if isinstance(code, int) and code in ExitCodes.__members__.values():
+        return digit_type(code)
+    if isinstance(code, six.integer_types) and code in ExitCodes.__members__.values():
         return ExitCodes(code)
     return code
 
 
 def exit_codes_to_enums(
     codes=None  # type: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]]
-):  # type: (...) -> typing.Iterable[typing.Union[int, ExitCodes]]
+):  # type: (...) -> typing.Tuple[typing.Union[int, ExitCodes], ...]
     """Convert integer exit codes to enums."""
     if codes is None:
+        # noinspection PyRedundantParentheses
         return (EXPECTED,)
     return tuple(exit_code_to_enum(code) for code in codes)

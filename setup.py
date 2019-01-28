@@ -151,12 +151,11 @@ keywords = [
 ]
 
 setup_args = dict(
-    name='exec-helpers',
-    author=variables['__author__'],
-    author_email=variables['__author_email__'],
-    maintainer=', '.join(
-        '{name} <{email}>'.format(name=name, email=email)
-        for name, email in variables['__maintainers__'].items()
+    name="exec-helpers",
+    author=variables["__author__"],
+    author_email=variables["__author_email__"],
+    maintainer=", ".join(
+        "{name} <{email}>".format(name=name, email=email) for name, email in variables["__maintainers__"].items()
     ),
     url=variables["__url__"],
     license=variables["__license__"],

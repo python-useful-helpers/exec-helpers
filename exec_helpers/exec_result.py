@@ -85,10 +85,11 @@ class ExecResult(object):
 
         self.__cmd = cmd
         if isinstance(stdin, six.binary_type):
-            stdin = self._get_str_from_bin(bytearray(stdin))
+            self.__stdin = self._get_str_from_bin(bytearray(stdin))  # type: typing.Optional[typing.Text]
         elif isinstance(stdin, bytearray):
-            stdin = self._get_str_from_bin(stdin)
-        self.__stdin = stdin  # type: typing.Optional[typing.Text]
+            self.__stdin = self._get_str_from_bin(stdin)
+        else:
+            self.__stdin = stdin
 
         if stdout is not None:
             self._stdout = tuple(stdout)  # type: typing.Tuple[bytes, ...]
@@ -107,10 +108,10 @@ class ExecResult(object):
         self.__started = started  # type: typing.Optional[datetime.datetime]
 
         # By default is none:
-        self._stdout_str = None
-        self._stderr_str = None
-        self._stdout_brief = None
-        self._stderr_brief = None
+        self._stdout_str = None  # type: typing.Optional[typing.Text]
+        self._stderr_str = None  # type: typing.Optional[typing.Text]
+        self._stdout_brief = None  # type: typing.Optional[typing.Text]
+        self._stderr_brief = None  # type: typing.Optional[typing.Text]
 
     @property
     def stdout_lock(self):  # type: () -> threading.RLock
@@ -176,7 +177,7 @@ class ExecResult(object):
         return src.strip().decode(encoding="utf-8", errors="backslashreplace")
 
     @classmethod
-    def _get_brief(cls, data):  # type: (typing.Tuple[bytes]) -> typing.Text
+    def _get_brief(cls, data):  # type: (typing.Tuple[bytes, ...]) -> typing.Text
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
         :param data: source to process
@@ -228,7 +229,7 @@ class ExecResult(object):
         log=None,  # type: typing.Optional[logging.Logger]
         verbose=False,  # type: bool
     ):  # type: (...) -> typing.List[bytes]
-        dst = []
+        dst = []  # type: typing.List[bytes]
         try:
             for line in src:
                 dst.append(line)
@@ -323,8 +324,8 @@ class ExecResult(object):
         """
         with self.stdout_lock:
             if self._stdout_str is None:
-                self._stdout_str = self._get_str_from_bin(self.stdout_bin)  # type: ignore
-            return self._stdout_str  # type: ignore
+                self._stdout_str = self._get_str_from_bin(self.stdout_bin)
+            return self._stdout_str
 
     @property
     def stderr_str(self):  # type: () -> typing.Text
@@ -334,8 +335,8 @@ class ExecResult(object):
         """
         with self.stderr_lock:
             if self._stderr_str is None:
-                self._stderr_str = self._get_str_from_bin(self.stderr_bin)  # type: ignore
-            return self._stderr_str  # type: ignore
+                self._stderr_str = self._get_str_from_bin(self.stderr_bin)
+            return self._stderr_str
 
     @property
     def stdout_brief(self):  # type: () -> typing.Text
@@ -345,8 +346,8 @@ class ExecResult(object):
         """
         with self.stdout_lock:
             if self._stdout_brief is None:
-                self._stdout_brief = self._get_brief(self.stdout)  # type: ignore
-            return self._stdout_brief  # type: ignore
+                self._stdout_brief = self._get_brief(self.stdout)
+            return self._stdout_brief
 
     @property
     def stderr_brief(self):  # type: () -> typing.Text
@@ -356,8 +357,8 @@ class ExecResult(object):
         """
         with self.stderr_lock:
             if self._stderr_brief is None:
-                self._stderr_brief = self._get_brief(self.stderr)  # type: ignore
-            return self._stderr_brief  # type: ignore
+                self._stderr_brief = self._get_brief(self.stderr)
+            return self._stderr_brief
 
     @property
     def exit_code(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
@@ -382,7 +383,7 @@ class ExecResult(object):
         if self.timestamp:
             raise RuntimeError("Exit code is already received.")
         if not isinstance(new_val, (six.integer_types, proc_enums.ExitCodes)):
-            raise TypeError("Exit code is strictly int, got {!r}".format(new_val))
+            raise TypeError("Exit code is strictly int, received: {code!r}".format(code=new_val))
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
