@@ -47,7 +47,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
             pass
 
     parent = psutil.Process(pid)
-    children = parent.children(recursive=True)
+    children = parent.children(recursive=True)  # type: typing.List[psutil.Process]
     for child in children:  # type: psutil.Process
         safe_stop(child)  # SIGTERM to allow cleanup
     _, alive = psutil.wait_procs(children, timeout=1)

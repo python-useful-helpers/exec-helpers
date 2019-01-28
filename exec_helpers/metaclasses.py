@@ -39,7 +39,7 @@ class SingletonMeta(abc.ABCMeta):
         return cls._instances[cls]
 
     @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
+    def __prepare__(  # type: ignore  # pylint: disable=unused-argument
         mcs: typing.Type["SingletonMeta"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
     ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.
@@ -57,7 +57,7 @@ class SingleLock(abc.ABCMeta):
         super(SingleLock, cls).__init__(name, bases, namespace)
         cls.__lock = threading.RLock()
 
-    def __new__(  # pylint: disable=arguments-differ
+    def __new__(
         mcs: typing.Type["SingleLock"],
         name: str,
         bases: typing.Tuple[type, ...],
@@ -74,7 +74,7 @@ class SingleLock(abc.ABCMeta):
         return cls.__lock
 
     @classmethod
-    def __prepare__(  # pylint: disable=unused-argument
+    def __prepare__(  # type: ignore  # pylint: disable=unused-argument
         mcs: typing.Type["SingleLock"], name: str, bases: typing.Iterable[type], **kwargs: typing.Any
     ) -> "collections.OrderedDict[str, typing.Any]":
         """Metaclass magic for object storage.
