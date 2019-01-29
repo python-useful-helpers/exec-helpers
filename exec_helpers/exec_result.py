@@ -65,7 +65,7 @@ class LinesAccessProxy:
         :param data: data to work with.
         :type data: typing.Sequence[bytes]
         """
-        self._data: typing.Tuple[bytes, ...] = tuple(data)
+        self._data = tuple(data)  # type: typing.Tuple[bytes, ...]
 
     def __getitem__(self, item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, "ellipsis"]]]) -> str:
         """Access magic.
@@ -79,7 +79,7 @@ class LinesAccessProxy:
             return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
         if isinstance(item, slice):
             return _get_str_from_bin(_get_bytearray_from_array(self._data[item]))
-        buf: typing.List[bytes] = []
+        buf = []  # type: typing.List[bytes]
         for rule in item:
             if isinstance(rule, int):
                 buf.append(self._data[rule])
@@ -99,7 +99,7 @@ class LinesAccessProxy:
 
     def __repr__(self) -> str:
         """Repr for debug purposes."""
-        return f"{self.__class__.__name__}(data={self._data!r})"
+        return "{cls}(data={self._data!r})".format(cls=self.__class__.__name__, self=self)
 
 
 class ExecResult:
@@ -129,7 +129,7 @@ class ExecResult:
         stderr: typing.Optional[typing.Iterable[bytes]] = None,
         exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID,
         *,
-        started: typing.Optional[datetime.datetime] = None,
+        started: typing.Optional[datetime.datetime] = None
     ) -> None:
         """Command execution result.
 
