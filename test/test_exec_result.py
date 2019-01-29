@@ -18,8 +18,7 @@
 
 import datetime
 import unittest
-
-import mock
+from unittest import mock
 
 import exec_helpers
 from exec_helpers import proc_enums
@@ -228,3 +227,40 @@ class TestExecResult(unittest.TestCase):
                 spent=f"{spent // (60 * 60):02d}:{spent // 60:02d}:{spent % 60:02d}",
             ),
         )
+
+    def test_indexed_lines_access(self):
+        result = exec_helpers.ExecResult(
+            cmd,
+            stdout=(
+                b'line0\n',
+                b'line1\n',
+                b'line2\n',
+                b'line3\n',
+                b'line4\n',
+                b'line5\n',
+                b'line6\n',
+                b'line7\n',
+                b'line8\n',
+                b'line9\n',
+            ),
+            stderr=(
+                b'e_line0\n',
+                b'e_line1\n',
+                b'e_line2\n',
+                b'e_line3\n',
+                b'e_line4\n',
+                b'e_line5\n',
+                b'e_line6\n',
+                b'e_line7\n',
+                b'e_line8\n',
+                b'e_line9\n',
+            )
+        )
+
+        self.assertEqual(result.stdout_lines[:], result.stdout_str)
+        self.assertEqual(result.stderr_lines[:], result.stderr_str)
+        self.assertEqual(result.stdout_lines[0], 'line0')
+        self.assertEqual(result.stdout_lines[0, 1], 'line0\nline1')
+        self.assertEqual(result.stdout_lines[0, 2], 'line0\nline2')
+        self.assertEqual(result.stdout_lines[0, ..., 2], 'line0\n...\nline2')
+        self.assertEqual(result.stdout_lines[:1, ..., 2], 'line0\n...\nline2')
