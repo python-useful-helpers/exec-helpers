@@ -37,6 +37,79 @@ __all__ = ("ExecResult",)
 logger = logging.getLogger(__name__)
 
 
+def _get_str_from_bin(src):  # type: (bytearray) -> str
+    """Join data in list to the string.
+
+    :param src: source to process
+    :type src: bytearray
+    :return: decoded string
+    :rtype: str
+    """
+    return src.strip().decode(encoding="utf-8", errors="backslashreplace")
+
+
+def _get_bytearray_from_array(src):  # type: (typing.Iterable[bytes]) -> bytearray
+    """Get bytearray from array of bytes blocks.
+
+    :param src: source to process
+    :type src: typing.List[bytes]
+    :return: bytearray
+    :rtype: bytearray
+    """
+    return bytearray(b"".join(src))
+
+
+class LinesAccessProxy(object):
+    """Lines access proxy."""
+
+    __slots__ = ("_data",)
+
+    def __init__(self, data):  # type: (typing.Sequence[bytes]) -> None
+        """Lines access proxy.
+
+        :param data: data to work with.
+        :type data: typing.Sequence[bytes]
+        """
+        self._data = tuple(data)  # type: typing.Tuple[bytes, ...]
+
+    def __getitem__(
+        self,
+        item  # type: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, "ellipsis"]]]
+    ):  # type: (...) -> typing.Text
+        """Access magic.
+
+        :param item: index
+        :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
+        :returns: Joined selected lines
+        :rtype: str
+        """
+        if isinstance(item, six.integer_types):
+            return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
+        if isinstance(item, slice):
+            return _get_str_from_bin(_get_bytearray_from_array(self._data[item]))
+        buf = []  # type: typing.List[bytes]
+        for rule in item:
+            if isinstance(rule, six.integer_types):
+                buf.append(self._data[rule])
+            elif isinstance(rule, slice):
+                buf.extend(self._data[rule])
+            else:
+                buf.append(b"...\n")
+        return _get_str_from_bin(_get_bytearray_from_array(buf))
+
+    def __len__(self):  # type: () -> int  # pragma: no cover
+        """Data len."""
+        return len(self._data)
+
+    def __unicode__(self):  # type: () -> typing.Text  # pragma: no cover
+        """Get string for debug purposes."""
+        return self[:]
+
+    def __repr__(self):  # type: () -> typing.Text
+        """Repr for debug purposes."""
+        return "{cls}(data={self._data!r})".format(cls=self.__class__.__name__, self=self)
+
+
 class ExecResult(object):
     """Execution result."""
 
@@ -85,9 +158,9 @@ class ExecResult(object):
 
         self.__cmd = cmd
         if isinstance(stdin, six.binary_type):
-            self.__stdin = self._get_str_from_bin(bytearray(stdin))  # type: typing.Optional[typing.Text]
+            self.__stdin = _get_str_from_bin(bytearray(stdin))  # type: typing.Optional[typing.Text]
         elif isinstance(stdin, bytearray):
-            self.__stdin = self._get_str_from_bin(stdin)
+            self.__stdin = _get_str_from_bin(stdin)
         else:
             self.__stdin = stdin
 
@@ -154,28 +227,6 @@ class ExecResult(object):
         if self.timestamp is None:
             self.__timestamp = datetime.datetime.utcnow()
 
-    @staticmethod
-    def _get_bytearray_from_array(src):  # type: (typing.Iterable[bytes]) -> bytearray
-        """Get bytearray from array of bytes blocks.
-
-        :param src: source to process
-        :type src: typing.List[bytes]
-        :return: bytearray
-        :rtype: bytearray
-        """
-        return bytearray(b"".join(src))
-
-    @staticmethod
-    def _get_str_from_bin(src):  # type: (bytearray) -> typing.Text
-        """Join data in list to the string, with python 2&3 compatibility.
-
-        :param src: source to process
-        :type src: bytearray
-        :return: decoded string
-        :rtype: str
-        """
-        return src.strip().decode(encoding="utf-8", errors="backslashreplace")
-
     @classmethod
     def _get_brief(cls, data):  # type: (typing.Tuple[bytes, ...]) -> typing.Text
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
@@ -186,10 +237,8 @@ class ExecResult(object):
         :rtype: str
         """
         if len(data) <= 7:
-            src = data  # type: typing.Tuple[bytes, ...]
-        else:
-            src = data[:3] + (b"...\n",) + data[-3:]
-        return cls._get_str_from_bin(cls._get_bytearray_from_array(src))
+            return _get_str_from_bin(_get_bytearray_from_array(data))
+        return LinesAccessProxy(data)[:3, ..., -3:]
 
     @property
     def cmd(self):  # type: () -> typing.Text
@@ -305,7 +354,7 @@ class ExecResult(object):
         :rtype: bytearray
         """
         with self.stdout_lock:
-            return self._get_bytearray_from_array(self.stdout)
+            return _get_bytearray_from_array(self.stdout)
 
     @property
     def stderr_bin(self):  # type: () -> bytearray
@@ -314,7 +363,7 @@ class ExecResult(object):
         :rtype: bytearray
         """
         with self.stderr_lock:
-            return self._get_bytearray_from_array(self.stderr)
+            return _get_bytearray_from_array(self.stderr)
 
     @property
     def stdout_str(self):  # type: () -> typing.Text
@@ -324,7 +373,7 @@ class ExecResult(object):
         """
         with self.stdout_lock:
             if self._stdout_str is None:
-                self._stdout_str = self._get_str_from_bin(self.stdout_bin)
+                self._stdout_str = _get_str_from_bin(self.stdout_bin)
             return self._stdout_str
 
     @property
@@ -335,7 +384,7 @@ class ExecResult(object):
         """
         with self.stderr_lock:
             if self._stderr_str is None:
-                self._stderr_str = self._get_str_from_bin(self.stderr_bin)
+                self._stderr_str = _get_str_from_bin(self.stderr_bin)
             return self._stderr_str
 
     @property
@@ -359,6 +408,25 @@ class ExecResult(object):
             if self._stderr_brief is None:
                 self._stderr_brief = self._get_brief(self.stderr)
             return self._stderr_brief
+
+    @property
+    def stdout_lines(self):  # type: () -> LinesAccessProxy
+        """Get lines by indexes.
+
+        :rtype: LinesAccessProxy
+
+        Usage example:
+
+        .. code-block::python
+
+            res.stdout_lines[<line_number>, <index_start>:<index_end>, ...]
+        """
+        return LinesAccessProxy(self.stdout)
+
+    @property
+    def stderr_lines(self):  # type: () -> LinesAccessProxy
+        """Magic to get lines human-friendly way."""
+        return LinesAccessProxy(self.stderr)
 
     @property
     def exit_code(self):  # type: () -> typing.Union[int, proc_enums.ExitCodes]
@@ -451,6 +519,8 @@ class ExecResult(object):
             "stderr_str",
             "stdout_brief",
             "stderr_brief",
+            "stdout_lines",
+            "stderr_lines",
             "stdout_json",
             "stdout_yaml",
             "lock",

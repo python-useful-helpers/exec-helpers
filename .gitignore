@@ -1,14 +1,14 @@
 ### Test results
 /*_result*.xml
 /report.html
-/mypy_report/*
+/mypy_report
 /assets/*
 .cache/*
 .pytest_cache/*
 
 ### Generated code
 /exec_helpers/**/*.c
-
+/pip-wheel-metadata
 ### TortoiseGit template
 # Project-level settings
 /.tgitconfig

@@ -102,6 +102,24 @@ API: ExecResult
         ``typing.Text``
         Brief stderr output (mostly for exceptions).
 
+    .. py:attribute:: stdout_lines
+
+        Get lines by indexes
+
+        :rtype: LinesAccessProxy
+
+        Usage example:
+
+        .. code-block:: python
+
+            lines: str = res.stdout_lines[<line_number>, <index_start>:<index_end>, ...]
+
+    .. py:attribute:: stderr_lines
+
+        Get lines by indexes
+
+        :rtype: LinesAccessProxy
+
     .. py:attribute:: exit_code
 
         Return(exit) code of command.
@@ -154,3 +172,32 @@ API: ExecResult
         :type verbose: ``bool``
 
         .. versionchanged:: 1.2.0 - src can be None
+
+
+.. py:class:: LinesAccessProxy()
+
+    Lines access proxy.
+
+    .. py:method:: __init__(self, data)
+
+        Lines access proxy.
+
+        :param data: data to work with.
+        :type data: typing.Sequence[bytes]
+
+    .. py:method:: __getitem__(self, item)
+
+        Access magic.
+
+        :param item: index
+        :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
+        :returns: Joined selected lines
+        :rtype: str
+
+    .. py:method:: __unicode__(self)
+
+        Get string for debug purposes.
+
+    .. py:method:: __len__(self)
+
+        Data len.
