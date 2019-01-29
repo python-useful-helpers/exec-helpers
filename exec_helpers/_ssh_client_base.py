@@ -815,7 +815,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                 self.logger.warning("STDIN Send failed: closed channel")
 
         async_result = SshExecuteAsyncResult(
-            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started)
+            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started
+        )
 
         # noinspection PyDictCreation
         result = self._exec_command(
@@ -876,9 +877,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call."""
-            async_result = remote.execute_async(
-                command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
-            )
+            async_result = remote.execute_async(command, stdin=stdin, log_mask_re=log_mask_re, **kwargs)
 
             async_result.interface.status_event.wait(timeout)
             exit_code = async_result.interface.recv_exit_status()
