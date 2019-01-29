@@ -123,8 +123,8 @@ jobs:
 #    <<: *pypy3
 #    allow_failure: true
 
-  - <<: *test_cythonized
-    <<: *python34
+#  - <<: *test_cythonized
+#    <<: *python34
   - <<: *test_cythonized
     <<: *python35
   - <<: *test_cythonized
