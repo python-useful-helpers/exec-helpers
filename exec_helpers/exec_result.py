@@ -82,6 +82,7 @@ class LinesAccessProxy(object):
         :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
         :returns: Joined selected lines
         :rtype: str
+        :raises KeyError: Unexpected key
         """
         if isinstance(item, six.integer_types):
             return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
@@ -93,8 +94,10 @@ class LinesAccessProxy(object):
                 buf.append(self._data[rule])
             elif isinstance(rule, slice):
                 buf.extend(self._data[rule])
-            else:
+            elif rule is Ellipsis:
                 buf.append(b"...\n")
+            else:
+                raise KeyError("Unexpected key: {rule!r} (from {item!r})".format(rule=rule, item=item))
         return _get_str_from_bin(_get_bytearray_from_array(buf))
 
     def __len__(self):  # type: () -> int  # pragma: no cover
