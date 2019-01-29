@@ -121,6 +121,7 @@ jobs:
     <<: *python37
   - stage: test
     <<: *pypy3
+    allow_failure: true
 
   - <<: *test_cythonized
     <<: *python34
