@@ -82,23 +82,25 @@ class LinesAccessProxy(object):
         :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
         :returns: Joined selected lines
         :rtype: str
-        :raises KeyError: Unexpected key
+        :raises TypeError: Unexpected key
         """
         if isinstance(item, six.integer_types):
             return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
         if isinstance(item, slice):
             return _get_str_from_bin(_get_bytearray_from_array(self._data[item]))
-        buf = []  # type: typing.List[bytes]
-        for rule in item:
-            if isinstance(rule, six.integer_types):
-                buf.append(self._data[rule])
-            elif isinstance(rule, slice):
-                buf.extend(self._data[rule])
-            elif rule is Ellipsis:
-                buf.append(b"...\n")
-            else:
-                raise KeyError("Unexpected key: {rule!r} (from {item!r})".format(rule=rule, item=item))
-        return _get_str_from_bin(_get_bytearray_from_array(buf))
+        if isinstance(item, tuple):
+            buf = []  # type: typing.List[bytes]
+            for rule in item:
+                if isinstance(rule, six.integer_types):
+                    buf.append(self._data[rule])
+                elif isinstance(rule, slice):
+                    buf.extend(self._data[rule])
+                elif rule is Ellipsis:
+                    buf.append(b"...\n")
+                else:
+                    raise TypeError("Unexpected key type: {rule!r} (from {item!r})".format(rule=rule, item=item))
+            return _get_str_from_bin(_get_bytearray_from_array(buf))
+        raise TypeError("Unexpected key type: {item!r}".format(item=item))
 
     def __len__(self):  # type: () -> int  # pragma: no cover
         """Data len."""
