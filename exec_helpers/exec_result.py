@@ -80,7 +80,7 @@ class LinesAccessProxy:
             return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
         if isinstance(item, slice):
             return _get_str_from_bin(_get_bytearray_from_array(self._data[item]))
-        elif isinstance(item, tuple):
+        if isinstance(item, tuple):
             buf: typing.List[bytes] = []
             for rule in item:
                 if isinstance(rule, int):
