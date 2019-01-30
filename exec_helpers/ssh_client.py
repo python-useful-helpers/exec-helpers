@@ -23,7 +23,7 @@ from __future__ import unicode_literals
 import logging
 import os
 import posixpath
-
+import typing  # pylint: disable=unused-import
 
 from ._ssh_client_base import SSHClientBase
 
