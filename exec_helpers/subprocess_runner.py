@@ -30,7 +30,7 @@ import threaded
 from exec_helpers import api
 from exec_helpers import exec_result
 from exec_helpers import exceptions
-from exec_helpers import metaclasses
+from exec_helpers import metaclasses  # pylint: disable=unused-import
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 
