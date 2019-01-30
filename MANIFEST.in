@@ -1,9 +1,10 @@
-include *.rst LICENSE requirements.txt
+include *.rst LICENSE requirements.txt pyproject.toml
 global-exclude *.c
 exclude Makefile
 prune tools
 exclude .travis.yml appveyor.yml
 exclude tox.ini pytest.ini .coveragerc
+exclude .gitignore .dockerignore
 prune test
 prune .github
 prune docs
