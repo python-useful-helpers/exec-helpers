@@ -28,7 +28,7 @@ import typing
 from exec_helpers.async_api import api
 from exec_helpers.async_api import exec_result
 from exec_helpers import exceptions
-from exec_helpers import metaclasses  # pylint: disable=unused-import
+from exec_helpers import metaclasses
 from exec_helpers import subprocess_runner
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
