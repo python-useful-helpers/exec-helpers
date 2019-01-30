@@ -264,5 +264,7 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stdout_lines[0, 2], 'line0\nline2')
         self.assertEqual(result.stdout_lines[0, ..., 2], 'line0\n...\nline2')
         self.assertEqual(result.stdout_lines[:1, ..., 2], 'line0\n...\nline2')
-        with self.assertRaises(KeyError):
+        with self.assertRaises(TypeError):
+            _ = result.stdout_lines['aaa']  # noqa
+        with self.assertRaises(TypeError):
             _ = result.stdout_lines[1, 'aaa']  # noqa
