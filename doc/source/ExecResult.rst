@@ -193,7 +193,7 @@ API: ExecResult
         :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
         :returns: Joined selected lines
         :rtype: str
-        :raises KeyError: Unexpected key
+        :raises TypeError: Unexpected key
 
     .. py:method:: __str__(self)
 
