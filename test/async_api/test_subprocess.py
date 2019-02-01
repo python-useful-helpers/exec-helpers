@@ -104,6 +104,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -123,6 +124,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
 
 
@@ -190,10 +192,12 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
 
 @pytest.fixture
 def logger(mocker):
+    """Simple mock of logger instance."""
     return mocker.patch("exec_helpers.async_api.subprocess_runner.Subprocess.logger", autospec=True)
 
 
 async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
+    """Test low level API."""
     runner = exec_helpers.async_api.Subprocess()
     res = await runner.execute_async(
         command,
@@ -246,6 +250,7 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
 
 
 async def test_002_execute(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
+    """Test API without checkers."""
     runner = exec_helpers.async_api.Subprocess()
     res = await runner.execute(command, stdin=run_parameters["stdin"])
     assert isinstance(res, exec_helpers.async_api.ExecResult)
@@ -256,6 +261,7 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
 
 
 async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger, exec_result, run_parameters) -> None:
+    """Test context manager for threads synchronization."""
     lock = asynctest.CoroutineMock()
     lock.attach_mock(asynctest.CoroutineMock("acquire"), "acquire")
     lock.attach_mock(mock.Mock("release"), "release")
@@ -272,6 +278,7 @@ async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger,
 
 
 async def test_004_check_call(execute, exec_result, logger) -> None:
+    """Test exit code validator."""
     runner = exec_helpers.async_api.Subprocess()
     if exec_result.exit_code == exec_helpers.ExitCodes.EX_OK:
         assert await runner.check_call(command, stdin=exec_result.stdin) == exec_result
@@ -295,6 +302,7 @@ async def test_004_check_call(execute, exec_result, logger) -> None:
 
 
 async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
+    """Test exit code validator in permissive mode."""
     runner = exec_helpers.async_api.Subprocess()
     res = await runner.check_call(command, stdin=exec_result.stdin, raise_on_err=False)
     assert res == exec_result
@@ -308,11 +316,13 @@ async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
 
 
 async def test_006_check_call_expect(execute, exec_result, logger) -> None:
+    """Test exit code validator with custom return codes."""
     runner = exec_helpers.async_api.Subprocess()
     assert await runner.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
 
 
 async def test_007_check_stderr(execute, exec_result, logger) -> None:
+    """Test STDERR content validator."""
     runner = exec_helpers.async_api.Subprocess()
     if not exec_result.stderr:
         assert (
@@ -337,6 +347,7 @@ async def test_007_check_stderr(execute, exec_result, logger) -> None:
 
 
 async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
+    """Test STDERR content validator in permissive mode."""
     runner = exec_helpers.async_api.Subprocess()
     assert (
         await runner.check_stderr(
@@ -347,6 +358,7 @@ async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
 
 
 async def test_009_call(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
+    """Test callable."""
     runner = exec_helpers.async_api.Subprocess()
     res = await runner(command, stdin=run_parameters["stdin"])
     assert isinstance(res, exec_helpers.async_api.ExecResult)

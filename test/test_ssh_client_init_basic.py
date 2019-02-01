@@ -36,6 +36,7 @@ def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
 
 
 class FakeStream:
+    """Stream-like object for usage in tests."""
     def __init__(self, *args: bytes):
         self.__src = list(args)
 
@@ -73,6 +74,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -93,23 +95,8 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
-
-
-@pytest.fixture
-def auto_add_policy(mocker):
-    return mocker.patch("paramiko.AutoAddPolicy", return_value="AutoAddPolicy")
-
-
-@pytest.fixture
-def paramiko_ssh_client(mocker, run_parameters):
-    mocker.patch("time.sleep")
-    return mocker.patch("paramiko.SSHClient")
-
-
-@pytest.fixture
-def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
 
 
 def teardown_function(function):
@@ -119,6 +106,7 @@ def teardown_function(function):
 
 
 def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_auth_logger):
+    """Parametrized validation of SSH client initialization."""
     # Helper code
     _ssh = mock.call
     port = run_parameters.get("port", 22)

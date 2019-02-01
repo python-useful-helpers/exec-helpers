@@ -31,7 +31,7 @@ cmd = "ls -la | awk '{print $1}'"
 class TestExecResult(unittest.TestCase):
     @mock.patch("exec_helpers.exec_result.logger")
     def test_create_minimal(self, logger):
-        """Test defaults"""
+        """Test defaults."""
         result = exec_helpers.ExecResult(cmd=cmd)
         self.assertEqual(result.cmd, cmd)
         self.assertEqual(result.cmd, result["cmd"])
@@ -98,7 +98,7 @@ class TestExecResult(unittest.TestCase):
 
     @mock.patch("exec_helpers.exec_result.logger", autospec=True)
     def test_not_implemented(self, logger):
-        """Test assertion on non implemented deserializer"""
+        """Test assertion on non implemented deserializer."""
         result = exec_helpers.ExecResult(cmd=cmd)
         deserialize = getattr(result, "_ExecResult__deserialize")
         with self.assertRaises(NotImplementedError):
@@ -106,6 +106,7 @@ class TestExecResult(unittest.TestCase):
         logger.assert_has_calls((mock.call.error("{fmt} deserialize target is not implemented".format(fmt="tst")),))
 
     def test_setters(self):
+        """Test setters: unlocked and final."""
         result = exec_helpers.ExecResult(cmd=cmd)
         self.assertEqual(result.exit_code, exec_helpers.ExitCodes.EX_INVALID)
 
@@ -148,12 +149,13 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stderr_brief, stderr_brief)
 
     def test_json(self):
+        """Test json extraction."""
         result = exec_helpers.ExecResult("test", stdout=[b'{"test": true}'])
         self.assertEqual(result.stdout_json, {"test": True})
 
     @mock.patch("exec_helpers.exec_result.logger", autospec=True)
     def test_wrong_result(self, logger):
-        """Test logging exception if stdout if not a correct json"""
+        """Test logging exception if stdout if not a correct json."""
         cmd = r"ls -la | awk '{print $1\}'"
         result = exec_helpers.ExecResult(cmd=cmd)
         with self.assertRaises(exec_helpers.ExecHelperError):
@@ -207,22 +209,27 @@ class TestExecResult(unittest.TestCase):
             result.read_stderr([b"err"])
 
     def test_stdin_none(self):
+        """Test with empty STDIN."""
         result = exec_helpers.ExecResult(cmd, exit_code=0)
         self.assertIsNone(result.stdin)
 
     def test_stdin_utf(self):
+        """Test with string in STDIN."""
         result = exec_helpers.ExecResult(cmd, stdin="STDIN", exit_code=0)
         self.assertEqual(result.stdin, "STDIN")
 
     def test_stdin_bytes(self):
+        """Test with bytes STDIN."""
         result = exec_helpers.ExecResult(cmd, stdin=b"STDIN", exit_code=0)
         self.assertEqual(result.stdin, "STDIN")
 
     def test_stdin_bytearray(self):
+        """Test with bytearray STDIN."""
         result = exec_helpers.ExecResult(cmd, stdin=bytearray(b"STDIN"), exit_code=0)
         self.assertEqual(result.stdin, "STDIN")
 
     def test_started(self):
+        """Test timestamp."""
         started = datetime.datetime.utcnow()
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
         spent = (result.timestamp - started).seconds
@@ -251,6 +258,7 @@ class TestExecResult(unittest.TestCase):
         )
 
     def test_indexed_lines_access(self):
+        """Test custom indexes usage for construction string from output."""
         result = exec_helpers.ExecResult(
             cmd,
             stdout=(

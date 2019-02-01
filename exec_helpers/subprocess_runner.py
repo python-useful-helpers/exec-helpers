@@ -64,7 +64,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     def __init__(
-        self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger = logging.getLogger(__name__)
+        self,
+        log_mask_re: typing.Optional[str] = None,
+        *,
+        logger: logging.Logger = logging.getLogger(__name__)  # noqa: B008
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
