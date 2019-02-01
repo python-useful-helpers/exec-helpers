@@ -1,2 +1,1 @@
-mock  # no assert_called_once in py35
 -r requirements.txt

@@ -17,8 +17,8 @@ import logging
 import random
 import subprocess
 import typing
+from unittest import mock
 
-import mock
 import pytest
 
 import exec_helpers
@@ -101,6 +101,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -126,6 +127,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
 
 
@@ -187,12 +189,8 @@ def create_subprocess_shell(mocker, run_parameters):
     return create_mock(**run_parameters)
 
 
-@pytest.fixture
-def logger(mocker):
-    return mocker.patch("exec_helpers.subprocess_runner.Subprocess.logger", autospec=True)
-
-
-def test_special_cases(create_subprocess_shell, exec_result, logger, run_parameters) -> None:
+def test_special_cases(create_subprocess_shell, exec_result, subprocess_logger, run_parameters) -> None:
+    """Parametrized validation of special cases."""
     runner = exec_helpers.Subprocess(log_mask_re=run_parameters.get("init_log_mask_re", None))
     if "expect_exc" not in run_parameters:
         res = runner.execute(
@@ -209,8 +207,8 @@ def test_special_cases(create_subprocess_shell, exec_result, logger, run_paramet
             command=command_for_log.rstrip(), result=res
         )
 
-        assert logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
-        assert logger.mock_calls[-1] == mock.call.log(level=level, msg=result_log)
+        assert subprocess_logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
+        assert subprocess_logger.mock_calls[-1] == mock.call.log(level=level, msg=result_log)
         assert res == exec_result
     else:
         with pytest.raises(run_parameters["expect_exc"]):

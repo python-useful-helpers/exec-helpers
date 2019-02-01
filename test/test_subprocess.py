@@ -16,8 +16,8 @@ import logging
 import random
 import subprocess
 import typing
+from unittest import mock
 
-import mock
 import pytest
 
 import exec_helpers
@@ -99,6 +99,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -118,6 +119,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
 
 
@@ -169,12 +171,8 @@ def popen(mocker, run_parameters):
     return create_mock(**run_parameters)
 
 
-@pytest.fixture
-def logger(mocker):
-    return mocker.patch("exec_helpers.subprocess_runner.Subprocess.logger", autospec=True)
-
-
-def test_001_execute_async(popen, logger, run_parameters) -> None:
+def test_001_execute_async(popen, subprocess_logger, run_parameters) -> None:
+    """Test low level API."""
     runner = exec_helpers.Subprocess()
     res = runner.execute_async(
         command,
@@ -224,10 +222,11 @@ def test_001_execute_async(popen, logger, run_parameters) -> None:
     if stdin is not None:
         res.interface.stdin.write.assert_called_once_with(stdin)
         res.interface.stdin.close.assert_called_once()
-    logger.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
+    subprocess_logger.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
 
 
-def test_002_execute(popen, logger, exec_result, run_parameters) -> None:
+def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> None:
+    """Test API without checkers."""
     runner = exec_helpers.Subprocess()
     res = runner.execute(
         command,
@@ -240,7 +239,8 @@ def test_002_execute(popen, logger, exec_result, run_parameters) -> None:
     popen().wait.assert_called_once_with(timeout=default_timeout)
 
 
-def test_003_context_manager(mocker, popen, logger, exec_result, run_parameters) -> None:
+def test_003_context_manager(mocker, popen, subprocess_logger, exec_result, run_parameters) -> None:
+    """Test context manager for threads synchronization."""
     with mocker.patch("threading.RLock") as lock:
         with exec_helpers.Subprocess() as runner:
             res = runner.execute(command, stdin=run_parameters["stdin"])
@@ -250,7 +250,8 @@ def test_003_context_manager(mocker, popen, logger, exec_result, run_parameters)
     assert res == exec_result
 
 
-def test_004_check_call(execute, exec_result, logger) -> None:
+def test_004_check_call(execute, exec_result, subprocess_logger) -> None:
+    """Test exit code validator."""
     runner = exec_helpers.Subprocess()
     if exec_result.exit_code == exec_helpers.ExitCodes.EX_OK:
         assert runner.check_call(command, stdin=exec_result.stdin) == exec_result
@@ -266,30 +267,33 @@ def test_004_check_call(execute, exec_result, logger) -> None:
         assert exc.result == exec_result
         assert exc.expected == (proc_enums.EXPECTED,)
 
-        assert logger.mock_calls[-1] == mock.call.error(
+        assert subprocess_logger.mock_calls[-1] == mock.call.error(
             msg=f"Command {exc.result.cmd!r} returned exit code {exc.result.exit_code!s} "
             f"while expected {exc.expected!r}"
         )
 
 
-def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
+def test_005_check_call_no_raise(execute, exec_result, subprocess_logger) -> None:
+    """Test exit code validator in permissive mode."""
     runner = exec_helpers.Subprocess()
     res = runner.check_call(command, stdin=exec_result.stdin, raise_on_err=False)
     assert res == exec_result
 
     if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
         expected = (proc_enums.EXPECTED,)
-        assert logger.mock_calls[-1] == mock.call.error(
+        assert subprocess_logger.mock_calls[-1] == mock.call.error(
             msg=f"Command {res.cmd!r} returned exit code {res.exit_code!s} while expected {expected!r}"
         )
 
 
-def test_006_check_call_expect(execute, exec_result, logger) -> None:
+def test_006_check_call_expect(execute, exec_result, subprocess_logger) -> None:
+    """Test exit code validator with custom return codes."""
     runner = exec_helpers.Subprocess()
     assert runner.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
 
 
-def test_007_check_stderr(execute, exec_result, logger) -> None:
+def test_007_check_stderr(execute, exec_result, subprocess_logger) -> None:
+    """Test STDERR content validator."""
     runner = exec_helpers.Subprocess()
     if not exec_result.stderr:
         assert runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
@@ -304,13 +308,14 @@ def test_007_check_stderr(execute, exec_result, logger) -> None:
         assert exc.stderr == exec_result.stderr_str
         assert exc.result == exec_result
 
-        assert logger.mock_calls[-1] == mock.call.error(
+        assert subprocess_logger.mock_calls[-1] == mock.call.error(
             msg=f"Command {exc.result.cmd!r} output contains STDERR while not expected\n"
             f"\texit code: {exc.result.exit_code!s}"
         )
 
 
-def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
+def test_008_check_stderr_no_raise(execute, exec_result, subprocess_logger) -> None:
+    """Test STDERR content validator in permissive mode."""
     runner = exec_helpers.Subprocess()
     assert (
         runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
@@ -318,7 +323,8 @@ def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
     )
 
 
-def test_009_call(popen, logger, exec_result, run_parameters) -> None:
+def test_009_call(popen, subprocess_logger, exec_result, run_parameters) -> None:
+    """Test callable."""
     runner = exec_helpers.Subprocess()
     res = runner(
         command,

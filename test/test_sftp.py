@@ -20,8 +20,8 @@ import os
 import posixpath
 import stat
 import unittest
+from unittest import mock
 
-import mock
 import paramiko
 
 import exec_helpers

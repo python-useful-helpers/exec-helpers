@@ -26,10 +26,12 @@ import exec_helpers
 
 
 def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
+    """Generate VALID private keys for usage in tests."""
     return [paramiko.RSAKey.generate(1024) for _ in range(amount)]
 
 
 def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
+    """Generate or extract VALID public key from private key."""
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
     return f"{private_key.get_name()} {private_key.get_base64()}"
@@ -50,17 +52,6 @@ def get_internal_keys(
     return int_keys
 
 
-class FakeStream:
-    def __init__(self, *args):
-        self.__src = list(args)
-
-    def __iter__(self):
-        if len(self.__src) == 0:
-            raise IOError()
-        for _ in range(len(self.__src)):
-            yield self.__src.pop(0)
-
-
 username = "user"
 password = "pass"
 
@@ -78,6 +69,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -95,10 +87,12 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
 
 
 def test_001_init_checks(run_parameters) -> None:
+    """Object create validation."""
     auth = exec_helpers.SSHAuth(**run_parameters)
     int_keys = get_internal_keys(**run_parameters)
 

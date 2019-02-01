@@ -17,9 +17,9 @@ import errno
 import logging
 import random
 import typing
+from unittest import mock
 
 import asynctest
-import mock
 import pytest
 
 import exec_helpers
@@ -104,6 +104,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
+    """Tests parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -129,6 +130,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
+    """Tests configuration apply."""
     return configs[request.param]
 
 
@@ -198,6 +200,7 @@ def logger(mocker):
 
 
 async def test_special_cases(create_subprocess_shell, exec_result, logger, run_parameters) -> None:
+    """Parametrized validation of special cases."""
     runner = exec_helpers.async_api.Subprocess(log_mask_re=run_parameters.get("init_log_mask_re", None))
     if "expect_exc" not in run_parameters:
         res = await runner.execute(

@@ -14,8 +14,8 @@
 
 import base64
 import typing
+from unittest import mock
 
-import mock
 import pytest
 
 import exec_helpers
@@ -62,17 +62,6 @@ default_timeout = 60 * 60  # 1 hour
 
 
 @pytest.fixture
-def auto_add_policy(mocker):
-    return mocker.patch("paramiko.AutoAddPolicy", return_value="AutoAddPolicy")
-
-
-@pytest.fixture
-def paramiko_ssh_client(mocker):
-    mocker.patch("time.sleep")
-    return mocker.patch("paramiko.SSHClient")
-
-
-@pytest.fixture
 def chan_makefile():
     class MkFile:
         def __init__(self):
@@ -109,16 +98,6 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile):
     _ssh.attach_mock(get_transport, "get_transport")
     paramiko_ssh_client.return_value = _ssh
     return chan
-
-
-@pytest.fixture
-def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
-
-
-@pytest.fixture
-def get_logger(mocker):
-    return mocker.patch("logging.getLogger")
 
 
 @pytest.fixture

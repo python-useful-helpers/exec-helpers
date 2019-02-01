@@ -14,8 +14,8 @@
 
 import base64
 import typing
+from unittest import mock
 
-import mock
 import pytest
 
 import exec_helpers
@@ -59,17 +59,6 @@ encoded_cmd = base64.b64encode(f"{command}\n".encode("utf-8")).decode("utf-8")
 
 print_stdin = 'read line; echo "$line"'
 default_timeout = 60 * 60  # 1 hour
-
-
-@pytest.fixture
-def auto_add_policy(mocker):
-    return mocker.patch("paramiko.AutoAddPolicy", return_value="AutoAddPolicy")
-
-
-@pytest.fixture
-def paramiko_ssh_client(mocker):
-    mocker.patch("time.sleep")
-    return mocker.patch("paramiko.SSHClient")
 
 
 @pytest.fixture
@@ -125,16 +114,6 @@ def ssh_transport_channel(chan_makefile, ssh_transport):
     open_session = mock.Mock(return_value=chan)
     ssh_transport.attach_mock(open_session, "open_session")
     return chan
-
-
-@pytest.fixture
-def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
-
-
-@pytest.fixture
-def get_logger(mocker):
-    return mocker.patch("logging.getLogger")
 
 
 @pytest.fixture
