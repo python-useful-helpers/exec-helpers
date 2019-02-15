@@ -64,7 +64,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     def __init__(
-        self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger = logging.getLogger(__name__)
+        self,
+        log_mask_re: typing.Optional[str] = None,
+        *,
+        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
+        chroot_path: typing.Optional[str] = None
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
@@ -75,12 +79,14 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :type log_mask_re: typing.Optional[str]
         :param logger: logger instance to use
         :type logger: logging.Logger
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 2.9.3 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 2.9.3 Logger can be enforced.
         """
-        super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
+        super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re, chroot_path=chroot_path)
 
     def _exec_command(  # type: ignore
         self,
@@ -189,6 +195,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         *,
+        chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: typing.Optional[
             typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
@@ -210,6 +217,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
@@ -232,6 +241,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         .. versionadded:: 1.2.0
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 2.9.3 Expose cwd and env as optional keyword-only arguments
+        .. versionchanged:: 2.12.0 support chroot
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
@@ -242,7 +252,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         started = datetime.datetime.utcnow()
 
         process = subprocess.Popen(
-            args=[command],
+            args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
             stdin=subprocess.PIPE,

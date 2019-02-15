@@ -139,6 +139,8 @@ class _MemorizedSSH(abc.ABCMeta):
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
+        *,
+        chroot_path: typing.Optional[str] = None
     ) -> "SSHClientBase":
         """Main memorize method: check for cached instance and return it. API follows target __init__.
 
@@ -156,10 +158,12 @@ class _MemorizedSSH(abc.ABCMeta):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
         :return: SSH client instance
         :rtype: SSHClientBase
         """
-        if (host, port) in cls.__cache:
+        if (host, port) in cls.__cache and not chroot_path:  # chrooted connections are not memorized
             key = host, port
             if auth is None:
                 auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
@@ -187,8 +191,10 @@ class _MemorizedSSH(abc.ABCMeta):
             private_keys=private_keys,
             auth=auth,
             verbose=verbose,
+            chroot_path=chroot_path,
         )
-        cls.__cache[(ssh.hostname, ssh.port)] = ssh
+        if not chroot_path:
+            cls.__cache[(ssh.hostname, ssh.port)] = ssh
         return ssh
 
     @classmethod
@@ -199,7 +205,6 @@ class _MemorizedSSH(abc.ABCMeta):
         """
         n_count = 3
         # PY3: cache, ssh, temporary
-        # PY4: cache, values mapping, ssh, temporary
         for ssh in mcs.__cache.values():
             if CPYTHON and sys.getrefcount(ssh) == n_count:  # pragma: no cover
                 ssh.logger.debug("Closing as unused")
@@ -214,63 +219,66 @@ class _MemorizedSSH(abc.ABCMeta):
                 ssh.close()  # type: ignore
 
 
+class _SudoContext:
+    """Context manager for call commands with sudo."""
+
+    __slots__ = ("__ssh", "__sudo_status", "__enforce")
+
+    def __init__(self, ssh: "SSHClientBase", enforce: typing.Optional[bool] = None) -> None:
+        """Context manager for call commands with sudo.
+
+        :param ssh: connection instance
+        :type ssh: SSHClientBase
+        :param enforce: sudo mode for context manager
+        :type enforce: typing.Optional[bool]
+        """
+        self.__ssh = ssh  # type: SSHClientBase
+        self.__sudo_status = ssh.sudo_mode  # type: bool
+        self.__enforce = enforce  # type: typing.Optional[bool]
+
+    def __enter__(self) -> None:
+        self.__sudo_status = self.__ssh.sudo_mode
+        if self.__enforce is not None:
+            self.__ssh.sudo_mode = self.__enforce
+
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        self.__ssh.sudo_mode = self.__sudo_status
+
+
+class _KeepAliveContext:
+    """Context manager for keepalive management."""
+
+    __slots__ = ("__ssh", "__keepalive_status", "__enforce")
+
+    def __init__(self, ssh: "SSHClientBase", enforce: bool = True) -> None:
+        """Context manager for keepalive management.
+
+        :param ssh: connection instance
+        :type ssh: SSHClientBase
+        :param enforce: keepalive mode for context manager
+        :type enforce: bool
+        :param enforce: Keep connection alive after context manager exit
+        """
+        self.__ssh = ssh  # type: SSHClientBase
+        self.__keepalive_status = ssh.keepalive_mode  # type: bool
+        self.__enforce = enforce  # type: typing.Optional[bool]
+
+    def __enter__(self) -> None:
+        self.__ssh.__enter__()
+        self.__keepalive_status = self.__ssh.keepalive_mode
+        if self.__enforce is not None:
+            self.__ssh.keepalive_mode = self.__enforce
+
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        # Exit before releasing!
+        self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+        self.__ssh.keepalive_mode = self.__keepalive_status
+
+
 class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     """SSH Client helper."""
 
     __slots__ = ("__hostname", "__port", "__auth", "__ssh", "__sftp", "__sudo_mode", "__keepalive_mode", "__verbose")
-
-    class __get_sudo:
-        """Context manager for call commands with sudo."""
-
-        __slots__ = ("__ssh", "__sudo_status", "__enforce")
-
-        def __init__(self, ssh: "SSHClientBase", enforce: typing.Optional[bool] = None) -> None:
-            """Context manager for call commands with sudo.
-
-            :param ssh: connection instance
-            :type ssh: SSHClientBase
-            :param enforce: sudo mode for context manager
-            :type enforce: typing.Optional[bool]
-            """
-            self.__ssh = ssh
-            self.__sudo_status = ssh.sudo_mode
-            self.__enforce = enforce
-
-        def __enter__(self) -> None:
-            self.__sudo_status = self.__ssh.sudo_mode
-            if self.__enforce is not None:
-                self.__ssh.sudo_mode = self.__enforce
-
-        def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
-            self.__ssh.sudo_mode = self.__sudo_status
-
-    class __get_keepalive:
-        """Context manager for keepalive management."""
-
-        __slots__ = ("__ssh", "__keepalive_status", "__enforce")
-
-        def __init__(self, ssh: "SSHClientBase", enforce: bool = True) -> None:
-            """Context manager for keepalive management.
-
-            :param ssh: connection instance
-            :type ssh: SSHClientBase
-            :param enforce: keepalive mode for context manager
-            :type enforce: bool
-            :param enforce: Keep connection alive after context manager exit
-            """
-            self.__ssh = ssh
-            self.__keepalive_status = ssh.keepalive_mode
-            self.__enforce = enforce
-
-        def __enter__(self) -> None:
-            self.__keepalive_status = self.__ssh.keepalive_mode
-            if self.__enforce is not None:
-                self.__ssh.keepalive_mode = self.__enforce
-            self.__ssh.__enter__()
-
-        def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
-            self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
-            self.__ssh.keepalive_mode = self.__keepalive_status
 
     def __hash__(self) -> int:
         """Hash for usage as dict keys."""
@@ -285,6 +293,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
+        *,
+        chroot_path: typing.Optional[str] = None
     ) -> None:
         """Main SSH Client helper.
 
@@ -302,11 +312,14 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port)),
+            chroot_path=chroot_path
         )
 
         self.__hostname = host
@@ -525,7 +538,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :return: context manager with selected sudo state inside
         :rtype: typing.ContextManager
         """
-        return self.__get_sudo(ssh=self, enforce=enforce)
+        return _SudoContext(ssh=self, enforce=enforce)
 
     def keepalive(self, enforce: bool = True) -> "typing.ContextManager[None]":
         """Call contextmanager with keepalive mode change.
@@ -538,7 +551,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
         """
-        return self.__get_keepalive(ssh=self, enforce=enforce)
+        return _KeepAliveContext(ssh=self, enforce=enforce)
 
     # noinspection PyMethodOverriding
     def execute_async(  # pylint: disable=arguments-differ
@@ -550,6 +563,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         *,
+        chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -570,6 +584,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -595,6 +611,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 2.9.3 Expose pty options as optional keyword-only arguments
+        .. versionchanged:: 2.12.0 support chroot
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -612,7 +629,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         stdout = chan.makefile("rb")  # type: paramiko.ChannelFile
         stderr = chan.makefile_stderr("rb") if open_stderr else None
 
-        cmd = "{command}\n".format(command=command)
+        cmd = "{cmd}\n".format(cmd=self._prepare_command(cmd=command, chroot_path=chroot_path))
         started = datetime.datetime.utcnow()
         if self.sudo_mode:
             encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
