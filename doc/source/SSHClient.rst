@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, )
+    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, chroot_path=None)
 
         :param host: remote hostname
         :type host: ``str``
@@ -26,6 +26,8 @@ API: SSHClient and SSHAuth.
         :type auth: typing.Optional[SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
     .. note:: auth has priority over username/password/private_keys
 
@@ -66,6 +68,11 @@ API: SSHClient and SSHAuth.
         ``bool``
         Paramiko status: ready to use|reconnect required
 
+    .. py:attribute:: chroot_path
+
+        ``typing.Optional[str]``
+        Path for chroot if set.
+
     .. py:attribute:: sudo_mode
 
         ``bool``
@@ -102,6 +109,18 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.1.0 release lock on exit
         .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
 
+    .. py:method:: chroot(path)
+
+        Context manager for changing chroot rules.
+
+        :param path: chroot path or none for working without chroot.
+        :type path: typing.Optional[str]
+        :return: context manager with selected chroot state inside
+        :rtype: typing.ContextManager
+
+        .. Note:: Enter and exit main context manager is produced as well.
+        .. versionadded:: 4.1.0
+
     .. py:method:: sudo(enforce=None)
 
         Context manager getter for sudo operation
@@ -121,7 +140,7 @@ API: SSHClient and SSHAuth.
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
 
-    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, chroot_path=None, get_pty=False, width=80, height=24, **kwargs)
 
         Execute command in async mode and return channel with IO objects.
 
@@ -137,7 +156,9 @@ API: SSHClient and SSHAuth.
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: ``typing.Optional[str]``
+        :param chroot_path: chroot path override
+        :type chroot_path: ``typing.Optional[str]``
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width

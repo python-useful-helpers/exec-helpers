@@ -8,7 +8,7 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
-    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"))
+    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"), chroot_path=None)
 
         ExecHelper global API.
 
@@ -16,10 +16,13 @@ API: Subprocess
         :type log_mask_re: typing.Optional[str]
         :param logger: logger instance to use
         :type logger: logging.Logger
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 3.2.0 Logger can be enforced.
+        .. versionchanged:: 4.1.0 support chroot
 
     .. py:attribute:: log_mask_re
 
@@ -43,7 +46,24 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 release lock on exit
 
-    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, cwd=None, env=None, **kwargs)
+    .. py:attribute:: chroot_path
+
+        ``typing.Optional[str]``
+        Path for chroot if set.
+
+    .. py:method:: chroot(path)
+
+        Context manager for changing chroot rules.
+
+        :param path: chroot path or none for working without chroot.
+        :type path: typing.Optional[str]
+        :return: context manager with selected chroot state inside
+        :rtype: typing.ContextManager
+
+        .. Note:: Enter and exit main context manager is produced as well.
+        .. versionadded:: 4.1.0
+
+    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, chroot_path=None, cwd=None, env=None, **kwargs)
 
         Execute command in async mode and return Popen with IO objects.
 
@@ -60,6 +80,8 @@ API: Subprocess
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param chroot_path: chroot path override
+        :type chroot_path: ``typing.Optional[str]``
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.

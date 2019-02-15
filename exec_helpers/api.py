@@ -46,12 +46,48 @@ ExecuteAsyncResult = typing.NamedTuple(
 )
 
 
+class _ChRootContext:
+    """Context manager for call commands with chroot.
+
+    .. versionadded:: 4.1.0
+    """
+
+    __slots__ = ("__conn", "__chroot_status", "__path")
+
+    def __init__(self, conn: "ExecHelper", path: typing.Optional[str] = None) -> None:
+        """Context manager for call commands with sudo.
+
+        :param conn: connection instance
+        :type conn: ExecHelper
+        :param path: chroot path or None for no chroot
+        :type path: typing.Optional[str]
+        """
+        self.__conn: "ExecHelper" = conn
+        self.__chroot_status: typing.Optional[str] = conn.chroot_path
+        self.__path: typing.Optional[str] = path
+
+    def __enter__(self) -> None:
+        self.__conn.__enter__()
+        self.__chroot_status = self.__conn.chroot_path
+        self.__conn.chroot_path = self.__path
+
+    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+        self.__conn.chroot_path = self.__chroot_status
+        self.__conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+
+
 class ExecHelper(metaclass=abc.ABCMeta):
     """ExecHelper global API."""
 
-    __slots__ = ("__lock", "__logger", "log_mask_re")
+    __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
 
-    def __init__(self, logger: logging.Logger, log_mask_re: typing.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        log_mask_re: typing.Optional[str] = None,
+        *,
+        logger: logging.Logger,
+        chroot_path: typing.Optional[str] = None,
+    ) -> None:
         """Global ExecHelper API.
 
         :param logger: logger instance to use
@@ -59,13 +95,17 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 1.3.5 make API public to use as interface
+        .. versionchanged:: 4.1.0 support chroot
         """
         self.__lock = threading.RLock()
         self.__logger: logging.Logger = logger
         self.log_mask_re: typing.Optional[str] = log_mask_re
+        self.__chroot_path: typing.Optional[str] = chroot_path
 
     @property
     def logger(self) -> logging.Logger:
@@ -79,6 +119,46 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :rtype: threading.RLock
         """
         return self.__lock
+
+    @property
+    def chroot_path(self) -> typing.Optional[str]:
+        """Path for chroot if set.
+
+        :rtype: typing.Optional[str]
+        .. versionadded:: 4.1.0
+        """
+        return self.__chroot_path
+
+    @chroot_path.setter
+    def chroot_path(self, new_state: typing.Optional[str]) -> None:
+        """Path for chroot if set.
+
+        :param new_state: new path
+        :type new_state: typing.Optional[str]
+        .. versionadded:: 4.1.0
+        """
+        self.__chroot_path = new_state
+
+    @chroot_path.deleter
+    def chroot_path(self) -> None:
+        """Remove Path for chroot.
+
+        .. versionadded:: 4.1.0
+        """
+        self.__chroot_path = None
+
+    def chroot(self, path: typing.Union[str, None]) -> "typing.ContextManager[None]":
+        """Context manager for changing chroot rules.
+
+        :param path: chroot path or none for working without chroot.
+        :type path: typing.Optional[str]
+        :return: context manager with selected chroot state inside
+        :rtype: typing.ContextManager
+
+        .. Note:: Enter and exit main context manager is produced as well.
+        .. versionadded:: 4.1.0
+        """
+        return _ChRootContext(conn=self, path=path)
 
     def __enter__(self) -> "ExecHelper":
         """Get context manager.
@@ -136,6 +216,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         return result
 
+    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
+        """Prepare command: cower chroot and other cases."""
+        if any((chroot_path, self.chroot_path)):
+            return f"chroot {chroot_path if chroot_path else self.chroot_path} {cmd}"
+        return cmd
+
     @abc.abstractmethod
     def execute_async(
         self,
@@ -145,6 +231,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> ExecuteAsyncResult:
         """Execute command in async mode and return remote interface with IO objects.
@@ -162,6 +250,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -179,6 +269,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
         .. versionchanged:: 1.2.0 stdin data
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
+        .. versionchanged:: 4.1.0 support chroot
         """
         raise NotImplementedError  # pragma: no cover
 

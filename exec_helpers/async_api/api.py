@@ -36,7 +36,13 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
 
     __slots__ = ("__alock",)
 
-    def __init__(self, logger: logging.Logger, log_mask_re: typing.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        log_mask_re: typing.Optional[str] = None,
+        *,
+        logger: logging.Logger,
+        chroot_path: typing.Optional[str] = None,
+    ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
         :param logger: logger instance to use
@@ -44,8 +50,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
         """
-        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
+        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re, chroot_path=chroot_path)
         self.__alock: typing.Optional[asyncio.Lock] = None
 
     async def __aenter__(self) -> "ExecHelper":
@@ -104,6 +112,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
+        *,
+        chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> api.ExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -121,6 +131,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
