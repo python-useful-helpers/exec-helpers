@@ -4,5 +4,5 @@ six>=1.10.0  # MIT
 threaded>=2.0  # Apache-2.0
 PyYAML>=3.12  # MIT
 advanced-descriptors>=1.0  # Apache-2.0
-typing >= 3.6 ; python_version < "3.8"
+typing >= 3.6 ; python_version < "3.7"
 psutil >= 5.0
