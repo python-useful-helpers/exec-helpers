@@ -16,10 +16,10 @@ jobs:
       python -m pip install --upgrade pip
       pip install -U setuptools
       pip install -r requirements.txt
+      pip install -U pytest pylint pytest-sugar pytest-flake8 flake8-bugbear flake8-docstrings
     displayName: 'Install dependencies'
 
   - script: |
-      pip install -U pytest pylint pytest-sugar pytest-flake8 flake8-bugbear flake8-docstrings
       pytest -vvv --flake8 -m flake8 --junitxml=flake8_result.xml exec_helpers
     displayName: 'PEP8'
 
@@ -43,10 +43,10 @@ jobs:
       python -m pip install --upgrade pip
       pip install -U setuptools
       pip install -r requirements.txt
+      pip install -U pytest pylint pytest-pylint pytest-sugar
     displayName: 'Install dependencies'
 
   - script: |
-      pip install -U pytest pylint pytest-pylint pytest-sugar
       pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
     displayName: 'PyLint'
 
@@ -70,10 +70,10 @@ jobs:
       python -m pip install --upgrade pip
       pip install -U setuptools
       pip install -r requirements.txt
+      pip install -U mypy
     displayName: 'Install dependencies'
 
   - script: |
-      pip install -U mypy
       mypy --strict --junit-xml=mypy_result.xml exec_helpers
     displayName: 'MyPy'
 
