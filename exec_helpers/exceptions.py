@@ -246,7 +246,7 @@ class ParallelCallExceptions(ParallelCallProcessError):
         exceptions,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], Exception]
         errors,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
         results,  # type: typing.Dict[typing.Tuple[typing.Union[str, typing.Text], int], exec_result.ExecResult]
-        expected=(proc_enums.EXPECTED,),  # type: typing.List[typing.Union[int, proc_enums.ExitCodes]]
+        expected=(proc_enums.EXPECTED,),  # type: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...]
         **kwargs  # type: typing.Any
     ):  # type: (...) -> None
         """Exception during parallel execution.

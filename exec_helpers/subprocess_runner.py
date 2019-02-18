@@ -57,7 +57,11 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(self, log_mask_re=None):  # type: (typing.Optional[typing.Text]) -> None
+    def __init__(
+        self,
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
+        chroot_path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+    ):  # type: (...) -> None
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -65,6 +69,8 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
+        :param chroot_path: chroot path (use chroot if set)
+        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 1.9.0 Not singleton anymore. Only lock is shared between all instances.
@@ -164,7 +170,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
         wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
     # noinspection PyMethodOverriding
     def execute_async(
@@ -209,6 +215,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
         .. versionadded:: 1.2.0
         .. versionchanged:: 1.4.0 Use typed NamedTuple as result
+        .. versionchanged:: 1.12.0 support chroot
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
@@ -219,7 +226,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         started = datetime.datetime.utcnow()
 
         process = subprocess.Popen(
-            args=[command],
+            args=[self._prepare_command(cmd=command, chroot_path=kwargs.get("chroot_path", None))],
             stdout=subprocess.PIPE if open_stdout else devnull,
             stderr=subprocess.PIPE if open_stderr else devnull,
             stdin=subprocess.PIPE,
