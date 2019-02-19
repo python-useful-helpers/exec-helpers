@@ -40,6 +40,17 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 release lock on exit
 
+    .. py:method:: chroot(path)
+
+        Context manager for changing chroot rules.
+
+        :param path: chroot path or none for working without chroot.
+        :type path: ``typing.Optional[typing.Union[str, typing.Text]``
+        :return: context manager with selected chroot state inside
+        :rtype: typing.ContextManager
+
+        .. Note:: Enter and exit main context manager is produced as well.
+
     .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
 
         Execute command in async mode and return Popen with IO objects.

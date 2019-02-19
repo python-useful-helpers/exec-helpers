@@ -59,8 +59,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
 
     def __init__(
         self,
-        log_mask_re=None,  # type: typing.Optional[typing.Text]
-        chroot_path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+        log_mask_re=None  # type: typing.Optional[typing.Text]
     ):  # type: (...) -> None
         """Subprocess helper with timeouts and lock-free FIFO.
 
@@ -69,8 +68,6 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 1.9.0 Not singleton anymore. Only lock is shared between all instances.

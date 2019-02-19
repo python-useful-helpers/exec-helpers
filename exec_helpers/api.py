@@ -50,19 +50,20 @@ ExecuteAsyncResult = typing.NamedTuple(
 )
 
 
-class _ChRootContext(object):
+# noinspection PyProtectedMember
+class _ChRootContext(object):  # pylint: disable=protected-access
     """Context manager for call commands with chroot.
 
     .. versionadded:: 1.12.0
     """
 
-    __slots__ = ("__conn", "__chroot_status", "__path")
+    __slots__ = ("_conn", "_chroot_status", "_path")
 
     def __init__(
         self,
         conn,  # type: ExecHelper
         path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
-    ):  # type: (...) -> None
+    ):  # type: (...) -> None  # pylint: disable=protected-access
         """Context manager for call commands with sudo.
 
         :param conn: connection instance
@@ -70,18 +71,18 @@ class _ChRootContext(object):
         :param path: chroot path or None for no chroot
         :type path: typing.Optional[str]
         """
-        self.__conn = conn  # type: ExecHelper
-        self.__chroot_status = conn.chroot_path  # type: typing.Optional[typing.Union[str, typing.Text]]
-        self.__path = path  # type: typing.Optional[typing.Union[str, typing.Text]]
+        self._conn = conn  # type: ExecHelper
+        self._chroot_status = conn._chroot_path  # type: typing.Optional[typing.Union[str, typing.Text]]
+        self._path = path  # type: typing.Optional[typing.Union[str, typing.Text]]
 
     def __enter__(self):  # type: () -> None
-        self.__conn.__enter__()
-        self.__chroot_status = self.__conn.chroot_path
-        self.__conn.chroot_path = self.__path
+        self._conn.__enter__()
+        self._chroot_status = self._conn._chroot_path  # pylint: disable=protected-access
+        self._conn._chroot_path = self._path  # pylint: disable=protected-access
 
     def __exit__(self, exc_type, exc_val, exc_tb):  # type: (typing.Any, typing.Any, typing.Any) -> None
-        self.__conn.chroot_path = self.__chroot_status
-        self.__conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+        self._conn._chroot_path = self._chroot_status  # pylint: disable=protected-access
+        self._conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
 
 
 class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
@@ -92,8 +93,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     def __init__(
         self,
         logger,  # type: logging.Logger
-        log_mask_re=None,  # type: typing.Optional[typing.Text]
-        chroot_path=None  # type: typing.Optional[typing.Union[str, typing.Text]]
+        log_mask_re=None  # type: typing.Optional[typing.Text]
     ):  # type: (...) -> None
         """Global ExecHelper API.
 
@@ -101,8 +101,6 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         :type logger: logging.Logger
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
@@ -112,7 +110,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         self.__lock = threading.RLock()
         self.__logger = logger
         self.log_mask_re = log_mask_re  # type: typing.Optional[typing.Text]
-        self.__chroot_path = chroot_path  # type: typing.Optional[typing.Union[str, typing.Text]]
+        self.__chroot_path = None  # type: typing.Optional[typing.Union[str, typing.Text]]
 
     @property
     def logger(self):  # type: () -> logging.Logger
@@ -120,7 +118,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         return self.__logger
 
     @property
-    def chroot_path(self):  # type: () -> typing.Optional[typing.Union[str, typing.Text]]
+    def _chroot_path(self):  # type: () -> typing.Optional[typing.Union[str, typing.Text]]
         """Path for chroot if set.
 
         :rtype: typing.Optional[typing.Text]
@@ -128,8 +126,8 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         """
         return self.__chroot_path
 
-    @chroot_path.setter
-    def chroot_path(self, new_state):  # type: (typing.Optional[typing.Union[str, typing.Text]]) -> None
+    @_chroot_path.setter
+    def _chroot_path(self, new_state):  # type: (typing.Optional[typing.Union[str, typing.Text]]) -> None
         """Path for chroot if set.
 
         :param new_state: new path
@@ -138,8 +136,8 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         """
         self.__chroot_path = new_state
 
-    @chroot_path.deleter
-    def chroot_path(self):  # type: () -> None
+    @_chroot_path.deleter
+    def _chroot_path(self):  # type: () -> None
         """Remove Path for chroot.
 
         .. versionadded:: 1.12.0
@@ -231,9 +229,9 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         chroot_path=None  # type: typing.Optional[typing.Union[str, typing.Text]]
     ):  # type: (...) -> typing.Text
         """Prepare command: cower chroot and other cases."""
-        if any((chroot_path, self.chroot_path)):
+        if any((chroot_path, self._chroot_path)):
             return "chroot {chroot_path} {cmd}".format(
-                chroot_path=chroot_path if chroot_path else self.chroot_path,
+                chroot_path=chroot_path if chroot_path else self._chroot_path,
                 cmd=cmd
             )
         return cmd

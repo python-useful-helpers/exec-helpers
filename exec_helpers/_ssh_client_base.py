@@ -119,8 +119,7 @@ class _MemorizedSSH(abc.ABCMeta):
         password=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
-        verbose=True,  # type: bool
-        chroot_path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
+        verbose=True  # type: bool
     ):  # type: (...) -> SSHClientBase
         """Main memorize method: check for cached instance and return it.
 
@@ -138,12 +137,10 @@ class _MemorizedSSH(abc.ABCMeta):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[typing.Union[str, typing.Text]]
         :return: SSH client instance
         :rtype: SSHClientBase
         """
-        if (host, port) in cls.__cache and not chroot_path:  # chrooted connections are not memorized
+        if (host, port) in cls.__cache:
             key = host, port
             if auth is None:
                 auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
@@ -171,10 +168,8 @@ class _MemorizedSSH(abc.ABCMeta):
             private_keys=private_keys,
             auth=auth,
             verbose=verbose,
-            chroot_path=chroot_path,
         )
-        if not chroot_path:
-            cls.__cache[(ssh.hostname, ssh.port)] = ssh
+        cls.__cache[(ssh.hostname, ssh.port)] = ssh
         return ssh
 
     @classmethod
@@ -272,7 +267,6 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
         verbose=True,  # type: bool
-        chroot_path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
     ):  # type: (...) -> None
         """Main SSH Client helper.
 
@@ -290,14 +284,11 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[typing.Union[str, typing.Text]]
 
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port)),
-            chroot_path=chroot_path
+            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
         )
 
         self.__hostname = host
@@ -367,7 +358,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             cls=self.__class__.__name__, self=self, username=self.auth.username
         )
 
-    def __str__(self):  # type: () -> bytes  # pragma: no cover
+    def __str__(self):  # type: ignore  # pragma: no cover
         """Representation for debug purposes."""
         return self.__unicode__().encode("utf-8")
 
