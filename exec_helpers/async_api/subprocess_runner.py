@@ -71,8 +71,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         self,
         log_mask_re: typing.Optional[str] = None,
         *,
-        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
-        chroot_path: typing.Optional[str] = None
+        logger: logging.Logger = logging.getLogger(__name__)  # noqa: B008
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
@@ -81,13 +80,11 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :type log_mask_re: typing.Optional[str]
         :param logger: logger instance to use
         :type logger: logging.Logger
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 3.2.0 Logger can be enforced.
         """
-        super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re, chroot_path=chroot_path)
+        super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
     async def _exec_command(  # type: ignore
         self,

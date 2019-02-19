@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, chroot_path=None)
+    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None)
 
         :param host: remote hostname
         :type host: ``str``
@@ -26,8 +26,6 @@ API: SSHClient and SSHAuth.
         :type auth: typing.Optional[SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
 
     .. note:: auth has priority over username/password/private_keys
 
@@ -67,11 +65,6 @@ API: SSHClient and SSHAuth.
 
         ``bool``
         Paramiko status: ready to use|reconnect required
-
-    .. py:attribute:: chroot_path
-
-        ``typing.Optional[str]``
-        Path for chroot if set.
 
     .. py:attribute:: sudo_mode
 
