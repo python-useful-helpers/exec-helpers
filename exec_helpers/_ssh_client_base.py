@@ -128,8 +128,6 @@ class _MemorizedSSH(abc.ABCMeta):
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
-        *,
-        chroot_path: typing.Optional[str] = None,
     ) -> "SSHClientBase":
         """Main memorize method: check for cached instance and return it. API follows target __init__.
 
@@ -147,12 +145,10 @@ class _MemorizedSSH(abc.ABCMeta):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
         :return: SSH client instance
         :rtype: SSHClientBase
         """
-        if (host, port) in cls.__cache and not chroot_path:  # chrooted connections are not memorized
+        if (host, port) in cls.__cache:
             key = host, port
             if auth is None:
                 auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
@@ -180,10 +176,8 @@ class _MemorizedSSH(abc.ABCMeta):
             private_keys=private_keys,
             auth=auth,
             verbose=verbose,
-            chroot_path=chroot_path,
         )
-        if not chroot_path:
-            cls.__cache[(ssh.hostname, ssh.port)] = ssh
+        cls.__cache[(ssh.hostname, ssh.port)] = ssh
         return ssh
 
     @classmethod
@@ -282,8 +276,6 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
-        *,
-        chroot_path: typing.Optional[str] = None,
     ) -> None:
         """Main SSH Client helper.
 
@@ -301,13 +293,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
 
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild(f"{host}:{port}"), chroot_path=chroot_path
+            logger=logging.getLogger(self.__class__.__name__).getChild(f"{host}:{port}")
         )
 
         self.__hostname: str = host

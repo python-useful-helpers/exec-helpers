@@ -31,18 +31,38 @@ from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
 
+# noinspection PyProtectedMember
+class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
+    """Async extension for chroot."""
+
+    def __init__(self, conn: "ExecHelper", path: typing.Optional[str] = None) -> None:
+        """Context manager for call commands with sudo.
+
+        :param conn: connection instance
+        :type conn: ExecHelper
+        :param path: chroot path or None for no chroot
+        :type path: typing.Optional[str]
+        """
+        super(_ChRootContext, self).__init__(conn=conn, path=path)
+
+    async def __aenter__(self) -> None:
+        await self._conn.__aenter__()  # type: ignore
+        self._chroot_status = self._conn._chroot_path  # pylint: disable=protected-access
+        self._conn._chroot_path = self._path  # pylint: disable=protected-access
+
+    async def __aexit__(  # pylint: disable=protected-access
+        self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any
+    ) -> None:
+        self._conn._chroot_path = self._chroot_status
+        await self._conn.__aexit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+
+
 class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     __slots__ = ("__alock",)
 
-    def __init__(
-        self,
-        log_mask_re: typing.Optional[str] = None,
-        *,
-        logger: logging.Logger,
-        chroot_path: typing.Optional[str] = None,
-    ) -> None:
+    def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
         :param logger: logger instance to use
@@ -50,10 +70,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
         """
-        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re, chroot_path=chroot_path)
+        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
         self.__alock: typing.Optional[asyncio.Lock] = None
 
     async def __aenter__(self) -> "ExecHelper":
@@ -66,6 +84,19 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
     async def __aexit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         """Async context manager."""
         self.__alock.release()  # type: ignore
+
+    def chroot(self, path: typing.Union[str, None]) -> "typing.ContextManager[None]":
+        """Context manager for changing chroot rules.
+
+        :param path: chroot path or none for working without chroot.
+        :type path: typing.Optional[str]
+        :return: context manager with selected chroot state inside
+        :rtype: typing.ContextManager
+
+        .. Note:: Enter and exit main context manager is produced as well.
+        .. versionadded:: 4.1.0
+        """
+        return _ChRootContext(conn=self, path=path)
 
     @abc.abstractmethod
     async def _exec_command(  # type: ignore

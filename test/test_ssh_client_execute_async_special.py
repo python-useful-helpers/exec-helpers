@@ -230,20 +230,7 @@ def test_010_check_stdin_closed(paramiko_ssh_client, chan_makefile, auto_add_pol
     log.warning.assert_called_once_with("STDIN Send failed: closed channel")
 
 
-def test_011_execute_async_chroot(ssh, ssh_transport_channel):
-    """Global chroot path."""
-    ssh.chroot_path = "/"
-
-    ssh.execute_async(command)
-    ssh_transport_channel.assert_has_calls(
-        (
-            mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot {ssh.chroot_path} {command}\n'),
-        )
-    )
-
-
-def test_012_execute_async_chroot_cmd(ssh, ssh_transport_channel):
+def test_011_execute_async_chroot_cmd(ssh, ssh_transport_channel):
     """Command-only chroot path."""
     ssh.execute_async(command, chroot_path='/')
     ssh_transport_channel.assert_has_calls(
@@ -254,7 +241,7 @@ def test_012_execute_async_chroot_cmd(ssh, ssh_transport_channel):
     )
 
 
-def test_013_execute_async_chroot_context(ssh, ssh_transport_channel):
+def test_012_execute_async_chroot_context(ssh, ssh_transport_channel):
     """Context-managed chroot path."""
     with ssh.chroot('/'):
         ssh.execute_async(command)
@@ -266,9 +253,9 @@ def test_013_execute_async_chroot_context(ssh, ssh_transport_channel):
     )
 
 
-def test_014_execute_async_no_chroot_context(ssh, ssh_transport_channel):
+def test_013_execute_async_no_chroot_context(ssh, ssh_transport_channel):
     """Context-managed chroot path override."""
-    ssh.chroot_path = "/"
+    ssh._chroot_path = "/"
 
     with ssh.chroot(None):
         ssh.execute_async(command)
