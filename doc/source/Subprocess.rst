@@ -8,7 +8,7 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
-    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"), chroot_path=None)
+    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"))
 
         ExecHelper global API.
 
@@ -16,8 +16,6 @@ API: Subprocess
         :type log_mask_re: typing.Optional[str]
         :param logger: logger instance to use
         :type logger: logging.Logger
-        :param chroot_path: chroot path (use chroot if set)
-        :type chroot_path: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 2.9.0 Not singleton anymore. Only lock is shared between all instances.
@@ -45,11 +43,6 @@ API: Subprocess
         Close context manager
 
         .. versionchanged:: 1.1.0 release lock on exit
-
-    .. py:attribute:: chroot_path
-
-        ``typing.Optional[str]``
-        Path for chroot if set.
 
     .. py:method:: chroot(path)
 
