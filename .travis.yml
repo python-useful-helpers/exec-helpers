@@ -87,8 +87,7 @@ jobs:
     - pip install --upgrade "mypy >= 0.670"
     script:
     - mypy --strict exec_helpers
-
-  - <<: *code_style_check
+  - <<: *static_analysis
     name: "PEP8"
     install:
     - *upgrade_python_toolset

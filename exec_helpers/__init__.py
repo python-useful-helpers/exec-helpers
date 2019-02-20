@@ -32,8 +32,9 @@ __all__ = (
     "ExecResult",
 )
 
-import pkg_resources
 import warnings
+
+import pkg_resources
 
 from .proc_enums import ExitCodes
 
