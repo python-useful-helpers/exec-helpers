@@ -33,6 +33,7 @@ __all__ = (
 )
 
 import pkg_resources
+import warnings
 
 from .proc_enums import ExitCodes
 
@@ -64,6 +65,11 @@ except pkg_resources.DistributionNotFound:  # pragma: no cover
         __version__ = setuptools_scm.get_version()
     except ImportError:
         pass
+
+warnings.warn(
+    "Python 3.4 is going to reach EOL. Please update to fresh python and use newer versions of Exec-Helpers.",
+    PendingDeprecationWarning
+)
 
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"
