@@ -135,6 +135,8 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+        # Keyword only:
+        log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
     )
 
@@ -149,6 +151,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         # Keyword only:
+        log_mask_re=None,  # type: typing.Optional[str]
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
         **kwargs
     )
@@ -162,6 +165,7 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         # Keyword only:
+        log_mask_re=None,  # type: typing.Optional[str]
         expected=(0,),  # typing.Iterable[typing.Union[int, ExitCodes]]
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
     )
@@ -172,6 +176,8 @@ This methods are almost the same for `SSHCleint` and `Subprocess`, except specif
         command,  # type: str
         verbose=False,  # type: bool
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+        # Keyword only:
+        log_mask_re=None,  # type: typing.Optional[str]
         **kwargs
     )
 

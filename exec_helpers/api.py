@@ -311,6 +311,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -321,6 +323,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -330,10 +335,17 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        async_result = self.execute_async(command, verbose=verbose, **kwargs)  # type: ExecuteAsyncResult
+        async_result = self.execute_async(
+            command, verbose=verbose, log_mask_re=log_mask_re, **kwargs
+        )  # type: ExecuteAsyncResult
 
         result = self._exec_command(
-            command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
+            command=command,
+            async_result=async_result,
+            timeout=timeout,
+            verbose=verbose,
+            log_mask_re=log_mask_re,
+            **kwargs
         )  # type: exec_result.ExecResult
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
@@ -344,6 +356,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         command: str,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -354,6 +368,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -362,7 +379,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         .. versionadded:: 3.3.0
         """
-        return self.execute(command=command, verbose=verbose, timeout=timeout, **kwargs)
+        return self.execute(command=command, verbose=verbose, timeout=timeout, log_mask_re=log_mask_re, **kwargs)
 
     def check_call(
         self,
@@ -373,6 +390,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
+        log_mask_re: typing.Optional[str] = None,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any
     ) -> exec_result.ExecResult:
@@ -390,6 +408,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -404,7 +425,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
         expected_codes = proc_enums.exit_codes_to_enums(expected)
-        result = self.execute(command, verbose, timeout, **kwargs)  # type: exec_result.ExecResult
+        result = self.execute(
+            command, verbose, timeout, log_mask_re=log_mask_re, **kwargs
+        )  # type: exec_result.ExecResult
         if result.exit_code not in expected_codes:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "
@@ -425,6 +448,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
+        log_mask_re: typing.Optional[str] = None,
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any
@@ -441,6 +465,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type error_info: typing.Optional[str]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
         :param expected: expected return codes (0 by default)
         :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
@@ -464,6 +491,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             raise_on_err=raise_on_err,
             expected=expected,
             exception_class=exception_class,
+            log_mask_re=log_mask_re,
             **kwargs
         )
         append = error_info + "\n" if error_info else ""  # type: str
