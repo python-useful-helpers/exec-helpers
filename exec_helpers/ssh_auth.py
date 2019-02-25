@@ -18,10 +18,12 @@
 
 __all__ = ("SSHAuth",)
 
+# Standard Library
 import copy
 import logging
 import typing
 
+# External Dependencies
 import paramiko  # type: ignore
 
 logger = logging.getLogger(__name__)

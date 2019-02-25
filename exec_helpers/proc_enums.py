@@ -21,6 +21,7 @@ Linux signals, Linux & bash return codes.
 
 __all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")
 
+# Standard Library
 import enum
 import sys
 import typing

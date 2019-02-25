@@ -16,9 +16,11 @@
 
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
+# Standard Library
 import platform
 import typing
 
+# External Dependencies
 import psutil  # type: ignore
 
 

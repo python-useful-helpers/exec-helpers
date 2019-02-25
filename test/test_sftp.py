@@ -16,16 +16,18 @@
 
 # pylint: disable=no-self-use
 
+# Standard Library
 import os
 import posixpath
 import stat
 import unittest
 from unittest import mock
 
+# External Dependencies
 import paramiko
 
+# Exec-Helpers Implementation
 import exec_helpers
-
 
 host = "127.0.0.1"
 port = 22
