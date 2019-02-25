@@ -21,15 +21,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+# Standard Library
 import ast
 import collections
-from distutils.command import build_ext
 import distutils.errors
 import os.path
 import shutil
 import sys
+from distutils.command import build_ext
 
+# External Dependencies
 import setuptools
+
 try:
     # noinspection PyPackageRequirements
     from Cython.Build import cythonize
