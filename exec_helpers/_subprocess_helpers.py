@@ -16,14 +16,16 @@
 
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
+# Standard Library
 import platform
-
 # pylint: disable=unused-import
 import typing  # noqa: F401
 
+# External Dependencies
+import psutil  # type: ignore
+
 # pylint: enable=unused-import
 
-import psutil  # type: ignore
 
 
 # Adopt from:
