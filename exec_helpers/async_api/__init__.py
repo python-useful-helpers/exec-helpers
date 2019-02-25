@@ -23,4 +23,4 @@ __all__ = ("ExecHelper", "ExecResult", "Subprocess", "SubprocessExecuteAsyncResu
 from .api import ExecHelper
 from .exec_result import ExecResult
 from .subprocess_runner import Subprocess  # nosec  # Expected
-from .subprocess_runner import SubprocessExecuteAsyncResult
+from .subprocess_runner import SubprocessExecuteAsyncResult  # nosec  # Our implementation
