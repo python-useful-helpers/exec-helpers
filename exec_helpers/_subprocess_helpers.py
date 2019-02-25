@@ -27,7 +27,6 @@ import psutil  # type: ignore
 # pylint: enable=unused-import
 
 
-
 # Adopt from:
 # https://stackoverflow.com/questions/1230669/subprocess-deleting-child-processes-in-windows
 def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: no cover
