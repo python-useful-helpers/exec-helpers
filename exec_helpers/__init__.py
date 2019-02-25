@@ -52,7 +52,7 @@ from .proc_enums import ExitCodes
 from .ssh_auth import SSHAuth
 from .ssh_client import SSHClient
 from .subprocess_runner import Subprocess  # nosec  # Expected
-from .subprocess_runner import SubprocessExecuteAsyncResult
+from .subprocess_runner import SubprocessExecuteAsyncResult  # nosec  # Our implementation
 
 try:  # pragma: no cover
     __version__ = pkg_resources.get_distribution(__name__).version  # type: str
