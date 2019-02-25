@@ -18,6 +18,7 @@
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
+# Standard Library
 import concurrent.futures
 import datetime
 import errno
@@ -25,14 +26,16 @@ import logging
 import subprocess  # nosec  # Expected usage
 import typing
 
+# External Dependencies
 import threaded
 
-from exec_helpers import api
-from exec_helpers import exec_result
-from exec_helpers import exceptions
-from exec_helpers import metaclasses  # pylint: disable=unused-import
+# Exec-Helpers Implementation
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
+from exec_helpers import api
+from exec_helpers import exceptions
+from exec_helpers import exec_result
+from exec_helpers import metaclasses  # pylint: disable=unused-import
 
 
 # noinspection PyTypeHints
