@@ -120,6 +120,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         :rtype: ExecResult
         :raises OSError: exception during process kill (and not regarding to already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperNoKillError: Process not dies on SIGTERM & SIGKILL
         """
 
         async def poll_stdout() -> None:
