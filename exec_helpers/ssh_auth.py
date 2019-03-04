@@ -174,9 +174,8 @@ class SSHAuth:
                 if self.__password is None:
                     logger.exception("No password has been set!")
                     raise
-                else:
-                    logger.critical("Unexpected PasswordRequiredException, when password is set!")
-                    raise
+                logger.critical("Unexpected PasswordRequiredException, when password is set!")
+                raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
         msg: str = "Connection using stored authentication info failed!"
