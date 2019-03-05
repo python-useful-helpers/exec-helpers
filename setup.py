@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -191,10 +191,6 @@ def get_simple_vars_from_src(src):
             continue
         try:
             if isinstance(node.value, ast_data):
-                value = ast.literal_eval(node.value)
-            elif isinstance(node.value, ast.Name) and isinstance(  # NameConstant in python < 3.4
-                node.value.ctx, ast.Load  # Read constant
-            ):
                 value = ast.literal_eval(node.value)
             else:
                 continue
