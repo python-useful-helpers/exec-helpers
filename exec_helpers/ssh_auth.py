@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 #
