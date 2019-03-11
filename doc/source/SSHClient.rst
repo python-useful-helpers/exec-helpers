@@ -166,7 +166,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
 
-    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
 
         Execute command and wait for return code.
 
@@ -179,12 +179,14 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param stdin: pass STDIN text to the process
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
-    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, **kwargs)
+    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
 
         Execute command and wait for return code.
 
@@ -197,12 +199,14 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param stdin: pass STDIN text to the process
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionadded:: 2.9.4
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
 
@@ -221,6 +225,8 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param stdin: pass STDIN text to the process
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
@@ -231,7 +237,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, log_mask_re=None, expected=(0,), exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -250,6 +256,8 @@ API: SSHClient and SSHAuth.
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
+        :param stdin: pass STDIN text to the process
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
