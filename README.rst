@@ -135,6 +135,7 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         **kwargs
     )
 
@@ -150,6 +151,7 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         raise_on_err=True,  # type: bool
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
         **kwargs
     )
@@ -163,8 +165,9 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         error_info=None,  # type: typing.Optional[str]
         raise_on_err=True,  # type: bool
         # Keyword only:
-        log_mask_re=None,  # type: typing.Optional[str]
         expected=(0,),  # typing.Iterable[typing.Union[int, ExitCodes]]
+        log_mask_re=None,  # type: typing.Optional[str]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
     )
 
@@ -176,6 +179,7 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
+        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
         **kwargs
     )
 
