@@ -383,7 +383,9 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         if result.stderr:
             message = (
                 "{append}Command {result.cmd!r} output contains STDERR while not expected\n"
-                "\texit code: {result.exit_code!s}".format(append=error_info + "\n" if error_info else "", result=result)
+                "\texit code: {result.exit_code!s}".format(
+                    append=error_info + "\n" if error_info else "", result=result
+                )
             )
             self.logger.error(msg=message)
             if raise_on_err:
