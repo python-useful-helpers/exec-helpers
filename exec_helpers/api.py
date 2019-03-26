@@ -103,7 +103,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
     @property
     def logger(self) -> logging.Logger:
-        """Instance logger access."""
+        """Instance logger access.
+
+        :returns: logger instance
+        """
         return self.__logger
 
     @property
@@ -181,7 +184,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
 
         def mask(text: str, rules: str) -> str:
-            """Mask part of text using rules."""
+            """Mask part of text using rules.
+
+            :param text: source text
+            :param rules: regex rules to mask.
+            :returns: source with all MATCHED groups replaced by '<*masked*>'
+            """
             indexes = [0]  # Start of the line
             masked = ""
 
@@ -211,11 +219,15 @@ class ExecHelper(metaclass=abc.ABCMeta):
         return result
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
-        """Prepare command: cower chroot and other cases."""
+        """Prepare command: cower chroot and other cases.
+
+        :param cmd: main command
+        :param chroot_path: path to make chroot for execution
+        :returns: final command, includes chroot, if required
+        """
         if any((chroot_path, self._chroot_path)):
             return "chroot {chroot_path} {cmd}".format(
-                chroot_path=chroot_path if chroot_path else self._chroot_path,
-                cmd=cmd
+                chroot_path=chroot_path if chroot_path else self._chroot_path, cmd=cmd
             )
         return cmd
 
@@ -353,7 +365,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             **kwargs
         )  # type: exec_result.ExecResult
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
         return result
 
     def __call__(
@@ -440,7 +452,6 @@ class ExecHelper(metaclass=abc.ABCMeta):
         expected_codes = proc_enums.exit_codes_to_enums(expected)
         result = self.execute(
             command, verbose, timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
-
         )  # type: exec_result.ExecResult
         if result.exit_code not in expected_codes:
             message = (
@@ -527,6 +538,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
     def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
         """Get bytes string from string/bytes/bytearray union.
 
+        :param src: source string or bytes-like object
         :return: Byte string
         :rtype: bytes
         :raises TypeError: unexpected source type.

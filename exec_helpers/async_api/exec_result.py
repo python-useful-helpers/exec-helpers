@@ -26,8 +26,6 @@ import typing
 # Exec-Helpers Implementation
 from exec_helpers import exec_result
 
-logger = logging.getLogger(__name__)
-
 
 class ExecResult(exec_result.ExecResult):
     """Execution result."""
@@ -38,12 +36,19 @@ class ExecResult(exec_result.ExecResult):
     async def _poll_stream(  # type: ignore
         src: typing.AsyncIterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
+        """Stream poll helper.
+
+        :param src: source to read from
+        :param log: logger instance, if line per line logging expected
+        :param verbose: use INFO level for logging
+        :returns: read result as list of bytes strings
+        """
         dst = []  # type: typing.List[bytes]
         try:
             async for line in src:
                 dst.append(line)
                 if log:
-                    log.log(  # type: ignore
+                    log.log(
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )

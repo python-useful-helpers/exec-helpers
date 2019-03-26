@@ -74,17 +74,26 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     @property
     def cmd(self) -> str:
-        """Failed command."""
+        """Failed command.
+
+        :returns: command
+        """
         return self.result.cmd
 
     @property
     def stdout(self) -> str:
-        """Command stdout."""
+        """Command stdout.
+
+        :returns: command stdout as string
+        """
         return self.result.stdout_str
 
     @property
     def stderr(self) -> str:
-        """Command stderr."""
+        """Command stderr.
+
+        :returns: command stderr as string
+        """
         return self.result.stderr_str
 
 
@@ -162,22 +171,34 @@ class CalledProcessError(ExecCalledProcessError):
 
     @property
     def returncode(self) -> typing.Union[int, proc_enums.ExitCodes]:
-        """Command return code."""
+        """Command return code.
+
+        :returns: command return code
+        """
         return self.result.exit_code
 
     @property
     def cmd(self) -> str:
-        """Failed command."""
+        """Failed command.
+
+        :returns: command
+        """
         return self.result.cmd
 
     @property
     def stdout(self) -> str:
-        """Command stdout."""
+        """Command stdout.
+
+        :returns: command stdout as string
+        """
         return self.result.stdout_str
 
     @property
     def stderr(self) -> str:
-        """Command stderr."""
+        """Command stderr.
+
+        :returns: command stderr as string
+        """
         return self.result.stderr_str
 
 

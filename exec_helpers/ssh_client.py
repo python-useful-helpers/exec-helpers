@@ -19,14 +19,11 @@
 __all__ = ("SSHClient",)
 
 # Standard Library
-import logging
 import os
 import posixpath
 
 # Local Implementation
 from ._ssh_client_base import SSHClientBase
-
-logger = logging.getLogger(__name__)
 
 
 class SSHClient(SSHClientBase):
@@ -36,12 +33,19 @@ class SSHClient(SSHClientBase):
 
     @staticmethod
     def _path_esc(path: str) -> str:
-        """Escape space character in the path."""
+        """Escape space character in the path.
+
+        :param path: path to be escaped
+        :type path: str
+        :returns: path with escaped spaces
+        :rtype: str
+        """
         return path.replace(" ", r"\ ")
 
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.
 
+        :param path: path to create
         :type path: str
         """
         if self.exists(path):
@@ -52,6 +56,7 @@ class SSHClient(SSHClientBase):
     def rm_rf(self, path: str) -> None:
         """Run 'rm -rf path' on remote.
 
+        :param path: path to remove
         :type path: str
         """
         # noinspection PyTypeChecker
@@ -60,10 +65,12 @@ class SSHClient(SSHClientBase):
     def upload(self, source: str, target: str) -> None:
         """Upload file(s) from source to target using SFTP session.
 
+        :param source: local path
         :type source: str
+        :param target: remote path
         :type target: str
         """
-        self.logger.debug("Copying '%s' -> '%s'", source, target)
+        self.logger.debug("Copying '{source}' -> '{target}'".format(source=source, target=target))
 
         if self.isdir(target):
             target = posixpath.join(target, os.path.basename(source))
@@ -95,7 +102,11 @@ class SSHClient(SSHClientBase):
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
-        self.logger.debug("Copying '%s' -> '%s' from remote to local host", destination, target)
+        self.logger.debug(
+            "Copying '{destination}' -> '{target}' from remote to local host".format(
+                destination=destination, target=target
+            )
+        )
 
         if os.path.isdir(target):
             target = posixpath.join(target, os.path.basename(destination))
@@ -104,7 +115,9 @@ class SSHClient(SSHClientBase):
             if self.exists(destination):
                 self._sftp.get(destination, target)
             else:
-                self.logger.debug("Can't download %s because it doesn't exist", destination)
+                self.logger.debug(
+                    "Can't download {destination} because it doesn't exist".format(destination=destination)
+                )
         else:
-            self.logger.debug("Can't download %s because it is a directory", destination)
+            self.logger.debug("Can't download {destination} because it is a directory".format(destination=destination))
         return os.path.exists(target)

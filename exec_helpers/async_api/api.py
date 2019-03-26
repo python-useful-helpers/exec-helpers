@@ -226,7 +226,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             **kwargs
         )  # type: exec_result.ExecResult
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
         return result
 
     async def __call__(  # type: ignore
@@ -309,9 +309,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
         expected_codes = proc_enums.exit_codes_to_enums(expected)
-        result = await self.execute(
-            command, verbose, timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
-        )
+        result = await self.execute(command, verbose, timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs)
         if result.exit_code not in expected_codes:
             message = (
                 "{append}Command {result.cmd!r} returned exit code "

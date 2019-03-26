@@ -60,7 +60,11 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
         retry_on: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
         reraise: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
     ) -> None:
-        """Retry on exceptions, except several types."""
+        """Retry on exceptions, except several types.
+
+        :param retry_on: Exceptions to retry on
+        :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
+        """
         super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
@@ -141,7 +145,7 @@ class _MemorizedSSH(abc.ABCMeta):
         password: typing.Optional[str] = None,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        verbose: bool = True
+        verbose: bool = True,
     ) -> "SSHClientBase":
         """Main memorize method: check for cached instance and return it. API follows target __init__.
 
@@ -289,7 +293,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         password: typing.Optional[str] = None,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        verbose: bool = True
+        verbose: bool = True,
     ) -> None:
         """Main SSH Client helper.
 
@@ -491,6 +495,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def sudo_mode(self, mode: bool) -> None:
         """Persistent sudo mode change for connection object.
 
+        :param mode: sudo status: enabled | disabled
         :type mode: bool
         """
         self.__sudo_mode = bool(mode)
@@ -607,7 +612,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
@@ -711,9 +716,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
-        future = poll_pipes()
+        future = poll_pipes()  # type: "concurrent.futures.Future[None]"
         # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
@@ -784,7 +788,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 3.5.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
@@ -885,7 +889,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
-            """Get result from remote call."""
+            """Get result from remote call.
+
+            :param remote: SSH connection instance
+            :returns: execution result
+            """
             async_result = remote.execute_async(command, stdin=stdin, log_mask_re=log_mask_re, **kwargs)
 
             async_result.interface.status_event.wait(timeout)

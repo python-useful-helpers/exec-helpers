@@ -14,7 +14,7 @@
 
 """Python subprocess shared code."""
 
-__all__ = ("kill_proc_tree", "subprocess_kw")
+__all__ = ("kill_proc_tree", "SUBPROCESS_KW")
 
 # Standard Library
 import platform
@@ -39,7 +39,11 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
     """
 
     def safe_stop(proc: psutil.Process, kill: bool = False) -> None:
-        """Do not crash on already stopped process."""
+        """Do not crash on already stopped process.
+
+        :param proc: target process
+        :param kill: use SIGKILL instead of SIGTERM
+        """
         try:
             if kill:
                 proc.kill()
@@ -65,8 +69,8 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 # Subprocess extra arguments.
 # Flags from:
 # https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
-subprocess_kw = {}  # type: typing.Dict[str, typing.Any]
+SUBPROCESS_KW = {}  # type: typing.Dict[str, typing.Any]
 if "Windows" == platform.system():  # pragma: no cover
-    subprocess_kw["creationflags"] = 0x00000200
+    SUBPROCESS_KW["creationflags"] = 0x00000200
 else:  # pragma: no cover
-    subprocess_kw["start_new_session"] = True
+    SUBPROCESS_KW["start_new_session"] = True

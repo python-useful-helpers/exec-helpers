@@ -33,7 +33,7 @@ def auto_add_policy(mocker):
 @pytest.fixture
 def ssh_auth_logger(mocker):
     """Minimal exec_helpers.ssh_auth.logger mock."""
-    return mocker.patch("exec_helpers.ssh_auth.logger")
+    return mocker.patch("exec_helpers.ssh_auth.LOGGER")
 
 
 @pytest.fixture

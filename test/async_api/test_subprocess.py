@@ -243,7 +243,7 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
         cwd=run_parameters.get("cwd", None),
         env=run_parameters.get("env", None),
         universal_newlines=False,
-        **_subprocess_helpers.subprocess_kw
+        **_subprocess_helpers.SUBPROCESS_KW
     )
 
     if stdin is not None:
