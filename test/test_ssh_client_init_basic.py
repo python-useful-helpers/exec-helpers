@@ -112,7 +112,7 @@ def paramiko_ssh_client(mocker, run_parameters):
 
 @pytest.fixture
 def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
+    return mocker.patch("exec_helpers.ssh_auth.LOGGER")
 
 
 def teardown_function(function):

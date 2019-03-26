@@ -132,7 +132,7 @@ def ssh_transport_channel(chan_makefile, ssh_transport):
 
 @pytest.fixture
 def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
+    return mocker.patch("exec_helpers.ssh_auth.LOGGER")
 
 
 @pytest.fixture

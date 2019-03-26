@@ -29,10 +29,10 @@ import typing
 import yaml
 
 # Exec-Helpers Implementation
-from exec_helpers import exceptions  # pylint: disable=cyclic-import
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -277,12 +277,19 @@ class ExecResult:
     def _poll_stream(
         src: typing.Iterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
+        """Stream poll helper.
+
+        :param src: source to read from
+        :param log: logger instance, if line per line logging expected
+        :param verbose: use INFO level for logging
+        :returns: read result as list of bytes strings
+        """
         dst = []  # type: typing.List[bytes]
         try:
             for line in src:
                 dst.append(line)
                 if log:
-                    log.log(  # type: ignore
+                    log.log(
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
@@ -424,7 +431,10 @@ class ExecResult:
 
     @property
     def stderr_lines(self) -> LinesAccessProxy:
-        """Magic to get lines human-friendly way."""
+        """Magic to get lines human-friendly way.
+
+        :rtype: LinesAccessProxy
+        """
         return LinesAccessProxy(self.stderr)
 
     @property
@@ -460,6 +470,7 @@ class ExecResult:
     def started(self) -> typing.Optional[datetime.datetime]:
         """Timestamp of command start.
 
+        :returns: timestamp from command start, if applicable
         .. versionadded:: 2.11.0
         """
         return self.__started
@@ -481,14 +492,14 @@ class ExecResult:
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
             tmpl = "{{self.cmd}} stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
-            logger.exception(tmpl.format(self=self, stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
+            LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
 
             raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
                 e.__traceback__
             ) from e
 
         msg = "{fmt} deserialize target is not implemented".format(fmt=fmt)
-        logger.error(msg)
+        LOGGER.error(msg)
         raise NotImplementedError(msg)
 
     @property
@@ -569,7 +580,7 @@ class ExecResult:
             spent = ""
         return (
             "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
+            "\n\tstdout=\n'{stdout_brief}',"
             "\n\tstderr=\n'{stderr_brief}', "
             "\n\texit_code={exit_code!s},"
             "\n{started}{spent})".format(
@@ -584,7 +595,11 @@ class ExecResult:
         )
 
     def __eq__(self, other: typing.Any) -> bool:
-        """Comparision."""
+        """Comparision.
+
+        :param other: other ExecResult instance.
+        :returns: current object equals other
+        """
         return (
             self.__class__ is other.__class__
             or issubclass(self.__class__, other.__class__)
@@ -598,7 +613,11 @@ class ExecResult:
         )
 
     def __ne__(self, other: typing.Any) -> bool:
-        """Comparision."""
+        """Comparision.
+
+        :param other: other ExecResult instance.
+        :returns: current object not equals other
+        """
         return not self.__eq__(other)
 
     def __hash__(self) -> int:

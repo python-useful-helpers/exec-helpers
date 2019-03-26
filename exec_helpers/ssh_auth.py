@@ -26,7 +26,7 @@ import typing
 # External Dependencies
 import paramiko  # type: ignore
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("iso8601").setLevel(logging.WARNING)
 
@@ -85,6 +85,7 @@ class SSHAuth:
     def username(self) -> typing.Optional[str]:
         """Username for auth.
 
+        :returns: auth username
         :rtype: str
         """
         return self.__username
@@ -93,7 +94,10 @@ class SSHAuth:
     def __get_public_key(key: typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]:
         """Internal method for get public key from private.
 
+        :param key: SSH private key
         :type key: paramiko.RSAKey
+        :returns: public key text if applicable
+        :rtype: typing.Optional[str]
         """
         if key is None:
             return None
@@ -103,6 +107,7 @@ class SSHAuth:
     def public_key(self) -> typing.Optional[str]:
         """Public key for stored private key if presents else None.
 
+        :returns: public key for current private key
         :rtype: str
         """
         return self.__get_public_key(self.__key)
@@ -111,6 +116,7 @@ class SSHAuth:
     def key_filename(self) -> typing.Union[typing.List[str], str, None]:
         """Key filename(s).
 
+        :returns: copy of used key filename (original should not be changed via mutability).
         .. versionadded:: 1.0.0
         """
         return copy.deepcopy(self.__key_filename)
@@ -121,7 +127,7 @@ class SSHAuth:
         Note: required for 'sudo' call
 
         :param tgt: Target
-        :type tgt: file
+        :type tgt: typing.BinaryIO
         """
         # noinspection PyTypeChecker
         tgt.write("{}\n".format(self.__password if self.__password is not None else "").encode("utf-8"))
@@ -168,19 +174,19 @@ class SSHAuth:
                 client.connect(**kwargs)
                 if self.__key != key:
                     self.__key = key
-                    logger.debug("Main key has been updated, public key is: \n%s", self.public_key)
+                    LOGGER.debug("Main key has been updated, public key is: \n{self.public_key}".format(self=self))
                 return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:
-                    logger.exception("No password has been set!")
+                    LOGGER.exception("No password has been set!")
                     raise
-                logger.critical("Unexpected PasswordRequiredException, when password is set!")
+                LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
         msg = "Connection using stored authentication info failed!"
         if log:
-            logger.exception(msg)
+            LOGGER.exception(msg)
         raise paramiko.AuthenticationException(msg)
 
     def __hash__(self) -> int:
@@ -197,15 +203,27 @@ class SSHAuth:
         )
 
     def __eq__(self, other: typing.Any) -> bool:
-        """Comparison helper."""
+        """Comparison helper.
+
+        :param other: other SSHAuth instance
+        :returns: current object equals other
+        """
         return hash(self) == hash(other)
 
     def __ne__(self, other: typing.Any) -> bool:
-        """Comparison helper."""
+        """Comparison helper.
+
+        :param other: other SSHAuth instance
+        :returns: current object not equals other
+        """
         return not self.__eq__(other)
 
     def __deepcopy__(self, memo: typing.Any) -> "SSHAuth":
-        """Helper for copy.deepcopy."""
+        """Helper for copy.deepcopy.
+
+        :param memo: copy.deeepcopy() memodict
+        :returns: re-constructed copy of current class
+        """
         return self.__class__(
             username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
         )

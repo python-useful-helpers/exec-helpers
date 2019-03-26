@@ -147,12 +147,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
         stdout_future = poll_stdout()  # type: concurrent.futures.Future[None]
         # noinspection PyNoneFunctionAssignment
         stderr_future = poll_stderr()  # type: concurrent.futures.Future[None]
-        # pylint: enable=assignment-from-no-return
 
         try:
             # Wait real timeout here
@@ -245,7 +243,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)  # type: str
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
@@ -260,7 +258,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
             cwd=cwd,
             env=env,
             universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw
+            **_subprocess_helpers.SUBPROCESS_KW
         )
 
         if stdin is None:

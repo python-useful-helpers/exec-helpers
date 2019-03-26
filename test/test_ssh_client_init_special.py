@@ -68,7 +68,7 @@ def paramiko_ssh_client(mocker, monkeypatch):
 
 @pytest.fixture
 def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
+    return mocker.patch("exec_helpers.ssh_auth.LOGGER")
 
 
 @pytest.fixture
@@ -101,7 +101,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     auto_add_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(
-        "Main key has been updated, public key is: \n%s", ssh.auth.public_key
+        "Main key has been updated, public key is: \n{ssh.auth.public_key}".format(ssh=ssh)
     )
 
     pkey = private_keys[0]
@@ -138,7 +138,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     auto_add_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(
-        "Main key has been updated, public key is: \n%s", ssh.auth.public_key
+        "Main key has been updated, public key is: \n{ssh.auth.public_key}".format(ssh=ssh)
     )
 
     kwargs = dict(hostname=host, pkey=None, port=port, username=username, password=None)
@@ -261,7 +261,9 @@ def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_log
     # Test
     ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, password=password, key=key))
 
-    ssh_auth_logger.assert_has_calls((mock.call.debug("Main key has been updated, public key is: \n%s", None),))
+    ssh_auth_logger.assert_has_calls(
+        (mock.call.debug("Main key has been updated, public key is: \n{ssh.auth.public_key}".format(ssh=ssh)),)
+    )
 
     assert ssh.auth == exec_helpers.SSHAuth(username=username, password=password, keys=[key])
 

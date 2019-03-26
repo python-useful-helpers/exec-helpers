@@ -116,7 +116,7 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile):
 
 @pytest.fixture
 def ssh_auth_logger(mocker):
-    return mocker.patch("exec_helpers.ssh_auth.logger")
+    return mocker.patch("exec_helpers.ssh_auth.LOGGER")
 
 
 @pytest.fixture
