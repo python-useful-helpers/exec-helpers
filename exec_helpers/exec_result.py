@@ -568,7 +568,7 @@ class ExecResult:
         return (
             f"{self.__class__.__name__}(\n"
             f"\tcmd={self.cmd!r},\n"
-            f"\t stdout=\n"
+            f"\tstdout=\n"
             f"{self.stdout_brief!r},\n"
             f"\tstderr=\n"
             f"{self.stderr_brief!r}, \n"

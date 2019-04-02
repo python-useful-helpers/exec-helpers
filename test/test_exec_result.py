@@ -54,23 +54,15 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.exit_code, result["exit_code"])
         self.assertEqual(
             repr(result),
-            "{cls}(cmd={cmd!r}, stdout={stdout}, stderr={stderr}, "
-            "exit_code={exit_code!s},)".format(
-                cls=exec_helpers.ExecResult.__name__, cmd=cmd, stdout=(), stderr=(), exit_code=proc_enums.INVALID
-            ),
+            f"{exec_helpers.ExecResult.__name__}"
+            f"(cmd={cmd!r}, stdout={()}, stderr={()}, exit_code={proc_enums.INVALID!s},)",
         )
         self.assertEqual(
             str(result),
-            "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
-            "\n\texit_code={exit_code!s},\n)".format(
-                cls=exec_helpers.ExecResult.__name__,
-                cmd=cmd,
-                stdout_brief="",
-                stderr_brief="",
-                exit_code=proc_enums.INVALID,
-            ),
+            f"""{exec_helpers.ExecResult.__name__}(\n\tcmd={cmd!r},"""
+            f"""\n\tstdout=\n'{""}',"""
+            f"""\n\tstderr=\n'{""}', """
+            f"\n\texit_code={proc_enums.INVALID!s},\n)",
         )
 
         with self.assertRaises(IndexError):
@@ -89,10 +81,10 @@ class TestExecResult(unittest.TestCase):
     def test_not_implemented(self, logger):
         """Test assertion on non implemented deserializer."""
         result = exec_helpers.ExecResult(cmd=cmd)
-        deserialize = getattr(result, "_ExecResult__deserialize")
+        deserialize = getattr(result, "_ExecResult__deserialize")  # noqa: B009
         with self.assertRaises(NotImplementedError):
             deserialize("tst")
-        logger.assert_has_calls((mock.call.error("{fmt} deserialize target is not implemented".format(fmt="tst")),))
+        logger.assert_has_calls((mock.call.error(f"{'tst'} deserialize target is not implemented"),))
 
     def test_setters(self):
         """Test setters: unlocked and final."""
@@ -219,21 +211,13 @@ class TestExecResult(unittest.TestCase):
         self.assertIs(result.started, started)
         self.assertEqual(
             str(result),
-            "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
-            "\n\texit_code={exit_code!s},"
-            "\n\tstarted={started},"
-            "\n\tspent={spent},"
-            "\n)".format(
-                cls=exec_helpers.ExecResult.__name__,
-                cmd=cmd,
-                stdout_brief="",
-                stderr_brief="",
-                exit_code=proc_enums.EXPECTED,
-                started=started.strftime("%Y-%m-%d %H:%M:%S"),
-                spent=f"{spent // (60 * 60):02d}:{spent // 60:02d}:{spent % 60:02d}",
-            ),
+            f"""{exec_helpers.ExecResult.__name__}(\n\tcmd={cmd!r},"""
+            f"""\n\tstdout=\n'{""}',"""
+            f"""\n\tstderr=\n'{""}', """
+            f"""\n\texit_code={proc_enums.EXPECTED!s},"""
+            f"""\n\tstarted={started.strftime("%Y-%m-%d %H:%M:%S")},"""
+            f"\n\tspent={spent // (60 * 60):02d}:{spent // 60:02d}:{spent % 60:02d},"
+            "\n)",
         )
 
     def test_indexed_lines_access(self):
