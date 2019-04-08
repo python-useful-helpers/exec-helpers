@@ -282,7 +282,7 @@ class ExecResult:
             for line in src:
                 dst.append(line)
                 if log:
-                    log.log(  # type: ignore
+                    log.log(
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )

@@ -350,7 +350,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             **kwargs,
         )
         message = f"Command {result.cmd!r} exit code: {result.exit_code!s}"
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
         return result
 
     def __call__(

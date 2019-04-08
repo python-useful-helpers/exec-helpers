@@ -216,7 +216,7 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         """
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 

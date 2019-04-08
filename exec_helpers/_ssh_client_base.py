@@ -592,7 +592,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         """
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
@@ -770,7 +770,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
