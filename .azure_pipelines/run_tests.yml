@@ -45,9 +45,9 @@ jobs:
     displayName: Build and install
 
   - script: |
-      pip install asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar
+      pip install asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar pytest-cov
 
-      pytest -vvv --junitxml=unit_result.xml test
+      pytest -vvv --junitxml=unit_result.xml --cov=exec_helpers --cov-report=xml --cov-report=html test
     displayName: PyTest
 
   - task: PublishTestResults@2
@@ -57,3 +57,9 @@ jobs:
       testResultsFormat: "JUnit"
       testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/unit_result.xml') }}
       testRunTitle: ${{ format('{0}_{1}_{2}', parameters.name, parameters.architecture, parameters.kind) }}
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: ${{ format('$(System.DefaultWorkingDirectory)/coverage.xml') }}
+      reportDirectory: ${{ format('$(System.DefaultWorkingDirectory)/htmlcov') }}
