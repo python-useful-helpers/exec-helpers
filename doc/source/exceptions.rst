@@ -19,7 +19,7 @@ API: exceptions
     Base class for process call errors.
 
 class ExecHelperTimeoutProcessError(ExecCalledProcessError):
-    
+
     Timeout based errors.
 
     .. versionadded:: 3.4.0
@@ -46,13 +46,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
 
 .. py:exception:: ExecHelperNoKillError(ExecHelperTimeoutProcessError)
-    
+
     Impossible to kill process.
 
     .. versionadded:: 3.4.0
 
     .. py:method:: __init__(self, result, timeout)
-        
+
         Exception for error on process calls.
 
         :param result: execution result

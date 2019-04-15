@@ -29,8 +29,10 @@ you can call command with timeout, but without receiving return code,
 or call command and wait for return code, but without timeout processing.
 
 In the most cases, we are need just simple SSH client with comfortable API for calls, calls via SSH proxy and checking return code/stderr.
-This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects (with inline decoding of YAML, JSON, binary or just strings).
-In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls (for protection from race conditions).
+This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects
+(with inline decoding of YAML, JSON, binary or just strings).
+In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls
+(for protection from race conditions).
 
 Pros:
 

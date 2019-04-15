@@ -80,7 +80,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     paramiko_ssh_client.assert_called_once()
     auto_add_policy.assert_called_once()
 
-    ssh_auth_logger.debug.assert_called_once_with("Main key has been updated, public key is: \n%s", ssh.auth.public_key)
+    ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
     pkey = private_keys[0]
 
@@ -115,7 +115,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     paramiko_ssh_client.assert_called_once()
     auto_add_policy.assert_called_once()
 
-    ssh_auth_logger.debug.assert_called_once_with("Main key has been updated, public key is: \n%s", ssh.auth.public_key)
+    ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
     kwargs = dict(hostname=host, pkey=None, port=port, username=username, password=None)
     kwargs0 = {key: kwargs[key] for key in kwargs}
@@ -238,7 +238,7 @@ def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_log
     ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, password=password, key=key))
 
     ssh_auth_logger.assert_has_calls(
-        (mock.call.debug("Main key has been updated, public key is: \n%s", ssh.auth.public_key),)
+        (mock.call.debug(f"Main key has been updated, public key is: \n{ssh.auth.public_key}"),)
     )
 
     assert ssh.auth == exec_helpers.SSHAuth(username=username, password=password, keys=[key])

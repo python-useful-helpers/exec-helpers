@@ -19,14 +19,11 @@
 __all__ = ("SSHClient",)
 
 # Standard Library
-import logging
 import os
 import posixpath
 
 # Local Implementation
 from ._ssh_client_base import SSHClientBase
-
-logger = logging.getLogger(__name__)
 
 
 class SSHClient(SSHClientBase):
@@ -63,7 +60,7 @@ class SSHClient(SSHClientBase):
         :type source: str
         :type target: str
         """
-        self.logger.debug("Copying '%s' -> '%s'", source, target)
+        self.logger.debug(f"Copying '{source}' -> '{target}'")
 
         if self.isdir(target):
             target = posixpath.join(target, os.path.basename(source))
@@ -95,7 +92,7 @@ class SSHClient(SSHClientBase):
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
-        self.logger.debug("Copying '%s' -> '%s' from remote to local host", destination, target)
+        self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")
 
         if os.path.isdir(target):
             target = posixpath.join(target, os.path.basename(destination))
@@ -104,7 +101,7 @@ class SSHClient(SSHClientBase):
             if self.exists(destination):
                 self._sftp.get(destination, target)
             else:
-                self.logger.debug("Can't download %s because it doesn't exist", destination)
+                self.logger.debug(f"Can't download {destination} because it doesn't exist")
         else:
-            self.logger.debug("Can't download %s because it is a directory", destination)
+            self.logger.debug(f"Can't download {destination} because it is a directory")
         return os.path.exists(target)

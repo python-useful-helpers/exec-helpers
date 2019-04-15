@@ -26,8 +26,6 @@ import typing
 # Exec-Helpers Implementation
 from exec_helpers import exec_result
 
-logger = logging.getLogger(__name__)
-
 
 class ExecResult(exec_result.ExecResult):
     """Execution result."""

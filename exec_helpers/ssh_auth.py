@@ -26,7 +26,7 @@ import typing
 # External Dependencies
 import paramiko  # type: ignore
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("iso8601").setLevel(logging.WARNING)
 
@@ -168,19 +168,19 @@ class SSHAuth:
                 client.connect(**kwargs)
                 if self.__key != key:
                     self.__key = key
-                    logger.debug("Main key has been updated, public key is: \n%s", self.public_key)
+                    LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:
-                    logger.exception("No password has been set!")
+                    LOGGER.exception("No password has been set!")
                     raise
-                logger.critical("Unexpected PasswordRequiredException, when password is set!")
+                LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
         msg: str = "Connection using stored authentication info failed!"
         if log:
-            logger.exception(msg)
+            LOGGER.exception(msg)
         raise paramiko.AuthenticationException(msg)
 
     def __hash__(self) -> int:

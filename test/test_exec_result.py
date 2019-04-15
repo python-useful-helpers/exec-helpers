@@ -30,7 +30,7 @@ cmd = "ls -la | awk '{print $1}'"
 
 # noinspection PyTypeChecker
 class TestExecResult(unittest.TestCase):
-    @mock.patch("exec_helpers.exec_result.logger")
+    @mock.patch("exec_helpers.exec_result.LOGGER")
     def test_create_minimal(self, logger):
         """Test defaults."""
         result = exec_helpers.ExecResult(cmd=cmd)
@@ -77,7 +77,7 @@ class TestExecResult(unittest.TestCase):
 
         self.assertEqual(hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)))
 
-    @mock.patch("exec_helpers.exec_result.logger", autospec=True)
+    @mock.patch("exec_helpers.exec_result.LOGGER", autospec=True)
     def test_not_implemented(self, logger):
         """Test assertion on non implemented deserializer."""
         result = exec_helpers.ExecResult(cmd=cmd)
@@ -95,12 +95,12 @@ class TestExecResult(unittest.TestCase):
 
         tst_stderr = [b"test\n"] * 10
 
-        with mock.patch("exec_helpers.exec_result.logger", autospec=True):
+        with mock.patch("exec_helpers.exec_result.LOGGER", autospec=True):
             result.read_stdout(tst_stdout)
         self.assertEqual(result.stdout, tuple(tst_stdout))
         self.assertEqual(result.stdout, result["stdout"])
 
-        with mock.patch("exec_helpers.exec_result.logger", autospec=True):
+        with mock.patch("exec_helpers.exec_result.LOGGER", autospec=True):
             result.read_stderr(tst_stderr)
         self.assertEqual(result.stderr, tuple(tst_stderr))
         self.assertEqual(result.stderr, result["stderr"])
@@ -134,7 +134,7 @@ class TestExecResult(unittest.TestCase):
         result = exec_helpers.ExecResult("test", stdout=[b'{"test": true}'])
         self.assertEqual(result.stdout_json, {"test": True})
 
-    @mock.patch("exec_helpers.exec_result.logger", autospec=True)
+    @mock.patch("exec_helpers.exec_result.LOGGER", autospec=True)
     def test_wrong_result(self, logger):
         """Test logging exception if stdout if not a correct json."""
         cmd = r"ls -la | awk '{print $1\}'"

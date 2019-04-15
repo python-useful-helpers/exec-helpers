@@ -212,12 +212,11 @@ class TestSftp(unittest.TestCase):
         fopen.assert_called_once_with(dst, mode)
         self.assertTrue(result)
 
-    @mock.patch("exec_helpers.ssh_client.logger", autospec=True)
     @mock.patch("exec_helpers.ssh_client.SSHClient.exists")
     @mock.patch("os.path.exists", autospec=True)
     @mock.patch("exec_helpers.ssh_client.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
-    def test_download(self, isdir, remote_isdir, exists, remote_exists, logger, client, policy, _logger):
+    def test_download(self, isdir, remote_isdir, exists, remote_exists, client, policy, _logger):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True
         exists.side_effect = [True, False, False]

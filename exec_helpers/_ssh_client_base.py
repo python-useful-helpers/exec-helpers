@@ -697,10 +697,8 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
         future: "concurrent.futures.Future[None]" = poll_pipes()
-        # pylint: enable=assignment-from-no-return
 
         concurrent.futures.wait([future], timeout)
 

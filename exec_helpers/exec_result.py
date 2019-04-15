@@ -29,10 +29,10 @@ import typing
 import yaml
 
 # Exec-Helpers Implementation
-from exec_helpers import exceptions  # pylint: disable=cyclic-import
+from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
-logger = logging.getLogger(__name__)
+LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -481,14 +481,14 @@ class ExecResult:
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
             tmpl: str = "{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n".format(fmt=fmt)
-            logger.exception(tmpl.format(self=self, stdout=self.stdout_str))  # pylint: disable=logging-not-lazy
+            LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
 
             raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
                 e.__traceback__
             ) from e
 
         msg = f"{fmt} deserialize target is not implemented"
-        logger.error(msg)
+        LOGGER.error(msg)
         raise NotImplementedError(msg)
 
     @property

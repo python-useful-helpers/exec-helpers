@@ -147,12 +147,10 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # pylint: disable=assignment-from-no-return
         # noinspection PyNoneFunctionAssignment
         stdout_future: "concurrent.futures.Future[None]" = poll_stdout()
         # noinspection PyNoneFunctionAssignment
         stderr_future: "concurrent.futures.Future[None]" = poll_stderr()
-        # pylint: enable=assignment-from-no-return
 
         try:
             exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
