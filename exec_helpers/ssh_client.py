@@ -33,12 +33,19 @@ class SSHClient(SSHClientBase):
 
     @staticmethod
     def _path_esc(path: str) -> str:
-        """Escape space character in the path."""
+        """Escape space character in the path.
+
+        :param path: path to be escaped
+        :type path: str
+        :returns: path with escaped spaces
+        :rtype: str
+        """
         return path.replace(" ", r"\ ")
 
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.
 
+        :param path: path to create
         :type path: str
         """
         if self.exists(path):
@@ -49,6 +56,7 @@ class SSHClient(SSHClientBase):
     def rm_rf(self, path: str) -> None:
         """Run 'rm -rf path' on remote.
 
+        :param path: path to remove
         :type path: str
         """
         # noinspection PyTypeChecker
@@ -57,7 +65,9 @@ class SSHClient(SSHClientBase):
     def upload(self, source: str, target: str) -> None:
         """Upload file(s) from source to target using SFTP session.
 
+        :param source: local path
         :type source: str
+        :param target: remote path
         :type target: str
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")

@@ -60,5 +60,8 @@ class SingleLock(abc.ABCMeta):
 
     @property
     def lock(cls) -> threading.RLock:
-        """Lock property for class."""
+        """Lock property for class.
+
+        :returns: lock to be used on the CLASS level
+        """
         return cls.__lock

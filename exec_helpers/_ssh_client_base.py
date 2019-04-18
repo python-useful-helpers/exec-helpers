@@ -59,7 +59,11 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
         retry_on: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
         reraise: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
     ) -> None:
-        """Retry on exceptions, except several types."""
+        """Retry on exceptions, except several types.
+
+        :param retry_on: Exceptions to retry on
+        :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
+        """
         super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
@@ -476,6 +480,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def sudo_mode(self, mode: bool) -> None:
         """Persistent sudo mode change for connection object.
 
+        :param mode: sudo status: enabled | disabled
         :type mode: bool
         """
         self.__sudo_mode = bool(mode)
@@ -869,7 +874,11 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
 
         @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
-            """Get result from remote call."""
+            """Get result from remote call.
+
+            :param remote: SSH connection instance
+            :returns: execution result
+            """
             async_result: SshExecuteAsyncResult = remote.execute_async(
                 command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
             )

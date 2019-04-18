@@ -36,7 +36,11 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
     """
 
     def safe_stop(proc: psutil.Process, kill: bool = False) -> None:
-        """Do not crash on already stopped process."""
+        """Do not crash on already stopped process.
+
+        :param proc: target process
+        :param kill: use SIGKILL instead of SIGTERM
+        """
         try:
             if kill:
                 proc.kill()

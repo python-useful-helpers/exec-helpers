@@ -103,7 +103,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
     @property
     def logger(self) -> logging.Logger:
-        """Instance logger access."""
+        """Instance logger access.
+
+        :returns: logger instance
+        """
         return self.__logger
 
     @property
@@ -181,7 +184,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
 
         def mask(text: str, rules: str) -> str:
-            """Mask part of text using rules."""
+            """Mask part of text using rules.
+
+            :param text: source text
+            :param rules: regex rules to mask.
+            :returns: source with all MATCHED groups replaced by '<*masked*>'
+            """
             indexes: typing.List[int] = [0]  # Start of the line
             masked: str = ""
 
@@ -211,7 +219,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
         return result
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
-        """Prepare command: cower chroot and other cases."""
+        """Prepare command: cower chroot and other cases.
+
+        :param cmd: main command
+        :param chroot_path: path to make chroot for execution
+        :returns: final command, includes chroot, if required
+        """
         if any((chroot_path, self._chroot_path)):
             return f"chroot {chroot_path if chroot_path else self._chroot_path} {cmd}"
         return cmd
@@ -524,6 +537,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
     def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
         """Get bytes string from string/bytes/bytearray union.
 
+        :param src: source string or bytes-like object
         :return: Byte string
         :rtype: bytes
         :raises TypeError: unexpected source type.

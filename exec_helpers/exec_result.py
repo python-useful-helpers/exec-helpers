@@ -277,6 +277,13 @@ class ExecResult:
     def _poll_stream(
         src: typing.Iterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
     ) -> typing.List[bytes]:
+        """Stream poll helper.
+
+        :param src: source to read from
+        :param log: logger instance, if line per line logging expected
+        :param verbose: use INFO level for logging
+        :returns: read result as list of bytes strings
+        """
         dst: typing.List[bytes] = []
         try:
             for line in src:
@@ -424,7 +431,10 @@ class ExecResult:
 
     @property
     def stderr_lines(self) -> LinesAccessProxy:
-        """Magic to get lines human-friendly way."""
+        """Magic to get lines human-friendly way.
+
+        :rtype: LinesAccessProxy
+        """
         return LinesAccessProxy(self.stderr)
 
     @property
@@ -460,6 +470,7 @@ class ExecResult:
     def started(self) -> typing.Optional[datetime.datetime]:
         """Timestamp of command start.
 
+        :returns: timestamp from command start, if applicable
         .. versionadded:: 4.0.0
         """
         return self.__started
@@ -577,7 +588,11 @@ class ExecResult:
         )
 
     def __eq__(self, other: typing.Any) -> bool:
-        """Comparision."""
+        """Comparision.
+
+        :param other: other ExecResult instance.
+        :returns: current object equals other
+        """
         return (
             self.__class__ is other.__class__
             or issubclass(self.__class__, other.__class__)
@@ -591,7 +606,11 @@ class ExecResult:
         )
 
     def __ne__(self, other: typing.Any) -> bool:
-        """Comparision."""
+        """Comparision.
+
+        :param other: other ExecResult instance.
+        :returns: current object not equals other
+        """
         return not self.__eq__(other)
 
     def __hash__(self) -> int:
