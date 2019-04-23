@@ -117,18 +117,18 @@ jobs:
       - Python_36_x86_cython
       - Python_37_x64_cython
       - Python_37_x86_cython
-      condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
-      pool:
-        vmIMage: 'VS2017-Win2016'
-      strategy:
-        maxParallel: 6
-        matrix:
-          Python35_x64:
-            python.version: '3.5'
-            python.architecture: 'x64'
-          Python35_x86:
-            python.version: '3.5'
-            python.architecture: 'x86'
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+    pool:
+      vmIMage: 'VS2017-Win2016'
+    strategy:
+      maxParallel: 6
+      matrix:
+        Python35_x64:
+          python.version: '3.5'
+          python.architecture: 'x64'
+        Python35_x86:
+          python.version: '3.5'
+          python.architecture: 'x86'
 
     steps:
       - task: UsePythonVersion@0
