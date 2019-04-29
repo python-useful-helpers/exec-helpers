@@ -21,7 +21,7 @@ _helpers:
   - &install_cython pip install --upgrade Cython
   - &build_package python setup.py bdist_wheel
   - &install_built pip install exec_helpers --no-index -f dist
-  - &test_no_cov  py.test -vv test
+  - &test_no_cov  py.test -vvv test
   - &test_cythonized
     stage: Test cythonized
     install:
@@ -46,8 +46,8 @@ _helpers:
     after_success: skip
 
 script:
-  - pip install -e .
-  - py.test -vv --cov-config .coveragerc --cov-report= --cov=exec_helpers test
+  - python setup.py develop -v
+  - py.test -vvv --cov-config .coveragerc --cov-report= --cov=exec_helpers test
   - coverage report -m --fail-under 87
 after_success:
   - coveralls
