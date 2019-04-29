@@ -20,9 +20,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import abc
 import base64
-
 # noinspection PyCompatibility
 import concurrent.futures
 import copy
@@ -35,19 +35,21 @@ import time
 import typing  # noqa: F401  # pylint: disable=unused-import
 import warnings
 
+# External Dependencies
 import advanced_descriptors
 import paramiko  # type: ignore
+import six
 import tenacity  # type: ignore
 import threaded
-import six
 
+# Exec-Helpers Implementation
+from exec_helpers import _log_templates
 from exec_helpers import api
 from exec_helpers import constants
-from exec_helpers import exec_result
 from exec_helpers import exceptions
+from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
-from exec_helpers import _log_templates
 
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 
@@ -119,7 +121,7 @@ class _MemorizedSSH(abc.ABCMeta):
         password=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
         private_keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         auth=None,  # type: typing.Optional[ssh_auth.SSHAuth]
-        verbose=True  # type: bool
+        verbose=True,  # type: bool
     ):  # type: (...) -> SSHClientBase
         """Main memorize method: check for cached instance and return it.
 
@@ -574,7 +576,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 
@@ -740,7 +742,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 

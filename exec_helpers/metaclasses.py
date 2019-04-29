@@ -16,15 +16,14 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-__all__ = ("SingletonMeta",)
-
+# Standard Library
 import abc
 import threading
-
 # pylint: disable=unused-import
 import typing  # noqa: F401
-
 # pylint: enable=unused-import
+
+__all__ = ("SingletonMeta",)
 
 
 class SingletonMeta(abc.ABCMeta):

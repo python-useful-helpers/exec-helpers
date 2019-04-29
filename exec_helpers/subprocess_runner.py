@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 # noinspection PyCompatibility
 import concurrent.futures
 import datetime
@@ -29,15 +30,17 @@ import os
 import subprocess  # nosec  # Expected usage
 import typing  # noqa: F401  # pylint: disable=unused-import
 
+# External Dependencies
 import six
 import threaded
 
-from exec_helpers import api
-from exec_helpers import exec_result
-from exec_helpers import exceptions
-from exec_helpers import metaclasses  # pylint: disable=unused-import
+# Exec-Helpers Implementation
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
+from exec_helpers import api
+from exec_helpers import exceptions
+from exec_helpers import exec_result
+from exec_helpers import metaclasses  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 # noinspection PyUnresolvedReferences
@@ -57,10 +60,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(
-        self,
-        log_mask_re=None  # type: typing.Optional[typing.Text]
-    ):  # type: (...) -> None
+    def __init__(self, log_mask_re=None):  # type: (typing.Optional[typing.Text]) -> None
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -216,7 +216,7 @@ class Subprocess(six.with_metaclass(metaclasses.SingleLock, api.ExecHelper)):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        self.logger.log(  # type: ignore
+        self.logger.log(
             level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
         )
 

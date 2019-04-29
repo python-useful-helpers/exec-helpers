@@ -23,6 +23,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import abc
 import datetime
 import logging
@@ -30,13 +31,14 @@ import re
 import threading
 import typing
 
+# External Dependencies
 import six
 
+# Exec-Helpers Implementation
 from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result  # noqa  # pylint: disable=unused-import
 from exec_helpers import proc_enums
-
 
 ExecuteAsyncResult = typing.NamedTuple(
     "ExecuteAsyncResult",
@@ -93,7 +95,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     def __init__(
         self,
         logger,  # type: logging.Logger
-        log_mask_re=None  # type: typing.Optional[typing.Text]
+        log_mask_re=None,  # type: typing.Optional[typing.Text]
     ):  # type: (...) -> None
         """Global ExecHelper API.
 
@@ -226,13 +228,12 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
     def _prepare_command(
         self,
         cmd,  # type: typing.Union[str, typing.Text]
-        chroot_path=None  # type: typing.Optional[typing.Union[str, typing.Text]]
+        chroot_path=None,  # type: typing.Optional[typing.Union[str, typing.Text]]
     ):  # type: (...) -> typing.Text
         """Prepare command: cower chroot and other cases."""
         if any((chroot_path, self._chroot_path)):
             return "chroot {chroot_path} {cmd}".format(
-                chroot_path=chroot_path if chroot_path else self._chroot_path,
-                cmd=cmd
+                chroot_path=chroot_path if chroot_path else self._chroot_path, cmd=cmd
             )
         return cmd
 
@@ -346,7 +347,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
             command=command, async_result=async_result, timeout=timeout, verbose=verbose, **kwargs
         )  # type: exec_result.ExecResult
         message = "Command {result.cmd!r} exit code: {result.exit_code!s}".format(result=result)
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)  # type: ignore
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
         return result
 
     def __call__(
@@ -421,8 +422,7 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
             self.logger.error(msg=message)
             if raise_on_err:
                 raise kwargs.get("exception_class", exceptions.CalledProcessError)(
-                    result=result,
-                    expected=expected_codes
+                    result=result, expected=expected_codes
                 )
         return result
 

@@ -1,8 +1,8 @@
 exec-helpers
 ============
 
-.. image:: https://travis-ci.org/python-useful-helpers/exec-helpers.svg?branch=master
-    :target: https://travis-ci.org/python-useful-helpers/exec-helpers
+.. image:: https://travis-ci.com/python-useful-helpers/exec-helpers.svg?branch=master
+    :target: https://travis-ci.com/python-useful-helpers/exec-helpers
 .. image:: https://coveralls.io/repos/github/python-useful-helpers/exec-helpers/badge.svg?branch=master
     :target: https://coveralls.io/github/python-useful-helpers/exec-helpers?branch=master
 .. image:: https://readthedocs.org/projects/exec-helpers/badge/?version=latest
@@ -25,8 +25,10 @@ you can call command with timeout, but without receiving return code,
 or call command and wait for return code, but without timeout processing.
 
 In the most cases, we are need just simple SSH client with comfortable API for calls, calls via SSH proxy and checking return code/stderr.
-This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects (with inline decoding of YAML, JSON, binary or just strings).
-In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls (for protection from race conditions).
+This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects
+(with inline decoding of YAML, JSON, binary or just strings).
+In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls
+(for protection from race conditions).
 
 Pros:
 
@@ -96,7 +98,7 @@ Creation from scratch:
     )
 
 Key is a main connection key (always tried first) and keys are alternate keys.
-Key filename is a filename or list of filenames with keys, which should be loaded.
+Key filename is afilename or list of filenames with keys, which should be loaded.
 Passphrase is an alternate password for keys, if it differs from main password.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
@@ -116,7 +118,7 @@ Base methods
 ------------
 Main methods are `execute`, `check_call` and `check_stderr` for simple executing, executing and checking return code
 and executing, checking return code and checking for empty stderr output.
-This methods are almost the same for `SSHCleint` and `Subprocess`, except specific flags.
+This methods are almost the same for `SSHClient` and `Subprocess`, except specific flags.
 
 .. note:: By default ALL methods have timeout 1 hour, infinite waiting can be enabled, but it's special case.
 
@@ -166,7 +168,7 @@ If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `
 The next command level uses lower level and kwargs are forwarded, so expected exit codes are forwarded from `check_stderr`.
 Implementation specific flags are always set via kwargs.
 
-If required to mask part of command from logging, `log_mask_re` attribute can be set global over instance or providden with command.
+If required to mask part of command from logging, `log_mask_re` attribute can be set global over instance or provided with command.
 All regex matched groups will be replaced by `'<*masked*>'`.
 
 .. code-block:: python
@@ -327,6 +329,6 @@ CI systems
 ==========
 For code checking several CI systems is used in parallel:
 
-1. `Travis CI: <https://travis-ci.org/python-useful-helpers/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
+1. `Travis CI: <https://travis-ci.com/python-useful-helpers/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
 
 2. `coveralls: <https://coveralls.io/github/python-useful-helpers/exec-helpers>`_ is used for coverage display.

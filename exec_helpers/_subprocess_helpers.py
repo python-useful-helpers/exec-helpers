@@ -17,17 +17,17 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-__all__ = ("kill_proc_tree", "subprocess_kw")
-
+# Standard Library
 import os
 import platform
-
 # pylint: disable=unused-import
 import typing  # noqa: F401
-
 # pylint: enable=unused-import
 
+# External Dependencies
 import psutil  # type: ignore
+
+__all__ = ("kill_proc_tree", "subprocess_kw")
 
 
 # Adopt from:

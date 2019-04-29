@@ -23,10 +23,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import enum
 import sys
 import typing  # noqa  # pylint: disable=unused-import
 
+# External Dependencies
 import six
 
 __all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")

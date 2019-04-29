@@ -20,10 +20,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import copy
 import logging
 import typing  # noqa  # pylint: disable=unused-import
 
+# External Dependencies
 import paramiko  # type: ignore
 
 __all__ = ("SSHAuth",)

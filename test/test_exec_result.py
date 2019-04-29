@@ -70,8 +70,8 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(
             str(result),
             "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
+            "\n\tstdout=\n'{stdout_brief}',"
+            "\n\tstderr=\n'{stderr_brief}',"
             "\n\texit_code={exit_code!s},\n)".format(
                 cls=exec_helpers.ExecResult.__name__,
                 cmd=cmd,
@@ -241,8 +241,8 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(
             str(result),
             "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
+            "\n\tstdout=\n'{stdout_brief}',"
+            "\n\tstderr=\n'{stderr_brief}',"
             "\n\texit_code={exit_code!s},"
             "\n\tstarted={started},"
             "\n\tspent={spent},"

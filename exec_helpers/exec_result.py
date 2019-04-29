@@ -20,15 +20,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import datetime
 import json
 import logging
 import threading
 import typing  # noqa  # pylint: disable=unused-import
 
+# External Dependencies
 import six
 import yaml
 
+# Exec-Helpers Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
@@ -73,9 +76,8 @@ class LinesAccessProxy(object):
         self._data = tuple(data)  # type: typing.Tuple[bytes, ...]
 
     def __getitem__(
-        self,
-        item  # type: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, "ellipsis"]]]
-    ):  # type: (...) -> typing.Text
+        self, item
+    ):  # type: (typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, "ellipsis"]]]) -> typing.Text
         """Access magic.
 
         :param item: index
@@ -288,7 +290,7 @@ class ExecResult(object):
             for line in src:
                 dst.append(line)
                 if log:
-                    log.log(  # type: ignore
+                    log.log(
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
@@ -571,8 +573,8 @@ class ExecResult(object):
             spent = ""
         return (
             "{cls}(\n\tcmd={cmd!r},"
-            "\n\t stdout=\n'{stdout_brief}',"
-            "\n\tstderr=\n'{stderr_brief}', "
+            "\n\tstdout=\n'{stdout_brief}',"
+            "\n\tstderr=\n'{stderr_brief}',"
             "\n\texit_code={exit_code!s},"
             "\n{started}{spent})".format(
                 cls=self.__class__.__name__,

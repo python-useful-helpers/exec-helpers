@@ -18,10 +18,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+# Standard Library
 import typing
 
-from exec_helpers import proc_enums
+# Exec-Helpers Implementation
 from exec_helpers import _log_templates
+from exec_helpers import proc_enums
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import, unused-import
