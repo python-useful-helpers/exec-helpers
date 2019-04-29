@@ -2,164 +2,164 @@ sudo: false
 language: python
 os: linux
 install:
-- &upgrade_python_toolset pip install --upgrade pip setuptools wheel
-- &install_test_deps pip install --upgrade mock pytest pytest-mock pytest-sugar
-- &install_deps pip install -r CI_REQUIREMENTS.txt
-- pip install --upgrade pytest-cov coveralls
+  - &upgrade_python_toolset pip install --upgrade pip setuptools wheel
+  - &install_test_deps pip install --upgrade mock pytest pytest-mock pytest-sugar
+  - &install_deps pip install -r CI_REQUIREMENTS.txt
+  - pip install --upgrade pytest-cov coveralls
 
 _python:
-- &python34
-  name: "Python 3.4"
-  python: "3.4"
-- &python35
-  name: "Python 3.5"
-  python: "3.5"
-- &python36
-  name: "Python 3.6"
-  python: "3.6"
-- &python37
-  name: "Python 3.7"
-  python: "3.7"
-  dist: xenial
-  sudo: true
-- &pypy3
-  name: "PyPy3"
-  python: "pypy3.5"
+  - &python34
+    name: "Python 3.4"
+    python: "3.4"
+  - &python35
+    name: "Python 3.5"
+    python: "3.5"
+  - &python36
+    name: "Python 3.6"
+    python: "3.6"
+  - &python37
+    name: "Python 3.7"
+    python: "3.7"
+    dist: xenial
+    sudo: true
+  - &pypy3
+    name: "PyPy3"
+    python: "pypy3.5"
 
 _helpers:
-- &install_cython pip install --upgrade Cython
-- &build_package python setup.py bdist_wheel
-- &install_built pip install exec_helpers --no-index -f dist
-- &test_no_cov  py.test -vv test
-- &test_cythonized
-  stage: Test cythonized
-  install:
-  - *upgrade_python_toolset
-  - *install_test_deps
-  - *install_deps
-  - *install_cython
-  script:
-  - *build_package
-  - *install_built
-  - *test_no_cov
-  after_success: skip
+  - &install_cython pip install --upgrade Cython
+  - &build_package python setup.py bdist_wheel
+  - &install_built pip install exec_helpers --no-index -f dist
+  - &test_no_cov  py.test -vv test
+  - &test_cythonized
+    stage: Test cythonized
+    install:
+      - *upgrade_python_toolset
+      - *install_test_deps
+      - *install_deps
+      - *install_cython
+    script:
+      - *build_package
+      - *install_built
+      - *test_no_cov
+    after_success: skip
 
-- &static_analysis
-  stage: Static analysis
-  <<: *python34
-  after_success: skip
+  - &static_analysis
+    stage: Static analysis
+    <<: *python34
+    after_success: skip
 
-- &code_style_check
-  stage: Code style check
-  <<: *python34
-  after_success: skip
+  - &code_style_check
+    stage: Code style check
+    <<: *python34
+    after_success: skip
 
 script:
-- pip install -e .
-- py.test -vv --cov-config .coveragerc --cov-report= --cov=exec_helpers test
-- coverage report -m --fail-under 87
+  - python setup.py develop -v
+  - py.test -vvv --cov-config .coveragerc --cov-report= --cov=exec_helpers test
+  - coverage report -m --fail-under 87
 after_success:
-- coveralls
+  - coveralls
 
 jobs:
   include:
-  - <<: *static_analysis
-    name: "PyLint"
-    install:
-    - *upgrade_python_toolset
-    - *install_deps
-    - pip install --upgrade "pylint >= 2.3" isort[pyproject,requirements]
-    script:
-    - pylint exec_helpers
-  - <<: *static_analysis
-    name: "Bandit"
-    install:
-    - *upgrade_python_toolset
-    - pip install --upgrade bandit
-    script:
-    - bandit -r exec_helpers
-  - <<: *static_analysis
-    <<: *python37
-    name: "MyPy"
-    install:
-    - *upgrade_python_toolset
-    - *install_deps
-    - pip install --upgrade "mypy >= 0.670"
-    script:
-    - mypy --strict exec_helpers
-  - <<: *static_analysis
-    name: "PEP8"
-    install:
-    - *upgrade_python_toolset
-    - pip install --upgrade flake8
-    script:
-    - flake8
-#  - <<: *code_style_check
-#    name: "PEP257"
-#    install:
-#    - *upgrade_python_toolset
-#    - pip install --upgrade pydocstyle
-#    script:
-#    - pydocstyle -v exec_helpers
-#  - <<: *code_style_check
-#    <<: *python37
-#    name: "Black formatting"
-#    install:
-#    - *upgrade_python_toolset
-#    - pip install --upgrade black
-#    script:
-#    - black --check exec_helpers
+    - <<: *static_analysis
+      name: "PyLint"
+      install:
+        - *upgrade_python_toolset
+        - *install_deps
+        - pip install --upgrade "pylint >= 2.3" isort[pyproject,requirements]
+      script:
+        - pylint exec_helpers
+    - <<: *static_analysis
+      name: "Bandit"
+      install:
+        - *upgrade_python_toolset
+        - pip install --upgrade bandit
+      script:
+        - bandit -r exec_helpers
+    - <<: *static_analysis
+      <<: *python37
+      name: "MyPy"
+      install:
+        - *upgrade_python_toolset
+        - *install_deps
+        - pip install --upgrade "mypy >= 0.670"
+      script:
+        - mypy --strict exec_helpers
+    - <<: *static_analysis
+      name: "PEP8"
+      install:
+        - *upgrade_python_toolset
+        - pip install --upgrade flake8
+      script:
+        - flake8
+    #  - <<: *code_style_check
+    #    name: "PEP257"
+    #    install:
+    #    - *upgrade_python_toolset
+    #    - pip install --upgrade pydocstyle
+    #    script:
+    #    - pydocstyle -v exec_helpers
+    #  - <<: *code_style_check
+    #    <<: *python37
+    #    name: "Black formatting"
+    #    install:
+    #    - *upgrade_python_toolset
+    #    - pip install --upgrade black
+    #    script:
+    #    - black --check exec_helpers
 
-  - stage: test
-    <<: *python34
-  - stage: test
-    <<: *python35
-  - stage: test
-    <<: *python36
-  - stage: test
-    <<: *python37
-#  - stage: test
-#    <<: *pypy3
-#    allow_failure: true
+    - stage: test
+      <<: *python34
+    - stage: test
+      <<: *python35
+    - stage: test
+      <<: *python36
+    - stage: test
+      <<: *python37
+    #  - stage: test
+    #    <<: *pypy3
+    #    allow_failure: true
 
-#  - <<: *test_cythonized
-#    <<: *python34
-  - <<: *test_cythonized
-    <<: *python35
-  - <<: *test_cythonized
-    <<: *python36
-  - <<: *test_cythonized
-    <<: *python37
+    #  - <<: *test_cythonized
+    #    <<: *python34
+    - <<: *test_cythonized
+      <<: *python35
+    - <<: *test_cythonized
+      <<: *python36
+    - <<: *test_cythonized
+      <<: *python37
 
-  - stage: deploy
-    # This prevents job from appearing in test plan unless commit is tagged:
-    if: tag IS present
-    # Run on pypy to build not cythonized wheel
-    <<: *pypy3
-    name: Build universal and cythonized bdist_wheel. Deploy bdist and sdist.
-    services:
-    - docker
-    install:
-    - *upgrade_python_toolset
-    script:
-    - ./tools/run_docker.sh "exec_helpers"
-    before_deploy:
-    - pip install -r build_requirements.txt
-    - *build_package
-    deploy:
-    - provider: pypi
-      # `skip_cleanup: true` is required to preserve binary wheels, built
-      # inside of manylinux1 docker container during `script` step above.
-      skip_cleanup: true
-      user: penguinolog
-      password:
-        secure: "maml4+SU/6NtRf7JIwWhVyXkesE9Gk5Umdo3txOjcrcvt84S3NlN/hFgdNclMUpJ3b+rOFEpiZOamtDKbP67uhlA6yJ364SxW5T3ZQJ8tjFFzMHcaM38HgGbgLR8AxK8fdZKRg9gVMnGofeiusB5aNsKmn9XnvESc8dNv0Umdmi83wXxm+DfVRXL8VTFgwsH3BxQy/Kdv6upRrXyNWkyoi8Zk8PkrFFDpFoW9WK1fRBqnvCw1Wt8nEAJah7y2b7vj52eM+MfT3IL+jpocZqOJQlFPdWkTonX7mAP9nB97kk4DMbm3ZqUw2Qr9pM0nKK9HhrXhsSSUGa1w95zmw9nbXLrpfnQ61Lyk9pGcVh60WbrVKstE/x9Lq3pqGsA/YKqsIZK3OAqRfBHNG9L7lekP05hXyDNHJXGoEyGQjVA/666S2ZCjM10XaaUmZ5P1kPGocCnEjv86dKdINTkFM6L0n4oIu1nyftBhVu9jz0xQaxute4LZNJiQtE6x8NX3WuSO68UhWjDqevYdRgW55Gp1OD4ilfA/SVNPpsHJfB2baue1fi9m8Rn3bWQSJoZ8twYHoIxEOAIXyMBhYnmldvsuUY6h5p+/hk6kpJAsTXZFjUSa/FPIH84QvDkNCoZxwInSkjEN1tj9PBep2vYcLMd92+g6udtin8FbYMZItiDl1M="
-      on:
-        tags: true
-        distributions: sdist
-      skip_upload_docs: true
-      skip_existing: true
+    - stage: deploy
+      # This prevents job from appearing in test plan unless commit is tagged:
+      if: tag IS present
+      # Run on pypy to build not cythonized wheel
+      <<: *pypy3
+      name: Build universal and cythonized bdist_wheel. Deploy bdist and sdist.
+      services:
+        - docker
+      install:
+        - *upgrade_python_toolset
+      script:
+        - ./tools/run_docker.sh "exec_helpers"
+      before_deploy:
+        - pip install -r build_requirements.txt
+        - *build_package
+      deploy:
+        - provider: pypi
+          # `skip_cleanup: true` is required to preserve binary wheels, built
+          # inside of manylinux1 docker container during `script` step above.
+          skip_cleanup: true
+          user: penguinolog
+          password:
+            secure: "maml4+SU/6NtRf7JIwWhVyXkesE9Gk5Umdo3txOjcrcvt84S3NlN/hFgdNclMUpJ3b+rOFEpiZOamtDKbP67uhlA6yJ364SxW5T3ZQJ8tjFFzMHcaM38HgGbgLR8AxK8fdZKRg9gVMnGofeiusB5aNsKmn9XnvESc8dNv0Umdmi83wXxm+DfVRXL8VTFgwsH3BxQy/Kdv6upRrXyNWkyoi8Zk8PkrFFDpFoW9WK1fRBqnvCw1Wt8nEAJah7y2b7vj52eM+MfT3IL+jpocZqOJQlFPdWkTonX7mAP9nB97kk4DMbm3ZqUw2Qr9pM0nKK9HhrXhsSSUGa1w95zmw9nbXLrpfnQ61Lyk9pGcVh60WbrVKstE/x9Lq3pqGsA/YKqsIZK3OAqRfBHNG9L7lekP05hXyDNHJXGoEyGQjVA/666S2ZCjM10XaaUmZ5P1kPGocCnEjv86dKdINTkFM6L0n4oIu1nyftBhVu9jz0xQaxute4LZNJiQtE6x8NX3WuSO68UhWjDqevYdRgW55Gp1OD4ilfA/SVNPpsHJfB2baue1fi9m8Rn3bWQSJoZ8twYHoIxEOAIXyMBhYnmldvsuUY6h5p+/hk6kpJAsTXZFjUSa/FPIH84QvDkNCoZxwInSkjEN1tj9PBep2vYcLMd92+g6udtin8FbYMZItiDl1M="
+          on:
+            tags: true
+            distributions: sdist
+          skip_upload_docs: true
+          skip_existing: true
 
 cache: pip
 before_cache:
-- rm -f $HOME/.cache/pip/log/debug.log
+  - rm -f $HOME/.cache/pip/log/debug.log
