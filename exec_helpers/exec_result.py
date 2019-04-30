@@ -489,6 +489,8 @@ class ExecResult:
             if fmt == "json":
                 return json.loads(self.stdout_str, encoding="utf-8")
             if fmt == "yaml":
+                if yaml.__with_libyaml__:
+                    return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
             tmpl: str = "{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n".format(fmt=fmt)
