@@ -290,7 +290,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild("{host}:{port}".format(host=host, port=port))
+            logger=logging.getLogger(self.__class__.__name__).getChild("({host}:{port})".format(host=host, port=port))
         )
 
         self.__hostname = host
@@ -952,7 +952,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         try:
             attrs = self._sftp.lstat(path)
-            return attrs.st_mode & stat.S_IFREG != 0  # type: ignore
+            return stat.S_ISREG(attrs.st_mode)
         except IOError:
             return False
 
@@ -966,6 +966,40 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         try:
             attrs = self._sftp.lstat(path)
-            return attrs.st_mode & stat.S_IFDIR != 0  # type: ignore
+            return stat.S_ISDIR(attrs.st_mode)
         except IOError:
             return False
+
+    def islink(self, path):  # type: (typing.Union[str, typing.Text]) -> bool
+        """Check, that path is symlink using SFTP session.
+
+        :param path: remote path to validate
+        :type path: str
+        :return: path is symlink
+        :rtype: bool
+        """
+        try:
+            attrs = self._sftp.lstat(path)
+            return stat.S_ISLNK(attrs.st_mode)
+        except IOError:
+            return False
+
+    def symlink(self, source, dest):  # type: (typing.Union[str, typing.Text], typing.Union[str, typing.Text]) -> None
+        """Produce symbolic link like `os.symlink`.
+
+        :param source: source path
+        :type source: str
+        :param dest: source path
+        :type dest: str
+        """
+        self._sftp.symlink(source, dest)  # pragma: no cover
+
+    def chmod(self, path, mode):  # type: (typing.Union[str, typing.Text],int) -> None
+        """Change the mode (permissions) of a file like `os.chmod`.
+
+        :param path: filesystem object path
+        :type path: str
+        :param mode: new permissions
+        :type mode: int
+        """
+        self._sftp.chmod(path, mode)  # pragma: no cover

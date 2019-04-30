@@ -159,6 +159,38 @@ class TestSftp(unittest.TestCase):
         self.assertFalse(result)
         lstat.assert_called_once_with(dst)
 
+    def test_islink(self, client, *args):
+        class Attrs:
+            def __init__(self, mode):
+                self.st_mode = mode
+
+        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        lstat = mock.Mock()
+        _sftp.attach_mock(lstat, "lstat")
+        lstat.return_value = Attrs(stat.S_IFLNK)
+        dst = "/etc/passwd"
+
+        # noinspection PyTypeChecker
+        result = ssh.islink(dst)
+        self.assertTrue(result)
+        lstat.assert_called_once_with(dst)
+
+        # Negative scenario
+        lstat.reset_mock()
+        lstat.return_value = Attrs(stat.S_IFREG)
+
+        # noinspection PyTypeChecker
+        result = ssh.islink(dst)
+        self.assertFalse(result)
+        lstat.assert_called_once_with(dst)
+
+        lstat.reset_mock()
+        lstat.side_effect = IOError
+        # noinspection PyTypeChecker
+        result = ssh.islink(dst)
+        self.assertFalse(result)
+        lstat.assert_called_once_with(dst)
+
     @mock.patch("exec_helpers.ssh_client.SSHClient.exists")
     @mock.patch("exec_helpers.ssh_client.SSHClient.execute")
     def test_mkdir(self, execute, exists, *args):

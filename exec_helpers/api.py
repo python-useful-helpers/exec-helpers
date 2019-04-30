@@ -282,7 +282,6 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
         .. versionchanged:: 1.4.0 Use typed NamedTuple as result
         .. versionchanged:: 1.12.0 support chroot
         """
-        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def _exec_command(
@@ -315,7 +314,6 @@ class ExecHelper(six.with_metaclass(abc.ABCMeta, object)):
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        raise NotImplementedError  # pragma: no cover
 
     def execute(
         self,
