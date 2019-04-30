@@ -3,7 +3,7 @@ source =
   exec_helpers
 omit =
   test/*
-
+branch = True
 [report]
 exclude_lines =
   # Have to re-enable the standard pragma
