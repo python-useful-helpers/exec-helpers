@@ -134,7 +134,6 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :raises OSError: exception during process kill (and not regarding to already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
-        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     async def execute_async(  # type: ignore
@@ -181,7 +180,6 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
                 )
         :raises OSError: impossible to process STDIN
         """
-        raise NotImplementedError  # pragma: no cover
 
     async def execute(  # type: ignore
         self,

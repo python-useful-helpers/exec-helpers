@@ -280,7 +280,6 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
         .. versionchanged:: 3.5.3 support chroot
         """
-        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def _exec_command(
@@ -317,7 +316,6 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
-        raise NotImplementedError  # pragma: no cover
 
     def execute(
         self,
