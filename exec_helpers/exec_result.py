@@ -493,7 +493,7 @@ class ExecResult:
                     return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)
                 return yaml.safe_load(self.stdout_str)
         except Exception as e:
-            tmpl: str = "{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n".format(fmt=fmt)
+            tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
             LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
 
             raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
