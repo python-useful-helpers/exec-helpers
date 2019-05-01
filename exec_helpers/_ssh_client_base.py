@@ -304,7 +304,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. note:: auth has priority over username/password/private_keys
         """
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild(f"{host}:{port}")
+            logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
         )
 
         self.__hostname: str = host
