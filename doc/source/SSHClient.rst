@@ -337,21 +337,29 @@ API: SSHClient and SSHAuth.
 
         Open file on remote using SFTP session.
 
+        :param path: filesystem object path
         :type path: ``str``
+        :param mode: open file mode ('t' is not supported)
         :type mode: ``str``
+        :return: file.open() stream
+        :rtype: ``paramiko.SFTPFile``
 
     .. py:method:: exists(path)
 
         Check for file existence using SFTP session.
 
+        :param path: filesystem object path
         :type path: ``str``
+        :return: path is valid (object exists)
         :rtype: ``bool``
 
     .. py:method:: stat(path)
 
         Get stat info for path with following symlinks.
 
+        :param path: filesystem object path
         :type path: ``str``
+        :return: stat like information for remote path
         :rtype: ``paramiko.sftp_attr.SFTPAttributes``
 
     .. py:method:: utime(path, times=None):
@@ -359,9 +367,9 @@ API: SSHClient and SSHAuth.
         Set atime, mtime.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: ``str``
         :param times: (atime, mtime)
-        :type times: typing.Optional[typing.Tuple[int, int]]
+        :type times: ``typing.Optional[typing.Tuple[int, int]]``
         :rtype: None
 
         .. versionadded:: 1.0.0
@@ -370,15 +378,46 @@ API: SSHClient and SSHAuth.
 
         Check, that path is file using SFTP session.
 
+        :param path: remote path to validate
         :type path: ``str``
+        :return: path is file
         :rtype: ``bool``
 
     .. py:method:: isdir(path)
 
         Check, that path is directory using SFTP session.
 
+        :param path: remote path to validate
         :type path: ``str``
+        :return: path is directory
         :rtype: ``bool``
+
+    .. py:method:: islink(path)
+
+        Check, that path is symlink using SFTP session.
+
+        :param path: remote path to validate
+        :type path: ``str``
+        :return: path is symlink
+        :rtype: ``bool``
+
+    .. py:method:: symlink(source, dest)
+
+        Produce symbolic link like `os.symlink`.
+
+        :param source: source path
+        :type source: ``str``
+        :param dest: source path
+        :type dest: ``str``
+
+    .. py:method:: chmod(path, mode)
+
+        Change the mode (permissions) of a file like `os.chmod`.
+
+        :param path: filesystem object path
+        :type path: ``str``
+        :param mode: new permissions
+        :type mode: ``int``
 
     **Non standard methods:**
 
