@@ -155,7 +155,7 @@ def get_simple_vars_from_src(src):
                     str, bytes,
                     int, float, complex,
                     list, set, dict, tuple,
-                    None,
+                    None, bool, Ellipsis
                 ]
             ]
 
@@ -189,7 +189,10 @@ def get_simple_vars_from_src(src):
     >>> get_simple_vars_from_src(multiple_assign)
     OrderedDict([('e', 1), ('f', 1), ('g', 1)])
     """
-    ast_data = (ast.Str, ast.Num, ast.List, ast.Set, ast.Dict, ast.Tuple, ast.Bytes, ast.NameConstant)
+    if sys.version_info[:2] < (3, 8):
+        ast_data = (ast.Str, ast.Num, ast.List, ast.Set, ast.Dict, ast.Tuple, ast.Bytes, ast.NameConstant, ast.Ellipsis)
+    else:
+        ast_data = ast.Constant
 
     tree = ast.parse(src)
 
@@ -222,6 +225,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
