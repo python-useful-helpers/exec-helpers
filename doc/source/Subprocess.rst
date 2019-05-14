@@ -16,7 +16,6 @@ API: Subprocess
         :type log_mask_re: typing.Optional[str]
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 1.9.0 Not singleton anymore. Only lock is shared between all instances.
 
     .. py:attribute:: log_mask_re
 
@@ -50,6 +49,7 @@ API: Subprocess
         :rtype: typing.ContextManager
 
         .. Note:: Enter and exit main context manager is produced as well.
+        .. versionadded:: 4.1.0
 
     .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, **kwargs)
 
@@ -72,7 +72,7 @@ API: Subprocess
         :raises OSError: impossible to process STDIN
 
         .. versionadded:: 1.2.0
-        .. versionchanged:: 1.4.0 Use typed NamedTuple as result
+        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, **kwargs)
 
@@ -107,7 +107,7 @@ API: Subprocess
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. note:: stdin channel is closed after the input processing
-        .. versionadded:: 1.9.7
+        .. versionadded:: 3.3.0
 
     .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, **kwargs)
 
@@ -131,8 +131,8 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 1.10.0 Exception class can be substituted
-        .. versionchanged:: 1.11.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
     .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, **kwargs)
 
@@ -156,7 +156,7 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 1.10.0 Exception class can be substituted
+        .. versionchanged:: 3.2.0 Exception class can be substituted
 
 
 .. py:class:: SubprocessExecuteAsyncResult
@@ -183,4 +183,4 @@ API: Subprocess
 
         ``datetime.datetime``
 
-        .. versionadded:: 2.11.0
+        .. versionadded:: 3.4.1
