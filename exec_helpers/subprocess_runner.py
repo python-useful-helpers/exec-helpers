@@ -35,7 +35,6 @@ from exec_helpers import _subprocess_helpers
 from exec_helpers import api
 from exec_helpers import exceptions
 from exec_helpers import exec_result
-from exec_helpers import metaclasses  # pylint: disable=unused-import
 
 
 # noinspection PyTypeHints
@@ -63,7 +62,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super(SubprocessExecuteAsyncResult, self).stdout
 
 
-class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
+class Subprocess(api.ExecHelper):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     def __init__(
@@ -85,6 +84,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 3.2.0 Logger can be enforced.
+        .. versionchanged:: 4.1.0 support chroot
+        .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
