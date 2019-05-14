@@ -18,9 +18,10 @@ API: Subprocess
         :type logger: logging.Logger
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 2.9.0 Not singleton anymore. Only lock is shared between all instances.
-        .. versionchanged:: 2.9.3 Logger can be enforced.
-        .. versionchanged:: 2.12.0 support chroot
+        .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
+        .. versionchanged:: 3.2.0 Logger can be enforced.
+        .. versionchanged:: 4.1.0 support chroot
+        .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances
 
     .. py:attribute:: log_mask_re
 
@@ -54,7 +55,7 @@ API: Subprocess
         :rtype: typing.ContextManager
 
         .. Note:: Enter and exit main context manager is produced as well.
-        .. versionadded:: 2.12.0
+        .. versionadded:: 4.1.0
 
     .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, chroot_path=None, cwd=None, env=None, **kwargs)
 
@@ -84,7 +85,7 @@ API: Subprocess
 
         .. versionadded:: 1.2.0
         .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 2.9.3 Expose cwd and env as optional keyword-only arguments
+        .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
 
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
 
@@ -129,7 +130,7 @@ API: Subprocess
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. note:: stdin channel is closed after the input processing
-        .. versionadded:: 2.9.4
+        .. versionadded:: 3.3.0
 
     .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
 
@@ -160,8 +161,8 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.9.3 Exception class can be substituted
-        .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
     .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
 
@@ -192,8 +193,8 @@ API: Subprocess
 
         .. versionchanged:: 1.1.0 make method
         .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.9.3 Exception class can be substituted
-        .. versionchanged:: 2.11.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
 
 .. py:class:: SubprocessExecuteAsyncResult
@@ -220,4 +221,4 @@ API: Subprocess
 
         ``datetime.datetime``
 
-        .. versionadded:: 2.11.0
+        .. versionadded:: 3.4.1

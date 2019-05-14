@@ -64,7 +64,6 @@ REQUIRES_OPTIMIZATION = [
     _extension("exec_helpers.constants"),
     _extension("exec_helpers.exceptions"),
     _extension("exec_helpers.exec_result"),
-    _extension("exec_helpers.metaclasses"),
     _extension("exec_helpers.proc_enums"),
     _extension("exec_helpers.ssh_auth"),
     _extension("exec_helpers.ssh_client"),
