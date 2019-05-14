@@ -21,6 +21,7 @@ API: Subprocess
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 3.2.0 Logger can be enforced.
         .. versionchanged:: 4.1.0 support chroot
+        .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances
 
     .. py:attribute:: log_mask_re
 

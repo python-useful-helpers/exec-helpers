@@ -30,7 +30,6 @@ import typing
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 from exec_helpers import exceptions
-from exec_helpers import metaclasses  # pylint: disable=unused-import
 from exec_helpers import subprocess_runner
 from exec_helpers.async_api import api
 from exec_helpers.async_api import exec_result
@@ -64,7 +63,7 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
         return super(SubprocessExecuteAsyncResult, self).stdout
 
 
-class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
+class Subprocess(api.ExecHelper):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     __slots__ = ()
@@ -85,6 +84,8 @@ class Subprocess(api.ExecHelper, metaclass=metaclasses.SingleLock):
 
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
         .. versionchanged:: 3.2.0 Logger can be enforced.
+        .. versionchanged:: 4.1.0 support chroot
+        .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
