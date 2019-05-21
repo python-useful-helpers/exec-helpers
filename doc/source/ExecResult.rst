@@ -147,6 +147,13 @@ API: ExecResult
         :rtype: ``typing.Any``
         :raises DeserializeValueError: STDOUT can not be deserialized as YAML
 
+    .. py:attribute:: stdout_xml
+
+        XML from stdout
+
+        :rtype: xml.etree.ElementTree.Element
+        :raises DeserializeValueError: STDOUT can not be deserialized as XML
+
     .. py:method:: read_stdout(src=None, log=None, verbose=False)
 
         Read stdout file-like object to stdout.

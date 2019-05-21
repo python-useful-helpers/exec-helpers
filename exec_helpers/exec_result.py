@@ -25,15 +25,20 @@ import datetime
 import json
 import logging
 import threading
-import typing  # noqa  # pylint: disable=unused-import
+import typing
+
 
 # External Dependencies
+import defusedxml.ElementTree  # type: ignore
 import six
 import yaml
 
 # Exec-Helpers Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
+
+if typing.TYPE_CHECKING:
+    import xml.etree.ElementTree  # nosec  # noqa  # pylint: disable=unused-import
 
 __all__ = ("ExecResult",)
 
@@ -489,6 +494,8 @@ class ExecResult(object):
                 if yaml.__with_libyaml__:
                     return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
                 return yaml.safe_load(self.stdout_str)
+            if fmt == "xml":
+                return defusedxml.ElementTree.fromstring(bytes(self.stdout_bin))
         except Exception:
             tmpl = " stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))
@@ -502,6 +509,7 @@ class ExecResult(object):
         """JSON from stdout.
 
         :rtype: typing.Any
+        :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
         with self.stdout_lock:
             return self.__deserialize(fmt="json")
@@ -511,9 +519,20 @@ class ExecResult(object):
         """YAML from stdout.
 
         :rtype: typing.Any
+        :raises DeserializeValueError: STDOUT can not be deserialized as YAML
         """
         with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
+
+    @property
+    def stdout_xml(self):  # type: () -> xml.etree.ElementTree.Element
+        """YAML from stdout.
+
+        :rtype: xml.etree.ElementTree.Element
+        :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        """
+        with self.stdout_lock:
+            return self.__deserialize(fmt="xml")  # type: ignore
 
     def __dir__(self):  # type: () -> typing.List[typing.Text]
         """Override dir for IDE and as source for getitem checks."""
@@ -532,6 +551,7 @@ class ExecResult(object):
             "stderr_lines",
             "stdout_json",
             "stdout_yaml",
+            "stdout_xml",
             "lock",
         ]
 

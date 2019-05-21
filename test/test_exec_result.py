@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 
 import datetime
 import unittest
+import xml.etree.ElementTree
 
 import mock
 
@@ -301,3 +302,16 @@ class TestExecResult(unittest.TestCase):
             _ = result.stdout_lines["aaa"]  # noqa
         with self.assertRaises(TypeError):
             _ = result.stdout_lines[1, "aaa"]  # noqa
+
+    def test_stdout_xml(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"<?xml version='1.0'?>\n",
+                b'<data>123</data>\n',
+            ]
+        )
+        expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
+        self.assertEqual(
+            xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml)
+        )
