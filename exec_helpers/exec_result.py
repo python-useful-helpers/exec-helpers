@@ -24,7 +24,7 @@ import json
 import logging
 import threading
 import typing
-import xml.etree.ElementTree
+import xml.etree.ElementTree  # nosec  # for typing only
 
 # External Dependencies
 import defusedxml.ElementTree  # type: ignore
