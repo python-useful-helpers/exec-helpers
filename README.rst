@@ -222,6 +222,8 @@ Execution result object has a set of useful properties:
 
 * `stdout_yaml` - STDOUT decoded as YAML.
 
+* `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library.
+
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 
 SSHClient specific
