@@ -24,8 +24,10 @@ import json
 import logging
 import threading
 import typing
+import xml.etree.ElementTree
 
 # External Dependencies
+import defusedxml.ElementTree  # type: ignore
 import yaml
 
 # Exec-Helpers Implementation
@@ -492,6 +494,8 @@ class ExecResult:
                 if yaml.__with_libyaml__:
                     return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
                 return yaml.safe_load(self.stdout_str)
+            if fmt == "xml":
+                return defusedxml.ElementTree.fromstring(bytes(self.stdout_bin))
         except Exception as e:
             tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
             LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
@@ -509,6 +513,7 @@ class ExecResult:
         """JSON from stdout.
 
         :rtype: typing.Any
+        :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
         with self.stdout_lock:
             return self.__deserialize(fmt="json")
@@ -518,9 +523,20 @@ class ExecResult:
         """YAML from stdout.
 
         :rtype: typing.Any
+        :raises DeserializeValueError: STDOUT can not be deserialized as YAML
         """
         with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
+
+    @property
+    def stdout_xml(self) -> xml.etree.ElementTree.Element:
+        """YAML from stdout.
+
+        :rtype: xml.etree.ElementTree.Element
+        :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        """
+        with self.stdout_lock:
+            return self.__deserialize(fmt="xml")  # type: ignore
 
     def __dir__(self) -> typing.List[str]:
         """Override dir for IDE and as source for getitem checks."""
@@ -539,6 +555,7 @@ class ExecResult:
             "stderr_lines",
             "stdout_json",
             "stdout_yaml",
+            "stdout_xml",
             "lock",
         ]
 
