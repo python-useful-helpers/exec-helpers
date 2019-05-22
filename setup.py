@@ -256,7 +256,7 @@ setup_args = dict(
         "!=36.2.0",
         "setuptools_scm",
     ],
-    use_scm_version=True,
+    use_scm_version={'write_to': 'exec_helpers/_version.py'},
     install_requires=REQUIRED,
     extras_require={
         "lxml": ["lxml!=3.7.0"]

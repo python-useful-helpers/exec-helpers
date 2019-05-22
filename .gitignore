@@ -6,6 +6,9 @@
 .cache/*
 .pytest_cache/*
 /pip-wheel-metadata
+### Versioning
+/exec_helpers/_version.py
+
 ### Generated code
 /exec_helpers/**/*.c
 /pip-wheel-metadata
