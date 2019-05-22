@@ -47,6 +47,7 @@ jobs:
         displayName: 'Install dependencies'
 
       - script: |
+          python setup.py --version
           pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
         displayName: 'PyLint'
 
@@ -74,6 +75,7 @@ jobs:
         displayName: 'Install dependencies'
 
       - script: |
+          python setup.py --version
           mypy --strict --junit-xml=mypy_result.xml exec_helpers
         displayName: 'MyPy'
 
