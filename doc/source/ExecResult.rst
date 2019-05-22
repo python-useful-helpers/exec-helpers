@@ -154,6 +154,16 @@ API: ExecResult
         :rtype: xml.etree.ElementTree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
 
+    .. py:attribute:: stdout_lxml
+
+        XML from stdout using lxml.
+
+        :rtype: lxml.etree.Element
+        :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        :raises AttributeError: lxml is not installed
+
+        .. note:: Can be insecure.
+
     .. py:method:: read_stdout(src=None, log=None, verbose=False)
 
         Read stdout file-like object to stdout.

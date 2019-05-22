@@ -26,6 +26,11 @@ from unittest import mock
 import exec_helpers
 from exec_helpers import proc_enums
 
+try:
+    import lxml.etree
+except ImportError:
+    lxml = None
+
 cmd = "ls -la | awk '{print $1}'"
 
 
@@ -304,4 +309,18 @@ class TestExecResult(unittest.TestCase):
         expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
         self.assertEqual(
             xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml)
+        )
+
+    @unittest.skipIf(lxml is None, "no lxml installed")
+    def test_stdout_lxml(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"<?xml version='1.0'?>\n",
+                b'<data>123</data>\n',
+            ]
+        )
+        expect = lxml.etree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
+        self.assertEqual(
+            lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml)
         )
