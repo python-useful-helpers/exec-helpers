@@ -229,6 +229,8 @@ Execution result object has a set of useful properties:
 
 * `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library.
 
+* `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if lxml library installed. Can be insecure.
+
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 
 SSHClient specific

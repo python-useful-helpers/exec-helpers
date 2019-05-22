@@ -259,6 +259,9 @@ setup_args = dict(
     ],
     use_scm_version=True,
     install_requires=REQUIRED,
+    extras_require={
+        "lxml": ["lxml!=3.7.0"]
+    },
     package_data={"exec_helpers": ["py.typed"]},
 )
 if cythonize is not None:
