@@ -37,7 +37,7 @@ from exec_helpers import proc_enums
 try:
     import lxml.etree  # type: ignore  # nosec
 except ImportError:
-    lxml = None
+    lxml = None  # pylint: disable=invalid-name
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
