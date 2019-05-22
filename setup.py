@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -178,6 +178,9 @@ setup_args = dict(
     ],
     use_scm_version=True,
     install_requires=required,
+    extras_require={
+        "lxml": ["lxml!=3.7.0"]
+    },
     package_data={
         str('exec_helpers'): ['py.typed'],
     },

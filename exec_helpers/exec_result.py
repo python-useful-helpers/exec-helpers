@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 #
@@ -36,6 +36,11 @@ import yaml
 # Exec-Helpers Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
+
+try:
+    import lxml.etree  # type: ignore  # nosec
+except ImportError:
+    lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
     import xml.etree.ElementTree  # nosec  # noqa  # pylint: disable=unused-import
@@ -496,6 +501,8 @@ class ExecResult(object):
                 return yaml.safe_load(self.stdout_str)
             if fmt == "xml":
                 return defusedxml.ElementTree.fromstring(bytes(self.stdout_bin))
+            if fmt == "lxml":
+                return lxml.etree.fromstring(bytes(self.stdout_bin))  # nosec
         except Exception:
             tmpl = " stdout is not valid {fmt}:\n" "{{stdout!r}}\n".format(fmt=fmt)
             logger.exception(self.cmd + tmpl.format(stdout=self.stdout_str))
@@ -526,7 +533,7 @@ class ExecResult(object):
 
     @property
     def stdout_xml(self):  # type: () -> xml.etree.ElementTree.Element
-        """YAML from stdout.
+        """XML from stdout.
 
         :rtype: xml.etree.ElementTree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
@@ -534,9 +541,24 @@ class ExecResult(object):
         with self.stdout_lock:
             return self.__deserialize(fmt="xml")  # type: ignore
 
+    @property
+    def stdout_lxml(self):  # type: () -> "lxml.etree.Element"
+        """XML from stdout using lxml.
+
+        :rtype: lxml.etree.Element
+        :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        :raises AttributeError: lxml is not installed
+
+        .. note:: Can be insecure.
+        """
+        if lxml is None:
+            raise AttributeError("lxml is not installed -> attribute is not functional.")
+        with self.stdout_lock:
+            return self.__deserialize(fmt="lxml")
+
     def __dir__(self):  # type: () -> typing.List[typing.Text]
         """Override dir for IDE and as source for getitem checks."""
-        return [
+        content = [
             "cmd",
             "stdout",
             "stderr",
@@ -554,6 +576,9 @@ class ExecResult(object):
             "stdout_xml",
             "lock",
         ]
+        if lxml is not None:
+            content.append("stdout_lxml")
+        return content
 
     def __getitem__(self, item):  # type: (typing.Union[str, typing.Text]) -> typing.Any
         """Dict like get data.
