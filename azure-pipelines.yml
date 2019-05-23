@@ -46,8 +46,9 @@ jobs:
           pip install -U pytest pylint pytest-pylint pytest-sugar isort[pyproject,requirements]
         displayName: 'Install dependencies'
 
-      - script: python setup.py --version
-          displayName: 'Generate version file'
+      - script: |
+          python setup.py --version
+        displayName: 'Generate version file'
 
       - script: |
           pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
@@ -76,7 +77,8 @@ jobs:
           pip install -U "mypy>=0.700"
         displayName: 'Install dependencies'
 
-      - script: python setup.py --version
+      - script: |
+          python setup.py --version
         displayName: 'Generate version file'
 
       - script: |
