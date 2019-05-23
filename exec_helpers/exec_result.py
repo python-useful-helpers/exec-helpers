@@ -28,13 +28,23 @@ import xml.etree.ElementTree  # nosec  # for typing only
 
 # External Dependencies
 import defusedxml.ElementTree  # type: ignore
-import yaml
 
 # Exec-Helpers Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
 try:
+    # noinspection PyPackageRequirements
+    import yaml
+except ImportError:
+    yaml = None  # type:ignore  # pylint: disable=invalid-name
+try:
+    import ruamel.yaml as ruamel_yaml  # type: ignore
+except ImportError:
+    ruamel_yaml = None  # pylint: disable=invalid-name
+
+try:
+    # noinspection PyPackageRequirements
     import lxml.etree  # type: ignore  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
@@ -496,9 +506,11 @@ class ExecResult:
             if fmt == "json":
                 return json.loads(self.stdout_str, encoding="utf-8")
             if fmt == "yaml":
-                if yaml.__with_libyaml__:
-                    return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
-                return yaml.safe_load(self.stdout_str)
+                if yaml is not None:
+                    if yaml.__with_libyaml__:
+                        return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
+                    return yaml.safe_load(self.stdout_str)
+                return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
             if fmt == "xml":
                 return defusedxml.ElementTree.fromstring(bytes(self.stdout_bin))
             if fmt == "lxml":
@@ -531,7 +543,10 @@ class ExecResult:
 
         :rtype: typing.Any
         :raises DeserializeValueError: STDOUT can not be deserialized as YAML
+        :raises AttributeError: no any yaml parser installed
         """
+        if yaml is None and ruamel_yaml is None:
+            raise AttributeError("no any yaml parser installed -> attribute is not functional.")
         with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
 
@@ -576,10 +591,11 @@ class ExecResult:
             "stdout_lines",
             "stderr_lines",
             "stdout_json",
-            "stdout_yaml",
             "stdout_xml",
             "lock",
         ]
+        if yaml is not None or ruamel_yaml is not None:
+            content.append("stdout_yaml")
         if lxml is not None:
             content.append("stdout_lxml")
         return content

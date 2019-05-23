@@ -146,6 +146,7 @@ API: ExecResult
 
         :rtype: ``typing.Any``
         :raises DeserializeValueError: STDOUT can not be deserialized as YAML
+        :raises AttributeError: no any yaml parser installed
 
     .. py:attribute:: stdout_xml
 

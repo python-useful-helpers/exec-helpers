@@ -223,7 +223,7 @@ Execution result object has a set of useful properties:
 
 * `stdout_json` - STDOUT decoded as JSON.
 
-* `stdout_yaml` - STDOUT decoded as YAML.
+* `stdout_yaml` - STDOUT decoded as YAML. Accessible only if PyYAML or ruamel.YAML library installed.
 
 * `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library.
 

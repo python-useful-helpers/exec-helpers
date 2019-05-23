@@ -27,6 +27,14 @@ import exec_helpers
 from exec_helpers import proc_enums
 
 try:
+    import yaml
+except ImportError:
+    yaml = None
+try:
+    import ruamel.yaml as ruamel_yaml
+except ImportError:
+    ruamel_yaml = None
+try:
     import lxml.etree
 except ImportError:
     lxml = None
@@ -79,7 +87,6 @@ class TestExecResult(unittest.TestCase):
             # noinspection PyStatementEffect
             result["stdout_json"]  # pylint: disable=pointless-statement
         logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
-        self.assertIsNone(result["stdout_yaml"])
 
         self.assertEqual(hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)))
 
@@ -149,7 +156,6 @@ class TestExecResult(unittest.TestCase):
             # noinspection PyStatementEffect
             result.stdout_json  # pylint: disable=pointless-statement
         logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
-        self.assertIsNone(result["stdout_yaml"])
 
     def test_not_equal(self):
         """Exec result equality is validated by all fields."""
@@ -294,3 +300,35 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(
             lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml)
         )
+
+    @unittest.skipUnless(yaml is not None, "PyYAML parser should be installed")
+    def test_stdout_yaml_pyyaml(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"{test: data}\n"
+            ]
+        )
+        expect = {"test": "data"}
+        self.assertEqual(expect, result.stdout_yaml)
+
+
+# noinspection PyTypeChecker
+class TestExecResultRuamelYaml(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
+
+    def tearDown(self) -> None:
+        exec_helpers.exec_result.yaml = self._orig_yaml
+
+    @unittest.skipUnless(ruamel_yaml is not None, "Ruamel.YAML parser should be installed")
+    def test_stdout_yaml_ruamel(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"{test: data}\n"
+            ]
+        )
+        expect = {"test": "data"}
+        result = result.stdout_yaml
+        self.assertEqual(expect, result)

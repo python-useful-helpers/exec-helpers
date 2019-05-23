@@ -259,7 +259,8 @@ setup_args = dict(
     use_scm_version={'write_to': 'exec_helpers/_version.py'},
     install_requires=REQUIRED,
     extras_require={
-        "lxml": ["lxml!=3.7.0"]
+        "lxml": ["lxml!=3.7.0"],
+        "yaml": ["PyYAML>=3.12"],
     },
     package_data={"exec_helpers": ["py.typed"]},
 )
