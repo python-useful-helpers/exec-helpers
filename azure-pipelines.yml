@@ -41,17 +41,17 @@ jobs:
 
       - script: |
           python -m pip install --upgrade pip
-          pip install -U setuptools wheel
+          pip install -U setuptools
           pip install -r requirements.txt
-          pip install -U pytest pylint pytest-pylint pytest-sugar isort[pyproject,requirements] asynctest pytest-mock pytest-asyncio pytest-cov
+          pip install -U pytest pylint pytest-pylint pytest-sugar isort[pyproject,requirements]
         displayName: 'Install dependencies'
 
       - script: |
-          python setup.py develop -v
+          python setup.py --version
         displayName: 'Generate version file'
 
       - script: |
-          pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml
+          pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
         displayName: 'PyLint'
 
       - task: PublishTestResults@2
