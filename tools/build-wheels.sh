@@ -1,11 +1,12 @@
 #!/bin/bash
+set -e
 PYTHON_VERSIONS="cp36-cp36m cp37-cp37m"
 
 # Avoid creation of __pycache__/*.py[c|o]
 export PYTHONDONTWRITEBYTECODE=1
 
 package_name="$1"
-if [ -z "$package_name" ]
+if [[ -z "$package_name" ]]
 then
     &>2 echo "Please pass package name as a first argument of this script ($0)"
     exit 1
@@ -53,7 +54,7 @@ for PYTHON in ${PYTHON_VERSIONS}; do
     /opt/python/${PYTHON}/bin/python -c "import platform;print(platform.platform())"
     /opt/python/${PYTHON}/bin/pip install "$package_name" --no-index -f file:///io/dist
     /opt/python/${PYTHON}/bin/pip install asynctest pytest pytest-asyncio pytest-mock
-    /opt/python/${PYTHON}/bin/py.test -vv /io/test
+    /opt/python/${PYTHON}/bin/py.test -vvv /io/test
 done
 
 find /io/dist/ -type f -not -name "*$package_name*" -delete
@@ -61,5 +62,12 @@ rm -rf /io/.eggs
 rm -rf /io/build
 rm -rf /io/*.egg-info
 rm -rf /io/.pytest_cache
+rm -rf /io/.tox
+rm -f /io/.coverage
+# Clean caches and cythonized
+find -name *.py[co] -delete
+find -name *.c -delete
+# Reset permissions
 chmod -v a+rwx /io/dist
 chmod -v a+rw /io/dist/*
+chmod -vR a+rw /io/"$package_name"
