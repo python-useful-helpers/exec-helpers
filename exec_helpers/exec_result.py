@@ -24,10 +24,6 @@ import json
 import logging
 import threading
 import typing
-import xml.etree.ElementTree  # nosec  # for typing only
-
-# External Dependencies
-import defusedxml.ElementTree  # type: ignore
 
 # Exec-Helpers Implementation
 from exec_helpers import exceptions
@@ -42,12 +38,18 @@ try:
     import ruamel.yaml as ruamel_yaml  # type: ignore
 except ImportError:
     ruamel_yaml = None  # pylint: disable=invalid-name
-
+try:
+    import defusedxml.ElementTree  # type: ignore
+except ImportError:
+    defusedxml = None  # pylint: disable=invalid-name
 try:
     # noinspection PyPackageRequirements
     import lxml.etree  # type: ignore  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
+
+if typing.TYPE_CHECKING:
+    import xml.etree.ElementTree  # nosec  # for typing only
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -551,12 +553,15 @@ class ExecResult:
             return self.__deserialize(fmt="yaml")
 
     @property
-    def stdout_xml(self) -> xml.etree.ElementTree.Element:
+    def stdout_xml(self) -> "xml.etree.ElementTree.Element":
         """XML from stdout.
 
         :rtype: xml.etree.ElementTree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        :raises AttributeError: defusedxml is not installed
         """
+        if defusedxml is None:
+            raise AttributeError("defusedxml is not installed -> attribute is not functional by security reasons.")
         with self.stdout_lock:
             return self.__deserialize(fmt="xml")  # type: ignore
 
@@ -591,11 +596,12 @@ class ExecResult:
             "stdout_lines",
             "stderr_lines",
             "stdout_json",
-            "stdout_xml",
             "lock",
         ]
         if yaml is not None or ruamel_yaml is not None:
             content.append("stdout_yaml")
+        if defusedxml is not None:
+            content.append("stdout_xml")
         if lxml is not None:
             content.append("stdout_lxml")
         return content

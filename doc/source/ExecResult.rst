@@ -154,6 +154,7 @@ API: ExecResult
 
         :rtype: xml.etree.ElementTree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
+        :raises AttributeError: defusedxml is not installed
 
     .. py:attribute:: stdout_lxml
 

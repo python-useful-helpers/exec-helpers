@@ -5,4 +5,3 @@ threaded>=2.0  # Apache-2.0
 advanced-descriptors>=1.0  # Apache-2.0
 typing >= 3.6 ; python_version < "3.7"  # PSF
 psutil >= 5.0  # BSD
-defusedxml  # PSF

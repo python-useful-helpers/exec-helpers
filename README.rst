@@ -30,7 +30,7 @@ or call command and wait for return code, but without timeout processing.
 
 In the most cases, we are need just simple SSH client with comfortable API for calls, calls via SSH proxy and checking return code/stderr.
 This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects
-(with inline decoding of YAML, JSON, binary or just strings).
+(with inline decoding of XML Element tree, YAML, JSON, binary or just strings).
 In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls
 (for protection from race conditions).
 
@@ -223,11 +223,11 @@ Execution result object has a set of useful properties:
 
 * `stdout_json` - STDOUT decoded as JSON.
 
-* `stdout_yaml` - STDOUT decoded as YAML. Accessible only if PyYAML or ruamel.YAML library installed.
+* `stdout_yaml` - STDOUT decoded as YAML. Accessible only if PyYAML or ruamel.YAML library installed. (Option ``yaml``)
 
-* `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library.
+* `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library. Accessible only if `defusedxml` library installed. (Option ``xml``)
 
-* `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if lxml library installed. Can be insecure.
+* `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if `lxml` library installed. (Option ``lxml``) Can be insecure.
 
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 
