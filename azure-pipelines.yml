@@ -31,36 +31,36 @@ jobs:
           testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/flake8_result.xml') }}
           testRunTitle: 'PEP8'
 
-#  - job: 'PyLint'
-#    pool:
-#      vmIMage: 'VS2017-Win2016'
-#    steps:
-#      - task: UsePythonVersion@0
-#        inputs:
-#          versionSpec: '3.7'
-#
-#      - script: |
-#          python -m pip install --upgrade pip
-#          pip install -U setuptools
-#          pip install -r requirements.txt
-#          pip install -U pytest pylint pytest-pylint pytest-sugar isort[pyproject,requirements]
-#        displayName: 'Install dependencies'
-#
-#      - script: |
-#          python setup.py --version
-#        displayName: 'Generate version file'
-#
-#      - script: |
-#          pytest -vvv --pylint -m pylint --junitxml=pylint_result.xml exec_helpers
-#        displayName: 'PyLint'
-#
-#      - task: PublishTestResults@2
-#        displayName: publish test results via junit
-#        condition: succeededOrFailed()
-#        inputs:
-#          testResultsFormat: "JUnit"
-#          testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/pylint_result.xml') }}
-#          testRunTitle: 'PyLint'
+  - job: 'PyLint'
+    pool:
+      vmIMage: 'VS2017-Win2016'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.7'
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install -U setuptools
+          pip install -r requirements.txt
+          pip install -U pylint pylint_junit isort[pyproject,requirements]
+        displayName: 'Install dependencies'
+
+      - script: |
+          python setup.py --version
+        displayName: 'Generate version file'
+
+      - script: |
+          pylint --output-format=pylint_junit.JUnitReporter exec_helpers > pylint_result.xml
+        displayName: 'PyLint'
+
+      - task: PublishTestResults@2
+        displayName: publish test results via junit
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: "JUnit"
+          testResultsFiles: ${{ format('$(System.DefaultWorkingDirectory)/pylint_result.xml') }}
+          testRunTitle: 'PyLint'
 
   - job: 'MyPy'
     pool:
