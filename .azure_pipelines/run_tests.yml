@@ -30,7 +30,7 @@ jobs:
     displayName: upgrade pip and setuptools
 
   - script: |
-      pip install -r requirements.txt
+      pip install -r CI_REQUIREMENTS.txt
     displayName: Install dependencies
 
   - ${{ if eq(parameters.kind, 'cython') }}:
