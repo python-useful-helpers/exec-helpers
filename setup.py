@@ -230,7 +230,11 @@ CLASSIFIERS = [
 
 KEYWORDS = ["logging", "debugging", "development"]
 
-setup_args = dict(
+XML_DEPS = ["defusedxml"]
+LXML_DEPS = ["lxml!=3.7.0"]
+YAML_DEPS = ["PyYAML>=3.12"]
+
+SETUP_ARGS = dict(
     name="exec-helpers",
     author=VARIABLES["__author__"],
     author_email=VARIABLES["__author_email__"],
@@ -259,20 +263,21 @@ setup_args = dict(
     use_scm_version={'write_to': 'exec_helpers/_version.py'},
     install_requires=REQUIRED,
     extras_require={
-        "xml": ["defusedxml"],
-        "lxml": ["lxml!=3.7.0"],
-        "yaml": ["PyYAML>=3.12"],
+        "xml": XML_DEPS,
+        "lxml": LXML_DEPS,
+        "yaml": YAML_DEPS,
+        "ALL_FORMATS": XML_DEPS + LXML_DEPS + YAML_DEPS
     },
     package_data={"exec_helpers": ["py.typed"]},
 )
 if cythonize is not None:
-    setup_args["ext_modules"] = EXT_MODULES
-    setup_args["cmdclass"] = dict(build_ext=AllowFailRepair)
+    SETUP_ARGS["ext_modules"] = EXT_MODULES
+    SETUP_ARGS["cmdclass"] = dict(build_ext=AllowFailRepair)
 
 try:
-    setuptools.setup(**setup_args)
+    setuptools.setup(**SETUP_ARGS)
 except BuildFailed:
     print("*" * 80 + "\n" "* Build Failed!\n" "* Use clear scripts version.\n" "*" * 80 + "\n")
-    del setup_args["ext_modules"]
-    del setup_args["cmdclass"]
-    setuptools.setup(**setup_args)
+    del SETUP_ARGS["ext_modules"]
+    del SETUP_ARGS["cmdclass"]
+    setuptools.setup(**SETUP_ARGS)

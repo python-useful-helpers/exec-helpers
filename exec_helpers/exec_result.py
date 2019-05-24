@@ -514,9 +514,9 @@ class ExecResult:
                     return yaml.safe_load(self.stdout_str)
                 return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
             if fmt == "xml":
-                return defusedxml.ElementTree.fromstring(bytes(self.stdout_bin))
+                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))
             if fmt == "lxml":
-                return lxml.etree.fromstring(bytes(self.stdout_bin))  # nosec
+                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec
         except Exception as e:
             tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
             LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))

@@ -69,9 +69,24 @@ This package includes:
   .. note:: for Windows `ProactorEventLoop` or another non-standard event loop should be used!
 
 * `ExecResult` - class for execution results storage.
-  Contains exit code, stdout, stderr and getters for decoding as JSON, YAML, string, bytearray and brief strings (up to 7 lines).
+  Contains exit code, stdout, stderr and getters for decoding as JSON, YAML, XML (and LXML) element tree, string, bytearray
+  and brief strings (up to 7 lines).
 
-* `ExitCodes` - enumerator for standard Linux exit codes. BASH return codes (broduced from signal codes) also available.
+* `ExitCodes` - enumerator for standard Linux exit codes. BASH return codes (produced from signal codes) also available.
+
+Installation
+============
+
+Standard: `pip install exec-helpers`
+Extras:
+
+* ``yaml`` - install `PyYaml` for yaml decoding (`PyYAML` is main decoder, `ruamel.YAML` also supported as fallback.)
+
+* ``xml`` - install `defusedxml` for safe XML parsing to `xml.etree.ElementTree.Element`.
+
+* ``lxml`` - install `lxml` for advanced XML parsing. Can be unsafe.
+
+* ``ALL_FORMATS`` - install all parsers. When new parsers will be added, it will ne also supported.
 
 Usage
 =====
@@ -105,7 +120,7 @@ Creation from scratch:
     )
 
 Key is a main connection key (always tried first) and keys are alternate keys.
-Key filename is afilename or list of filenames with keys, which should be loaded.
+Key filename is a filename or list of filenames with keys, which should be loaded.
 Passphrase is an alternate password for keys, if it differs from main password.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
@@ -223,11 +238,14 @@ Execution result object has a set of useful properties:
 
 * `stdout_json` - STDOUT decoded as JSON.
 
-* `stdout_yaml` - STDOUT decoded as YAML. Accessible only if PyYAML or ruamel.YAML library installed. (Option ``yaml``)
+* `stdout_yaml` - STDOUT decoded as YAML. Accessible only if `PyYAML` or `ruamel.YAML` library installed.
+  (Extras: ``yaml``)
 
-* `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library. Accessible only if `defusedxml` library installed. (Option ``xml``)
+* `stdout_xml` - STDOUT decoded as XML to `ElementTree` using `defusedxml` library. Accessible only if `defusedxml` library installed.
+  (Extras: ``xml``)
 
-* `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if `lxml` library installed. (Option ``lxml``) Can be insecure.
+* `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if `lxml` library installed.
+  (Extras: ``lxml``) Can be insecure.
 
 * `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
 

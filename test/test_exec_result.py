@@ -337,3 +337,41 @@ class TestExecResultRuamelYaml(unittest.TestCase):
         expect = {"test": "data"}
         result = result.stdout_yaml
         self.assertEqual(expect, result)
+
+
+class TestExecResultNoExtras(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
+        self._orig_ruamel_yaml, exec_helpers.exec_result.ruamel_yaml = exec_helpers.exec_result.ruamel_yaml, None
+        self._orig_lxml, exec_helpers.exec_result.lxml = exec_helpers.exec_result.lxml, None
+        self._orig_defusedxml, exec_helpers.exec_result.defusedxml = exec_helpers.exec_result.defusedxml, None
+
+    def tearDown(self) -> None:
+        exec_helpers.exec_result.yaml = self._orig_yaml
+        exec_helpers.exec_result.ruamel_yaml = self._orig_ruamel_yaml
+        exec_helpers.exec_result.lxml = self._orig_lxml
+        exec_helpers.exec_result.defusedxml = self._orig_defusedxml
+
+    def test_stdout_yaml(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"{test: data}\n"
+            ]
+        )
+        with self.assertRaises(AttributeError):
+            getattr(result, 'stdout_yaml')  # noqa: B009
+
+    def test_stdout_xmls(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"<?xml version='1.0'?>\n",
+                b'<data>123</data>\n',
+            ]
+        )
+        with self.assertRaises(AttributeError):
+            getattr(result, 'stdout_xml')  # noqa: B009
+
+        with self.assertRaises(AttributeError):
+            getattr(result, 'stdout_lxml')  # noqa: B009
