@@ -509,9 +509,9 @@ class ExecResult:
                 return json.loads(self.stdout_str, encoding="utf-8")
             if fmt == "yaml":
                 if yaml is not None:
-                    if yaml.__with_libyaml__:
+                    if yaml.__with_libyaml__:  # pragma: no cover
                         return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
-                    return yaml.safe_load(self.stdout_str)
+                    return yaml.safe_load(self.stdout_str)  # pragma: no cover
                 return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
             if fmt == "xml":
                 return defusedxml.ElementTree.fromstring(b"".join(self.stdout))
