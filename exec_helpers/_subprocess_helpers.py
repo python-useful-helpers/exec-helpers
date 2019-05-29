@@ -67,7 +67,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 # Flags from:
 # https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
 subprocess_kw: typing.Dict[str, typing.Any] = {}
-if "Windows" == platform.system():  # pragma: no cover
+if platform.system() == "Windows":
     subprocess_kw["creationflags"] = 0x00000200
 else:  # pragma: no cover
     subprocess_kw["start_new_session"] = True

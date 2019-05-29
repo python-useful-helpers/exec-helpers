@@ -31,7 +31,7 @@ import typing
 from exec_helpers import _log_templates
 from exec_helpers import proc_enums
 
-if typing.TYPE_CHECKING:  # pragma: no cover
+if typing.TYPE_CHECKING:
     from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
 
 
