@@ -525,7 +525,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             error_info=error_info,
             raise_on_err=raise_on_err,
             expected=expected,
-            exception_class=exception_class
+            exception_class=exception_class,
         )
 
     def _handle_stderr(
