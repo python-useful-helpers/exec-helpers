@@ -379,13 +379,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             stdin=stdin,
             **kwargs,
         )
-        append: str = error_info + "\n" if error_info else ""
-        if result.stderr:
-            message = (
-                f"{append}Command {result.cmd!r} output contains STDERR while not expected\n"
-                f"\texit code: {result.exit_code!s}"
-            )
-            self.logger.error(msg=message)
-            if raise_on_err:
-                raise exception_class(result=result, expected=expected)
-        return result
+        return self._handle_stderr(
+            result=result,
+            error_info=error_info,
+            raise_on_err=raise_on_err,
+            expected=expected,
+            exception_class=exception_class,
+        )

@@ -131,12 +131,6 @@ def exec_result():
     return exec_helpers.ExecResult(cmd=command, stdin=None, stdout=stdout_src, stderr=stderr_src, exit_code=0)
 
 
-def teardown_function(function):
-    """Clean-up after tests."""
-    with mock.patch("warnings.warn"):
-        exec_helpers.SSHClient._clear_cache()
-
-
 def test_01_execute_through_host_no_creds(ssh, ssh_transport, exec_result) -> None:
     target = "127.0.0.2"
     result = ssh.execute_through_host(target, command)

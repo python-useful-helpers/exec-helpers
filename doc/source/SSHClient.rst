@@ -80,10 +80,6 @@ API: SSHClient and SSHAuth.
 
         Close connection
 
-    .. py:classmethod:: close()
-
-        Close all memorized connections
-
     .. py:method:: reconnect()
 
         Reconnect SSH session
@@ -147,8 +143,7 @@ API: SSHClient and SSHAuth.
         :type open_stderr: bool
         :param verbose: produce verbose log record on command call
         :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
         :param chroot_path: chroot path override
         :type chroot_path: ``typing.Optional[str]``
@@ -176,8 +171,7 @@ API: SSHClient and SSHAuth.
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Union[int, float, None]``
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
@@ -196,8 +190,7 @@ API: SSHClient and SSHAuth.
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
         :type timeout: ``typing.Union[int, float, None]``
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
@@ -222,8 +215,7 @@ API: SSHClient and SSHAuth.
         :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
@@ -253,8 +245,7 @@ API: SSHClient and SSHAuth.
         :type raise_on_err: ``bool``
         :param expected: expected return codes (0 by default)
         :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
@@ -285,8 +276,7 @@ API: SSHClient and SSHAuth.
         :type timeout: ``typing.Union[int, float, None]``
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
         :param get_pty: open PTY on target machine
         :type get_pty: ``bool``
@@ -318,8 +308,7 @@ API: SSHClient and SSHAuth.
         :type raise_on_err: ``bool``
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception to raise on error. Mandatory subclass of ParallelCallProcessError
         :type exception_class: typing.Type[ParallelCallProcessError]

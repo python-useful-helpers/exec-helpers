@@ -102,12 +102,6 @@ def run_parameters(request):
     return configs[request.param]
 
 
-def teardown_function(function):
-    """Clean-up after tests."""
-    with mock.patch("warnings.warn"):
-        exec_helpers.SSHClient._clear_cache()
-
-
 def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_auth_logger):
     """Parametrized validation of SSH client initialization."""
     # Helper code

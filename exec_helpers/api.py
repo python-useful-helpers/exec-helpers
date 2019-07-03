@@ -520,6 +520,23 @@ class ExecHelper(metaclass=abc.ABCMeta):
             stdin=stdin,
             **kwargs,
         )
+        return self._handle_stderr(
+            result=result,
+            error_info=error_info,
+            raise_on_err=raise_on_err,
+            expected=expected,
+            exception_class=exception_class,
+        )
+
+    def _handle_stderr(
+        self,
+        result: exec_result.ExecResult,
+        error_info: typing.Optional[str],
+        raise_on_err: bool,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]],
+        exception_class: "typing.Type[exceptions.CalledProcessError]",
+    ) -> exec_result.ExecResult:
+        """Internal check_stderr logic (synchronous)."""
         append: str = error_info + "\n" if error_info else ""
         if result.stderr:
             message = (

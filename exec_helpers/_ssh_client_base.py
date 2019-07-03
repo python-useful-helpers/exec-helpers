@@ -19,21 +19,16 @@
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 
 # Standard Library
-import abc
 import base64
 import concurrent.futures
 import copy
 import datetime
 import logging
-import platform
 import stat
-import sys
 import time
 import typing
-import warnings
 
 # External Dependencies
-import advanced_descriptors
 import paramiko  # type: ignore
 import tenacity  # type: ignore
 import threaded
@@ -92,123 +87,6 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super(SshExecuteAsyncResult, self).stdout
 
 
-CPYTHON = "CPython" == platform.python_implementation()
-
-
-class _MemorizedSSH(abc.ABCMeta):
-    """Memorize metaclass for SSHClient.
-
-    This class implements caching and managing of SSHClient connections.
-    Class is not in public scope: all required interfaces is accessible throw
-      SSHClient classmethods.
-
-    Main flow is:
-      SSHClient() -> check for cached connection and
-        - If exists the same: check for alive, reconnect if required and return
-        - If exists with different credentials: delete and continue processing
-          create new connection and cache on success
-      * Note: each invocation of SSHClient instance will return current dir to
-        the root of the current user home dir ("cd ~").
-        It is necessary to avoid unpredictable behavior when the same
-        connection is used from different places.
-        If you need to enter some directory and execute command there, please
-        use the following approach:
-        cmd1 = "cd <some dir> && <command1>"
-        cmd2 = "cd <some dir> && <command2>"
-
-    Close cached connections is allowed per-client and all stored:
-      connection will be closed, but still stored in cache for faster reconnect
-
-    Clear cache is strictly not recommended:
-      from this moment all open connections should be managed manually,
-      duplicates is possible.
-    """
-
-    __cache: typing.Dict[typing.Tuple[str, int], "SSHClientBase"] = {}
-
-    def __call__(  # type: ignore
-        cls: "_MemorizedSSH",
-        host: str,
-        port: int = 22,
-        username: typing.Optional[str] = None,
-        password: typing.Optional[str] = None,
-        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
-        auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        verbose: bool = True,
-    ) -> "SSHClientBase":
-        """Main memorize method: check for cached instance and return it. API follows target __init__.
-
-        :param host: remote hostname
-        :type host: str
-        :param port: remote ssh port
-        :type port: int
-        :param username: remote username.
-        :type username: typing.Optional[str]
-        :param password: remote password
-        :type password: typing.Optional[str]
-        :param private_keys: private keys for connection
-        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
-        :param auth: credentials for connection
-        :type auth: typing.Optional[ssh_auth.SSHAuth]
-        :param verbose: show additional error/warning messages
-        :type verbose: bool
-        :return: SSH client instance
-        :rtype: SSHClientBase
-        """
-        if (host, port) in cls.__cache:
-            key = host, port
-            if auth is None:
-                auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
-            if hash((cls, host, port, auth)) == hash(cls.__cache[key]):
-                ssh: "SSHClientBase" = cls.__cache[key]
-                # noinspection PyBroadException
-                try:
-                    ssh.execute("cd ~", timeout=5)
-                except BaseException:  # Note: Do not change to lower level!
-                    ssh.logger.debug("Reconnect")
-                    ssh.reconnect()
-                return ssh
-            if CPYTHON and sys.getrefcount(cls.__cache[key]) == 2:  # pragma: no cover
-                # If we have only cache reference and temporary getrefcount
-                # reference: close connection before deletion
-                cls.__cache[key].logger.debug("Closing as unused")
-                cls.__cache[key].close()  # type: ignore
-            del cls.__cache[key]
-        # noinspection PyArgumentList
-        ssh = super(_MemorizedSSH, cls).__call__(
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-            private_keys=private_keys,
-            auth=auth,
-            verbose=verbose,
-        )
-        cls.__cache[(ssh.hostname, ssh.port)] = ssh
-        return ssh
-
-    @classmethod
-    def clear_cache(mcs: typing.Type["_MemorizedSSH"]) -> None:
-        """Clear cached connections for initialize new instance on next call.
-
-        getrefcount is used to check for usage, so connections closed on CPYTHON only.
-        """
-        n_count = 3
-        # PY3: cache, ssh, temporary
-        for ssh in mcs.__cache.values():
-            if CPYTHON and sys.getrefcount(ssh) == n_count:  # pragma: no cover
-                ssh.logger.debug("Closing as unused")
-                ssh.close()  # type: ignore
-        mcs.__cache = {}
-
-    @classmethod
-    def close_connections(mcs: typing.Type["_MemorizedSSH"]) -> None:
-        """Close connections for selected or all cached records."""
-        for ssh in mcs.__cache.values():
-            if ssh.is_alive:
-                ssh.close()  # type: ignore
-
-
 class _SudoContext:
     """Context manager for call commands with sudo."""
 
@@ -265,7 +143,7 @@ class _KeepAliveContext:
         self.__ssh.keepalive_mode = self.__keepalive_status
 
 
-class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
+class SSHClientBase(api.ExecHelper):
     """SSH Client helper."""
 
     __slots__ = ("__hostname", "__port", "__auth", "__ssh", "__sftp", "__sudo_mode", "__keepalive_mode", "__verbose")
@@ -415,7 +293,6 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             return self.__sftp
         raise paramiko.SSHException("SFTP connection failed")
 
-    @advanced_descriptors.SeparateClassMethod
     def close(self) -> None:
         """Close SSH and SFTP sessions."""
         with self.lock:
@@ -431,19 +308,6 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
                         self.__sftp.close()
                     except Exception:
                         self.logger.exception("Could not close sftp connection")
-
-    # noinspection PyMethodParameters
-    @close.class_method  # type: ignore
-    def close(cls: typing.Type["SSHClientBase"]) -> None:  # pylint: disable=no-self-argument
-        """Close all memorized SSH and SFTP sessions."""
-        # noinspection PyUnresolvedReferences
-        cls.__class__.close_connections()
-
-    @classmethod
-    def _clear_cache(cls: typing.Type["SSHClientBase"]) -> None:
-        """Enforce clear memorized records."""
-        warnings.warn("_clear_cache() is dangerous and not recommended for normal use!", Warning)
-        _MemorizedSSH.clear_cache()
 
     def __del__(self) -> None:
         """Destructor helper: close channel and threads BEFORE closing others.
@@ -465,7 +329,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
         """
         if not self.__keepalive_mode:
-            self.close()  # type: ignore
+            self.close()
         super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
 
     @property
@@ -505,7 +369,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
     def reconnect(self) -> None:
         """Reconnect SSH session."""
         with self.lock:
-            self.close()  # type: ignore
+            self.close()
 
             self.__ssh = paramiko.SSHClient()
             self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -684,7 +548,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
             if async_result.stderr and async_result.interface.recv_stderr_ready():
                 result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled
+        @threaded.threadpooled  # type: ignore
         def poll_pipes() -> None:
             """Polling task for FIFO buffers."""
             while not async_result.interface.status_event.is_set():
@@ -872,7 +736,7 @@ class SSHClientBase(api.ExecHelper, metaclass=_MemorizedSSH):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
 
-        @threaded.threadpooled
+        @threaded.threadpooled  # type: ignore
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call.
 

@@ -248,12 +248,6 @@ def execute(mocker, exec_result):
     return mocker.patch("exec_helpers.ssh_client.SSHClient.execute", name="execute", return_value=exec_result)
 
 
-def teardown_function(function):
-    """Clean-up after tests."""
-    with mock.patch("warnings.warn"):
-        exec_helpers.SSHClient._clear_cache()
-
-
 def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan_makefile, run_parameters, get_logger):
     open_stdout = run_parameters["open_stdout"]
     open_stderr = run_parameters["open_stderr"]
