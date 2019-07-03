@@ -13,7 +13,6 @@
 #    under the License.
 
 # Standard Library
-import platform
 import typing
 from unittest import mock
 
