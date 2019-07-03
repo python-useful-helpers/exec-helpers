@@ -56,12 +56,6 @@ username = "user"
 password = "pass"
 
 
-def teardown_function(function):
-    """Clean-up after tests."""
-    with mock.patch("warnings.warn"):
-        exec_helpers.SSHClient._clear_cache()
-
-
 def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     """Reject key and allow to connect without key."""
     # Helper code
@@ -383,78 +377,3 @@ def test_014_sftp_repair(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, 
     sftp = ssh._sftp
     assert sftp == open_sftp()
     log.assert_has_calls((mock.call.debug("SFTP is not connected, try to connect..."),))
-
-
-def test_015_memorize(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, mocker):
-    """Memorize."""
-    # Helper code
-    mocker.patch("exec_helpers.exec_result.ExecResult")
-    close_conn = mocker.patch("exec_helpers.ssh_client.SSHClient.close_connections")
-    # Test
-    port1 = 2222
-    host1 = "127.0.0.2"
-
-    # 1. Normal init
-    ssh01 = exec_helpers.SSHClient(host=host)
-    ssh02 = exec_helpers.SSHClient(host=host)
-    ssh11 = exec_helpers.SSHClient(host=host, port=port1)
-    ssh12 = exec_helpers.SSHClient(host=host, port=port1)
-    ssh21 = exec_helpers.SSHClient(host=host1)
-    ssh22 = exec_helpers.SSHClient(host=host1)
-
-    assert ssh01 is ssh02
-    assert ssh11 is ssh12
-    assert ssh21 is ssh22
-
-    assert ssh01 is not ssh11
-    assert ssh01 is not ssh21
-    assert ssh11 is not ssh21
-
-    exec_helpers.SSHClient.close()
-    close_conn.assert_not_called()
-
-    # Mock returns false-connected state, so we just count close calls
-    paramiko_ssh_client().close.assert_has_calls((mock.call(), mock.call(), mock.call()))
-
-    # change creds
-    exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username))
-
-    # Change back: new connection differs from old with the same creds
-    ssh004 = exec_helpers.SSHAuth(host)
-
-    assert ssh01 is not ssh004
-
-
-def test_016_memorize_reconnect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, mocker):
-    """Re-connect."""
-    # Helper code
-    mocker.patch("exec_helpers.ssh_client.SSHClient.execute", side_effect=paramiko.SSHException)
-    # Test
-    exec_helpers.SSHClient(host=host)
-    paramiko_ssh_client.reset_mock()
-    auto_add_policy.reset_mock()
-    exec_helpers.SSHClient(host=host)
-    paramiko_ssh_client.assert_called_once()
-    auto_add_policy.assert_called_once()
-
-
-@pytest.mark.skipif(
-    "CPython" != platform.python_implementation(),
-    reason="CPython only functionality: close connections depend on refcount",
-)
-def test_017_memorize_close_unused(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, mocker):
-    """Close unused connections."""
-    # Helper code
-    mocker.patch("warnings.warn")
-
-    # Test
-    ssh0 = exec_helpers.SSHClient(host=host)
-    del ssh0  # remove reference - now it's cached and unused
-    paramiko_ssh_client.reset_mock()
-    # New connection on the same host:port with different auth
-    ssh1 = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username))
-    paramiko_ssh_client.assert_has_calls((mock.call().close(),))
-    del ssh1  # remove reference - now it's cached and unused
-    paramiko_ssh_client.reset_mock()
-    exec_helpers.SSHClient._clear_cache()
-    paramiko_ssh_client.assert_has_calls((mock.call().close(),))

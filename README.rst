@@ -29,7 +29,7 @@ you can call command with timeout, but without receiving return code,
 or call command and wait for return code, but without timeout processing.
 
 In the most cases, we are need just simple SSH client with comfortable API for calls, calls via SSH proxy and checking return code/stderr.
-This library offers this functionality with connection memorizing, deadlock free polling and friendly result objects
+This library offers this functionality with deadlock free polling and friendly result objects
 (with inline decoding of XML Element tree, YAML, JSON, binary or just strings).
 In addition this library offers the same API for subprocess calls, but with specific limitation: no parallel calls
 (for protection from race conditions).
@@ -38,7 +38,6 @@ Pros:
 
 * STDOUT and STDERR polling during command execution - no deadlocks.
 * The same API for subprocess and ssh.
-* Connection memorize.
 * Free software: Apache license
 * Open Source: https://github.com/python-useful-helpers/exec-helpers
 * PyPI packaged: https://pypi.python.org/pypi/exec-helpers
@@ -55,8 +54,7 @@ Pros:
 
 This package includes:
 
-* `SSHClient` - historically the first one helper, which used for SSH connections and requires memorization
-  due to impossibility of connection close prediction.
+* `SSHClient` - historically the first one helper, which used for SSH connections.
   Several API calls for sFTP also presents.
 
 * `SSHAuth` - class for credentials storage. `SSHClient` does not store credentials as-is, but uses `SSHAuth` for it.
@@ -124,8 +122,6 @@ Key filename is a filename or list of filenames with keys, which should be loade
 Passphrase is an alternate password for keys, if it differs from main password.
 If main key now correct for username - alternate keys tried, if correct key found - it became main.
 If no working key - password is used and None is set as main key.
-
-.. note:: Automatic closing connections during cache record removal supported on CPython implementation only.
 
 Context manager is available, connection is closed and lock is released on exit from context.
 

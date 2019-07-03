@@ -124,12 +124,6 @@ def exec_result():
     return exec_helpers.ExecResult(cmd=command, stdin=None, stdout=stdout_src, stderr=stderr_src, exit_code=0)
 
 
-def teardown_function(function):
-    """Clean-up after tests."""
-    with mock.patch("warnings.warn"):
-        exec_helpers.SSHClient._clear_cache()
-
-
 def test_001_mask_command(ssh, get_logger) -> None:
     cmd = "USE='secret=secret_pass' do task"
     log_mask_re = r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
