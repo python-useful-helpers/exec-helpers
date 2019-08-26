@@ -35,9 +35,9 @@ try:
 except ImportError:
     yaml = None  # type:ignore  # pylint: disable=invalid-name
 try:
-    import ruamel.yaml as ruamel_yaml  # type: ignore
+    import ruamel.yaml as ruamel_yaml
 except ImportError:
-    ruamel_yaml = None  # pylint: disable=invalid-name
+    ruamel_yaml = None  # type:ignore  # pylint: disable=invalid-name
 try:
     import defusedxml.ElementTree  # type: ignore
 except ImportError:

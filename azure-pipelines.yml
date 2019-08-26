@@ -74,7 +74,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U setuptools
           pip install -r CI_REQUIREMENTS.txt
-          pip install -U "mypy>=0.700"
+          pip install -U "mypy>=0.720"
         displayName: 'Install dependencies'
 
       - script: |

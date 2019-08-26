@@ -53,12 +53,12 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
         return super(SubprocessExecuteAsyncResult, self).stdin
 
     @property
-    def stderr(self) -> typing.Optional[asyncio.StreamReader]:  # type: ignore
+    def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stderr
 
     @property
-    def stdout(self) -> typing.Optional[asyncio.StreamReader]:  # type: ignore
+    def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdout
 

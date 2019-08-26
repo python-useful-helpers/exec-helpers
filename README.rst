@@ -84,7 +84,7 @@ Extras:
 
 * ``lxml`` - install `lxml` for advanced XML parsing. Can be unsafe.
 
-* ``ALL_FORMATS`` - install all parsers. When new parsers will be added, it will ne also supported.
+* ``ALL_FORMATS`` (``all-formats``) - install all parsers. When new parsers will be added, it will ne also supported.
 
 Usage
 =====

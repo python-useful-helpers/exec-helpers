@@ -266,7 +266,8 @@ SETUP_ARGS = dict(
         "xml": XML_DEPS,
         "lxml": LXML_DEPS,
         "yaml": YAML_DEPS,
-        "ALL_FORMATS": XML_DEPS + LXML_DEPS + YAML_DEPS
+        "all_formats": XML_DEPS + LXML_DEPS + YAML_DEPS,
+        "all-formats": XML_DEPS + LXML_DEPS + YAML_DEPS,
     },
     package_data={"exec_helpers": ["py.typed"]},
 )

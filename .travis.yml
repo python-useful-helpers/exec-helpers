@@ -75,7 +75,7 @@ jobs:
       install:
         - *upgrade_python_toolset
         - *install_deps
-        - pip install --upgrade "mypy >= 0.700"
+        - pip install --upgrade "mypy >= 0.720"
       script:
         - python setup.py --version
         - mypy --strict exec_helpers
