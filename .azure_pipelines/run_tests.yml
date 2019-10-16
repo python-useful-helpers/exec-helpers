@@ -7,9 +7,9 @@ parameters:
 jobs:
 - job: ${{ format('{0}_{1}_{2}', parameters.name, parameters.architecture, parameters.kind) }}
   dependsOn:
-    - PyLint
-    - MyPy
-    - PEP8
+  - PyLint
+  - MyPy
+  - PEP8
   pool:
     vmImage: "vs2017-win2016"
 
@@ -58,8 +58,8 @@ jobs:
       testRunTitle: ${{ format('{0}_{1}_{2}', parameters.name, parameters.architecture, parameters.kind) }}
 
   - ${{ if ne(parameters.kind, 'cython') }}:
-      - task: PublishCodeCoverageResults@1
-        inputs:
-          codeCoverageTool: Cobertura
-          summaryFileLocation: ${{ format('$(System.DefaultWorkingDirectory)/coverage.xml') }}
-          reportDirectory: ${{ format('$(System.DefaultWorkingDirectory)/htmlcov') }}
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: Cobertura
+        summaryFileLocation: ${{ format('$(System.DefaultWorkingDirectory)/coverage.xml') }}
+        reportDirectory: ${{ format('$(System.DefaultWorkingDirectory)/htmlcov') }}

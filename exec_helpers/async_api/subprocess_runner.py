@@ -43,24 +43,24 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
     @property
     def interface(self) -> asyncio.subprocess.Process:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).interface
+        return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
 
     # pylint: enable=no-member
 
     @property
     def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stdin
+        return super(SubprocessExecuteAsyncResult, self).stdin  # type: ignore
 
     @property
     def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stderr
+        return super(SubprocessExecuteAsyncResult, self).stderr  # type: ignore
 
     @property
     def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stdout
+        return super(SubprocessExecuteAsyncResult, self).stdout  # type: ignore
 
 
 class Subprocess(api.ExecHelper):

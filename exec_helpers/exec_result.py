@@ -33,11 +33,11 @@ try:
     # noinspection PyPackageRequirements
     import yaml
 except ImportError:
-    yaml = None  # type:ignore  # pylint: disable=invalid-name
+    yaml = None  # type:ignore
 try:
     import ruamel.yaml as ruamel_yaml
 except ImportError:
-    ruamel_yaml = None  # type:ignore  # pylint: disable=invalid-name
+    ruamel_yaml = None  # type:ignore
 try:
     import defusedxml.ElementTree  # type: ignore
 except ImportError:

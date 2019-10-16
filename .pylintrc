@@ -64,16 +64,13 @@ confidence=
 # --disable=W".
 enable=all
 
-disable=import-star-module-level,
+disable=non-ascii-bytes-literal,
         raw-checker-failed,
         locally-disabled,
         file-ignored,
         suppressed-message,
-        use-symbolic-message-instead,
-        input-builtin,
-        round-builtin,
-        eq-without-hash,
-        exception-escape,
+        no-absolute-import,
+        old-division,
         comprehension-escape,
         similarities,
         too-many-ancestors,
@@ -90,7 +87,7 @@ disable=import-star-module-level,
         bad-continuation,
         broad-except,
         logging-fstring-interpolation,
-        useless-suppression
+        logging-format-interpolation
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

@@ -49,12 +49,10 @@ class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
 
     async def __aenter__(self) -> None:
         await self._conn.__aenter__()  # type: ignore
-        self._chroot_status = self._conn._chroot_path  # pylint: disable=protected-access
-        self._conn._chroot_path = self._path  # pylint: disable=protected-access
+        self._chroot_status = self._conn._chroot_path
+        self._conn._chroot_path = self._path
 
-    async def __aexit__(  # pylint: disable=protected-access
-        self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any
-    ) -> None:
+    async def __aexit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         self._conn._chroot_path = self._chroot_status
         await self._conn.__aexit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
 

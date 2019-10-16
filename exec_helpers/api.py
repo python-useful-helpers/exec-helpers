@@ -48,7 +48,7 @@ ExecuteAsyncResult = typing.NamedTuple(
 
 
 # noinspection PyProtectedMember
-class _ChRootContext:  # pylint: disable=protected-access
+class _ChRootContext:
     """Context manager for call commands with chroot.
 
     .. versionadded:: 4.1.0

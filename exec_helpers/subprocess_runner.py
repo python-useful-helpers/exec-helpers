@@ -42,9 +42,9 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
     @property
-    def interface(self) -> subprocess.Popen:
+    def interface(self) -> "subprocess.Popen[str]":
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).interface
+        return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
 
     @property
     def stdin(self) -> typing.Optional[typing.IO]:  # type: ignore
@@ -126,12 +126,12 @@ class Subprocess(api.ExecHelper):
         .. versionadded:: 1.2.0
         """
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stdout() -> None:
             """Sync stdout poll."""
             result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_stderr() -> None:
             """Sync stderr poll."""
             result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)

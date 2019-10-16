@@ -548,7 +548,7 @@ class SSHClientBase(api.ExecHelper):
             if async_result.stderr and async_result.interface.recv_stderr_ready():
                 result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def poll_pipes() -> None:
             """Polling task for FIFO buffers."""
             while not async_result.interface.status_event.is_set():
@@ -736,7 +736,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
 
-        @threaded.threadpooled  # type: ignore
+        @threaded.threadpooled
         def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
             """Get result from remote call.
 

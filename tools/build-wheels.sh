@@ -29,6 +29,7 @@ for PYTHON in ${PYTHON_VERSIONS}; do
     /opt/python/${PYTHON}/bin/pip wheel /io/ -w /io/dist/
     cd /io
     /opt/python/${PYTHON}/bin/python setup.py bdist_wheel
+    /opt/python/${PYTHON}/bin/python setup.py clean
 done
 
 echo
