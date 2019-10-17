@@ -5,8 +5,8 @@
 /assets/*
 .cache/*
 .pytest_cache/*
-/pip-wheel-metadata
-### Versioning
+
+### Generated version
 /exec_helpers/_version.py
 
 ### Generated code
