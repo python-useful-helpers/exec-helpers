@@ -23,6 +23,7 @@ from __future__ import unicode_literals
 # Standard Library
 import abc
 import base64
+
 # noinspection PyCompatibility
 import concurrent.futures
 import copy
@@ -43,7 +44,6 @@ import tenacity  # type: ignore
 import threaded
 
 # Exec-Helpers Implementation
-from exec_helpers import _log_templates
 from exec_helpers import api
 from exec_helpers import constants
 from exec_helpers import exceptions
@@ -159,7 +159,7 @@ class _MemorizedSSH(abc.ABCMeta):
                 # If we have only cache reference and temporary getrefcount
                 # reference: close connection before deletion
                 cls.__cache[key].logger.debug("Closing as unused")
-                cls.__cache[key].close()  # type: ignore
+                cls.__cache[key].close()
             del cls.__cache[key]
         # noinspection PyArgumentList
         ssh = super(_MemorizedSSH, cls).__call__(
@@ -185,7 +185,7 @@ class _MemorizedSSH(abc.ABCMeta):
         for ssh in mcs.__cache.values():
             if CPYTHON and sys.getrefcount(ssh) == n_count:  # pragma: no cover
                 ssh.logger.debug("Closing as unused")
-                ssh.close()  # type: ignore
+                ssh.close()
         mcs.__cache = {}
 
     @classmethod
@@ -193,7 +193,7 @@ class _MemorizedSSH(abc.ABCMeta):
         """Close connections for selected or all cached records."""
         for ssh in mcs.__cache.values():
             if ssh.is_alive:
-                ssh.close()  # type: ignore
+                ssh.close()
 
 
 class _SudoContext(object):
@@ -459,7 +459,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
         """
         if not self.__keepalive_mode:
-            self.close()  # type: ignore
+            self.close()
         super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
 
     @property
@@ -498,7 +498,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
     def reconnect(self):  # type: () -> None
         """Reconnect SSH session."""
         with self.lock:
-            self.close()  # type: ignore
+            self.close()
 
             self.__ssh = paramiko.SSHClient()
             self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -577,7 +577,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            level=logging.INFO if verbose else logging.DEBUG,
+            msg="Executing command:\n{cmd!r}\n".format(cmd=cmd_for_log),
         )
 
         chan = self._ssh.get_transport().open_session()
@@ -701,7 +702,7 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         concurrent.futures.wait([future], 0.001)
         result.set_timestamp()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg = exceptions.make_timeout_error_message(result=result, timeout=timeout)  # type: ignore
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
@@ -743,7 +744,8 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
         """
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=kwargs.get("log_mask_re", None))
         self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            level=logging.INFO if verbose else logging.DEBUG,
+            msg="Executing command:\n{cmd!r}\n".format(cmd=cmd_for_log),
         )
 
         if auth is None:

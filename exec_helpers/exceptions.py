@@ -22,7 +22,6 @@ from __future__ import unicode_literals
 import typing
 
 # Exec-Helpers Implementation
-from exec_helpers import _log_templates
 from exec_helpers import proc_enums
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -110,8 +109,34 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        message = _log_templates.CMD_KILL_ERROR.format(result=result, timeout=timeout)
+        stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
+        stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
+        message = (
+            "Wait for {result.cmd!r} during {timeout!s}s: no return code and no response on SIGTERM + SIGKILL signals!"
+            "\n"
+            "\tSTDOUT:\n"
+            "{stdout_brief}\n"
+            "\tSTDERR:\n"
+            "{stderr_brief}".format(
+                result=result, timeout=timeout, stdout_brief=stdout_brief, stderr_brief=stderr_brief
+            )
+        )
         super(ExecHelperNoKillError, self).__init__(message, result=result, timeout=timeout)
+
+
+def make_timeout_error_message(
+    result, timeout
+):  # type: (exec_result.ExecResult, typing.Union[int, float]) -> typing.Text
+    """Make timeout failed message."""
+    stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
+    stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
+    return (
+        "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
+        "\tSTDOUT:\n"
+        "{stdout_brief}\n"
+        "\tSTDERR:\n"
+        "{stderr_brief}".format(result=result, timeout=timeout, stdout_brief=stdout_brief, stderr_brief=stderr_brief)
+    )
 
 
 class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
@@ -131,8 +156,9 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        message = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
-        super(ExecHelperTimeoutError, self).__init__(message, result=result, timeout=timeout)
+        super(ExecHelperTimeoutError, self).__init__(
+            make_timeout_error_message(result=result, timeout=timeout), result=result, timeout=timeout
+        )
 
 
 class CalledProcessError(ExecCalledProcessError):
@@ -157,12 +183,17 @@ class CalledProcessError(ExecCalledProcessError):
         """
         self.result = result
         self.expected = proc_enums.exit_codes_to_enums(expected)
+        stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
+        stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
         message = (
             "Command {result.cmd!r} returned exit code {result.exit_code} "
             "while expected {expected}\n"
             "\tSTDOUT:\n"
-            "{result.stdout_brief}\n"
-            "\tSTDERR:\n{result.stderr_brief}".format(result=self.result, expected=self.expected)
+            "{stdout_brief}\n"
+            "\tSTDERR:\n"
+            "{stderr_brief}".format(
+                result=self.result, expected=self.expected, stdout_brief=stdout_brief, stderr_brief=stderr_brief
+            )
         )
         super(CalledProcessError, self).__init__(message)
 

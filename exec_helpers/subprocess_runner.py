@@ -34,7 +34,6 @@ import typing  # noqa: F401  # pylint: disable=unused-import
 import threaded
 
 # Exec-Helpers Implementation
-from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 from exec_helpers import api
 from exec_helpers import exceptions
@@ -50,9 +49,9 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
     @property
-    def interface(self):  # type: () -> subprocess.Popen
+    def interface(self):  # type: () -> subprocess.Popen[typing.Union[str, typing.Text]]
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).interface
+        return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
 
 
 class Subprocess(api.ExecHelper):
@@ -165,7 +164,7 @@ class Subprocess(api.ExecHelper):
             result.set_timestamp()
             close_streams()
 
-        wait_err_msg = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg = exceptions.make_timeout_error_message(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)
 
@@ -217,7 +216,8 @@ class Subprocess(api.ExecHelper):
         cmd_for_log = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
         self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
+            level=logging.INFO if verbose else logging.DEBUG,
+            msg="Executing command:\n{cmd!r}\n".format(cmd=cmd_for_log),
         )
 
         started = datetime.datetime.utcnow()
