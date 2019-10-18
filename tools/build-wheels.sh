@@ -54,7 +54,7 @@ for PYTHON in ${PYTHON_VERSIONS}; do
     echo -n "Test $PYTHON: $package_name "
     /opt/python/"${PYTHON}"/bin/python -c "import platform;print(platform.platform())"
     /opt/python/"${PYTHON}"/bin/pip install "$package_name" --no-index -f file:///io/dist
-    /opt/python/"${PYTHON}"/bin/pip install pytest
+    /opt/python/"${PYTHON}"/bin/pip install asynctest pytest pytest-asyncio pytest-mock
     /opt/python/"${PYTHON}"/bin/py.test -vvv /io/test
 done
 
