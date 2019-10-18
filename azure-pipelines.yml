@@ -20,7 +20,7 @@ jobs:
         displayName: 'Install dependencies'
 
       - script: |
-          pytest -vvv --flake8 -m flake8 --junitxml=flake8_result.xml exec_helpers
+          pytest --flake8 -m flake8 --junitxml=flake8_result.xml exec_helpers
         displayName: 'PEP8'
 
       - task: PublishTestResults@2

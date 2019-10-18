@@ -47,7 +47,7 @@ _helpers:
 
 script:
   - python setup.py develop -v
-  - py.test -vvv --cov-config .coveragerc --cov-report= --cov=exec_helpers test
+  - py.test --cov-config .coveragerc --cov-report= --cov=exec_helpers test
   - coverage report -m --fail-under 87
 after_success:
   - coveralls
@@ -83,7 +83,7 @@ jobs:
       name: "PEP8"
       install:
         - *upgrade_python_toolset
-        - pip install --upgrade flake8
+        - pip install --upgrade flake8 flake8-bugbear
       script:
         - flake8
 
