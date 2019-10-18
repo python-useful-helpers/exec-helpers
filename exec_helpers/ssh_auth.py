@@ -219,7 +219,7 @@ class SSHAuth(object):
         """Copy self."""
         return self.__class__(username=self.username, password=self.__password, key=self.__key, keys=self.__keys)
 
-    def __repr__(self):  # type: (...) -> str
+    def __repr__(self):  # type: () -> str
         """Representation for debug purposes."""
         _key = None if self.__key is None else "<private for pub: {}>".format(self.public_key)
         _keys = []  # type: typing.List[typing.Union[str, None]]
@@ -230,7 +230,7 @@ class SSHAuth(object):
             _keys.append("<private for pub: {}>".format(self.__get_public_key(key=k)) if k is not None else None)
 
         return (
-            "{cls}("
+            "{cls}("  # type: ignore
             "username={self.username!r}, "
             "password=<*masked*>, "
             "key={key}, "
@@ -238,8 +238,12 @@ class SSHAuth(object):
             "key_filename={self.key_filename!r}, "
             "passphrase=<*masked*>,"
             ")".format(cls=self.__class__.__name__, self=self, key=_key, keys=_keys)
-        )
+        ).encode('utf-8')
 
-    def __str__(self):  # type: (...) -> str
+    def __unicode__(self):  # type: () -> typing.Text
         """Representation for debug purposes."""
         return "{cls} for {self.username}".format(cls=self.__class__.__name__, self=self)
+
+    def __str__(self):  # type: () -> str
+        """Representation for debug purposes."""
+        return self.__unicode__().encode('utf-8')  # type: ignore

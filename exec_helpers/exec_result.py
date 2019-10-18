@@ -122,9 +122,11 @@ class LinesAccessProxy(object):
         """Get string for debug purposes."""
         return self[:]
 
-    def __repr__(self):  # type: () -> typing.Text
+    def __repr__(self):  # type: () -> str
         """Repr for debug purposes."""
-        return "{cls}(data={self._data!r})".format(cls=self.__class__.__name__, self=self)
+        return (
+            "{cls}(data={self._data!r})".format(cls=self.__class__.__name__, self=self).encode('utf-8')  # type: ignore
+        )
 
 
 class ExecResult(object):
@@ -600,11 +602,11 @@ class ExecResult(object):
         else:
             started = ""
         return (
-            "{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, "
+            "{cls}(cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, "  # type: ignore
             "exit_code={self.exit_code!s}{started},)".format(cls=self.__class__.__name__, self=self, started=started)
-        )
+        ).encode('utf-8')
 
-    def __str__(self):  # type: () -> str
+    def __unicode__(self):  # type: () -> typing.Text
         """Representation for logging."""
         if self.started:
             started = "\tstarted={started},\n".format(started=self.started.strftime("%Y-%m-%d %H:%M:%S"))
@@ -633,6 +635,10 @@ class ExecResult(object):
                 spent=spent,
             )
         )
+
+    def __str__(self):  # type: () -> str  # pragma: no cover
+        """Representation for debug purposes."""
+        return self.__unicode__().encode("utf-8")  # type: ignore
 
     def __eq__(self, other):  # type: (typing.Any) -> bool
         """Comparision."""

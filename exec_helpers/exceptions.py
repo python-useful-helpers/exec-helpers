@@ -109,17 +109,13 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
-        stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
         message = (
             "Wait for {result.cmd!r} during {timeout!s}s: no return code and no response on SIGTERM + SIGKILL signals!"
             "\n"
             "\tSTDOUT:\n"
-            "{stdout_brief}\n"
+            "{result.stdout_brief!r}\n"
             "\tSTDERR:\n"
-            "{stderr_brief}".format(
-                result=result, timeout=timeout, stdout_brief=stdout_brief, stderr_brief=stderr_brief
-            )
+            "{result.stderr_brief!r}".format(result=result, timeout=timeout)
         )
         super(ExecHelperNoKillError, self).__init__(message, result=result, timeout=timeout)
 
@@ -128,14 +124,12 @@ def make_timeout_error_message(
     result, timeout
 ):  # type: (exec_result.ExecResult, typing.Union[int, float]) -> typing.Text
     """Make timeout failed message."""
-    stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
-    stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
     return (
         "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
         "\tSTDOUT:\n"
-        "{stdout_brief}\n"
+        "{result.stdout_brief!r}\n"
         "\tSTDERR:\n"
-        "{stderr_brief}".format(result=result, timeout=timeout, stdout_brief=stdout_brief, stderr_brief=stderr_brief)
+        "{result.stderr_brief!r}".format(result=result, timeout=timeout)
     )
 
 
@@ -183,17 +177,13 @@ class CalledProcessError(ExecCalledProcessError):
         """
         self.result = result
         self.expected = proc_enums.exit_codes_to_enums(expected)
-        stdout_brief = result.stdout_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
-        stderr_brief = result.stderr_brief.encode(encoding="utf-8", errors="backslashreplace").decode("utf-8")
         message = (
             "Command {result.cmd!r} returned exit code {result.exit_code} "
             "while expected {expected}\n"
             "\tSTDOUT:\n"
-            "{stdout_brief}\n"
+            "{result.stdout_brief!r}\n"
             "\tSTDERR:\n"
-            "{stderr_brief}".format(
-                result=self.result, expected=self.expected, stdout_brief=stdout_brief, stderr_brief=stderr_brief
-            )
+            "{result.stderr_brief!r}".format(result=result, expected=self.expected)
         )
         super(CalledProcessError, self).__init__(message)
 

@@ -70,11 +70,15 @@ class SigNum(int, enum.Enum):
     SIGPWR = 30  # Power failure restart (System V).
     SIGSYS = 31  # Bad system call.
 
-    def __str__(self):  # type: () -> str  # pragma: no cover
+    def __unicode__(self):  # type: () -> typing.Text  # pragma: no cover
         """Representation for logs."""
         return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
             self=self
         )
+
+    def __str__(self):  # type: () -> str  # pragma: no cover
+        """Representation for debug purposes."""
+        return self.__unicode__().encode("utf-8")  # type: ignore
 
 
 if six.PY3:  # pragma: no cover
@@ -181,11 +185,15 @@ class ExitCodes(digit_type, enum.Enum):
     SH_EX_SIGPWR = 128 + SigNum.SIGPWR
     SH_EX_SIGSYS = 128 + SigNum.SIGSYS
 
-    def __str__(self):  # type: () -> str
+    def __unicode__(self):  # type: () -> typing.Text
         """Representation for logs."""
         return "{self.name}<{self.value:d}(0x{self.value:02X})>".format(  # pylint: disable=missing-format-attribute
             self=self
         )
+
+    def __str__(self):  # type: () -> str  # pragma: no cover
+        """Representation for debug purposes."""
+        return self.__unicode__().encode("utf-8")  # type: ignore
 
 
 EXPECTED = 0 if "win32" == sys.platform else ExitCodes.EX_OK

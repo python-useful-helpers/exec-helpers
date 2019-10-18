@@ -350,9 +350,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
 
     def __repr__(self):  # type: () -> str
         """Representation for debug purposes."""
-        return "{cls}(host={self.hostname}, port={self.port}, auth={self.auth!r})".format(
+        return "{cls}(host={self.hostname}, port={self.port}, auth={self.auth!r})".format(  # type: ignore
             cls=self.__class__.__name__, self=self
-        )
+        ).encode('utf-8')
 
     def __unicode__(self):  # type: () -> typing.Text  # pragma: no cover
         """Representation for debug purposes."""
@@ -360,9 +360,9 @@ class SSHClientBase(six.with_metaclass(_MemorizedSSH, api.ExecHelper)):
             cls=self.__class__.__name__, self=self, username=self.auth.username
         )
 
-    def __str__(self):  # type: ignore  # pragma: no cover
+    def __str__(self):  # type: () -> str  # pragma: no cover
         """Representation for debug purposes."""
-        return self.__unicode__().encode("utf-8")
+        return self.__unicode__().encode("utf-8")  # type: ignore
 
     @property
     def _ssh(self):  # type: () -> paramiko.SSHClient
