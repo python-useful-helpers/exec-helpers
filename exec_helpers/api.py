@@ -228,7 +228,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :returns: final command, includes chroot, if required
         """
         if any((chroot_path, self._chroot_path)):
-            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)
+            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
             return f'chroot {target_path} sh -c "eval {shlex.quote(cmd)}"'
         return cmd
 
