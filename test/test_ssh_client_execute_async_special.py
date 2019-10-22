@@ -13,7 +13,7 @@
 #    under the License.
 
 # Standard Library
-import base64
+import shlex
 import typing
 from unittest import mock
 
@@ -55,10 +55,10 @@ username = "user"
 password = "pass"
 
 command = "ls ~\nline 2\nline 3\nline с кирилицей"
+cmd_execute = f"{command}\n"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 stdout_src = (b" \n", b"2\n", b"3\n", b" \n")
 stderr_src = (b" \n", b"0\n", b"1\n", b" \n")
-encoded_cmd = base64.b64encode(f"{command}\n".encode("utf-8")).decode("utf-8")
 
 print_stdin = 'read line; echo "$line"'
 default_timeout = 60 * 60  # 1 hour
@@ -120,7 +120,7 @@ def test_001_execute_async_sudo(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
+            mock.call.exec_command(f'sudo -S bash -c \"eval {shlex.quote(cmd_execute)}\"'),
         )
     )
 

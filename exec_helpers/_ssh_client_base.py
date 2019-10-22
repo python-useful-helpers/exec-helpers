@@ -19,11 +19,11 @@
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 
 # Standard Library
-import base64
 import concurrent.futures
 import copy
 import datetime
 import logging
+import shlex
 import stat
 import time
 import typing
@@ -479,8 +479,7 @@ class SSHClientBase(api.ExecHelper):
 
         started = datetime.datetime.utcnow()
         if self.sudo_mode:
-            encoded_cmd = base64.b64encode(cmd.encode("utf-8")).decode("utf-8")
-            cmd = f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''
+            cmd = f'sudo -S bash -c "eval {shlex.quote(cmd)}"'
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
                 # noinspection PyTypeChecker
