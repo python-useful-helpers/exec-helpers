@@ -410,7 +410,8 @@ class SSHClientBase(api.ExecHelper):
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
         if any((chroot_path, self._chroot_path)):
             target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
-            return f'chroot {target_path} sudo sh -c "eval {shlex.quote(cmd)}"'
+            quoted_command: str = shlex.quote(cmd)
+            return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
         return f'sudo -S sh -c "eval {shlex.quote(cmd)}"'
 
     # noinspection PyMethodOverriding

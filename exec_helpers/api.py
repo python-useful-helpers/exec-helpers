@@ -229,7 +229,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         if any((chroot_path, self._chroot_path)):
             target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
-            return f'chroot {target_path} sh -c "eval {shlex.quote(cmd)}"'
+            quoted_command = shlex.quote(cmd)
+            return f'chroot {target_path} sh -c {shlex.quote(f"eval {quoted_command}")}'
         return cmd
 
     def execute_async(  # pylint: disable=missing-param-doc,differing-param-doc,differing-type-doc

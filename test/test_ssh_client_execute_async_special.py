@@ -56,6 +56,7 @@ password = "pass"
 
 command = "ls ~\nline 2\nline 3\nline с кирилицей"
 cmd_execute = f"{command}\n"
+quoted_command = shlex.quote(command)
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 stdout_src = (b" \n", b"2\n", b"3\n", b" \n")
 stderr_src = (b" \n", b"0\n", b"1\n", b" \n")
@@ -233,7 +234,7 @@ def test_011_execute_async_chroot_cmd(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot / sh -c "eval {shlex.quote(command)}"\n'),
+            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
         )
     )
 
@@ -245,7 +246,7 @@ def test_012_execute_async_chroot_context(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot / sh -c "eval {shlex.quote(command)}"\n'),
+            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
         )
     )
 
