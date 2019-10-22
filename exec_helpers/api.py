@@ -26,6 +26,7 @@ import abc
 import datetime
 import logging
 import re
+import shlex
 import threading
 import typing
 import warnings
@@ -227,7 +228,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :returns: final command, includes chroot, if required
         """
         if any((chroot_path, self._chroot_path)):
-            return f"chroot {chroot_path if chroot_path else self._chroot_path} {cmd}"
+            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)
+            return f'chroot {target_path} sh -c "eval {shlex.quote(cmd)}"'
         return cmd
 
     def execute_async(  # pylint: disable=missing-param-doc,differing-param-doc,differing-type-doc

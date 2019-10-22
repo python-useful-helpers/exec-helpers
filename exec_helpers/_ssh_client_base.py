@@ -399,6 +399,20 @@ class SSHClientBase(api.ExecHelper):
         """
         return _KeepAliveContext(ssh=self, enforce=enforce)
 
+    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
+        """Prepare command: cower chroot and other cases.
+
+        :param cmd: main command
+        :param chroot_path: path to make chroot for execution
+        :returns: final command, includes chroot, if required
+        """
+        if not self.sudo_mode:
+            return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
+        if any((chroot_path, self._chroot_path)):
+            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)
+            return f'chroot {target_path} sudo sh -c "eval {shlex.quote(cmd)}"'
+        return f'sudo -S sh -c "eval {shlex.quote(cmd)}"'
+
     # noinspection PyMethodOverriding
     def _execute_async(  # pylint: disable=arguments-differ
         self,
@@ -479,7 +493,6 @@ class SSHClientBase(api.ExecHelper):
 
         started = datetime.datetime.utcnow()
         if self.sudo_mode:
-            cmd = f'sudo -S bash -c "eval {shlex.quote(cmd)}"'
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
             if stdout.channel.closed is False:
                 # noinspection PyTypeChecker
