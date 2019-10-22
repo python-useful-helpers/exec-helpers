@@ -116,7 +116,7 @@ def exec_result():
 def test_001_execute_async_sudo(ssh, ssh_transport_channel):
     ssh.sudo_mode = True
 
-    ssh.execute_async(command)
+    ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
@@ -129,11 +129,11 @@ def test_002_execute_async_with_sudo_enforce(ssh, ssh_transport_channel):
     assert ssh.sudo_mode is False
 
     with ssh.sudo(enforce=True):
-        ssh.execute_async(command)
+        ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
+            mock.call.exec_command(f'sudo -S bash -c \"eval {shlex.quote(cmd_execute)}\"'),
         )
     )
 
@@ -142,7 +142,7 @@ def test_003_execute_async_with_no_sudo_enforce(ssh, ssh_transport_channel):
     ssh.sudo_mode = True
 
     with ssh.sudo(enforce=False):
-        ssh.execute_async(command)
+        ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))
 
 
@@ -150,7 +150,7 @@ def test_004_execute_async_with_sudo_none_enforce(ssh, ssh_transport_channel):
     ssh.sudo_mode = False
 
     with ssh.sudo():
-        ssh.execute_async(command)
+        ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))
 
 
@@ -159,11 +159,11 @@ def test_005_execute_async_sudo_password(ssh, ssh_transport_channel, mocker):
 
     ssh.sudo_mode = True
 
-    res = ssh.execute_async(command)
+    res = ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'sudo -S bash -c \'eval "$(base64 -d <(echo "{encoded_cmd}"))"\''),
+            mock.call.exec_command(f'sudo -S bash -c \"eval {shlex.quote(cmd_execute)}\"'),
         )
     )
 
@@ -221,7 +221,7 @@ def test_010_check_stdin_closed(paramiko_ssh_client, chan_makefile, auto_add_pol
     stdin_val = "this is a line"
 
     ssh = exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
-    ssh.execute_async(command=print_stdin, stdin=stdin_val)
+    ssh._execute_async(command=print_stdin, stdin=stdin_val)
 
     log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     log.warning.assert_called_once_with("STDIN Send failed: closed channel")
@@ -229,7 +229,7 @@ def test_010_check_stdin_closed(paramiko_ssh_client, chan_makefile, auto_add_pol
 
 def test_011_execute_async_chroot_cmd(ssh, ssh_transport_channel):
     """Command-only chroot path."""
-    ssh.execute_async(command, chroot_path='/')
+    ssh._execute_async(command, chroot_path='/')
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
@@ -241,7 +241,7 @@ def test_011_execute_async_chroot_cmd(ssh, ssh_transport_channel):
 def test_012_execute_async_chroot_context(ssh, ssh_transport_channel):
     """Context-managed chroot path."""
     with ssh.chroot('/'):
-        ssh.execute_async(command)
+        ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
@@ -255,7 +255,7 @@ def test_013_execute_async_no_chroot_context(ssh, ssh_transport_channel):
     ssh._chroot_path = "/"
 
     with ssh.chroot(None):
-        ssh.execute_async(command)
+        ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),

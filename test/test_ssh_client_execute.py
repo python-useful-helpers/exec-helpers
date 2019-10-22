@@ -235,7 +235,7 @@ def execute_async(mocker, run_parameters):
         )
 
     return mocker.patch(
-        "exec_helpers.ssh_client.SSHClient.execute_async",
+        "exec_helpers.ssh_client.SSHClient._execute_async",
         side_effect=[
             get_patched_execute_async_retval(**run_parameters),
             get_patched_execute_async_retval(**run_parameters),
@@ -261,7 +261,7 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     if "height" in run_parameters:
         kwargs["height"] = run_parameters["height"]
 
-    res = ssh.execute_async(
+    res = ssh._execute_async(
         command, stdin=run_parameters["stdin"], open_stdout=open_stdout, open_stderr=open_stderr, **kwargs
     )
     assert isinstance(res, exec_helpers.SshExecuteAsyncResult)

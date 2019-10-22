@@ -202,7 +202,7 @@ def logger(mocker):
 async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
     """Test low level API."""
     runner = exec_helpers.async_api.Subprocess()
-    res = await runner.execute_async(
+    res = await runner._execute_async(
         command,
         stdin=run_parameters["stdin"],
         open_stdout=run_parameters["open_stdout"],

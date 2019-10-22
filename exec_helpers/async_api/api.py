@@ -134,7 +134,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    async def execute_async(  # type: ignore
+    async def _execute_async(  # type: ignore
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
@@ -208,7 +208,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
-        async_result: api.ExecuteAsyncResult = await self.execute_async(
+        async_result: api.ExecuteAsyncResult = await self._execute_async(
             command, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin, **kwargs
         )
 

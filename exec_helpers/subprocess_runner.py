@@ -169,12 +169,11 @@ class Subprocess(api.ExecHelper):
             stdout_future.cancel()
             stderr_future.cancel()
             _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
-            if not_done:
-                if async_result.interface.returncode:
-                    self.logger.critical(
-                        f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
-                        f"but FIFO buffers are still open"
-                    )
+            if not_done and async_result.interface.returncode:
+                self.logger.critical(
+                    f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
+                    f"but FIFO buffers are still open"
+                )
             result.set_timestamp()
             close_streams()
 
@@ -183,7 +182,7 @@ class Subprocess(api.ExecHelper):
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     # noinspection PyMethodOverriding
-    def execute_async(  # pylint: disable=arguments-differ
+    def _execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,

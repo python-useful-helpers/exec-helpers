@@ -400,7 +400,7 @@ class SSHClientBase(api.ExecHelper):
         return _KeepAliveContext(ssh=self, enforce=enforce)
 
     # noinspection PyMethodOverriding
-    def execute_async(  # pylint: disable=arguments-differ
+    def _execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
@@ -743,7 +743,7 @@ class SSHClientBase(api.ExecHelper):
             :param remote: SSH connection instance
             :returns: execution result
             """
-            async_result: SshExecuteAsyncResult = remote.execute_async(
+            async_result: SshExecuteAsyncResult = remote._execute_async(  # pylint: disable=protected-access
                 command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
             )
 

@@ -177,7 +177,7 @@ def popen(mocker, run_parameters):
 def test_001_execute_async(popen, subprocess_logger, run_parameters) -> None:
     """Test low level API."""
     runner = exec_helpers.Subprocess()
-    res = runner.execute_async(
+    res = runner._execute_async(
         command,
         stdin=run_parameters["stdin"],
         open_stdout=run_parameters["open_stdout"],

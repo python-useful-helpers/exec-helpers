@@ -163,7 +163,7 @@ class Subprocess(api.ExecHelper):
 
     # pylint: disable=arguments-differ
     # noinspection PyMethodOverriding
-    async def execute_async(  # type: ignore
+    async def _execute_async(  # type: ignore
         self,
         command: str,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
