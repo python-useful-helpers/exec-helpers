@@ -129,38 +129,6 @@ API: SSHClient and SSHAuth.
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
 
-    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, chroot_path=None, get_pty=False, width=80, height=24, **kwargs)
-
-        Execute command in async mode and return channel with IO objects.
-
-        :param command: Command for execution
-        :type command: ``str``
-        :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[str, bytes, bytearray, None]``
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param verbose: produce verbose log record on command call
-        :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
-        :param chroot_path: chroot path override
-        :type chroot_path: ``typing.Optional[str]``
-        :param get_pty: Get PTY for connection
-        :type get_pty: bool
-        :param width: PTY width
-        :type width: int
-        :param height: PTY height
-        :type height: int
-        :rtype: SshExecuteAsyncResult
-
-        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
-        .. versionchanged:: 1.2.0 stdin data
-        .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
-
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
 
         Execute command and wait for return code.

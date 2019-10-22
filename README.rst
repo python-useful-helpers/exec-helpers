@@ -293,6 +293,9 @@ For execute through SSH host can be used `execute_through_host` method:
 Where hostname is a target hostname, auth is an alternate credentials for target host.
 
 SSH client implements fast sudo support via context manager:
+
+.. note:: In case of combination sudo + chroot, chroot will be applied first. For alternative order write command with chroot manually.
+
 Commands will be run with sudo enforced independently from client settings for normal usage:
 
 .. code-block:: python

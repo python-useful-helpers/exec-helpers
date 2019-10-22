@@ -57,36 +57,6 @@ API: Subprocess
         .. Note:: Enter and exit main context manager is produced as well.
         .. versionadded:: 4.1.0
 
-    .. py:method:: execute_async(command, stdin=None, open_stdout=True, open_stderr=True, verbose=False, log_mask_re=None, *, chroot_path=None, cwd=None, env=None, **kwargs)
-
-        Execute command in async mode and return Popen with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[str, bytes, bytearray, None]``
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: ``bool``
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: ``bool``
-        :param verbose: produce verbose log record on command call
-        :type verbose: ``bool``
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
-        :param chroot_path: chroot path override
-        :type chroot_path: ``typing.Optional[str]``
-        :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
-        :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
-        :rtype: SubprocessExecuteAsyncResult
-        :raises OSError: impossible to process STDIN
-
-        .. versionadded:: 1.2.0
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
-
     .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
 
         Execute command and wait for return code.
