@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import random
+import sys
 import typing
 from unittest import mock
 
@@ -199,6 +200,7 @@ def logger(mocker):
     return mocker.patch("exec_helpers.async_api.subprocess_runner.Subprocess.logger", autospec=True)
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 8), reason="Python 3.8 is not supported now by asynctest")
 async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
     """Test low level API."""
     runner = exec_helpers.async_api.Subprocess()
