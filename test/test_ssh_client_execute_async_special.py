@@ -13,6 +13,7 @@
 #    under the License.
 
 # Standard Library
+import pathlib
 import shlex
 import typing
 from unittest import mock
@@ -263,3 +264,23 @@ def test_013_execute_async_no_chroot_context(ssh, ssh_transport_channel):
             mock.call.exec_command(f'{command}\n'),
         )
     )
+
+
+def test_012_execute_async_chroot_path(ssh, ssh_transport_channel):
+    """Command-only chroot path."""
+    with ssh.chroot(pathlib.Path('/')):
+        ssh._execute_async(command)
+    ssh_transport_channel.assert_has_calls(
+        (
+            mock.call.makefile_stderr("rb"),
+            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+        )
+    )
+
+
+def test_013_execute_async_chroot_path_invalid_type(ssh, ssh_transport_channel):
+    """Command-only chroot path."""
+    with pytest.raises(TypeError) as exc:
+        with ssh.chroot(...):
+            ssh._execute_async(command)
+        assert str(exc.value) == f"path={...!r} is not instance of Optional[Union[str, pathlib.Path]]"

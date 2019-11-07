@@ -103,7 +103,7 @@ API: SSHClient and SSHAuth.
         Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[str]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 

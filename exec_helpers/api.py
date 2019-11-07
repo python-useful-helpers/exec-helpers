@@ -25,6 +25,7 @@ __all__ = ("ExecHelper", "ExecuteAsyncResult")
 import abc
 import datetime
 import logging
+import pathlib
 import re
 import shlex
 import threading
@@ -58,17 +59,23 @@ class _ChRootContext:
 
     __slots__ = ("_conn", "_chroot_status", "_path")
 
-    def __init__(self, conn: "ExecHelper", path: typing.Optional[str] = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
         """Context manager for call commands with sudo.
 
         :param conn: connection instance
         :type conn: ExecHelper
         :param path: chroot path or None for no chroot
-        :type path: typing.Optional[str]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+        :raises TypeError: incorrect type of path variable
         """
         self._conn: "ExecHelper" = conn
         self._chroot_status: typing.Optional[str] = conn._chroot_path
-        self._path: typing.Optional[str] = path
+        if path is None or isinstance(path, str):
+            self._path: typing.Optional[str] = path
+        elif isinstance(path, pathlib.Path):
+            self._path = path.as_posix()  # get absolute path
+        else:
+            raise TypeError(f"path={path!r} is not instance of Optional[Union[str, pathlib.Path]]")
 
     def __enter__(self) -> None:
         self._conn.__enter__()
@@ -146,11 +153,11 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         self.__chroot_path = None
 
-    def chroot(self, path: typing.Union[str, None]) -> "typing.ContextManager[None]":
+    def chroot(self, path: typing.Union[str, pathlib.Path, None]) -> "typing.ContextManager[None]":
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[str]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 
@@ -233,6 +240,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             return f'chroot {target_path} sh -c {shlex.quote(f"eval {quoted_command}")}'
         return cmd
 
+    # noinspection PyIncorrectDocstring
     def execute_async(  # pylint: disable=missing-param-doc,differing-param-doc,differing-type-doc
         self, *args: typing.Any, **kwargs: typing.Any
     ) -> ExecuteAsyncResult:

@@ -23,6 +23,7 @@ __all__ = ("ExecHelper",)
 import abc
 import asyncio
 import logging
+import pathlib
 import typing
 
 # Exec-Helpers Implementation
@@ -37,13 +38,13 @@ from exec_helpers import proc_enums
 class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
     """Async extension for chroot."""
 
-    def __init__(self, conn: "ExecHelper", path: typing.Optional[str] = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
         """Context manager for call commands with sudo.
 
         :param conn: connection instance
         :type conn: ExecHelper
         :param path: chroot path or None for no chroot
-        :type path: typing.Optional[str]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         """
         super(_ChRootContext, self).__init__(conn=conn, path=path)
 
@@ -85,11 +86,11 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         """Async context manager."""
         self.__alock.release()  # type: ignore
 
-    def chroot(self, path: typing.Union[str, None]) -> "typing.ContextManager[None]":
+    def chroot(self, path: typing.Union[str, pathlib.Path, None]) -> "typing.ContextManager[None]":
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[str]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 
