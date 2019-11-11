@@ -117,11 +117,14 @@ jobs:
     dependsOn:
       - Python_36_x64_native
       - Python_37_x64_native
+      - Python_38_x64_native
 
       - Python_36_x64_cython
       - Python_36_x86_cython
       - Python_37_x64_cython
       - Python_37_x86_cython
+      - Python_38_x64_cython
+      - Python_38_x86_cython
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     pool:
       vmIMage: 'VS2017-Win2016'
