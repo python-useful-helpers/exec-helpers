@@ -43,6 +43,12 @@ try:
 except ImportError:
     lxml = None
 
+try:
+    # noinspection PyPackageRequirements
+    import logwrap
+except ImportError:
+    logwrap = None
+
 cmd = "ls -la | awk '{print $1}'"
 
 
@@ -316,6 +322,34 @@ class TestExecResult(unittest.TestCase):
         )
         expect = {"test": "data"}
         self.assertEqual(expect, result.stdout_yaml)
+
+    @unittest.skipIf(logwrap is None, "logwrap is not installed")
+    def test_pretty_repr(self):
+        result = exec_helpers.ExecResult(
+            "test",
+            stdout=[
+                b"{test: data}"
+            ],
+            stderr=[
+                b"{test: stderr}"
+            ]
+        )
+        pretty_repr = logwrap.pretty_repr(result)
+        self.assertEqual(
+            "ExecResult(\n"
+            "    cmd='test',\n"
+            "    stdout=\n"
+            "    tuple((\n"
+            "        b'''{test: data}''',\n"
+            "    )),\n"
+            "    stderr=\n"
+            "    tuple((\n"
+            "        b'''{test: stderr}''',\n"
+            "    )),\n"
+            "    exit_code=EX_INVALID<3735928559(0xDEADBEEF)>,\n"
+            ")",
+            pretty_repr
+        )
 
 
 # noinspection PyTypeChecker

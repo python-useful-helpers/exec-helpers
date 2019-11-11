@@ -39,6 +39,7 @@ try:
 except ImportError:
     ruamel_yaml = None  # type:ignore
 try:
+    # noinspection PyPackageRequirements
     import defusedxml.ElementTree  # type: ignore
 except ImportError:
     defusedxml = None  # pylint: disable=invalid-name
@@ -49,6 +50,8 @@ except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
+    # noinspection PyPackageRequirements
+    import logwrap
     import xml.etree.ElementTree  # nosec  # for typing only
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -622,13 +625,40 @@ class ExecResult:
     def __repr__(self) -> str:
         """Representation for debugging."""
         if self.started:
-            started = f", started={self.started},\n"
+            started = f" started={self.started!r},"
         else:
             started = ""
         return (
             f"{self.__class__.__name__}("
-            f"cmd={self.cmd!r}, stdout={self.stdout}, stderr={self.stderr}, exit_code={self.exit_code!s}{started},)"
+            f"cmd={self.cmd!r}, stdout={self.stdout!r}, stderr={self.stderr!r}, exit_code={self.exit_code!s},{started})"
         )
+
+    def __pretty_repr__(self, log_wrap: "logwrap.PrettyRepr", indent: int = 0, no_indent_start: bool = False) -> str:
+        """Make human readable representation of object.
+
+        :param log_wrap: logwrap instance
+        :type log_wrap: logwrap.PrettyRepr
+        :param indent: start indentation
+        :type indent: int
+        :param no_indent_start: do not indent open bracket and simple parameters
+        :type no_indent_start: bool
+        :return: formatted string
+        :rtype: str
+        """
+        next_indent = log_wrap.next_indent(indent)
+        started = f"{'':<{next_indent}}started={self.started!r},\n" if self.started else ""
+        stdout = log_wrap.process_element(self.stdout, indent=next_indent, no_indent_start=True)
+        stderr = log_wrap.process_element(self.stderr, indent=next_indent, no_indent_start=True)
+        msg = (
+            f"{'':<{0 if no_indent_start else indent}}{self.__class__.__name__}(\n"
+            f"{'':<{next_indent}}cmd={self.cmd!r},\n"
+            f"{'':<{next_indent}}stdout={stdout},\n"
+            f"{'':<{next_indent}}stderr={stderr},\n"
+            f"{'':<{next_indent}}exit_code={self.exit_code!s},\n"
+            f"{started}"
+            f"{'':<{0 if no_indent_start else indent}})"
+        )
+        return msg
 
     def __str__(self) -> str:
         """Representation for logging."""
