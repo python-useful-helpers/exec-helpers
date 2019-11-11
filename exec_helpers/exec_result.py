@@ -647,8 +647,8 @@ class ExecResult:
         """
         next_indent = log_wrap.next_indent(indent)
         started = f"{'':<{next_indent}}started={self.started!r},\n" if self.started else ""
-        stdout = log_wrap.process_element(self.stdout, indent=next_indent, no_indent_start=True)
-        stderr = log_wrap.process_element(self.stderr, indent=next_indent, no_indent_start=True)
+        stdout = log_wrap.process_element(self.stdout, indent=log_wrap.next_indent(next_indent), no_indent_start=True)
+        stderr = log_wrap.process_element(self.stderr, indent=log_wrap.next_indent(next_indent), no_indent_start=True)
         msg = (
             f"{'':<{0 if no_indent_start else indent}}{self.__class__.__name__}(\n"
             f"{'':<{next_indent}}cmd={self.cmd!r},\n"
