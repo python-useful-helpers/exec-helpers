@@ -336,18 +336,18 @@ class TestExecResult(unittest.TestCase):
         )
         pretty_repr = logwrap.pretty_repr(result)
         self.assertEqual(
-            "ExecResult(\n"
-            "    cmd='test',\n"
-            "    stdout=\n"
-            "    tuple((\n"
-            "        b'''{test: data}''',\n"
-            "    )),\n"
-            "    stderr=\n"
-            "    tuple((\n"
-            "        b'''{test: stderr}''',\n"
-            "    )),\n"
-            "    exit_code=EX_INVALID<3735928559(0xDEADBEEF)>,\n"
-            ")",
+            f"ExecResult(\n"
+            f"    cmd='test',\n"
+            f"    stdout=\n"
+            f"    tuple((\n"
+            f"        b'''{{test: data}}''',\n"
+            f"    )),\n"
+            f"    stderr=\n"
+            f"    tuple((\n"
+            f"        b'''{{test: stderr}}''',\n"
+            f"    )),\n"
+            f"    exit_code={result.exit_code!s},\n"
+            f")",
             pretty_repr
         )
 
