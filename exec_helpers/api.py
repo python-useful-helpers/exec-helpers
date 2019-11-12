@@ -30,7 +30,6 @@ import re
 import shlex
 import threading
 import typing
-import warnings
 
 # Exec-Helpers Implementation
 from exec_helpers import constants
@@ -239,52 +238,6 @@ class ExecHelper(metaclass=abc.ABCMeta):
             quoted_command = shlex.quote(cmd)
             return f'chroot {target_path} sh -c {shlex.quote(f"eval {quoted_command}")}'
         return cmd
-
-    # noinspection PyIncorrectDocstring
-    def execute_async(  # pylint: disable=missing-param-doc,differing-param-doc,differing-type-doc
-        self, *args: typing.Any, **kwargs: typing.Any
-    ) -> ExecuteAsyncResult:
-        """Execute command in async mode and return remote interface with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param verbose: produce verbose log record on command call
-        :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-        :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
-        :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.NamedTuple(
-                    'ExecuteAsyncResult',
-                    [
-                        ('interface', typing.Any),
-                        ('stdin', typing.Optional[typing.Any]),
-                        ('stderr', typing.Optional[typing.Any]),
-                        ('stdout', typing.Optional[typing.Any]),
-                        ("started", datetime.datetime),
-                    ]
-                )
-
-        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
-        .. versionchanged:: 1.2.0 stdin data
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 4.1.0 support chroot
-        """
-        warnings.warn(
-            "execute_async public usage is deprecated and will be disallowed at the next major release.",
-            DeprecationWarning,
-        )
-        return self._execute_async(*args, **kwargs)
 
     @abc.abstractmethod
     def _execute_async(
