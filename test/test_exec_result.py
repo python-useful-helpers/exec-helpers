@@ -286,54 +286,25 @@ class TestExecResult(unittest.TestCase):
 
     @unittest.skipIf(defusedxml is None, "defusedxml is not installed")
     def test_stdout_xml(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"<?xml version='1.0'?>\n",
-                b'<data>123</data>\n',
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
-        self.assertEqual(
-            xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml)
-        )
+        self.assertEqual(xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml))
 
     @unittest.skipIf(lxml is None, "no lxml installed")
     def test_stdout_lxml(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"<?xml version='1.0'?>\n",
-                b'<data>123</data>\n',
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         expect = lxml.etree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
-        self.assertEqual(
-            lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml)
-        )
+        self.assertEqual(lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml))
 
     @unittest.skipUnless(yaml is not None, "PyYAML parser should be installed")
     def test_stdout_yaml_pyyaml(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"{test: data}\n"
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         expect = {"test": "data"}
         self.assertEqual(expect, result.stdout_yaml)
 
     @unittest.skipIf(logwrap is None, "logwrap is not installed")
     def test_pretty_repr(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"{test: data}"
-            ],
-            stderr=[
-                b"{test: stderr}"
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"{test: data}"], stderr=[b"{test: stderr}"])
         pretty_repr = logwrap.pretty_repr(result)
         self.assertEqual(
             f"ExecResult(\n"
@@ -348,7 +319,7 @@ class TestExecResult(unittest.TestCase):
             f"        )),\n"
             f"    exit_code={result.exit_code!s},\n"
             f")",
-            pretty_repr
+            pretty_repr,
         )
 
 
@@ -362,12 +333,7 @@ class TestExecResultRuamelYaml(unittest.TestCase):
 
     @unittest.skipUnless(ruamel_yaml is not None, "Ruamel.YAML parser should be installed")
     def test_stdout_yaml_ruamel(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"{test: data}\n"
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         expect = {"test": "data"}
         result = result.stdout_yaml
         self.assertEqual(expect, result)
@@ -387,25 +353,14 @@ class TestExecResultNoExtras(unittest.TestCase):
         exec_helpers.exec_result.defusedxml = self._orig_defusedxml
 
     def test_stdout_yaml(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"{test: data}\n"
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         with self.assertRaises(AttributeError):
-            getattr(result, 'stdout_yaml')  # noqa: B009
+            getattr(result, "stdout_yaml")  # noqa: B009
 
     def test_stdout_xmls(self):
-        result = exec_helpers.ExecResult(
-            "test",
-            stdout=[
-                b"<?xml version='1.0'?>\n",
-                b'<data>123</data>\n',
-            ]
-        )
+        result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         with self.assertRaises(AttributeError):
-            getattr(result, 'stdout_xml')  # noqa: B009
+            getattr(result, "stdout_xml")  # noqa: B009
 
         with self.assertRaises(AttributeError):
-            getattr(result, 'stdout_lxml')  # noqa: B009
+            getattr(result, "stdout_lxml")  # noqa: B009

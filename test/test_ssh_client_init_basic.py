@@ -40,6 +40,7 @@ def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
 
 class FakeStream:
     """Stream-like object for usage in tests."""
+
     def __init__(self, *args: bytes):
         self.__src = list(args)
 
@@ -140,3 +141,5 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     assert repr(ssh) == "{cls}(host={host}, port={port}, auth={auth!r})".format(
         cls=ssh.__class__.__name__, host=ssh.hostname, port=ssh.port, auth=ssh.auth
     )
+    assert ssh.ssh_config == {host: {"hostname": host}}
+    assert ssh.ssh_config[host].hostname == host

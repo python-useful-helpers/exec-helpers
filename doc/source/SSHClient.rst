@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None)
+    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None)
 
         :param host: remote hostname
         :type host: ``str``
@@ -26,6 +26,14 @@ API: SSHClient and SSHAuth.
         :type auth: typing.Optional[SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
+        :type ssh_config:
+            typing.Union[
+                str,
+                paramiko.SSHConfig,
+                typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+                None
+            ]
 
     .. note:: auth has priority over username/password/private_keys
 
