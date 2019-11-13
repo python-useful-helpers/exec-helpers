@@ -97,6 +97,7 @@ class SSHConfig:
         self.__compression: typing.Optional[bool] = self._parse_optional_bool(compression)
 
     def __hash__(self) -> int:  # pragma: no cover
+        """Hash for caching possibility."""
         return hash(
             (
                 self.__class__,
