@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None)
+    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None, sock=None)
 
         :param host: remote hostname
         :type host: ``str``
@@ -27,13 +27,9 @@ API: SSHClient and SSHAuth.
         :param verbose: show additional error/warning messages
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
-        :type ssh_config:
-            typing.Union[
-                str,
-                paramiko.SSHConfig,
-                typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-                None
-            ]
+        :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
+        :param sock: socket for connection. Useful for ssh proxies support
+        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
 
     .. note:: auth has priority over username/password/private_keys
 
@@ -506,3 +502,119 @@ API: SSHClient and SSHAuth.
         ``datetime.datetime``
 
         .. versionadded:: 3.4.1
+
+
+.. py:class:: HostsSSHConfigs(typing.Dict[str, SSHConfig])
+
+    Specific dictionary for managing SSHConfig records.
+
+    Instead of creating new record by request just generate default value and return if not exists.
+
+    .. py:method::  __missing__(key)
+
+        Missing key handling.
+
+        :param key: nonexistent key
+        :type key: str
+        :returns: generated ssh config for host
+        :rtype: SSHConfig
+        :raises KeyError: key is not string
+
+        .. versionadded:: 6.0.0
+
+
+.. py:class:: SSHConfig
+
+    Parsed SSH Config for creation connection.
+
+    .. py:method:: __init__(hostname, port=None, user=None, identityfile=None, proxycommand=None, proxyjump=None, *, controlpath=None, controlmaster=None, compression=None, )
+
+        SSH Config for creation connection.
+
+        :param hostname: hostname, which config relates
+        :type hostname: str
+        :param port: remote port
+        :type port: typing.Optional[typing.Union[str, int]]
+        :param user: remote user
+        :type user: typing.Optional[str]
+        :param identityfile: connection ssh keys file names
+        :type identityfile: typing.Optional[typing.List[str]]
+        :param proxycommand: proxy command for ssh connection
+        :type proxycommand: typing.Optional[str]
+        :type proxyjump: typing.Optional[str]
+        :param proxyjump: proxy host name
+        :param controlpath: shared socket file path for re-using connection by multiple instances
+        :type controlpath: typing.Optional[str]
+        :param controlmaster: re-use connection
+        :type controlmaster: typing.Optional[typing.Union[str, bool]]
+        :param compression: use ssh compression
+        :type compression: typing.Optional[typing.Union[str, bool]]
+        :raises ValueError: Invalid argument provided.
+
+        .. versionadded:: 6.0.0
+
+    .. py:classmethod:: from_ssh_config(ssh_config):
+
+        Construct config from Paramiko parsed file.
+
+        :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict,
+        :returns: SSHConfig with supported values from config
+
+    .. py:attribute:: as_dict
+
+        ``typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]``
+        Dictionary for rebuilding config.
+
+    .. py:method:: overridden_by(ssh_config)
+
+        Get copy with values overridden by another config.
+
+        :param ssh_config: Other ssh config
+        :type ssh_config: SSHConfig
+        :returns: Composite from 2 configs with priority of second one
+        :rtype: SSHConfig
+
+    .. py:attribute:: hostname
+
+        ``str``
+        Hostname which config relates.
+
+    .. py:attribute:: port
+
+        ``typing.Optional[int]``
+        Remote port.
+
+    .. py:attribute:: user
+
+        ``typing.Optional[str]``
+        Remote user.
+
+    .. py:attribute:: identityfile
+
+        ``typing.Optional[typing.List[str]]``
+        Connection ssh keys file names.
+
+    .. py:attribute:: proxycommand
+
+        ``typing.Optional[str]``
+        Proxy command for ssh connection.
+
+    .. py:attribute:: proxyjump
+
+        ``typing.Optional[str]``
+        Proxy host name.
+
+    .. py:attribute:: controlpath
+
+        ``typing.Optional[str]``
+        Shared socket file path for re-using connection by multiple instances.
+
+    .. py:attribute:: controlmaster
+
+        ``typing.Optional[bool]``
+        Re-use connection.
+
+    .. py:attribute:: compression
+
+        ``typing.Optional[bool]``
+        Use ssh compression.

@@ -272,14 +272,12 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     else:
         assert res.stdout is None
 
-    paramiko_ssh_client.assert_has_calls(
-        (
-            mock.call(),
-            mock.call().set_missing_host_key_policy("AutoAddPolicy"),
-            mock.call().connect(hostname="127.0.0.1", password="pass", pkey=None, port=22, username="user"),
-            mock.call().get_transport(),
-        )
-    )
+    assert paramiko_ssh_client.mock_calls == [
+        mock.call(),
+        mock.call().set_missing_host_key_policy("AutoAddPolicy"),
+        mock.call().connect(hostname="127.0.0.1", password="pass", pkey=None, port=22, username="user"),
+        mock.call().get_transport(),
+    ]
 
     transport_calls = []
     if get_pty:

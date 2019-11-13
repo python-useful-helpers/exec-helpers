@@ -24,6 +24,7 @@ import copy
 import datetime
 import logging
 import shlex
+import socket
 import stat
 import time
 import typing
@@ -42,6 +43,10 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
+
+# Local Implementation
+from ._ssh_helpers import HostsSSHConfigs
+from ._ssh_helpers import SSHConfig
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
@@ -156,6 +161,7 @@ class SSHClientBase(api.ExecHelper):
         "__keepalive_mode",
         "__verbose",
         "__ssh_config",
+        "__sock",
     )
 
     def __hash__(self) -> int:
@@ -176,8 +182,10 @@ class SSHClientBase(api.ExecHelper):
             str,
             paramiko.SSHConfig,
             typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+            HostsSSHConfigs,
             None,
         ] = None,
+        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
     ) -> None:
         """Main SSH Client helper.
 
@@ -201,8 +209,11 @@ class SSHClientBase(api.ExecHelper):
                 str,
                 paramiko.SSHConfig,
                 typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+                HostsSSHConfigs,
                 None
             ]
+        :param sock: socket for connection. Useful for ssh proxies support
+        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
 
         .. note:: auth has priority over username/password/private_keys
         """
@@ -210,9 +221,12 @@ class SSHClientBase(api.ExecHelper):
             logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
         )
 
-        self.__ssh_config: typing.Dict[str, _ssh_helpers.SSHConfig] = _ssh_helpers.parse_ssh_config(ssh_config, host)
+        if isinstance(ssh_config, HostsSSHConfigs):
+            self.__ssh_config: HostsSSHConfigs = ssh_config
+        else:
+            self.__ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
-        config: _ssh_helpers.SSHConfig = self.__ssh_config[host]
+        config: SSHConfig = self.__ssh_config[host]
 
         self.__hostname: str = config.hostname
         self.__port: int = port if port is not None else config.port if config.port is not None else 22
@@ -220,6 +234,7 @@ class SSHClientBase(api.ExecHelper):
         self.__sudo_mode = False
         self.__keepalive_mode = True
         self.__verbose: bool = verbose
+        self.__sock = sock
 
         self.__ssh = paramiko.SSHClient()
         self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -267,10 +282,10 @@ class SSHClientBase(api.ExecHelper):
         return self.__port
 
     @property
-    def ssh_config(self) -> typing.Dict[str, _ssh_helpers.SSHConfig]:
+    def ssh_config(self) -> HostsSSHConfigs:
         """SSH connection config.
 
-        :rtype: typing.Dict[str, _ssh_helpers.SSHConfig]
+        :rtype: HostsSSHConfigs
         """
         return copy.deepcopy(self.__ssh_config)
 
@@ -310,9 +325,14 @@ class SSHClientBase(api.ExecHelper):
     def __connect(self) -> None:
         """Main method for connection open."""
         with self.lock:
-            self.auth.connect(
-                client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose,
-            )
+            config = self.ssh_config[self.hostname]
+            if self.__sock is not None:
+                sock = self.__sock
+            elif config.proxycommand:
+                sock = paramiko.ProxyCommand(config.proxycommand)
+            else:
+                sock = None
+            self.auth.connect(client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock)
 
     def __connect_sftp(self) -> None:
         """SFTP connection opener."""
@@ -644,15 +664,62 @@ class SSHClientBase(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    def _get_proxy_channel(
+        self,
+        hostname: str,
+        port: typing.Optional[int],
+        *,
+        ssh_config: typing.Optional[typing.Union[SSHConfig, HostsSSHConfigs]] = None,
+    ) -> paramiko.Channel:
+        """Get ssh proxy channel.
+
+        :param hostname: target hostname
+        :type hostname: str
+        :param port: target port
+        :type port: typing.Optional[int]
+        :param ssh_config: pre-parsed ssh config
+        :type ssh_config:
+            typing.Optional[
+                typing.Union[
+                    SSHConfig,
+                    HostsSSHConfigs,
+                    str,
+                    paramiko.SSHConfig,
+                    typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+                ]
+            ]
+        :returns: ssh channel for usage as socket for new connection over it
+        :rtype: paramiko.Channel
+        :raises TypeError: ssh config type is not supported
+
+        .. versionadded:: 6.0.0
+        """
+        if isinstance(ssh_config, SSHConfig):
+            config = ssh_config
+        elif isinstance(ssh_config, HostsSSHConfigs):
+            config = ssh_config[hostname]
+        elif ssh_config is None or isinstance(ssh_config, (paramiko.SSHConfig, str, dict)):
+            config = _ssh_helpers.parse_ssh_config(ssh_config, hostname)[hostname]
+        else:
+            raise TypeError(f"Unsupported type of ssh_config: {type(ssh_config).__name__} ({ssh_config!r}")
+
+        dest_port: int = port if port is not None else config.port if config.port is not None else 22
+
+        return self._ssh.get_transport().open_channel(
+            kind="direct-tcpip", dest_addr=(config.hostname, dest_port), src_addr=(self.hostname, 0)
+        )
+
     def execute_through_host(
         self,
         hostname: str,
         command: str,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        target_port: int = 22,
+        target_port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
         *,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         log_mask_re: typing.Optional[str] = None,
         get_pty: bool = False,
@@ -668,11 +735,15 @@ class SSHClientBase(api.ExecHelper):
         :param auth: credentials for target machine
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param target_port: target port
-        :type target_port: int
+        :type target_port: typing.Optional[int]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -692,59 +763,31 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
+        .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         """
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-        self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
-        )
+
+        sock: paramiko.Channel = self._get_proxy_channel(hostname=hostname, port=target_port)
+        cls: typing.Type[SSHClientBase] = self.__class__
+        conn: SSHClientBase
 
         if auth is None:
             auth = self.auth
 
-        intermediate_channel = self._ssh.get_transport().open_channel(
-            kind="direct-tcpip", dest_addr=(hostname, target_port), src_addr=(self.hostname, 0)
-        )
-        transport = paramiko.Transport(sock=intermediate_channel)
-
-        # start client and authenticate transport
-        auth.connect(transport)
-
-        # open ssh session
-        channel: paramiko.Channel = transport.open_session()
-        if get_pty:
-            # Open PTY
-            channel.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
-
-        # Make proxy objects for read
-        _stdin: paramiko.ChannelFile = channel.makefile("wb")
-        stdout: paramiko.ChannelFile = channel.makefile("rb")
-        stderr: paramiko.ChannelFile = channel.makefile_stderr("rb")
-
-        started = datetime.datetime.utcnow()
-
-        channel.exec_command(command)  # nosec  # Sanitize on caller side
-
-        if stdin is not None:
-            if not _stdin.channel.closed:
-                stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
-
-                _stdin.write(stdin_str)
-                _stdin.flush()
-            else:
-                self.logger.warning("STDIN Send failed: closed channel")
-
-        async_result = SshExecuteAsyncResult(
-            interface=channel, stdin=_stdin, stdout=stdout, stderr=stderr, started=started
-        )
-
-        # noinspection PyDictCreation
-        result: exec_result.ExecResult = self._exec_command(
-            command, async_result=async_result, timeout=timeout, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin
-        )
-
-        intermediate_channel.close()
-
-        return result
+        with cls(  # type: ignore
+            host=hostname, auth=auth, verbose=verbose, ssh_config=self.ssh_config, sock=sock
+        ) as conn:
+            conn.keepalive_mode = False
+            return conn.execute(
+                command,
+                timeout=timeout,
+                open_stdout=open_stdout,
+                open_stderr=open_stderr,
+                stdin=stdin,
+                log_mask_re=log_mask_re,
+                get_pty=get_pty,
+                width=width,
+                height=height,
+            )
 
     @classmethod
     def execute_together(

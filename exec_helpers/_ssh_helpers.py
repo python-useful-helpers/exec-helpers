@@ -27,7 +27,7 @@ def _parse_ssh_config_file(file_path: pathlib.Path) -> typing.Optional[paramiko.
 
 
 class SSHConfig:
-    """SSH Config for creation connection."""
+    """Parsed SSH Config for creation connection."""
 
     __slots__ = (
         "__hostname",
@@ -74,8 +74,9 @@ class SSHConfig:
         :type controlmaster: typing.Optional[typing.Union[str, bool]]
         :param compression: use ssh compression
         :type compression: typing.Optional[typing.Union[str, bool]]
-
         :raises ValueError: Invalid argument provided.
+
+        .. versionadded:: 6.0.0
         """
         self.__hostname: str = hostname
         self.__port: typing.Optional[int] = self._parse_optional_int(port)
@@ -111,6 +112,22 @@ class SSHConfig:
                 self.__controlmaster,
                 self.__compression,
             )
+        )
+
+    def __repr__(self) -> str:
+        """Debug support."""
+        return (
+            f"{self.__class__.__name__}("
+            f"hostname={self.hostname!r}, "
+            f"port={self.port!r}, "
+            f"user={self.user!r}, "
+            f"identityfile={self.identityfile!r}, "
+            f"proxycommand={self.proxycommand!r}, "
+            f"proxyjump={self.proxyjump!r}, "
+            f"controlpath={self.controlpath!r}, "
+            f"controlmaster={self.controlmaster!r}, "
+            f"compression={self.compression!r}, "
+            f")"
         )
 
     @staticmethod
@@ -151,7 +168,11 @@ class SSHConfig:
 
     @property
     def as_dict(self) -> typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]:
-        """Dictionary for rebuilding config."""
+        """Dictionary for rebuilding config.
+
+        :returns: config as dictionary with only not None values
+        :rtype: typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+        """
         result: typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]] = {"hostname": self.hostname}
         if self.port is not None:
             result["port"] = self.port
@@ -172,7 +193,13 @@ class SSHConfig:
         return result
 
     def overridden_by(self, ssh_config: "SSHConfig") -> "SSHConfig":
-        """Get copy with values overridden by another config."""
+        """Get copy with values overridden by another config.
+
+        :param ssh_config: Other ssh config
+        :type ssh_config: SSHConfig
+        :returns: Composite from 2 configs with priority of second one
+        :rtype: SSHConfig
+        """
         cls: typing.Type["SSHConfig"] = self.__class__
         return cls(
             hostname=self.hostname,
@@ -214,7 +241,7 @@ class SSHConfig:
 
     @property
     def hostname(self) -> str:
-        """Hostname, which config relates."""
+        """Hostname which config relates."""
         return self.__hostname
 
     @property
@@ -260,7 +287,28 @@ class SSHConfig:
         return self.__compression
 
 
-def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> typing.Dict[str, SSHConfig]:
+class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
+    """Specific dictionary for managing SSHConfig records.
+
+    Instead of creating new record by request just generate default value and return if not exists.
+    """
+
+    def __missing__(self, key: str) -> SSHConfig:
+        """Missing key handling.
+
+        :param key: nonexistent key
+        :type key: str
+        :returns: generated ssh config for host
+        :rtype: SSHConfig
+        :raises KeyError: key is not string
+        .. versionadded:: 6.0.0
+        """
+        if isinstance(key, str):
+            return SSHConfig(key)
+        raise KeyError(f"{key} is not available and not allowed.")
+
+
+def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHConfigs:
     """Parse Paramiko ssh config for specific host to dictionary.
 
     :param conf: Paramiko SSHConfig instance
@@ -268,9 +316,10 @@ def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> typing.Di
     :param host: hostname to seek in config
     :type host: str
     :returns: parsed dictionary with proxy jump path, if available
-    :rtype: typing.Dict[str, typing.Dict[str, SSHConfig]
+    :rtype: HostsSSHConfigs
     """
-    config = {host: SSHConfig.from_ssh_config(conf.lookup(host))}
+    # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
+    config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.lookup(host))})
     config.setdefault(config[host].hostname, config[host])
 
     # Expand proxy info
@@ -283,7 +332,7 @@ def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> typing.Di
 
 def _parse_dict_ssh_config(
     conf: typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], host: str
-) -> typing.Dict[str, SSHConfig]:
+) -> HostsSSHConfigs:
     """Extract required data from pre-parsed ssh config for specific host to dictionary.
 
     :param conf: pre-parsed dictionary
@@ -291,9 +340,10 @@ def _parse_dict_ssh_config(
     :param host: hostname to seek in config
     :type host: str
     :returns: parsed dictionary with proxy jump path, if available
-    :rtype: typing.Dict[str, SSHConfig]
+    :rtype: HostsSSHConfigs
     """
-    config: typing.Dict[str, SSHConfig] = {host: SSHConfig.from_ssh_config(conf.get(host, {"hostname": host}))}
+    # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
+    config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.get(host, {"hostname": host}))})
     config.setdefault(config[host].hostname, config[host])
 
     # Expand proxy info
@@ -312,7 +362,7 @@ def parse_ssh_config(
         None,
     ],
     host: str,
-) -> typing.Dict[str, SSHConfig]:
+) -> HostsSSHConfigs:
     """Parse ssh config to get real connection parameters.
 
     :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
@@ -326,7 +376,7 @@ def parse_ssh_config(
     :param host: remote hostname
     :type host: str
     :returns: parsed ssh config if available
-    :rtype: typing.Dict[str, SSHConfig]
+    :rtype: HostsSSHConfigs
     """
     if isinstance(ssh_config, paramiko.SSHConfig):
         return _parse_paramiko_ssh_config(ssh_config, host)
@@ -348,12 +398,12 @@ def parse_ssh_config(
     if system_ssh_config is not None:
         config = _parse_paramiko_ssh_config(system_ssh_config, host)
     else:
-        config = {host: SSHConfig(host)}
+        config = HostsSSHConfigs({host: SSHConfig(host)})
 
     if user_ssh_config is not None:
+        # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
         user_config = _parse_paramiko_ssh_config(user_ssh_config, host)
         for hostname, cfg in user_config.items():
-            config.setdefault(hostname, SSHConfig(hostname))
             config[hostname] = config[hostname].overridden_by(cfg)
 
     return config

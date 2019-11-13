@@ -31,7 +31,7 @@ def no_real_ssh_config(mocker):
 def paramiko_ssh_client(mocker, no_real_ssh_config) -> mock.MagicMock:
     """Minimal paramiko.SSHClient mock."""
     mocker.patch("time.sleep")
-    return mocker.patch("paramiko.SSHClient")
+    return mocker.patch("paramiko.SSHClient", autospec=True)
 
 
 @pytest.fixture
