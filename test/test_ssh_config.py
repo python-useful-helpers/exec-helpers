@@ -1,5 +1,6 @@
 # Standard Library
 import io
+import sys
 from unittest import mock
 
 # External Dependencies
@@ -78,13 +79,6 @@ def no_user_ssh_config(mocker):
 
 
 @pytest.fixture
-def system_real_ssh_config(mocker):
-    conf_sys: mock.MagicMock = mocker.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True)
-    conf_sys.exists.return_value = True
-    mock.mock_open(conf_sys.open, read_data=SYSTEM_REAL_SSH_CONFIG)
-
-
-@pytest.fixture
 def system_ssh_config(mocker) -> mock.MagicMock:
     conf_sys: mock.MagicMock = mocker.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True)
     conf_sys.exists.return_value = True
@@ -120,7 +114,9 @@ def test_no_configs(no_system_ssh_config, no_user_ssh_config):
     assert host_config.compression is None
 
 
-def test_simple_config(system_real_ssh_config, user_ssh_config):
+@pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
+def test_simple_config(system_ssh_config, user_ssh_config):
+    mock.mock_open(system_ssh_config, read_data=SYSTEM_REAL_SSH_CONFIG)
     mock.mock_open(user_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
 
     config = ssh_helpers.parse_ssh_config(None, HOST)
@@ -139,6 +135,7 @@ def test_simple_config(system_real_ssh_config, user_ssh_config):
     assert host_config.compression
 
 
+@pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
 def test_simple_override_proxy_command(system_ssh_config, user_ssh_config):
     mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
     mock.mock_open(user_ssh_config, SSH_CONFIG_PROXY_COMMAND)
@@ -154,6 +151,7 @@ def test_simple_override_proxy_command(system_ssh_config, user_ssh_config):
     assert ssh_helpers.SSHConfig.from_ssh_config(host_config.as_dict) == host_config
 
 
+@pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
 def test_simple_override_single_proxy_jump(system_ssh_config, user_ssh_config):
     mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
     mock.mock_open(user_ssh_config, SSH_CONFIG_PROXY_JUMP)
@@ -173,6 +171,7 @@ def test_simple_override_single_proxy_jump(system_ssh_config, user_ssh_config):
     assert ssh_helpers.SSHConfig.from_ssh_config(host_config.as_dict) == host_config
 
 
+@pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
 def test_simple_override_chain_proxy_jump(system_ssh_config, user_ssh_config):
     mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
     mock.mock_open(user_ssh_config, SSH_CONFIG_MULTI_PROXY_JUMP)
