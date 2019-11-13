@@ -50,8 +50,8 @@ _helpers:
 
 script:
   - python setup.py develop -v
-  - py.test --cov-config .coveragerc --cov-report= --cov=exec_helpers test
-  - coverage report -m --fail-under 87
+  - py.test --cov-config .coveragerc --cov=exec_helpers test
+
 after_success:
   - coveralls
 

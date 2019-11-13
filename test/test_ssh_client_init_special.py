@@ -39,6 +39,7 @@ def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
 
 class FakeStream:
     """Stream-like object for usage in tests."""
+
     def __init__(self, *args: bytes):
         self.__src = list(args)
 

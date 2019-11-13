@@ -28,7 +28,6 @@ import paramiko  # type: ignore
 
 LOGGER = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
-logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
 class SSHAuth:

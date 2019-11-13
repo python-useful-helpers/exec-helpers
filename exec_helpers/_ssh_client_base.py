@@ -35,6 +35,7 @@ import threaded
 
 # Exec-Helpers Implementation
 from exec_helpers import _log_templates
+from exec_helpers import _ssh_helpers
 from exec_helpers import api
 from exec_helpers import constants
 from exec_helpers import exceptions
@@ -43,7 +44,6 @@ from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
-logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
@@ -146,7 +146,17 @@ class _KeepAliveContext:
 class SSHClientBase(api.ExecHelper):
     """SSH Client helper."""
 
-    __slots__ = ("__hostname", "__port", "__auth", "__ssh", "__sftp", "__sudo_mode", "__keepalive_mode", "__verbose")
+    __slots__ = (
+        "__hostname",
+        "__port",
+        "__auth",
+        "__ssh",
+        "__sftp",
+        "__sudo_mode",
+        "__keepalive_mode",
+        "__verbose",
+        "__ssh_config",
+    )
 
     def __hash__(self) -> int:
         """Hash for usage as dict keys."""
@@ -155,19 +165,26 @@ class SSHClientBase(api.ExecHelper):
     def __init__(
         self,
         host: str,
-        port: int = 22,
+        port: typing.Optional[int] = None,
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
+        *,
         verbose: bool = True,
+        ssh_config: typing.Union[
+            str,
+            paramiko.SSHConfig,
+            typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+            None,
+        ] = None,
     ) -> None:
         """Main SSH Client helper.
 
         :param host: remote hostname
         :type host: str
         :param port: remote ssh port
-        :type port: int
+        :type port: typing.Optional[int]
         :param username: remote username.
         :type username: typing.Optional[str]
         :param password: remote password
@@ -178,6 +195,14 @@ class SSHClientBase(api.ExecHelper):
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
+        :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
+        :type ssh_config:
+            typing.Union[
+                str,
+                paramiko.SSHConfig,
+                typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+                None
+            ]
 
         .. note:: auth has priority over username/password/private_keys
         """
@@ -185,8 +210,12 @@ class SSHClientBase(api.ExecHelper):
             logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
         )
 
-        self.__hostname: str = host
-        self.__port: int = port
+        self.__ssh_config: typing.Dict[str, _ssh_helpers.SSHConfig] = _ssh_helpers.parse_ssh_config(ssh_config, host)
+
+        config: _ssh_helpers.SSHConfig = self.__ssh_config[host]
+
+        self.__hostname: str = config.hostname
+        self.__port: int = port if port is not None else config.port if config.port is not None else 22
 
         self.__sudo_mode = False
         self.__keepalive_mode = True
@@ -197,7 +226,12 @@ class SSHClientBase(api.ExecHelper):
         self.__sftp: typing.Optional[paramiko.SFTPClient] = None
 
         if auth is None:
-            self.__auth = ssh_auth.SSHAuth(username=username, password=password, keys=private_keys)
+            self.__auth = ssh_auth.SSHAuth(
+                username=username if username is not None else config.user,
+                password=password,
+                keys=private_keys,
+                key_filename=config.identityfile,
+            )
         else:
             self.__auth = copy.copy(auth)
 
@@ -231,6 +265,14 @@ class SSHClientBase(api.ExecHelper):
         :rtype: int
         """
         return self.__port
+
+    @property
+    def ssh_config(self) -> typing.Dict[str, _ssh_helpers.SSHConfig]:
+        """SSH connection config.
+
+        :rtype: typing.Dict[str, _ssh_helpers.SSHConfig]
+        """
+        return copy.deepcopy(self.__ssh_config)
 
     @property
     def is_alive(self) -> bool:
@@ -268,7 +310,9 @@ class SSHClientBase(api.ExecHelper):
     def __connect(self) -> None:
         """Main method for connection open."""
         with self.lock:
-            self.auth.connect(client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose)
+            self.auth.connect(
+                client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose,
+            )
 
     def __connect_sftp(self) -> None:
         """SFTP connection opener."""

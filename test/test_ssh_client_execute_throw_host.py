@@ -121,7 +121,7 @@ def ssh_transport_channel(chan_makefile, ssh_transport):
 
 @pytest.fixture
 def ssh(
-    paramiko_ssh_client, ssh_intermediate_channel, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger
+    paramiko_ssh_client, ssh_intermediate_channel, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger,
 ):
     return exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
 
