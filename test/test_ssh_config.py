@@ -95,7 +95,7 @@ def system_ssh_config(mocker) -> mock.MagicMock:
 def user_ssh_config(mocker) -> mock.MagicMock:
     conf_sys: mock.MagicMock = mocker.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True)
     conf_sys.exists.return_value = True
-    return conf_sys
+    return conf_sys.open
 
 
 def test_no_configs(no_system_ssh_config, no_user_ssh_config):
@@ -121,7 +121,7 @@ def test_no_configs(no_system_ssh_config, no_user_ssh_config):
 
 
 def test_simple_config(system_real_ssh_config, user_ssh_config):
-    user_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_ALL_NO_PROXY)
+    mock.mock_open(user_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
 
     config = ssh_helpers.parse_ssh_config(None, HOST)
 
@@ -140,8 +140,8 @@ def test_simple_config(system_real_ssh_config, user_ssh_config):
 
 
 def test_simple_override_proxy_command(system_ssh_config, user_ssh_config):
-    system_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_ALL_NO_PROXY)
-    user_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_PROXY_COMMAND)
+    mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
+    mock.mock_open(user_ssh_config, SSH_CONFIG_PROXY_COMMAND)
 
     config = ssh_helpers.parse_ssh_config(None, HOST)
 
@@ -155,8 +155,8 @@ def test_simple_override_proxy_command(system_ssh_config, user_ssh_config):
 
 
 def test_simple_override_single_proxy_jump(system_ssh_config, user_ssh_config):
-    system_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_ALL_NO_PROXY)
-    user_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_PROXY_JUMP)
+    mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
+    mock.mock_open(user_ssh_config, SSH_CONFIG_PROXY_JUMP)
 
     config = ssh_helpers.parse_ssh_config(None, HOST)
 
@@ -174,8 +174,8 @@ def test_simple_override_single_proxy_jump(system_ssh_config, user_ssh_config):
 
 
 def test_simple_override_chain_proxy_jump(system_ssh_config, user_ssh_config):
-    system_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_ALL_NO_PROXY)
-    user_ssh_config.open = mock.mock_open(read_data=SSH_CONFIG_MULTI_PROXY_JUMP)
+    mock.mock_open(system_ssh_config, SSH_CONFIG_ALL_NO_PROXY)
+    mock.mock_open(user_ssh_config, SSH_CONFIG_MULTI_PROXY_JUMP)
 
     config = ssh_helpers.parse_ssh_config(None, HOST)
 
@@ -221,6 +221,6 @@ def test_negative(no_system_ssh_config, no_user_ssh_config):
 
 
 def test_negative_read(system_ssh_config, no_user_ssh_config):
-    system_ssh_config.open.side_effect = RuntimeError()
+    system_ssh_config.side_effect = RuntimeError()
     config = ssh_helpers.parse_ssh_config(None, HOST)
     assert config == {HOST: {"hostname": HOST}}
