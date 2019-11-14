@@ -21,13 +21,14 @@ import typing
 from unittest import mock
 
 # External Dependencies
+import asynctest
 import pytest
 
 # Exec-Helpers Implementation
-import asynctest
 import exec_helpers
 from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
+from exec_helpers.async_api.subprocess_runner import SubprocessExecuteAsyncResult
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -210,7 +211,7 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
         open_stdout=run_parameters["open_stdout"],
         open_stderr=run_parameters["open_stderr"],
     )
-    assert isinstance(res, exec_helpers.async_api.SubprocessExecuteAsyncResult)
+    assert isinstance(res, SubprocessExecuteAsyncResult)
     assert await res.interface.wait() == run_parameters["ec"]
     assert res.interface.returncode == run_parameters["ec"]
 

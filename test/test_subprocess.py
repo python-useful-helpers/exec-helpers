@@ -26,6 +26,7 @@ import pytest
 import exec_helpers
 from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
+from exec_helpers.subprocess_runner import SubprocessExecuteAsyncResult
 
 # All test coroutines will be treated as marked.
 
@@ -183,7 +184,7 @@ def test_001_execute_async(popen, subprocess_logger, run_parameters) -> None:
         open_stdout=run_parameters["open_stdout"],
         open_stderr=run_parameters["open_stderr"],
     )
-    assert isinstance(res, exec_helpers.SubprocessExecuteAsyncResult)
+    assert isinstance(res, SubprocessExecuteAsyncResult)
     assert res.interface.wait() == run_parameters["ec"]
     assert res.interface.returncode == run_parameters["ec"]
 

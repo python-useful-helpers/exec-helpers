@@ -24,6 +24,7 @@ import pytest
 # Exec-Helpers Implementation
 import exec_helpers
 from exec_helpers import proc_enums
+from exec_helpers._ssh_client_base import SshExecuteAsyncResult
 
 
 class FakeFileStream:
@@ -218,7 +219,7 @@ def exec_result(run_parameters):
 def execute_async(mocker, run_parameters):
     def get_patched_execute_async_retval(
         ec=0, stdout=(), stderr=(), open_stdout=True, open_stderr=True, **kwargs
-    ) -> exec_helpers.SshExecuteAsyncResult:
+    ) -> SshExecuteAsyncResult:
         stdout_part = FakeFileStream(*stdout) if open_stdout else None
         stderr_part = FakeFileStream(*stderr) if open_stderr else None
 
@@ -230,7 +231,7 @@ def execute_async(mocker, run_parameters):
         status_event.attach_mock(mock.Mock(), "wait")
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
-        return exec_helpers.SshExecuteAsyncResult(
+        return SshExecuteAsyncResult(
             interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
         )
 
@@ -264,7 +265,7 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     res = ssh._execute_async(
         command, stdin=run_parameters["stdin"], open_stdout=open_stdout, open_stderr=open_stderr, **kwargs
     )
-    assert isinstance(res, exec_helpers.SshExecuteAsyncResult)
+    assert isinstance(res, SshExecuteAsyncResult)
     assert res.interface is ssh_transport_channel
     assert res.stdin is chan_makefile.stdin
     if open_stdout:
