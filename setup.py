@@ -63,6 +63,7 @@ REQUIRES_OPTIMIZATION = [
     _extension("exec_helpers.async_api.subprocess_runner"),
 
     _extension("exec_helpers._log_templates"),
+    _extension("exec_helpers._ssh_helpers"),
     _extension("exec_helpers._ssh_client_base"),
     _extension("exec_helpers._subprocess_helpers"),
 

@@ -24,12 +24,10 @@ __all__ = (
     "ExecHelperTimeoutError",
     "ExecHelper",
     "SSHClient",
-    "SshExecuteAsyncResult",
     "SSHAuth",
     "SSHConfig",
     "HostsSSHConfigs",
     "Subprocess",
-    "SubprocessExecuteAsyncResult",
     "ExitCodes",
     "ExecResult",
     "async_api",
@@ -37,7 +35,6 @@ __all__ = (
 
 # Local Implementation
 from . import async_api
-from ._ssh_client_base import SshExecuteAsyncResult
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
 from .api import ExecHelper
@@ -53,7 +50,6 @@ from .proc_enums import ExitCodes
 from .ssh_auth import SSHAuth
 from .ssh_client import SSHClient
 from .subprocess_runner import Subprocess  # nosec  # Expected
-from .subprocess_runner import SubprocessExecuteAsyncResult  # nosec  # Our implementation
 
 try:
     from ._version import version as __version__
