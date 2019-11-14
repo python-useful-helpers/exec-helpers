@@ -643,7 +643,7 @@ class SSHClientBase(api.ExecHelper):
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # noinspection PyNoneFunctionAssignment
+        # noinspection PyNoneFunctionAssignment,PyTypeChecker
         future: "concurrent.futures.Future[None]" = poll_pipes()
 
         concurrent.futures.wait([future], timeout)

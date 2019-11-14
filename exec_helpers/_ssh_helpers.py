@@ -5,6 +5,7 @@ import functools
 import pathlib
 import typing
 
+# External Dependencies
 import paramiko  # type: ignore
 
 
@@ -17,6 +18,7 @@ SSH_CONFIG_FILE_USER = pathlib.Path("~/.ssh/config").expanduser()
 def _parse_ssh_config_file(file_path: pathlib.Path) -> typing.Optional[paramiko.SSHConfig]:
     if not file_path.exists():
         return None
+    # noinspection PyBroadException
     try:
         config = paramiko.SSHConfig()
         with file_path.open() as f_obj:

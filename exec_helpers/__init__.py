@@ -26,6 +26,8 @@ __all__ = (
     "SSHClient",
     "SshExecuteAsyncResult",
     "SSHAuth",
+    "SSHConfig",
+    "HostsSSHConfigs",
     "Subprocess",
     "SubprocessExecuteAsyncResult",
     "ExitCodes",
@@ -36,6 +38,8 @@ __all__ = (
 # Local Implementation
 from . import async_api
 from ._ssh_client_base import SshExecuteAsyncResult
+from ._ssh_helpers import HostsSSHConfigs
+from ._ssh_helpers import SSHConfig
 from .api import ExecHelper
 from .exceptions import CalledProcessError
 from .exceptions import ExecCalledProcessError
