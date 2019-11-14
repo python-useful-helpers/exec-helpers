@@ -18,6 +18,7 @@ import typing
 from unittest import mock
 
 # External Dependencies
+import paramiko
 import pytest
 
 # Exec-Helpers Implementation
@@ -74,7 +75,7 @@ def chan_makefile():
 
         def __call__(self, flags: str):
             if "wb" == flags:
-                self.stdin = mock.Mock()
+                self.stdin = mock.MagicMock()
                 self.stdin.channel = self.channel
                 return self.stdin
             elif "rb" == flags:
@@ -88,11 +89,11 @@ def chan_makefile():
 
 @pytest.fixture
 def ssh_intermediate_channel(paramiko_ssh_client):
-    chan = mock.Mock(name="intermediate_channel")
-    transport = mock.Mock()
+    chan = mock.MagicMock(name="intermediate_channel", spec=paramiko.Channel)
+    transport = mock.MagicMock(spec=paramiko.Transport)
     transport.attach_mock(chan, "open_channel")
-    get_transport = mock.Mock(return_value=transport)
-    _ssh = mock.Mock()
+    get_transport = mock.MagicMock(return_value=transport)
+    _ssh = mock.MagicMock(spec=paramiko.SSHClient)
     _ssh.attach_mock(get_transport, "get_transport")
     paramiko_ssh_client.return_value = _ssh
     return chan
@@ -100,66 +101,94 @@ def ssh_intermediate_channel(paramiko_ssh_client):
 
 @pytest.fixture
 def ssh_transport(mocker):
-    transport = mock.Mock(name="transport")
+    transport = mock.MagicMock(name="transport")
     mocker.patch("paramiko.Transport", return_value=transport)
     return transport
 
 
 @pytest.fixture
 def ssh_transport_channel(chan_makefile, ssh_transport):
-    chan = mock.Mock(makefile=chan_makefile, closed=False)
+    chan = mock.MagicMock(makefile=chan_makefile, closed=False)
     chan_makefile.channel = chan
-    chan.attach_mock(mock.Mock(return_value=FakeFileStream(*stderr_src)), "makefile_stderr")
+    chan.attach_mock(mock.MagicMock(return_value=FakeFileStream(*stderr_src)), "makefile_stderr")
 
     chan.configure_mock(exit_status=0)
 
-    chan.status_event.attach_mock(mock.Mock(return_value=True), "is_set")
-    open_session = mock.Mock(return_value=chan)
+    chan.status_event.attach_mock(mock.MagicMock(return_value=True), "is_set")
+    open_session = mock.MagicMock(return_value=chan)
     ssh_transport.attach_mock(open_session, "open_session")
     return chan
 
 
 @pytest.fixture
 def ssh(
-    paramiko_ssh_client, ssh_intermediate_channel, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger,
+    paramiko_ssh_client, ssh_intermediate_channel, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger
 ):
     return exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
 
 
-@pytest.fixture
-def exec_result():
-    return exec_helpers.ExecResult(cmd=command, stdin=None, stdout=stdout_src, stderr=stderr_src, exit_code=0)
-
-
-def test_01_execute_through_host_no_creds(ssh, ssh_transport, exec_result) -> None:
+def test_01_execute_through_host_no_creds(
+    ssh: exec_helpers.SSHClient, paramiko_ssh_client: mock.MagicMock, ssh_intermediate_channel: mock.MagicMock
+) -> None:
     target = "127.0.0.2"
-    result = ssh.execute_through_host(target, command)
-    ssh_transport.assert_has_calls(
-        (mock.call.connect(password=password, pkey=None, username=username), mock.call.open_session())
+    ssh.execute_through_host(target, command)
+    connect: mock.MagicMock = paramiko_ssh_client().connect
+    assert ssh_intermediate_channel.mock_calls == [
+        mock.call(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
+    ]
+    connect.assert_has_calls(
+        [
+            mock.call(hostname=host, password=password, pkey=None, port=port, username=username),
+            mock.call(
+                hostname=target,
+                port=port,
+                username=username,
+                password=password,
+                pkey=None,
+                sock=ssh_intermediate_channel(),
+            ),
+        ]
     )
-    assert exec_result == result
 
 
-def test_02_execute_through_host_with_creds(ssh, ssh_transport, exec_result) -> None:
+def test_02_execute_through_host_with_creds(
+    ssh: exec_helpers.SSHClient, paramiko_ssh_client: mock.MagicMock, ssh_intermediate_channel: mock.MagicMock
+) -> None:
     target = "127.0.0.2"
     username_2 = "user2"
     password_2 = "pass2"
-    result = ssh.execute_through_host(
-        target, command, auth=exec_helpers.SSHAuth(username=username_2, password=password_2)
+    ssh.execute_through_host(target, command, auth=exec_helpers.SSHAuth(username=username_2, password=password_2))
+    connect: mock.MagicMock = paramiko_ssh_client().connect
+    assert ssh_intermediate_channel.mock_calls == [
+        mock.call(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
+    ]
+    connect.assert_has_calls(
+        [
+            mock.call(hostname=host, password=password, pkey=None, port=port, username=username),
+            mock.call(
+                hostname=target,
+                port=port,
+                username=username_2,
+                password=password_2,
+                pkey=None,
+                sock=ssh_intermediate_channel(),
+            ),
+        ]
     )
-    ssh_transport.assert_has_calls(
-        (mock.call.connect(password=password_2, pkey=None, username=username_2), mock.call.open_session())
-    )
-    assert exec_result == result
 
 
-def test_03_execute_get_pty(ssh, ssh_transport_channel) -> None:
+def test_03_execute_get_pty(ssh, mocker) -> None:
+    conn = mocker.patch("paramiko.SSHClient")
     target = "127.0.0.2"
     ssh.execute_through_host(target, command, get_pty=True)
-    ssh_transport_channel.get_pty.assert_called_with(term="vt100", width=80, height=24, width_pixels=0, height_pixels=0)
+    final_client = conn()
+    session = final_client.get_transport().open_session()
+    session.get_pty.assert_called_with(term="vt100", width=80, height=24, width_pixels=0, height_pixels=0)
 
 
-def test_04_execute_use_stdin(ssh, chan_makefile) -> None:
+def test_04_execute_use_stdin(ssh, mocker, chan_makefile) -> None:
+    conn = mocker.patch("paramiko.SSHClient")
+    conn().get_transport().open_session().makefile = chan_makefile
     target = "127.0.0.2"
     cmd = 'read line; echo "$line"'
     stdin = "test"

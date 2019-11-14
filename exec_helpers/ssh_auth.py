@@ -21,6 +21,7 @@ __all__ = ("SSHAuth",)
 # Standard Library
 import copy
 import logging
+import socket
 import typing
 
 # External Dependencies
@@ -137,6 +138,8 @@ class SSHAuth:
         hostname: typing.Optional[str] = None,
         port: int = 22,
         log: bool = True,
+        *,
+        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
     ) -> None:
         """Connect SSH client object using credentials.
 
@@ -148,6 +151,8 @@ class SSHAuth:
         :type port: int
         :param log: Log on generic connection failure
         :type log: bool
+        :param sock: socket for connection. Useful for ssh proxies support
+        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -156,13 +161,12 @@ class SSHAuth:
             kwargs["hostname"] = hostname
             kwargs["port"] = port
 
-        if isinstance(client, paramiko.client.SSHClient):  # pragma: no cover
-            # paramiko.transport.Transport still do not allow passphrase and key filename
-
-            if self.key_filename is not None:
-                kwargs["key_filename"] = self.key_filename
-            if self.__passphrase is not None:
-                kwargs["passphrase"] = self.__passphrase
+        if self.key_filename is not None:
+            kwargs["key_filename"] = self.key_filename
+        if self.__passphrase is not None:
+            kwargs["passphrase"] = self.__passphrase
+        if sock is not None:
+            kwargs["sock"] = sock
 
         keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [self.__key]
         keys.extend([k for k in self.__keys if k != self.__key])
