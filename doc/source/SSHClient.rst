@@ -230,6 +230,33 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
+    .. py:method:: proxy_to(host, port=None, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None, )
+
+        Start new SSH connection using current as proxy.
+
+        :param host: remote hostname
+        :type host: str
+        :param port: remote ssh port
+        :type port: typing.Optional[int]
+        :param username: remote username.
+        :type username: typing.Optional[str]
+        :param password: remote password
+        :type password: typing.Optional[str]
+        :param private_keys: private keys for connection
+        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        :param auth: credentials for connection
+        :type auth: typing.Optional[ssh_auth.SSHAuth]
+        :param verbose: show additional error/warning messages
+        :type verbose: bool
+        :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
+        :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
+        :returns: new ssh client instance using current as a proxy
+        :rtype: SSHClientBase
+
+        .. note:: auth has priority over username/password/private_keys
+
+        .. versionadded:: 6.0.0
+
     .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=1*60*60, *, stdin=None, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.

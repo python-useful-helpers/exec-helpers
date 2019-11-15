@@ -664,49 +664,93 @@ class SSHClientBase(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
-    def _get_proxy_channel(
-        self,
-        hostname: str,
-        port: typing.Optional[int],
-        *,
-        ssh_config: typing.Optional[typing.Union[SSHConfig, HostsSSHConfigs]] = None,
-    ) -> paramiko.Channel:
+    def _get_proxy_channel(self, port: typing.Optional[int], ssh_config: SSHConfig,) -> paramiko.Channel:
         """Get ssh proxy channel.
 
-        :param hostname: target hostname
-        :type hostname: str
         :param port: target port
         :type port: typing.Optional[int]
         :param ssh_config: pre-parsed ssh config
-        :type ssh_config:
-            typing.Optional[
-                typing.Union[
-                    SSHConfig,
-                    HostsSSHConfigs,
-                    str,
-                    paramiko.SSHConfig,
-                    typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-                ]
-            ]
+        :type ssh_config: SSHConfig
         :returns: ssh channel for usage as socket for new connection over it
         :rtype: paramiko.Channel
-        :raises TypeError: ssh config type is not supported
 
         .. versionadded:: 6.0.0
         """
-        if isinstance(ssh_config, SSHConfig):
-            config = ssh_config
-        elif isinstance(ssh_config, HostsSSHConfigs):
-            config = ssh_config[hostname]
-        elif ssh_config is None or isinstance(ssh_config, (paramiko.SSHConfig, str, dict)):
-            config = _ssh_helpers.parse_ssh_config(ssh_config, hostname)[hostname]
-        else:
-            raise TypeError(f"Unsupported type of ssh_config: {type(ssh_config).__name__} ({ssh_config!r}")
-
-        dest_port: int = port if port is not None else config.port if config.port is not None else 22
+        dest_port: int = port if port is not None else ssh_config.port if ssh_config.port is not None else 22
 
         return self._ssh.get_transport().open_channel(
-            kind="direct-tcpip", dest_addr=(config.hostname, dest_port), src_addr=(self.hostname, 0)
+            kind="direct-tcpip", dest_addr=(ssh_config.hostname, dest_port), src_addr=(self.hostname, 0)
+        )
+
+    def proxy_to(
+        self,
+        host: str,
+        port: typing.Optional[int] = None,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
+        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+        auth: typing.Optional[ssh_auth.SSHAuth] = None,
+        *,
+        verbose: bool = True,
+        ssh_config: typing.Union[
+            str,
+            paramiko.SSHConfig,
+            typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+            HostsSSHConfigs,
+            None,
+        ] = None,
+    ) -> "SSHClientBase":
+        """Start new SSH connection using current as proxy.
+
+        :param host: remote hostname
+        :type host: str
+        :param port: remote ssh port
+        :type port: typing.Optional[int]
+        :param username: remote username.
+        :type username: typing.Optional[str]
+        :param password: remote password
+        :type password: typing.Optional[str]
+        :param private_keys: private keys for connection
+        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        :param auth: credentials for connection
+        :type auth: typing.Optional[ssh_auth.SSHAuth]
+        :param verbose: show additional error/warning messages
+        :type verbose: bool
+        :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
+        :type ssh_config:
+            typing.Union[
+                str,
+                paramiko.SSHConfig,
+                typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+                HostsSSHConfigs,
+                None
+            ]
+        :returns: new ssh client instance using current as a proxy
+        :rtype: SSHClientBase
+
+        .. note:: auth has priority over username/password/private_keys
+
+        .. versionadded:: 6.0.0
+        """
+        if isinstance(ssh_config, HostsSSHConfigs):
+            parsed_ssh_config: HostsSSHConfigs = ssh_config
+        else:
+            parsed_ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
+
+        hostname = parsed_ssh_config[host].hostname
+
+        sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
+        cls: typing.Type[SSHClientBase] = self.__class__
+        return cls(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            private_keys=private_keys,
+            auth=auth,
+            verbose=verbose,
+            ssh_config=ssh_config,
+            sock=sock,
         )
 
     def execute_through_host(
@@ -765,18 +809,14 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         """
-
-        sock: paramiko.Channel = self._get_proxy_channel(hostname=hostname, port=target_port)
-        cls: typing.Type[SSHClientBase] = self.__class__
         conn: SSHClientBase
-
         if auth is None:
             auth = self.auth
 
-        with cls(  # type: ignore
-            host=hostname, auth=auth, verbose=verbose, ssh_config=self.ssh_config, sock=sock
+        with self.proxy_to(  # type: ignore
+            host=hostname, port=target_port, auth=auth, verbose=verbose, ssh_config=self.ssh_config
         ) as conn:
-            conn.keepalive_mode = False
+            conn.keepalive_mode = False  # pylint: disable=assigning-non-slot
             return conn.execute(
                 command,
                 timeout=timeout,
