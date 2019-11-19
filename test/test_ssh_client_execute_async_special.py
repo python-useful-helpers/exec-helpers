@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 Alexey Stepanov aka penguinolog.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -150,17 +150,13 @@ def test_004_execute_async_with_sudo_none_enforce(ssh, ssh_transport_channel):
     ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))
 
 
-def test_005_execute_async_sudo_password(ssh, ssh_transport_channel, mocker):
-    enter_password = mocker.patch("exec_helpers.ssh_auth.SSHAuth.enter_password")
-
+def test_005_execute_async_sudo_password(ssh, ssh_transport_channel):
     ssh.sudo_mode = True
 
-    res = ssh._execute_async(command)
+    ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (mock.call.makefile_stderr("rb"), mock.call.exec_command(f'sudo -S sh -c "eval {shlex.quote(command)}"\n'))
     )
-
-    enter_password.assert_called_once_with(res.stdin)
 
 
 def test_006_keepalive(ssh, paramiko_ssh_client):

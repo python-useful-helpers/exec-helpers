@@ -141,5 +141,10 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     assert repr(ssh) == "{cls}(host={host}, port={port}, auth={auth!r})".format(
         cls=ssh.__class__.__name__, host=ssh.hostname, port=ssh.port, auth=ssh.auth
     )
-    assert ssh.ssh_config == {host: {"hostname": host}}
+    # ssh config for main connection is synchronised with connection parameters
+    expected_config_dict = {host: {"hostname": host, "port": ssh.port}}
+    if ssh.auth.username:
+        expected_config_dict[host]['user'] = ssh.auth.username
+
+    assert ssh.ssh_config == expected_config_dict
     assert ssh.ssh_config[host].hostname == host

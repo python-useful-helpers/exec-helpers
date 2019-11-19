@@ -154,7 +154,7 @@ class SSHClientBase(api.ExecHelper):
     __slots__ = (
         "__hostname",
         "__port",
-        "__auth",
+        "__auth_mapping",
         "__ssh",
         "__sftp",
         "__sudo_mode",
@@ -162,6 +162,7 @@ class SSHClientBase(api.ExecHelper):
         "__verbose",
         "__ssh_config",
         "__sock",
+        "__conn_chain",
     )
 
     def __hash__(self) -> int:
@@ -185,6 +186,7 @@ class SSHClientBase(api.ExecHelper):
             HostsSSHConfigs,
             None,
         ] = None,
+        ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
         keepalive: bool = True,
     ) -> None:
@@ -213,6 +215,8 @@ class SSHClientBase(api.ExecHelper):
                 HostsSSHConfigs,
                 None
             ]
+        :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
+        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
         :param keepalive: keepalive mode
@@ -226,6 +230,7 @@ class SSHClientBase(api.ExecHelper):
 
         .. versionchanged:: 6.0.0 private_keys, auth and vebose became keyword-only arguments
         .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
+        .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
         """
@@ -246,26 +251,66 @@ class SSHClientBase(api.ExecHelper):
         self.__hostname: str = config.hostname
         self.__port: int = port if port is not None else config.port if config.port is not None else 22
 
+        # Store initial auth mapping
+        self.__auth_mapping = ssh_auth.SSHAuthMapping(ssh_auth_map)
+        # We are already resolved hostname
+        if self.hostname not in self.__auth_mapping and host in self.__auth_mapping:
+            self.__auth_mapping[self.hostname] = self.__auth_mapping[host]
+
         self.__sudo_mode = False
         self.__keepalive_mode: bool = keepalive
         self.__verbose: bool = verbose
         self.__sock = sock
 
-        self.__ssh = paramiko.SSHClient()
-        self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.__ssh: paramiko.SSHClient
         self.__sftp: typing.Optional[paramiko.SFTPClient] = None
 
-        if auth is None:
-            self.__auth = ssh_auth.SSHAuth(
+        # Rebuild SSHAuth object if required.
+        # Priority: auth > credentials > auth mapping
+        if auth is not None:
+            self.__auth_mapping[self.hostname] = copy.copy(auth)
+        elif self.hostname not in self.__auth_mapping or any((username, password, private_keys)):
+            self.__auth_mapping[self.hostname] = ssh_auth.SSHAuth(
                 username=username if username is not None else config.user,
                 password=password,
                 keys=private_keys,
                 key_filename=config.identityfile,
             )
+
+        # Update config for target host: merge with data from credentials and parameters.
+        # SSHConfig is the single source for hostname/port/... during low level connection construction.
+        self.__rebuild_ssh_config()
+
+        # Build connection chain once and use it for connection later
+        if sock is None:
+            self.__conn_chain: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]] = self.__build_connection_chain()
         else:
-            self.__auth = copy.copy(auth)
+            self.__conn_chain = []
 
         self.__connect()
+
+    def __rebuild_ssh_config(self) -> None:
+        """Rebuild main ssh config from available information."""
+        self.__ssh_config[self.hostname] = self.__ssh_config[self.hostname].overridden_by(
+            _ssh_helpers.SSHConfig(
+                hostname=self.hostname, port=self.port, user=self.auth.username, identityfile=self.auth.key_filename,
+            )
+        )
+
+    def __build_connection_chain(self) -> typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]:
+        conn_chain: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]] = []
+
+        config = self.ssh_config[self.hostname]
+        default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
+        auth = self.__auth_mapping.get_with_alt_hostname(config.hostname, self.hostname, default=default_auth)
+        conn_chain.append((config, auth))
+
+        while config.proxyjump is not None:
+            # pylint: disable=no-member
+            config = self.ssh_config[config.proxyjump]
+            default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
+            conn_chain.append((config, self.__auth_mapping.get(config.hostname, default=default_auth)))
+        return conn_chain[::-1]
 
     @property
     def auth(self) -> ssh_auth.SSHAuth:
@@ -278,7 +323,7 @@ class SSHClientBase(api.ExecHelper):
 
         :rtype: ssh_auth.SSHAuth
         """
-        return self.__auth
+        return self.__auth_mapping[self.hostname]
 
     @property
     def hostname(self) -> str:
@@ -340,14 +385,57 @@ class SSHClientBase(api.ExecHelper):
     def __connect(self) -> None:
         """Main method for connection open."""
         with self.lock:
-            config = self.ssh_config[self.hostname]
             if self.__sock is not None:
                 sock = self.__sock
-            elif config.proxycommand:
-                sock = paramiko.ProxyCommand(config.proxycommand)
+
+                self.__ssh = paramiko.SSHClient()
+                self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.auth.connect(
+                    client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock
+                )
             else:
-                sock = None
-            self.auth.connect(client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock)
+                self.__ssh = self.__get_client()
+
+    def __get_client(self) -> paramiko.SSHClient:
+        """Connect using connection chain information.
+
+        :returns: paramiko ssh connection object
+        :rtype: paramiko.SSHClient
+        :raises ValueError: ProxyCommand found in connection chain after first host reached
+        :raises RuntimeError: Unexpected state
+        """
+
+        last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
+        last_ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        config, auth = self.__conn_chain[0]
+        if config.proxycommand:
+            auth.connect(
+                last_ssh_client,
+                hostname=config.hostname,
+                port=config.port or 22,
+                sock=paramiko.ProxyCommand(config.proxycommand),
+            )
+        else:
+            auth.connect(last_ssh_client, hostname=config.hostname, port=config.port or 22)
+
+        for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            if config.proxyjump:
+                sock = last_ssh_client.get_transport().open_channel(
+                    kind="direct-tcpip", dest_addr=(config.hostname, config.port or 22), src_addr=(config.proxyjump, 0),
+                )
+                auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
+                last_ssh_client = ssh
+                continue
+
+            if config.proxycommand:
+                raise ValueError(f"ProxyCommand found in connection chain after first host reached!\n{config}")
+
+            raise RuntimeError(f"Unexpected state: Final host by configuration, but requested host is not reached")
+        return last_ssh_client
 
     def __connect_sftp(self) -> None:
         """SFTP connection opener."""
@@ -449,10 +537,6 @@ class SSHClientBase(api.ExecHelper):
         """Reconnect SSH session."""
         with self.lock:
             self.close()
-
-            self.__ssh = paramiko.SSHClient()
-            self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
             self.__connect()
 
     def sudo(self, enforce: typing.Optional[bool] = None) -> "typing.ContextManager[None]":
@@ -714,6 +798,7 @@ class SSHClientBase(api.ExecHelper):
             HostsSSHConfigs,
             None,
         ] = None,
+        ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
         keepalive: bool = True,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
@@ -741,6 +826,8 @@ class SSHClientBase(api.ExecHelper):
                 HostsSSHConfigs,
                 None
             ]
+        :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
+        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param keepalive: keepalive mode
         :type keepalive: bool
         :returns: new ssh client instance using current as a proxy
@@ -769,6 +856,7 @@ class SSHClientBase(api.ExecHelper):
             verbose=verbose,
             ssh_config=ssh_config,
             sock=sock,
+            ssh_auth_map=ssh_auth_map if ssh_auth_map is not None else self.__auth_mapping,
             keepalive=keepalive,
         )
 

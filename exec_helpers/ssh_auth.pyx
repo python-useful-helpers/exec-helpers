@@ -31,10 +31,16 @@ LOGGER = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
-class SSHAuth:
+cdef class SSHAuth:
     """SSH Authorization object."""
 
-    __slots__ = ("__username", "__password", "__key", "__keys", "__key_filename", "__passphrase")
+    cdef:
+        readonly object username
+        readonly object key_filename
+        object password
+        object key
+        list keys
+        object passphrase
 
     def __init__(
         self,
@@ -67,31 +73,22 @@ class SSHAuth:
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
         """
-        self.__username: typing.Optional[str] = username
-        self.__password: typing.Optional[str] = password
-        self.__key: typing.Optional[paramiko.RSAKey] = key
-        self.__keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [None]
+        self.username = username  # type: typing.Optional[str]
+        self.password = password  # type: typing.Optional[str]
+        self.key = key  # type: typing.Optional[paramiko.RSAKey]
+        self.keys = [None]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
         if key is not None:
             # noinspection PyTypeChecker
-            self.__keys.append(key)
+            self.keys.append(key)
         if keys is not None:
             for k in keys:
-                if k not in self.__keys:
-                    self.__keys.append(k)
+                if k not in self.keys:
+                    self.keys.append(k)
         if key_filename is None or isinstance(key_filename, list):
-            self.__key_filename: typing.Optional[typing.List[str]] = key_filename
+            self.key_filename = key_filename  # type: typing.Optional[typing.List[str]]
         else:
             self.__key_filename = [key_filename]
-        self.__passphrase: typing.Optional[str] = passphrase
-
-    @property
-    def username(self) -> typing.Optional[str]:
-        """Username for auth.
-
-        :returns: auth username
-        :rtype: str
-        """
-        return self.__username
+        self.passphrase = passphrase  # type: typing.Optional[str]
 
     @staticmethod
     def __get_public_key(key: typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]:
@@ -113,16 +110,7 @@ class SSHAuth:
         :returns: public key for current private key
         :rtype: str
         """
-        return self.__get_public_key(self.__key)
-
-    @property
-    def key_filename(self) -> typing.Optional[typing.List[str]]:
-        """Key filename(s).
-
-        :returns: copy of used key filename (original should not be changed via mutability).
-        .. versionadded:: 1.0.0
-        """
-        return copy.deepcopy(self.__key_filename)
+        return self.__get_public_key(self.key)
 
     def enter_password(self, tgt: typing.BinaryIO) -> None:
         """Enter password to STDIN.
@@ -133,14 +121,14 @@ class SSHAuth:
         :type tgt: typing.BinaryIO
         """
         # noinspection PyTypeChecker
-        tgt.write(f"{self.__password if self.__password is not None else ''}\n".encode("utf-8"))
+        tgt.write(f"{self.password if self.password is not None else ''}\n".encode("utf-8"))
 
     def connect(
         self,
         client: typing.Union[paramiko.SSHClient, paramiko.Transport],
         hostname: typing.Optional[str] = None,
-        port: int = 22,
-        log: bool = True,
+        unsigned int port = 22,
+        bint log = True,
         *,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
     ) -> None:
@@ -159,38 +147,38 @@ class SSHAuth:
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
-        kwargs: typing.Dict[str, typing.Any] = {"username": self.username, "password": self.__password}
+        kwargs = {"username": self.username, "password": self.password}  # type: typing.Dict[str, typing.Any]
         if hostname is not None:
             kwargs["hostname"] = hostname
             kwargs["port"] = port
 
         if self.key_filename is not None:
             kwargs["key_filename"] = self.key_filename
-        if self.__passphrase is not None:
-            kwargs["passphrase"] = self.__passphrase
+        if self.passphrase is not None:
+            kwargs["passphrase"] = self.passphrase
         if sock is not None:
             kwargs["sock"] = sock
 
-        keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [self.__key]
-        keys.extend([k for k in self.__keys if k != self.__key])
+        keys = [self.key]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
+        keys.extend([k for k in self.keys if k != self.key])
 
         for key in keys:
             kwargs["pkey"] = key
             try:
                 client.connect(**kwargs)
-                if self.__key != key:
-                    self.__key = key
+                if self.key != key:
+                    self.key = key
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
             except paramiko.PasswordRequiredException:
-                if self.__password is None:
+                if self.password is None:
                     LOGGER.exception("No password has been set!")
                     raise
                 LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
-        msg: str = "Connection using stored authentication info failed!"
+        msg = "Connection using stored authentication info failed!"
         if log:
             LOGGER.exception(msg)
         raise paramiko.AuthenticationException(msg)
@@ -201,10 +189,10 @@ class SSHAuth:
             (
                 self.__class__,
                 self.username,
-                self.__password,
-                tuple(self.__keys),
+                self.password,
+                tuple(self.keys),
                 (tuple(self.key_filename) if isinstance(self.key_filename, list) else self.key_filename),
-                self.__passphrase,
+                self.passphrase,
             )
         )
 
@@ -231,19 +219,19 @@ class SSHAuth:
         :returns: re-constructed copy of current class
         """
         return self.__class__(
-            username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
+            username=self.username, password=self.password, key=self.key, keys=copy.deepcopy(self.keys)
         )
 
     def __copy__(self) -> "SSHAuth":
         """Copy self."""
-        return self.__class__(username=self.username, password=self.__password, key=self.__key, keys=self.__keys)
+        return self.__class__(username=self.username, password=self.password, key=self.key, keys=self.keys)
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        _key: typing.Optional[str] = None if self.__key is None else f"<private for pub: {self.public_key}>"
-        _keys: typing.List[typing.Union[str, None]] = []
-        for k in self.__keys:
-            if k == self.__key:
+        _key = None if self.key is None else f"<private for pub: {self.public_key}>"  # type: typing.Optional[str]
+        cdef list _keys = []  # type: typing.List[typing.Union[str, None]]
+        for k in self.keys:
+            if k == self.key:
                 continue
             # noinspection PyTypeChecker
             _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
@@ -264,10 +252,8 @@ class SSHAuth:
         return f"{self.__class__.__name__} for {self.username}"
 
 
-class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
+cdef class SSHAuthMapping(dict):
     """Specific dict-like ssh hostname - auth mapping."""
-
-    __slots__ = ("__auth_dict",)
 
     def __init__(
         self,
@@ -282,8 +268,7 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         :type auth_mapping: SSHAuth
         :raises TypeError: Incorrect type of auth dict or auth object
         """
-        self.__auth_dict: typing.Dict[str, SSHAuth] = {}
-
+        super().__init__()
         if auth_dict is not None:
             if isinstance(auth_dict, (dict, SSHAuthMapping)):
                 for hostname in auth_dict:
@@ -297,11 +282,7 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
             else:
                 raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
 
-    def __len__(self) -> int:
-        """Length."""
-        return len(self.__auth_dict)
-
-    def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
+    def __setitem__(self, str hostname, SSHAuth auth) -> None:
         """Dict-like access.
 
         :param hostname: key - hostname
@@ -310,13 +291,9 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         :type auth: SSHAuth
         :raises TypeError: key is not string or value is not SSHAuth.
         """
-        if not isinstance(hostname, str):
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        if not isinstance(auth, SSHAuth):
-            raise TypeError(f"Value {auth!r} is not SSHAuth object!")
-        self.__auth_dict[hostname.lower()] = auth
+        super().__setitem__(hostname.lower(), auth)
 
-    def __getitem__(self, hostname: str) -> SSHAuth:
+    def __getitem__(self, str hostname) -> SSHAuth:
         """Dict-like access.
 
         :param hostname: key - hostname
@@ -325,20 +302,10 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         :rtype: SSHAuth
         :raises TypeError: key is not string.
         """
-        if not isinstance(hostname, str):
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        return self.__auth_dict[hostname.lower()]
-
-    @typing.overload
-    def get_with_alt_hostname(self, hostname: str, *host_names: str, default: SSHAuth) -> SSHAuth:
-        """Try to guess hostname with credentials."""
-
-    @typing.overload
-    def get_with_alt_hostname(self, hostname: str, *host_names: str, default: None = None) -> typing.Optional[SSHAuth]:
-        """Try to guess hostname with credentials."""
+        return super().__getitem__(hostname.lower())
 
     def get_with_alt_hostname(
-        self, hostname: str, *host_names: str, default: typing.Optional[SSHAuth] = None
+        self, str hostname, *host_names: str, default: typing.Optional[SSHAuth] = None
     ) -> typing.Optional[SSHAuth]:
         """Try to guess hostname with credentials.
 
@@ -361,10 +328,6 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
                 return self[host]
         return default
 
-    def __iter__(self) -> typing.Iterator[str]:
-        """Dict-like iterator getter."""
-        return iter(self.__auth_dict)
-
     def __delitem__(self, hostname: str) -> None:
         """Dict-like access.
 
@@ -374,4 +337,4 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         """
         if not isinstance(hostname, str):
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        del self.__auth_dict[hostname.lower()]
+        super().__delitem__(hostname.lower())
