@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -245,11 +245,13 @@ def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> N
 
 def test_003_context_manager(mocker, popen, subprocess_logger, exec_result, run_parameters) -> None:
     """Test context manager for threads synchronization."""
-    with mocker.patch("threading.RLock") as lock:
-        with exec_helpers.Subprocess() as runner:
-            res = runner.execute(command, stdin=run_parameters["stdin"])
-        lock.acquire_assert_called_once()
-        lock.release_assert_called_once()
+    lock_mock = mocker.patch("threading.RLock")
+
+    with exec_helpers.Subprocess() as runner:
+        res = runner.execute(command, stdin=run_parameters["stdin"])
+    lock_mock.acquire_assert_called_once()
+    lock_mock.release_assert_called_once()
+
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
 

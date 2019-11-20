@@ -78,7 +78,10 @@ class SSHAuth:
             for k in keys:
                 if k not in self.__keys:
                     self.__keys.append(k)
-        self.__key_filename: typing.Union[typing.List[str], str, None] = key_filename
+        if key_filename is None or isinstance(key_filename, list):
+            self.__key_filename: typing.Optional[typing.List[str]] = key_filename
+        else:
+            self.__key_filename = [key_filename]
         self.__passphrase: typing.Optional[str] = passphrase
 
     @property
@@ -113,7 +116,7 @@ class SSHAuth:
         return self.__get_public_key(self.__key)
 
     @property
-    def key_filename(self) -> typing.Union[typing.List[str], str, None]:
+    def key_filename(self) -> typing.Optional[typing.List[str]]:
         """Key filename(s).
 
         :returns: copy of used key filename (original should not be changed via mutability).
@@ -130,7 +133,7 @@ class SSHAuth:
         :type tgt: typing.BinaryIO
         """
         # noinspection PyTypeChecker
-        tgt.write("{}\n".format(self.__password if self.__password is not None else "").encode("utf-8"))
+        tgt.write(f"{self.__password if self.__password is not None else ''}\n".encode("utf-8"))
 
     def connect(
         self,

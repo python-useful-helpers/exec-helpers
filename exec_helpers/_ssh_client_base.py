@@ -174,9 +174,9 @@ class SSHClientBase(api.ExecHelper):
         port: typing.Optional[int] = None,
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
+        *,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        *,
         verbose: bool = True,
         ssh_config: typing.Union[
             str,
@@ -186,6 +186,7 @@ class SSHClientBase(api.ExecHelper):
             None,
         ] = None,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
+        keepalive: bool = True,
     ) -> None:
         """Main SSH Client helper.
 
@@ -214,25 +215,39 @@ class SSHClientBase(api.ExecHelper):
             ]
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :param keepalive: keepalive mode
+        :type keepalive: bool
 
         .. note:: auth has priority over username/password/private_keys
+        .. note::
+
+            for proxy connection auth information is collected from SSHConfig
+            if ssh_auth_map record is not available
+
+        .. versionchanged:: 6.0.0 private_keys, auth and vebose became keyword-only arguments
+        .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
+        .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
+        .. versionchanged:: 6.0.0 keepalive exposed to constructor
         """
         super(SSHClientBase, self).__init__(
             logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
         )
 
+        # Init ssh config. It's main source for connection parameters
         if isinstance(ssh_config, HostsSSHConfigs):
             self.__ssh_config: HostsSSHConfigs = ssh_config
         else:
             self.__ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
+        # Get config. We are not resolving full chain. If you are have a chain by some reason - init config manually.
         config: SSHConfig = self.__ssh_config[host]
 
+        # Save resolved hostname and port
         self.__hostname: str = config.hostname
         self.__port: int = port if port is not None else config.port if config.port is not None else 22
 
         self.__sudo_mode = False
-        self.__keepalive_mode = True
+        self.__keepalive_mode: bool = keepalive
         self.__verbose: bool = verbose
         self.__sock = sock
 
@@ -688,9 +703,9 @@ class SSHClientBase(api.ExecHelper):
         port: typing.Optional[int] = None,
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
+        *,
         private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
-        *,
         verbose: bool = True,
         ssh_config: typing.Union[
             str,
@@ -699,6 +714,7 @@ class SSHClientBase(api.ExecHelper):
             HostsSSHConfigs,
             None,
         ] = None,
+        keepalive: bool = True,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
 
@@ -725,6 +741,8 @@ class SSHClientBase(api.ExecHelper):
                 HostsSSHConfigs,
                 None
             ]
+        :param keepalive: keepalive mode
+        :type keepalive: bool
         :returns: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
@@ -751,6 +769,7 @@ class SSHClientBase(api.ExecHelper):
             verbose=verbose,
             ssh_config=ssh_config,
             sock=sock,
+            keepalive=keepalive,
         )
 
     def execute_through_host(
@@ -814,9 +833,8 @@ class SSHClientBase(api.ExecHelper):
             auth = self.auth
 
         with self.proxy_to(  # type: ignore
-            host=hostname, port=target_port, auth=auth, verbose=verbose, ssh_config=self.ssh_config
+            host=hostname, port=target_port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
         ) as conn:
-            conn.keepalive_mode = False  # pylint: disable=assigning-non-slot
             return conn.execute(
                 command,
                 timeout=timeout,

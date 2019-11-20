@@ -1,4 +1,4 @@
-#    Copyright 2018 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -357,17 +357,19 @@ def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
     if "height" in run_parameters:
         kwargs["height"] = run_parameters["height"]
 
-    with mocker.patch("threading.RLock") as lock:
-        with ssh:
-            res = ssh.execute(
-                command,
-                stdin=run_parameters["stdin"],
-                open_stdout=run_parameters["open_stdout"],
-                open_stderr=run_parameters["open_stderr"],
-                **kwargs,
-            )
-        lock.acquire_assert_called_once()
-        lock.release_assert_called_once()
+    lock_mock = mocker.patch("threading.RLock")
+
+    with ssh:
+        res = ssh.execute(
+            command,
+            stdin=run_parameters["stdin"],
+            open_stdout=run_parameters["open_stdout"],
+            open_stderr=run_parameters["open_stderr"],
+            **kwargs,
+        )
+    lock_mock.acquire_assert_called_once()
+    lock_mock.release_assert_called_once()
+
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
 
