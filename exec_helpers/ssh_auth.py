@@ -88,7 +88,7 @@ class SSHAuth:
     def username(self) -> typing.Optional[str]:
         """Username for auth.
 
-        :returns: auth username
+        :return: auth username
         :rtype: str
         """
         return self.__username
@@ -99,7 +99,7 @@ class SSHAuth:
 
         :param key: SSH private key
         :type key: paramiko.RSAKey
-        :returns: public key text if applicable
+        :return: public key text if applicable
         :rtype: typing.Optional[str]
         """
         if key is None:
@@ -110,7 +110,7 @@ class SSHAuth:
     def public_key(self) -> typing.Optional[str]:
         """Public key for stored private key if presents else None.
 
-        :returns: public key for current private key
+        :return: public key for current private key
         :rtype: str
         """
         return self.__get_public_key(self.__key)
@@ -119,7 +119,7 @@ class SSHAuth:
     def key_filename(self) -> typing.Optional[typing.List[str]]:
         """Key filename(s).
 
-        :returns: copy of used key filename (original should not be changed via mutability).
+        :return: copy of used key filename (original should not be changed via mutability).
         .. versionadded:: 1.0.0
         """
         return copy.deepcopy(self.__key_filename)
@@ -212,7 +212,7 @@ class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
-        :returns: current object equals other
+        :return: current object equals other
         """
         return hash(self) == hash(other)
 
@@ -220,7 +220,7 @@ class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
-        :returns: current object not equals other
+        :return: current object not equals other
         """
         return not self.__eq__(other)
 
@@ -228,7 +228,7 @@ class SSHAuth:
         """Helper for copy.deepcopy.
 
         :param memo: copy.deeepcopy() memodict
-        :returns: re-constructed copy of current class
+        :return: re-constructed copy of current class
         """
         return self.__class__(
             username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
@@ -264,17 +264,20 @@ class SSHAuth:
         return f"{self.__class__.__name__} for {self.username}"
 
 
-class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
-    """Specific dict-like ssh hostname - auth mapping."""
+class SSHAuthMapping(typing.Dict[str, SSHAuth]):
+    """Specific dictionary for  ssh hostname - auth mapping.
 
-    __slots__ = ("__auth_dict",)
+    keys are always string and saved/collected lowercase.
+    """
+
+    __slots__ = ()
 
     def __init__(
         self,
         auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], "SSHAuthMapping"]] = None,
         **auth_mapping: SSHAuth,
     ) -> None:
-        """Specific dict-like ssh hostname - auth mapping.
+        """Specific dictionary for  ssh hostname - auth mapping.
 
         :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
         :type auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
@@ -282,8 +285,7 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         :type auth_mapping: SSHAuth
         :raises TypeError: Incorrect type of auth dict or auth object
         """
-        self.__auth_dict: typing.Dict[str, SSHAuth] = {}
-
+        super().__init__()
         if auth_dict is not None:
             if isinstance(auth_dict, (dict, SSHAuthMapping)):
                 for hostname in auth_dict:
@@ -296,10 +298,6 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
                 self[hostname] = auth
             else:
                 raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
-
-    def __len__(self) -> int:
-        """Length."""
-        return len(self.__auth_dict)
 
     def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
         """Dict-like access.
@@ -314,20 +312,20 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
         if not isinstance(auth, SSHAuth):
             raise TypeError(f"Value {auth!r} is not SSHAuth object!")
-        self.__auth_dict[hostname.lower()] = auth
+        super().__setitem__(hostname.lower(), auth)  # pylint: disable=no-member
 
     def __getitem__(self, hostname: str) -> SSHAuth:
         """Dict-like access.
 
         :param hostname: key - hostname
         :type hostname: str
-        :returns: associated SSHAuth object
+        :return: associated SSHAuth object
         :rtype: SSHAuth
         :raises TypeError: key is not string.
         """
         if not isinstance(hostname, str):
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        return self.__auth_dict[hostname.lower()]
+        return super().__getitem__(hostname.lower())  # pylint: disable=no-member
 
     @typing.overload
     def get_with_alt_hostname(self, hostname: str, *host_names: str, default: SSHAuth) -> SSHAuth:
@@ -348,9 +346,11 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         :type host_names: str
         :param default: credentials if hostname not found
         :type default: typing.Optional[SSHAuth]
-        :returns: guessed credentials
+        :return: guessed credentials
         :rtype: typing.Optional[SSHAuth]
         :raises TypeError: Default SSH Auth object is not SSHAuth
+
+        Method used in cases, when 1 host share 2 or more names in config.
         """
         if default is not None and not isinstance(default, SSHAuth):
             raise TypeError(f"Default SSH Auth object is not SSHAuth!. (got {default!r})")
@@ -361,10 +361,6 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
                 return self[host]
         return default
 
-    def __iter__(self) -> typing.Iterator[str]:
-        """Dict-like iterator getter."""
-        return iter(self.__auth_dict)
-
     def __delitem__(self, hostname: str) -> None:
         """Dict-like access.
 
@@ -374,4 +370,4 @@ class SSHAuthMapping(typing.MutableMapping[str, SSHAuth]):
         """
         if not isinstance(hostname, str):
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        del self.__auth_dict[hostname.lower()]
+        super().__delitem__(hostname.lower())  # pylint: disable=no-member

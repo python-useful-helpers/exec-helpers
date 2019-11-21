@@ -97,7 +97,7 @@ class LinesAccessProxy:
 
         :param item: index
         :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
-        :returns: Joined selected lines
+        :return: Joined selected lines
         :rtype: str
         :raises TypeError: Unexpected key
         """
@@ -304,7 +304,7 @@ class ExecResult:
         :param src: source to read from
         :param log: logger instance, if line per line logging expected
         :param verbose: use INFO level for logging
-        :returns: read result as list of bytes strings
+        :return: read result as list of bytes strings
         """
         dst: typing.List[bytes] = []
         try:
@@ -492,7 +492,7 @@ class ExecResult:
     def started(self) -> typing.Optional[datetime.datetime]:
         """Timestamp of command start.
 
-        :returns: timestamp from command start, if applicable
+        :return: timestamp from command start, if applicable
         .. versionadded:: 4.0.0
         """
         return self.__started
@@ -687,7 +687,7 @@ class ExecResult:
         """Comparision.
 
         :param other: other ExecResult instance.
-        :returns: current object equals other
+        :return: current object equals other
         """
         return (
             self.__class__ is other.__class__
@@ -705,7 +705,7 @@ class ExecResult:
         """Comparision.
 
         :param other: other ExecResult instance.
-        :returns: current object not equals other
+        :return: current object not equals other
         """
         return not self.__eq__(other)
 

@@ -210,7 +210,7 @@ API: ExecResult
 
         :param item: index
         :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
-        :returns: Joined selected lines
+        :return: Joined selected lines
         :rtype: str
         :raises TypeError: Unexpected key
 

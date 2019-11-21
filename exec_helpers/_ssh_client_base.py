@@ -28,6 +28,7 @@ import socket
 import stat
 import time
 import typing
+import warnings
 
 # External Dependencies
 import paramiko  # type: ignore
@@ -399,7 +400,7 @@ class SSHClientBase(api.ExecHelper):
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
-        :returns: paramiko ssh connection object
+        :return: paramiko ssh connection object
         :rtype: paramiko.SSHClient
         :raises ValueError: ProxyCommand found in connection chain after first host reached
         :raises RuntimeError: Unexpected state
@@ -567,7 +568,7 @@ class SSHClientBase(api.ExecHelper):
 
         :param cmd: main command
         :param chroot_path: path to make chroot for execution
-        :returns: final command, includes chroot, if required
+        :return: final command, includes chroot, if required
         """
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
@@ -770,7 +771,7 @@ class SSHClientBase(api.ExecHelper):
         :type port: typing.Optional[int]
         :param ssh_config: pre-parsed ssh config
         :type ssh_config: SSHConfig
-        :returns: ssh channel for usage as socket for new connection over it
+        :return: ssh channel for usage as socket for new connection over it
         :rtype: paramiko.Channel
 
         .. versionadded:: 6.0.0
@@ -830,7 +831,7 @@ class SSHClientBase(api.ExecHelper):
         :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param keepalive: keepalive mode
         :type keepalive: bool
-        :returns: new ssh client instance using current as a proxy
+        :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
         .. note:: auth has priority over username/password/private_keys
@@ -864,11 +865,12 @@ class SSHClientBase(api.ExecHelper):
         self,
         hostname: str,
         command: str,
+        *,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
+        port: typing.Optional[int] = None,
         target_port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        *,
         open_stdout: bool = True,
         open_stderr: bool = True,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
@@ -885,7 +887,9 @@ class SSHClientBase(api.ExecHelper):
         :type command: str
         :param auth: credentials for target machine
         :type auth: typing.Optional[ssh_auth.SSHAuth]
-        :param target_port: target port
+        :param port: target port
+        :type port: typing.Optional[int]
+        :param target_port: target port (deprecated in favor of port)
         :type target_port: typing.Optional[int]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
@@ -915,13 +919,22 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
+        .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
         """
         conn: SSHClientBase
         if auth is None:
             auth = self.auth
 
+        if target_port is not None:  # pragma: no cover
+            warnings.warn(
+                f'"target_port" argument was renamed to "port". '
+                f'Old version will be droppped in the next major release.',
+                DeprecationWarning,
+            )
+            port = target_port
+
         with self.proxy_to(  # type: ignore
-            host=hostname, port=target_port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
+            host=hostname, port=port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
         ) as conn:
             return conn.execute(
                 command,
@@ -987,7 +1000,7 @@ class SSHClientBase(api.ExecHelper):
             """Get result from remote call.
 
             :param remote: SSH connection instance
-            :returns: execution result
+            :return: execution result
             """
             async_result: SshExecuteAsyncResult = remote._execute_async(  # pylint: disable=protected-access
                 command, stdin=stdin, log_mask_re=log_mask_re, **kwargs

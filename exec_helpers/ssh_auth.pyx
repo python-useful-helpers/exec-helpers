@@ -96,7 +96,7 @@ cdef class SSHAuth:
 
         :param key: SSH private key
         :type key: paramiko.RSAKey
-        :returns: public key text if applicable
+        :return: public key text if applicable
         :rtype: typing.Optional[str]
         """
         if key is None:
@@ -107,7 +107,7 @@ cdef class SSHAuth:
     def public_key(self) -> typing.Optional[str]:
         """Public key for stored private key if presents else None.
 
-        :returns: public key for current private key
+        :return: public key for current private key
         :rtype: str
         """
         return self.__get_public_key(self.key)
@@ -200,7 +200,7 @@ cdef class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
-        :returns: current object equals other
+        :return: current object equals other
         """
         return hash(self) == hash(other)
 
@@ -208,7 +208,7 @@ cdef class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
-        :returns: current object not equals other
+        :return: current object not equals other
         """
         return not self.__eq__(other)
 
@@ -216,7 +216,7 @@ cdef class SSHAuth:
         """Helper for copy.deepcopy.
 
         :param memo: copy.deeepcopy() memodict
-        :returns: re-constructed copy of current class
+        :return: re-constructed copy of current class
         """
         return self.__class__(
             username=self.username, password=self.password, key=self.key, keys=copy.deepcopy(self.keys)
@@ -253,14 +253,17 @@ cdef class SSHAuth:
 
 
 cdef class SSHAuthMapping(dict):
-    """Specific dict-like ssh hostname - auth mapping."""
+    """Specific dictionary for  ssh hostname - auth mapping.
+
+    keys are always string and saved/collected lowercase.
+    """
 
     def __init__(
         self,
         auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], "SSHAuthMapping"]] = None,
         **auth_mapping: SSHAuth,
     ) -> None:
-        """Specific dict-like ssh hostname - auth mapping.
+        """Specific dictionary for  ssh hostname - auth mapping.
 
         :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
         :type auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
@@ -298,7 +301,7 @@ cdef class SSHAuthMapping(dict):
 
         :param hostname: key - hostname
         :type hostname: str
-        :returns: associated SSHAuth object
+        :return: associated SSHAuth object
         :rtype: SSHAuth
         :raises TypeError: key is not string.
         """
@@ -315,9 +318,11 @@ cdef class SSHAuthMapping(dict):
         :type host_names: str
         :param default: credentials if hostname not found
         :type default: typing.Optional[SSHAuth]
-        :returns: guessed credentials
+        :return: guessed credentials
         :rtype: typing.Optional[SSHAuth]
         :raises TypeError: Default SSH Auth object is not SSHAuth
+
+        Method used in cases, when 1 host share 2 or more names in config.
         """
         if default is not None and not isinstance(default, SSHAuth):
             raise TypeError(f"Default SSH Auth object is not SSHAuth!. (got {default!r})")
@@ -328,13 +333,11 @@ cdef class SSHAuthMapping(dict):
                 return self[host]
         return default
 
-    def __delitem__(self, hostname: str) -> None:
+    def __delitem__(self, str hostname) -> None:
         """Dict-like access.
 
         :param hostname: key - hostname
         :type hostname: str
         :raises TypeError: key is not string.
         """
-        if not isinstance(hostname, str):
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
         super().__delitem__(hostname.lower())
