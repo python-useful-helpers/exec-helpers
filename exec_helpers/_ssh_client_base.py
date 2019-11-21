@@ -928,7 +928,7 @@ class SSHClientBase(api.ExecHelper):
         if target_port is not None:  # pragma: no cover
             warnings.warn(
                 f'"target_port" argument was renamed to "port". '
-                f'Old version will be droppped in the next major release.',
+                f"Old version will be droppped in the next major release.",
                 DeprecationWarning,
             )
             port = target_port
