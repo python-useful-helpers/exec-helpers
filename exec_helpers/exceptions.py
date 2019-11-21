@@ -76,7 +76,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def cmd(self) -> str:
         """Failed command.
 
-        :returns: command
+        :return: command
         """
         return self.result.cmd
 
@@ -84,7 +84,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def stdout(self) -> str:
         """Command stdout.
 
-        :returns: command stdout as string
+        :return: command stdout as string
         """
         return self.result.stdout_str
 
@@ -92,7 +92,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def stderr(self) -> str:
         """Command stderr.
 
-        :returns: command stderr as string
+        :return: command stderr as string
         """
         return self.result.stderr_str
 
@@ -181,7 +181,7 @@ class CalledProcessError(ExecCalledProcessError):
     def returncode(self) -> typing.Union[int, proc_enums.ExitCodes]:
         """Command return code.
 
-        :returns: command return code
+        :return: command return code
         """
         return self.result.exit_code
 
@@ -189,7 +189,7 @@ class CalledProcessError(ExecCalledProcessError):
     def cmd(self) -> str:
         """Failed command.
 
-        :returns: command
+        :return: command
         """
         return self.result.cmd
 
@@ -197,7 +197,7 @@ class CalledProcessError(ExecCalledProcessError):
     def stdout(self) -> str:
         """Command stdout.
 
-        :returns: command stdout as string
+        :return: command stdout as string
         """
         return self.result.stdout_str
 
@@ -205,7 +205,7 @@ class CalledProcessError(ExecCalledProcessError):
     def stderr(self) -> str:
         """Command stderr.
 
-        :returns: command stderr as string
+        :return: command stderr as string
         """
         return self.result.stderr_str
 

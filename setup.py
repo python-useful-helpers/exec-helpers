@@ -71,7 +71,7 @@ REQUIRES_OPTIMIZATION = [
     _extension("exec_helpers.exceptions"),
     _extension("exec_helpers.exec_result"),
     _extension("exec_helpers.proc_enums"),
-    _extension("exec_helpers.ssh_auth"),
+    setuptools.Extension("exec_helpers.ssh_auth", ["exec_helpers/ssh_auth.pyx"]),
     _extension("exec_helpers.ssh_client"),
     _extension("exec_helpers.subprocess_runner"),
 ]
@@ -150,7 +150,7 @@ def get_simple_vars_from_src(
 
     :param src: Source code
     :type src: str
-    :returns: OrderedDict with keys, values = variable names, values
+    :return: OrderedDict with keys, values = variable names, values
     :rtype: typing.Dict[
                 str,
                 typing.Union[

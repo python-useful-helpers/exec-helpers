@@ -113,7 +113,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
     def logger(self) -> logging.Logger:
         """Instance logger access.
 
-        :returns: logger instance
+        :return: logger instance
         """
         return self.__logger
 
@@ -196,7 +196,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
             :param text: source text
             :param rules: regex rules to mask.
-            :returns: source with all MATCHED groups replaced by '<*masked*>'
+            :return: source with all MATCHED groups replaced by '<*masked*>'
             """
             indexes: typing.List[int] = [0]  # Start of the line
             masked: str = ""
@@ -231,7 +231,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
 
         :param cmd: main command
         :param chroot_path: path to make chroot for execution
-        :returns: final command, includes chroot, if required
+        :return: final command, includes chroot, if required
         """
         if any((chroot_path, self._chroot_path)):
             target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore

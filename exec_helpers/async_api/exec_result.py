@@ -41,7 +41,7 @@ class ExecResult(exec_result.ExecResult):
         :param src: source to read from
         :param log: logger instance, if line per line logging expected
         :param verbose: use INFO level for logging
-        :returns: read result as list of bytes strings
+        :return: read result as list of bytes strings
         """
         dst: typing.List[bytes] = []
         try:

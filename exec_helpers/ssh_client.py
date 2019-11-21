@@ -37,7 +37,7 @@ class SSHClient(SSHClientBase):
 
         :param path: path to be escaped
         :type path: str
-        :returns: path with escaped spaces
+        :return: path with escaped spaces
         :rtype: str
         """
         return path.replace(" ", r"\ ")

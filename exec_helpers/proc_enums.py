@@ -178,7 +178,7 @@ def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, E
     """Convert exit code to enum if possible.
 
     :param code: code to convert from
-    :returns: enum code if suitable else original code
+    :return: enum code if suitable else original code
     """
     if "win32" == sys.platform:
         return int(code)
@@ -193,7 +193,7 @@ def exit_codes_to_enums(
     """Convert integer exit codes to enums.
 
     :param codes: exit codes to process
-    :returns: exit codes as enums if suitable
+    :return: exit codes as enums if suitable
     """
     if codes is None:
         # noinspection PyRedundantParentheses

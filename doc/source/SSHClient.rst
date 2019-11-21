@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None, sock=None)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=True)
 
         :param host: remote hostname
         :type host: ``str``
@@ -28,10 +28,18 @@ API: SSHClient and SSHAuth.
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
         :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
+        :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
+        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :param keepalive: keepalive mode
+        :type keepalive: bool
 
     .. note:: auth has priority over username/password/private_keys
+    .. note::
+
+        for proxy connection auth information is collected from SSHConfig
+        if ssh_auth_map record is not available
 
     .. py:attribute:: log_mask_re
 
@@ -230,7 +238,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: proxy_to(host, port=None, username=None, password=None, private_keys=None, auth=None, *, verbose=True, ssh_config=None, )
+    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=True)
 
         Start new SSH connection using current as proxy.
 
@@ -250,14 +258,18 @@ API: SSHClient and SSHAuth.
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
         :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
-        :returns: new ssh client instance using current as a proxy
+        :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
+        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
+        :param keepalive: keepalive mode
+        :type keepalive: bool
+        :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
         .. note:: auth has priority over username/password/private_keys
 
         .. versionadded:: 6.0.0
 
-    .. py:method:: execute_through_host(hostname, command, auth=None, target_port=22, verbose=False, timeout=1*60*60, *, stdin=None, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -267,8 +279,8 @@ API: SSHClient and SSHAuth.
         :type command: ``str``
         :param auth: credentials for target machine
         :type auth: typing.Optional[SSHAuth]
-        :param target_port: target port
-        :type target_port: ``int``
+        :param port: target port
+        :type port: ``int``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -290,6 +302,8 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
+        .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
+        .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
 
     .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, stdin=None, log_mask_re="", exception_class=ParallelCallProcessError, **kwargs)
 
@@ -504,6 +518,39 @@ API: SSHClient and SSHAuth.
         :raises paramiko.AuthenticationException: Authentication failed.
 
 
+.. py:class::SSHAuthMapping(typing.Dict[str, SSHAuth])
+
+    Specific dictionary for  ssh hostname - auth mapping.
+
+    keys are always string and saved/collected lowercase.
+
+    .. py:method:: __init__(auth_dict=None, **auth_mapping)
+
+        Specific dictionary for  ssh hostname - auth mapping.
+
+        :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
+        :type auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
+        :param auth_mapping: SSHAuth setting via **kwargs
+        :type auth_mapping: SSHAuth
+        :raises TypeError: Incorrect type of auth dict or auth object
+
+    .. py:method:: get_with_alt_hostname(hostname, *host_names, default=None)
+
+        Try to guess hostname with credentials.
+
+        :param hostname: expected target hostname
+        :type hostname: str
+        :param host_names: alternate host names
+        :type host_names: str
+        :param default: credentials if hostname not found
+        :type default: typing.Optional[SSHAuth]
+        :return: guessed credentials
+        :rtype: typing.Optional[SSHAuth]
+        :raises TypeError: Default SSH Auth object is not SSHAuth
+
+        Method used in cases, when 1 host share 2 or more names in config.
+
+
 .. py:class:: SshExecuteAsyncResult
 
     Typed NamedTuple
@@ -543,7 +590,7 @@ API: SSHClient and SSHAuth.
 
         :param key: nonexistent key
         :type key: str
-        :returns: generated ssh config for host
+        :return: generated ssh config for host
         :rtype: SSHConfig
         :raises KeyError: key is not string
 
@@ -585,7 +632,7 @@ API: SSHClient and SSHAuth.
         Construct config from Paramiko parsed file.
 
         :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict,
-        :returns: SSHConfig with supported values from config
+        :return: SSHConfig with supported values from config
 
     .. py:attribute:: as_dict
 
@@ -598,7 +645,7 @@ API: SSHClient and SSHAuth.
 
         :param ssh_config: Other ssh config
         :type ssh_config: SSHConfig
-        :returns: Composite from 2 configs with priority of second one
+        :return: Composite from 2 configs with priority of second one
         :rtype: SSHConfig
 
     .. py:attribute:: hostname
