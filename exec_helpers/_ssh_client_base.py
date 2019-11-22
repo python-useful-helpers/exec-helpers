@@ -234,10 +234,17 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
+        .. versionchanged:: 6.0.0 private_keys is deprecated
         """
         super(SSHClientBase, self).__init__(
             logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
         )
+
+        if private_keys is not None:
+            warnings.warn(
+                "private_keys setting without SSHAuth object is deprecated and will be removed at short time.",
+                DeprecationWarning
+            )
 
         # Init ssh config. It's main source for connection parameters
         if isinstance(ssh_config, HostsSSHConfigs):
@@ -799,7 +806,6 @@ class SSHClientBase(api.ExecHelper):
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         *,
-        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
         ssh_config: typing.Union[
@@ -822,8 +828,6 @@ class SSHClientBase(api.ExecHelper):
         :type username: typing.Optional[str]
         :param password: remote password
         :type password: typing.Optional[str]
-        :param private_keys: private keys for connection
-        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         :param auth: credentials for connection
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
@@ -844,7 +848,7 @@ class SSHClientBase(api.ExecHelper):
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
-        .. note:: auth has priority over username/password/private_keys
+        .. note:: auth has priority over username/password
 
         .. versionadded:: 6.0.0
         """
@@ -862,7 +866,6 @@ class SSHClientBase(api.ExecHelper):
             port=port,
             username=username,
             password=password,
-            private_keys=private_keys,
             auth=auth,
             verbose=verbose,
             ssh_config=ssh_config,

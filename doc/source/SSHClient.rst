@@ -35,11 +35,18 @@ API: SSHClient and SSHAuth.
         :param keepalive: keepalive mode
         :type keepalive: bool
 
-    .. note:: auth has priority over username/password/private_keys
-    .. note::
+        .. note:: auth has priority over username/password/private_keys
+        .. note::
 
-        for proxy connection auth information is collected from SSHConfig
-        if ssh_auth_map record is not available
+            for proxy connection auth information is collected from SSHConfig
+            if ssh_auth_map record is not available
+
+        .. versionchanged:: 6.0.0 private_keys, auth and vebose became keyword-only arguments
+        .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
+        .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
+        .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
+        .. versionchanged:: 6.0.0 keepalive exposed to constructor
+        .. versionchanged:: 6.0.0 private_keys is deprecated
 
     .. py:attribute:: log_mask_re
 
@@ -238,7 +245,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=True)
+    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=True)
 
         Start new SSH connection using current as proxy.
 
@@ -250,8 +257,6 @@ API: SSHClient and SSHAuth.
         :type username: typing.Optional[str]
         :param password: remote password
         :type password: typing.Optional[str]
-        :param private_keys: private keys for connection
-        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
         :param auth: credentials for connection
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
@@ -265,7 +270,7 @@ API: SSHClient and SSHAuth.
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
-        .. note:: auth has priority over username/password/private_keys
+        .. note:: auth has priority over username/password
 
         .. versionadded:: 6.0.0
 
