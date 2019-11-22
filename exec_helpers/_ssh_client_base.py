@@ -243,7 +243,7 @@ class SSHClientBase(api.ExecHelper):
         if private_keys is not None:
             warnings.warn(
                 "private_keys setting without SSHAuth object is deprecated and will be removed at short time.",
-                DeprecationWarning
+                DeprecationWarning,
             )
 
         # Init ssh config. It's main source for connection parameters
