@@ -124,7 +124,15 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     if auth is None:
         expected_calls = [
             _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-            _ssh.connect(hostname=host, password=password, pkey=None, port=port, username=username),
+            _ssh.connect(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                compress=False,
+                key_filename=None,
+            ),
         ]
 
         assert expected_calls == paramiko_ssh_client().mock_calls
@@ -144,7 +152,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     # ssh config for main connection is synchronised with connection parameters
     expected_config_dict = {host: {"hostname": host, "port": ssh.port}}
     if ssh.auth.username:
-        expected_config_dict[host]['user'] = ssh.auth.username
+        expected_config_dict[host]["user"] = ssh.auth.username
 
     assert ssh.ssh_config == expected_config_dict
     assert ssh.ssh_config[host].hostname == host

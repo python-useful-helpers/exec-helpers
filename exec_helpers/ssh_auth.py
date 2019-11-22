@@ -137,17 +137,18 @@ class SSHAuth:
 
     def connect(
         self,
-        client: typing.Union[paramiko.SSHClient, paramiko.Transport],
-        hostname: typing.Optional[str] = None,
+        client: paramiko.SSHClient,
+        hostname: str,
         port: int = 22,
         log: bool = True,
         *,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
+        compress: bool = False,
     ) -> None:
         """Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
-        :type client: typing.Union[paramiko.SSHClient, paramiko.Transport]
+        :type client: paramiko.SSHClient
         :param hostname: remote hostname
         :type hostname: str
         :param port: remote ssh port
@@ -156,16 +157,13 @@ class SSHAuth:
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :param compress: use SSH compression
+        :type compress: bool
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
-        kwargs: typing.Dict[str, typing.Any] = {"username": self.username, "password": self.__password}
-        if hostname is not None:
-            kwargs["hostname"] = hostname
-            kwargs["port"] = port
+        kwargs: typing.Dict[str, typing.Any] = {}
 
-        if self.key_filename is not None:
-            kwargs["key_filename"] = self.key_filename
         if self.__passphrase is not None:
             kwargs["passphrase"] = self.__passphrase
         if sock is not None:
@@ -177,7 +175,15 @@ class SSHAuth:
         for key in keys:
             kwargs["pkey"] = key
             try:
-                client.connect(**kwargs)
+                client.connect(
+                    hostname=hostname,
+                    port=port,
+                    username=self.username,
+                    password=self.__password,
+                    key_filename=self.key_filename,
+                    compress=compress,
+                    **kwargs,
+                )
                 if self.__key != key:
                     self.__key = key
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")

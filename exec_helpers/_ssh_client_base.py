@@ -392,7 +392,12 @@ class SSHClientBase(api.ExecHelper):
                 self.__ssh = paramiko.SSHClient()
                 self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.auth.connect(
-                    client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock
+                    client=self.__ssh,
+                    hostname=self.hostname,
+                    port=self.port,
+                    log=self.__verbose,
+                    sock=sock,
+                    compress=bool(self.ssh_config[self.hostname].compression),
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -416,9 +421,12 @@ class SSHClientBase(api.ExecHelper):
                 hostname=config.hostname,
                 port=config.port or 22,
                 sock=paramiko.ProxyCommand(config.proxycommand),
+                compress=bool(config.compression),
             )
         else:
-            auth.connect(last_ssh_client, hostname=config.hostname, port=config.port or 22)
+            auth.connect(
+                last_ssh_client, hostname=config.hostname, port=config.port or 22, compress=bool(config.compression)
+            )
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
@@ -428,7 +436,9 @@ class SSHClientBase(api.ExecHelper):
                 sock = last_ssh_client.get_transport().open_channel(
                     kind="direct-tcpip", dest_addr=(config.hostname, config.port or 22), src_addr=(config.proxyjump, 0),
                 )
-                auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
+                auth.connect(
+                    ssh, hostname=config.hostname, port=config.port or 22, sock=sock, compress=bool(config.compression)
+                )
                 last_ssh_client = ssh
                 continue
 

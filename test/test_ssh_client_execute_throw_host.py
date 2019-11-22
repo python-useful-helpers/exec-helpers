@@ -138,7 +138,15 @@ def test_01_execute_through_host_no_creds(
     ]
     connect.assert_has_calls(
         [
-            mock.call(hostname=host, password=password, pkey=None, port=port, username=username),
+            mock.call(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                compress=False,
+                key_filename=None,
+            ),
             mock.call(
                 hostname=target,
                 port=port,
@@ -146,6 +154,8 @@ def test_01_execute_through_host_no_creds(
                 password=password,
                 pkey=None,
                 sock=ssh_intermediate_channel(),
+                compress=False,
+                key_filename=None,
             ),
         ]
     )
@@ -164,7 +174,15 @@ def test_02_execute_through_host_with_creds(
     ]
     connect.assert_has_calls(
         [
-            mock.call(hostname=host, password=password, pkey=None, port=port, username=username),
+            mock.call(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                compress=False,
+                key_filename=None,
+            ),
             mock.call(
                 hostname=target,
                 port=port,
@@ -172,6 +190,8 @@ def test_02_execute_through_host_with_creds(
                 password=password_2,
                 pkey=None,
                 sock=ssh_intermediate_channel(),
+                compress=False,
+                key_filename=None,
             ),
         ]
     )

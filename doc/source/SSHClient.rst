@@ -503,19 +503,24 @@ API: SSHClient and SSHAuth.
         :param tgt: Target
         :type tgt: file
 
-    .. py:method:: connect(client, hostname=None, port=22, log=True, )
+    .. py:method:: connect(client, hostname, port=22, log=True, *, sock=None, compress=False)
 
         Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
-        :type client: ``typing.Union[paramiko.client.SSHClient, paramiko.transport.Transport]``
+        :type client: ``paramiko.SSHClient``
         :param hostname: remote hostname
         :type hostname: ``str``
         :param port: remote ssh port
         :type port: ``int``
         :param log: Log on generic connection failure
         :type log: ``bool``
-        :raises paramiko.AuthenticationException: Authentication failed.
+        :param sock: socket for connection. Useful for ssh proxies support
+        :type sock: ``typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]``
+        :param compress: use SSH compression
+        :type compress: ``bool``
+        :raises PasswordRequiredException: No password has been set, but required.
+        :raises AuthenticationException: Authentication failed.
 
 
 .. py:class::SSHAuthMapping(typing.Dict[str, SSHAuth])

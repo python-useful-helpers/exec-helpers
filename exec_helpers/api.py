@@ -199,7 +199,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             :return: source with all MATCHED groups replaced by '<*masked*>'
             """
             indexes: typing.List[int] = [0]  # Start of the line
-            masked: str = ""
+            masked: typing.List[str] = []
 
             # places to exclude
             for match in re.finditer(rules, text):
@@ -211,11 +211,11 @@ class ExecHelper(metaclass=abc.ABCMeta):
             for idx in range(0, len(indexes) - 2, 2):
                 start: int = indexes[idx]
                 end: int = indexes[idx + 1]
-                masked += text[start:end] + "<*masked*>"
+                masked.append(text[start:end] + "<*masked*>")
 
             # noinspection PyPep8
-            masked += text[indexes[-2] : indexes[-1]]  # final part
-            return masked
+            masked.append(text[indexes[-2] : indexes[-1]])  # final part
+            return "".join(masked)
 
         result: str = cmd.rstrip()
 
