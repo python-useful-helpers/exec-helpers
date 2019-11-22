@@ -533,14 +533,16 @@ class ExecResult:
         raise NotImplementedError(msg)
 
     @property
-    def stdout_json(self) -> typing.Any:
+    def stdout_json(
+        self,
+    ) -> typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any], str, int, float, bool, None]:
         """JSON from stdout.
 
         :rtype: typing.Any
         :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
         with self.stdout_lock:
-            return self.__deserialize(fmt="json")
+            return self.__deserialize(fmt="json")  # type:ignore
 
     @property
     def stdout_yaml(self) -> typing.Any:
