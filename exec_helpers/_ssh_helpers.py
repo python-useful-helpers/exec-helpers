@@ -8,6 +8,10 @@ import typing
 # External Dependencies
 import paramiko  # type: ignore
 
+if typing.TYPE_CHECKING:
+    # noinspection PyPackageRequirements
+    import logwrap
+
 
 # Parse default SSHConfig if available
 SSH_CONFIG_FILE_SYSTEM = pathlib.Path("/etc/ssh/ssh_config")
@@ -131,6 +135,34 @@ class SSHConfig:
             f"compression={self.compression!r}, "
             f")"
         )
+
+    def __pretty_repr__(self, log_wrap: "logwrap.PrettyRepr", indent: int = 0, no_indent_start: bool = False) -> str:
+        """Make human readable representation of object.
+
+        :param log_wrap: logwrap instance
+        :type log_wrap: logwrap.PrettyRepr
+        :param indent: start indentation
+        :type indent: int
+        :param no_indent_start: do not indent open bracket and simple parameters
+        :type no_indent_start: bool
+        :return: formatted string
+        :rtype: str
+        """
+        next_indent = log_wrap.next_indent(indent)
+        msg = (
+            f"{'':<{0 if no_indent_start else indent}}{self.__class__.__name__}(\n"
+            f"{'':<{next_indent}}hostname={self.hostname!r},\n"
+            f"{'':<{next_indent}}port={self.port!r},\n"
+            f"{'':<{next_indent}}user={self.user!r},\n"
+            f"{'':<{next_indent}}identityfile={self.identityfile!r},\n"
+            f"{'':<{next_indent}}proxycommand={self.proxycommand!r},\n"
+            f"{'':<{next_indent}}proxyjump={self.proxyjump!r},\n"
+            f"{'':<{next_indent}}controlpath={self.controlpath!r},\n"
+            f"{'':<{next_indent}}controlmaster={self.controlmaster!r},\n"
+            f"{'':<{next_indent}}compression={self.compression!r},\n"
+            f"{'':<{0 if no_indent_start else indent}})"
+        )
+        return msg
 
     @staticmethod
     def _parse_optional_int(value: typing.Optional[typing.Union[str, int]]) -> typing.Optional[int]:
