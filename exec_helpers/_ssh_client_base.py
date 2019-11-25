@@ -177,7 +177,7 @@ class SSHClientBase(api.ExecHelper):
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         *,
-        private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+        private_keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
         ssh_config: typing.Union[
@@ -202,7 +202,7 @@ class SSHClientBase(api.ExecHelper):
         :param password: remote password
         :type password: typing.Optional[str]
         :param private_keys: private keys for connection
-        :type private_keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]
+        :type private_keys: typing.Optional[typing.Sequence[paramiko.RSAKey]]
         :param auth: credentials for connection
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages

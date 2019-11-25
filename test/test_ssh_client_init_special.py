@@ -78,16 +78,16 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
 
     pkey = private_keys[0]
 
-    kwargs = dict(
+    kwargs_no_key = dict(
         hostname=host, pkey=None, port=port, username=username, password=None, compress=False, key_filename=None,
     )
-    kwargs1 = {key: kwargs[key] for key in kwargs}
-    kwargs1["pkey"] = pkey
+    kwargs_full = {key: kwargs_no_key[key] for key in kwargs_no_key}
+    kwargs_full["pkey"] = pkey
 
     expected_calls = [
         _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-        _ssh.connect(**kwargs),
-        _ssh.connect(**kwargs1),
+        _ssh.connect(**kwargs_full),
+        _ssh.connect(**kwargs_no_key),
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -113,19 +113,19 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
-    kwargs = dict(
+    kwargs_no_key = dict(
         hostname=host, pkey=None, port=port, username=username, password=None, compress=False, key_filename=None,
     )
-    kwargs0 = {key: kwargs[key] for key in kwargs}
-    kwargs0["pkey"] = private_keys[0]
-    kwargs1 = {key: kwargs[key] for key in kwargs}
-    kwargs1["pkey"] = private_keys[1]
+    kwargs_key_0 = {key: kwargs_no_key[key] for key in kwargs_no_key}
+    kwargs_key_0["pkey"] = private_keys[0]
+    kwargs_key_1 = {key: kwargs_no_key[key] for key in kwargs_no_key}
+    kwargs_key_1["pkey"] = private_keys[1]
 
     expected_calls = [
         _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-        _ssh.connect(**kwargs),
-        _ssh.connect(**kwargs0),
-        _ssh.connect(**kwargs1),
+        _ssh.connect(**kwargs_key_0),
+        _ssh.connect(**kwargs_key_1),
+        _ssh.connect(**kwargs_no_key),
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -239,7 +239,7 @@ def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_log
         (mock.call.debug(f"Main key has been updated, public key is: \n{ssh.auth.public_key}"),)
     )
 
-    assert ssh.auth == exec_helpers.SSHAuth(username=username, password=password, keys=[key])
+    assert ssh.auth.public_key is None
 
 
 def test_010_context(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):

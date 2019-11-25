@@ -31,6 +31,19 @@ LOGGER = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
+def _get_public_key(key: typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]:
+    """Internal method for get public key from private.
+
+    :param key: SSH private key
+    :type key: paramiko.RSAKey
+    :return: public key text if applicable
+    :rtype: typing.Optional[str]
+    """
+    if key is None:
+        return None
+    return f"{key.get_name()} {key.get_base64()}"
+
+
 cdef class SSHAuth:
     """SSH Authorization object."""
 
@@ -38,7 +51,7 @@ cdef class SSHAuth:
         readonly object username
         readonly object key_filename
         object password
-        object key
+        unsigned long key_index
         list keys
         object passphrase
 
@@ -47,7 +60,7 @@ cdef class SSHAuth:
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         key: typing.Optional[paramiko.RSAKey] = None,
-        keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+        keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
         key_filename: typing.Union[typing.List[str], str, None] = None,
         passphrase: typing.Optional[str] = None,
     ) -> None:
@@ -64,7 +77,7 @@ cdef class SSHAuth:
         :param key: Main connection key
         :type key: typing.Optional[paramiko.RSAKey]
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]]
+        :type keys: typing.Optional[typing.Sequence[paramiko.RSAKey]]]
         :param key_filename: filename(s) for additional key files
         :type key_filename: typing.Union[typing.List[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
@@ -75,33 +88,26 @@ cdef class SSHAuth:
         """
         self.username = username  # type: typing.Optional[str]
         self.password = password  # type: typing.Optional[str]
-        self.key = key  # type: typing.Optional[paramiko.RSAKey]
-        self.keys = [None]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
+        self.keys = []  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
+
         if key is not None:
             # noinspection PyTypeChecker
             self.keys.append(key)
+
         if keys is not None:
             for k in keys:
-                if k not in self.keys:
+                if k not in self.keys and k != key:
                     self.keys.append(k)
+
+        self.keys.append(None)
+
+        self.key_index = 0
+
         if key_filename is None or isinstance(key_filename, list):
             self.key_filename = key_filename  # type: typing.Optional[typing.List[str]]
         else:
             self.__key_filename = [key_filename]
         self.passphrase = passphrase  # type: typing.Optional[str]
-
-    @staticmethod
-    def __get_public_key(key: typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]:
-        """Internal method for get public key from private.
-
-        :param key: SSH private key
-        :type key: paramiko.RSAKey
-        :return: public key text if applicable
-        :rtype: typing.Optional[str]
-        """
-        if key is None:
-            return None
-        return f"{key.get_name()} {key.get_base64()}"
 
     @property
     def public_key(self) -> typing.Optional[str]:
@@ -110,7 +116,7 @@ cdef class SSHAuth:
         :return: public key for current private key
         :rtype: str
         """
-        return self.__get_public_key(self.key)
+        return _get_public_key(self.keys[self.key_index])
 
     def enter_password(self, tgt: typing.BinaryIO) -> None:
         """Enter password to STDIN.
@@ -157,10 +163,7 @@ cdef class SSHAuth:
         if sock is not None:
             kwargs["sock"] = sock
 
-        keys = [self.key]  # type: typing.List[typing.Union[None, paramiko.RSAKey]]
-        keys.extend([k for k in self.keys if k != self.key])
-
-        for key in keys:
+        for index, key in sorted(enumerate(self.keys), key=lambda i_k: i_k[0] != self.key_index):
             kwargs["pkey"] = key
             try:
                 client.connect(
@@ -172,8 +175,8 @@ cdef class SSHAuth:
                     compress=compress,
                     **kwargs,
                 )
-                if self.key != key:
-                    self.key = key
+                if index != self.key_index:
+                    self.key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
             except paramiko.PasswordRequiredException:
@@ -225,22 +228,25 @@ cdef class SSHAuth:
         :return: re-constructed copy of current class
         """
         return self.__class__(
-            username=self.username, password=self.password, key=self.key, keys=copy.deepcopy(self.keys)
+            username=self.username, password=self.password, key=self.keys[self.key_index], keys=copy.deepcopy(self.keys)
         )
 
     def __copy__(self) -> "SSHAuth":
         """Copy self."""
-        return self.__class__(username=self.username, password=self.password, key=self.key, keys=self.keys)
+        return self.__class__(username=self.username, password=self.password, key=self.keys[self.key_index], keys=self.keys)
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        _key = None if self.key is None else f"<private for pub: {self.public_key}>"  # type: typing.Optional[str]
+        if self.keys[self.key_index] is None:
+            _key = None  # type: typing.Optional[str]
+        else:
+            _key = f"<private for pub: {self.public_key}>"
         cdef list _keys = []  # type: typing.List[typing.Union[str, None]]
-        for k in self.keys:
-            if k == self.key:
+        for idx, k in enumerate(self.keys):
+            if idx == self.key_index:
                 continue
             # noinspection PyTypeChecker
-            _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
+            _keys.append(f"<private for pub: {_get_public_key(key=k)}>" if k is not None else None)
 
         return (
             f"{self.__class__.__name__}("

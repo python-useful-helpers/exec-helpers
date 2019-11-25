@@ -127,7 +127,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
             _ssh.connect(
                 hostname=host,
                 password=password,
-                pkey=None,
+                pkey=private_keys[-1] if private_keys else None,
                 port=port,
                 username=username,
                 compress=False,

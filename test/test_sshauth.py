@@ -45,13 +45,15 @@ def get_internal_keys(
     keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
     **kwargs,
 ):
-    int_keys = [None]
+    int_keys = []
     if key is not None:
         int_keys.append(key)
     if keys is not None:
         for k in keys:
-            if k not in int_keys:
+            if k not in int_keys and k != key:
                 int_keys.append(k)
+
+    int_keys.append(None)
     return int_keys
 
 
@@ -104,7 +106,8 @@ def test_001_init_checks(run_parameters) -> None:
         auth.enter_password(tgt)
         assert tgt.getvalue() == f"{run_parameters.get('password', '')}\n".encode("utf-8")
 
-    key = run_parameters.get("key", None)
+    key = int_keys[0]
+
     if key is not None:
         assert auth.public_key == gen_public_key(key)
     else:
@@ -118,14 +121,14 @@ def test_001_init_checks(run_parameters) -> None:
         _keys.append(f"<private for pub: {gen_public_key(k)}>" if k is not None else None)
 
     assert repr(auth) == (
-        "{cls}("
-        "username={auth.username!r}, "
-        "password=<*masked*>, "
-        "key={key}, "
-        "keys={keys}, "
-        "key_filename={auth.key_filename!r}, "
-        "passphrase=<*masked*>,"
-        ")".format(cls=exec_helpers.SSHAuth.__name__, auth=auth, key=_key, keys=_keys)
+        f"{exec_helpers.SSHAuth.__name__}("
+        f"username={auth.username!r}, "
+        f"password=<*masked*>, "
+        f"key={_key}, "
+        f"keys={_keys}, "
+        f"key_filename={auth.key_filename!r}, "
+        f"passphrase=<*masked*>,"
+        f")"
     )
     assert str(auth) == f"{exec_helpers.SSHAuth.__name__} for {auth.username}"
 

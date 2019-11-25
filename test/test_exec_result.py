@@ -311,11 +311,11 @@ class TestExecResult(unittest.TestCase):
             f"    cmd='test',\n"
             f"    stdout=\n"
             f"        tuple((\n"
-            f"            b'''{{test: data}}''',\n"
+            f"            b'{{test: data}}',\n"
             f"        )),\n"
             f"    stderr=\n"
             f"        tuple((\n"
-            f"            b'''{{test: stderr}}''',\n"
+            f"            b'{{test: stderr}}',\n"
             f"        )),\n"
             f"    exit_code={result.exit_code!s},\n"
             f")",

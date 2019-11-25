@@ -34,14 +34,14 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 class SSHAuth:
     """SSH Authorization object."""
 
-    __slots__ = ("__username", "__password", "__key", "__keys", "__key_filename", "__passphrase")
+    __slots__ = ("__username", "__password", "__key_index", "__keys", "__key_filename", "__passphrase")
 
     def __init__(
         self,
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         key: typing.Optional[paramiko.RSAKey] = None,
-        keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+        keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
         key_filename: typing.Union[typing.List[str], str, None] = None,
         passphrase: typing.Optional[str] = None,
     ) -> None:
@@ -58,7 +58,7 @@ class SSHAuth:
         :param key: Main connection key
         :type key: typing.Optional[paramiko.RSAKey]
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Iterable[paramiko.RSAKey]]]
+        :type keys: typing.Optional[typing.Sequence[paramiko.RSAKey]]]
         :param key_filename: filename(s) for additional key files
         :type key_filename: typing.Union[typing.List[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
@@ -69,15 +69,22 @@ class SSHAuth:
         """
         self.__username: typing.Optional[str] = username
         self.__password: typing.Optional[str] = password
-        self.__key: typing.Optional[paramiko.RSAKey] = key
-        self.__keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [None]
+
+        self.__keys: typing.List[typing.Union[None, paramiko.RSAKey]] = []
+
         if key is not None:
             # noinspection PyTypeChecker
             self.__keys.append(key)
+
         if keys is not None:
             for k in keys:
-                if k not in self.__keys:
+                if k not in self.__keys and k != key:
                     self.__keys.append(k)
+
+        self.__keys.append(None)
+
+        self.__key_index: int = 0
+
         if key_filename is None or isinstance(key_filename, list):
             self.__key_filename: typing.Optional[typing.List[str]] = key_filename
         else:
@@ -113,7 +120,7 @@ class SSHAuth:
         :return: public key for current private key
         :rtype: str
         """
-        return self.__get_public_key(self.__key)
+        return self.__get_public_key(self.__keys[self.__key_index])
 
     @property
     def key_filename(self) -> typing.Optional[typing.List[str]]:
@@ -169,10 +176,7 @@ class SSHAuth:
         if sock is not None:
             kwargs["sock"] = sock
 
-        keys: typing.List[typing.Union[None, paramiko.RSAKey]] = [self.__key]
-        keys.extend([k for k in self.__keys if k != self.__key])
-
-        for key in keys:
+        for index, key in sorted(enumerate(self.__keys), key=lambda i_k: i_k[0] != self.__key_index):
             kwargs["pkey"] = key
             try:
                 client.connect(
@@ -180,12 +184,12 @@ class SSHAuth:
                     port=port,
                     username=self.username,
                     password=self.__password,
-                    key_filename=self.key_filename,
+                    key_filename=self.__key_filename,
                     compress=compress,
                     **kwargs,
                 )
-                if self.__key != key:
-                    self.__key = key
+                if index != self.__key_index:
+                    self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
             except paramiko.PasswordRequiredException:
@@ -237,19 +241,27 @@ class SSHAuth:
         :return: re-constructed copy of current class
         """
         return self.__class__(
-            username=self.username, password=self.__password, key=self.__key, keys=copy.deepcopy(self.__keys)
+            username=self.username,
+            password=self.__password,
+            key=self.__keys[self.__key_index],
+            keys=copy.deepcopy(self.__keys),
         )
 
     def __copy__(self) -> "SSHAuth":
         """Copy self."""
-        return self.__class__(username=self.username, password=self.__password, key=self.__key, keys=self.__keys)
+        return self.__class__(
+            username=self.username, password=self.__password, key=self.__keys[self.__key_index], keys=self.__keys
+        )
 
     def __repr__(self) -> str:
         """Representation for debug purposes."""
-        _key: typing.Optional[str] = None if self.__key is None else f"<private for pub: {self.public_key}>"
+        if self.__keys[self.__key_index] is None:
+            _key: typing.Optional[str] = None
+        else:
+            _key = f"<private for pub: {self.public_key}>"
         _keys: typing.List[typing.Union[str, None]] = []
-        for k in self.__keys:
-            if k == self.__key:
+        for idx, k in enumerate(self.__keys):
+            if idx == self.__key_index:
                 continue
             # noinspection PyTypeChecker
             _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)

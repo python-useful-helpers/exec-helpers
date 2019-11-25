@@ -21,7 +21,7 @@ API: SSHClient and SSHAuth.
         :param password: remote password
         :type password: ``typing.Optional[str]``
         :param private_keys: private keys for connection
-        :type private_keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
+        :type private_keys: ``typing.Optional[typing.Sequence[paramiko.RSAKey]]``
         :param auth: credentials for connection
         :type auth: typing.Optional[SSHAuth]
         :param verbose: show additional error/warning messages
@@ -474,7 +474,7 @@ API: SSHClient and SSHAuth.
         :param key: Main connection key
         :type key: ``typing.Optional[paramiko.RSAKey]``
         :param keys: Alternate connection keys
-        :type keys: ``typing.Optional[typing.Iterable[paramiko.RSAKey]]``
+        :type keys: ``typing.Optional[typing.Sequence[paramiko.RSAKey]]``
         :param key_filename: filename(s) for additional key files
         :type key_filename: ``typing.Union[typing.List[str], str, None]``
         :param passphrase: passphrase for keys. Need, if differs from password
