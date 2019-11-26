@@ -236,10 +236,6 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
         .. versionchanged:: 6.0.0 private_keys is deprecated
         """
-        super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{port})")
-        )
-
         if private_keys is not None:
             warnings.warn(
                 "private_keys setting without SSHAuth object is deprecated and will be removed at short time.",
@@ -258,6 +254,11 @@ class SSHClientBase(api.ExecHelper):
         # Save resolved hostname and port
         self.__hostname: str = config.hostname
         self.__port: int = port if port is not None else config.port if config.port is not None else 22
+
+        # Init super with host and real port
+        super(SSHClientBase, self).__init__(
+            logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{self.__port})")
+        )
 
         # Store initial auth mapping
         self.__auth_mapping = ssh_auth.SSHAuthMapping(ssh_auth_map)
