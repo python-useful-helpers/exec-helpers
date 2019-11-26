@@ -19,6 +19,7 @@
 __all__ = ("ExecResult",)
 
 # Standard Library
+import contextlib
 import datetime
 import json
 import logging
@@ -307,7 +308,7 @@ class ExecResult:
         :return: read result as list of bytes strings
         """
         dst: typing.List[bytes] = []
-        try:
+        with contextlib.suppress(IOError):
             for line in src:
                 dst.append(line)
                 if log:
@@ -315,8 +316,6 @@ class ExecResult:
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
-        except IOError:
-            pass
         return dst
 
     def read_stdout(

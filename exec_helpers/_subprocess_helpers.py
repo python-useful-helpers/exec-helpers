@@ -17,6 +17,7 @@
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
 # Standard Library
+import contextlib
 import platform
 import typing
 
@@ -41,12 +42,10 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
         :param proc: target process
         :param kill: use SIGKILL instead of SIGTERM
         """
-        try:
+        with contextlib.suppress(psutil.NoSuchProcess):
             if kill:
                 proc.kill()
             proc.terminate()
-        except psutil.NoSuchProcess:
-            pass
 
     parent = psutil.Process(pid)
     children: typing.List[psutil.Process] = parent.children(recursive=True)

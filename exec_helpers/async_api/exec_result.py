@@ -20,6 +20,7 @@
 __all__ = ("ExecResult",)
 
 # Standard Library
+import contextlib
 import logging
 import typing
 
@@ -44,7 +45,7 @@ class ExecResult(exec_result.ExecResult):
         :return: read result as list of bytes strings
         """
         dst: typing.List[bytes] = []
-        try:
+        with contextlib.suppress(IOError):
             async for line in src:
                 dst.append(line)
                 if log:
@@ -52,8 +53,6 @@ class ExecResult(exec_result.ExecResult):
                         level=logging.INFO if verbose else logging.DEBUG,
                         msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
-        except IOError:
-            pass
         return dst
 
     async def read_stdout(  # type: ignore
