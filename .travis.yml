@@ -109,8 +109,8 @@ jobs:
       <<: *python36
     - stage: test
       <<: *python37
-    - stage: test
-      <<: *python38
+#    - stage: test
+#      <<: *python38
 
     - <<: *test_cythonized
       <<: *python36
