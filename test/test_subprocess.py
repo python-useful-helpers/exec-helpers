@@ -226,7 +226,6 @@ def test_001_execute_async(popen, subprocess_logger, run_parameters) -> None:
     if stdin is not None:
         res.interface.stdin.write.assert_called_once_with(stdin)
         res.interface.stdin.close.assert_called_once()
-    subprocess_logger.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
 
 
 def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> None:
@@ -241,6 +240,7 @@ def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> N
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
     popen().wait.assert_called_once_with(timeout=default_timeout)
+    assert subprocess_logger.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=command_log)
 
 
 def test_003_context_manager(mocker, popen, subprocess_logger, exec_result, run_parameters) -> None:

@@ -141,8 +141,6 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         stdin: typing.Union[str, bytes, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
         *,
         chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
@@ -157,11 +155,6 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
-        :param verbose: produce verbose log record on command call
-        :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
@@ -209,6 +202,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+
+        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n")
+
         async_result: api.ExecuteAsyncResult = await self._execute_async(
             command, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin, **kwargs
         )

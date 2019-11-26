@@ -249,7 +249,7 @@ def execute(mocker, exec_result):
     return mocker.patch("exec_helpers.ssh_client.SSHClient.execute", name="execute", return_value=exec_result)
 
 
-def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan_makefile, run_parameters, get_logger):
+def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan_makefile, run_parameters):
     open_stdout = run_parameters["open_stdout"]
     open_stderr = run_parameters["open_stderr"]
     get_pty = run_parameters.get("get_pty", False)
@@ -316,11 +316,9 @@ def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan
     if stdin:
         res.stdin.write.assert_called_with(stdin.encode("utf-8"))
         res.stdin.flush.assert_called_once()
-    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
-    log.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
 
 
-def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters) -> None:
+def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters, get_logger) -> None:
     kwargs = {}
     if "get_pty" in run_parameters:
         kwargs["get_pty"] = run_parameters["get_pty"]
@@ -339,6 +337,8 @@ def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters) ->
     assert isinstance(res, exec_helpers.ExecResult)
     assert res == exec_result
     ssh_transport_channel.assert_has_calls((mock.call.status_event.is_set(),))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:22")
+    assert log.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=command_log)
 
 
 def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:

@@ -252,7 +252,6 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
     if stdin is not None:
         res.interface.stdin.write.assert_called_once_with(stdin)
         res.interface.stdin.drain.assert_awaited_once()
-    logger.log.assert_called_once_with(level=logging.DEBUG, msg=command_log)
 
 
 async def test_002_execute(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
@@ -261,6 +260,7 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
     res = await runner.execute(command, stdin=run_parameters["stdin"])
     assert isinstance(res, exec_helpers.async_api.ExecResult)
     assert res == exec_result
+    assert logger.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=command_log)
     assert logger.mock_calls[-1] == mock.call.log(
         level=logging.DEBUG, msg=f"Command {res.cmd!r} exit code: {res.exit_code!s}"
     )

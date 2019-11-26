@@ -16,8 +16,6 @@
 
 """Text templates for logging."""
 
-CMD_EXEC: str = "Executing command:\n{cmd!r}\n"
-
 CMD_WAIT_ERROR: str = (
     "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
     "\tSTDOUT:\n"

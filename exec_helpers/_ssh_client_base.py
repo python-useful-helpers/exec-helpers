@@ -603,8 +603,6 @@ class SSHClientBase(api.ExecHelper):
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
         *,
         chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
@@ -622,11 +620,6 @@ class SSHClientBase(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
-        :param verbose: produce verbose log record on command call
-        :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
@@ -656,12 +649,6 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-
-        self.logger.log(
-            level=logging.INFO if verbose else logging.DEBUG, msg=_log_templates.CMD_EXEC.format(cmd=cmd_for_log)
-        )
-
         chan: paramiko.Channel = self._ssh.get_transport().open_session()
 
         if get_pty:
@@ -950,7 +937,7 @@ class SSHClientBase(api.ExecHelper):
         with self.proxy_to(  # type: ignore
             host=hostname, port=port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
         ) as conn:
-            return conn.execute(
+            return conn(
                 command,
                 timeout=timeout,
                 open_stdout=open_stdout,
@@ -972,6 +959,7 @@ class SSHClientBase(api.ExecHelper):
         raise_on_err: bool = True,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any,
@@ -990,6 +978,8 @@ class SSHClientBase(api.ExecHelper):
         :type raise_on_err: bool
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param verbose: produce verbose log record on command call
+        :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -1016,16 +1006,19 @@ class SSHClientBase(api.ExecHelper):
             :param remote: SSH connection instance
             :return: execution result
             """
-            async_result: SshExecuteAsyncResult = remote._execute_async(  # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
+
+            remote.logger.log(
+                level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n"
+            )
+            async_result: SshExecuteAsyncResult = remote._execute_async(
                 command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
             )
+            # pylint: enable=protected-access
 
             async_result.interface.status_event.wait(timeout)
             exit_code = async_result.interface.recv_exit_status()
-
-            # pylint: disable=protected-access
-            cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
-            # pylint: enable=protected-access
 
             res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
             res.read_stdout(src=async_result.stdout)
