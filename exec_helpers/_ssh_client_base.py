@@ -255,11 +255,6 @@ class SSHClientBase(api.ExecHelper):
         self.__hostname: str = config.hostname
         self.__port: int = port if port is not None else config.port if config.port is not None else 22
 
-        # Init super with host and real port
-        super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild(f"({host}:{self.__port})")
-        )
-
         # Store initial auth mapping
         self.__auth_mapping = ssh_auth.SSHAuthMapping(ssh_auth_map)
         # We are already resolved hostname
@@ -277,14 +272,21 @@ class SSHClientBase(api.ExecHelper):
         # Rebuild SSHAuth object if required.
         # Priority: auth > credentials > auth mapping
         if auth is not None:
-            self.__auth_mapping[self.hostname] = copy.copy(auth)
+            self.__auth_mapping[self.hostname] = real_auth = copy.copy(auth)
         elif self.hostname not in self.__auth_mapping or any((username, password, private_keys)):
-            self.__auth_mapping[self.hostname] = ssh_auth.SSHAuth(
+            self.__auth_mapping[self.hostname] = real_auth = ssh_auth.SSHAuth(
                 username=username if username is not None else config.user,
                 password=password,
                 keys=private_keys,
                 key_filename=config.identityfile,
             )
+        else:
+            real_auth = self.__auth_mapping[self.hostname]
+
+        # Init super with host and real port and username
+        super(SSHClientBase, self).__init__(
+            logger=logging.getLogger(self.__class__.__name__).getChild(f"({real_auth.username}@{host}:{self.__port})")
+        )
 
         # Update config for target host: merge with data from credentials and parameters.
         # SSHConfig is the single source for hostname/port/... during low level connection construction.
