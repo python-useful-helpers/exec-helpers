@@ -47,17 +47,17 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
 
     @property
-    def stdin(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
+    def stdin(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdin
 
     @property
-    def stderr(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
+    def stderr(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stderr
 
     @property
-    def stdout(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
+    def stdout(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdout
 
