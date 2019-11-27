@@ -88,6 +88,8 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
         _ssh.set_missing_host_key_policy("AutoAddPolicy"),
         _ssh.connect(**kwargs_full),
         _ssh.connect(**kwargs_no_key),
+        _ssh.get_transport(),
+        _ssh.get_transport().set_keepalive(1)
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -126,6 +128,8 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
         _ssh.connect(**kwargs_key_0),
         _ssh.connect(**kwargs_key_1),
         _ssh.connect(**kwargs_no_key),
+        _ssh.get_transport(),
+        _ssh.get_transport().set_keepalive(1)
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -321,6 +325,8 @@ def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
         _ssh.connect(
             hostname="127.0.0.1", password=None, pkey=None, port=22, username=None, compress=False, key_filename=None,
         ),
+        _ssh.get_transport(),
+        _ssh.get_transport().set_keepalive(1)
     ]
 
     assert paramiko_ssh_client.mock_calls == expected_calls

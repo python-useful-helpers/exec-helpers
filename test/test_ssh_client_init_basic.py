@@ -133,6 +133,8 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
                 compress=False,
                 key_filename=None,
             ),
+            _ssh.get_transport(),
+            _ssh.get_transport().set_keepalive(1)
         ]
 
         assert expected_calls == paramiko_ssh_client().mock_calls

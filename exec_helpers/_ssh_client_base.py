@@ -410,6 +410,9 @@ class SSHClientBase(api.ExecHelper):
             else:
                 self.__ssh = self.__get_client()
 
+            transport: paramiko.Transport = self.__ssh.get_transport()
+            transport.set_keepalive(1 if self.__keepalive_mode else 0)  # send keepalive packets
+
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
@@ -551,6 +554,8 @@ class SSHClientBase(api.ExecHelper):
         :type mode: bool
         """
         self.__keepalive_mode = bool(mode)
+        transport: paramiko.Transport = self.__ssh.get_transport()
+        transport.set_keepalive(1 if mode else 0)
 
     def reconnect(self) -> None:
         """Reconnect SSH session."""
