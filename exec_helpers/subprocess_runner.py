@@ -42,22 +42,22 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
     @property
-    def interface(self) -> "subprocess.Popen[str]":
+    def interface(self) -> "subprocess.Popen[bytes]":
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
 
     @property
-    def stdin(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stdin(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdin
 
     @property
-    def stderr(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stderr(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stderr
 
     @property
-    def stdout(self) -> typing.Optional[typing.IO]:  # type: ignore
+    def stdout(self) -> typing.Optional[typing.IO[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super(SubprocessExecuteAsyncResult, self).stdout
 
@@ -148,9 +148,9 @@ class Subprocess(api.ExecHelper):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # noinspection PyNoneFunctionAssignment
+        # noinspection PyNoneFunctionAssignment,PyTypeChecker
         stdout_future: "concurrent.futures.Future[None]" = poll_stdout()
-        # noinspection PyNoneFunctionAssignment
+        # noinspection PyNoneFunctionAssignment,PyTypeChecker
         stderr_future: "concurrent.futures.Future[None]" = poll_stderr()
 
         try:
@@ -218,10 +218,10 @@ class Subprocess(api.ExecHelper):
         :rtype: typing.NamedTuple(
                     'SubprocessExecuteAsyncResult',
                     [
-                        ('interface', subprocess.Popen),
-                        ('stdin', typing.Optional[typing.IO]),
-                        ('stderr', typing.Optional[typing.IO]),
-                        ('stdout', typing.Optional[typing.IO]),
+                        ('interface', subprocess.Popen[bytes]),
+                        ('stdin', typing.Optional[typing.IO[bytes]]),
+                        ('stderr', typing.Optional[typing.IO[bytes]]),
+                        ('stdout', typing.Optional[typing.IO[bytes]]),
                         ("started", datetime.datetime),
                     ]
                 )
@@ -234,7 +234,7 @@ class Subprocess(api.ExecHelper):
         """
         started = datetime.datetime.utcnow()
 
-        process = subprocess.Popen(
+        process: "subprocess.Popen[bytes]" = subprocess.Popen(
             args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
@@ -247,7 +247,7 @@ class Subprocess(api.ExecHelper):
         )
 
         if stdin is None:
-            process_stdin: typing.Optional[typing.IO[typing.Any]] = process.stdin
+            process_stdin: typing.Optional[typing.IO[bytes]] = process.stdin
         else:
             stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
             try:

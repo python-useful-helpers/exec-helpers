@@ -173,19 +173,19 @@ API: Subprocess
 
     .. py:attribute:: interface
 
-        ``subprocess.Popen``
+        ``subprocess.Popen[bytes]``
 
     .. py:attribute:: stdin
 
-        ``typing.Optional[typing.IO]``
+        ``typing.Optional[typing.IO[bytes]]``
 
     .. py:attribute:: stderr
 
-        ``typing.Optional[typing.IO]``
+        ``typing.Optional[typing.IO[bytes]]``
 
     .. py:attribute:: stdout
 
-        ``typing.Optional[typing.IO]``
+        ``typing.Optional[typing.IO[bytes]]``
 
     .. py:attribute:: started
 

@@ -179,6 +179,7 @@ class SSHAuth:
         for index, key in sorted(enumerate(self.__keys), key=lambda i_k: i_k[0] != self.__key_index):
             kwargs["pkey"] = key
             try:
+                # noinspection PyTypeChecker
                 client.connect(
                     hostname=hostname,
                     port=port,
@@ -240,6 +241,7 @@ class SSHAuth:
         :param memo: copy.deeepcopy() memodict
         :return: re-constructed copy of current class
         """
+        # noinspection PyTypeChecker
         return self.__class__(
             username=self.username,
             password=self.__password,
@@ -249,6 +251,7 @@ class SSHAuth:
 
     def __copy__(self) -> "SSHAuth":
         """Copy self."""
+        # noinspection PyTypeChecker
         return self.__class__(
             username=self.username, password=self.__password, key=self.__keys[self.__key_index], keys=self.__keys
         )
