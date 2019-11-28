@@ -137,7 +137,6 @@ cdef class SSHAuth:
         bint log = True,
         *,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
-        bint compress = False,
     ) -> None:
         """Connect SSH client object using credentials.
 
@@ -151,8 +150,6 @@ cdef class SSHAuth:
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
-        :param compress: use SSH compression
-        :type compress: bool
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -172,7 +169,6 @@ cdef class SSHAuth:
                     username=self.username,
                     password=self.password,
                     key_filename=self.key_filename,
-                    compress=compress,
                     **kwargs,
                 )
                 if index != self.key_index:
