@@ -44,7 +44,6 @@ class SSHConfig:
         "__proxyjump",
         "__controlpath",
         "__controlmaster",
-        "__compression",
     )
 
     def __init__(
@@ -58,7 +57,6 @@ class SSHConfig:
         *,
         controlpath: typing.Optional[str] = None,
         controlmaster: typing.Optional[typing.Union[str, bool]] = None,
-        compression: typing.Optional[typing.Union[str, bool]] = None,
     ):
         """SSH Config for creation connection.
 
@@ -78,8 +76,6 @@ class SSHConfig:
         :type controlpath: typing.Optional[str]
         :param controlmaster: re-use connection
         :type controlmaster: typing.Optional[typing.Union[str, bool]]
-        :param compression: use ssh compression
-        :type compression: typing.Optional[typing.Union[str, bool]]
         :raises ValueError: Invalid argument provided.
 
         .. versionadded:: 6.0.0
@@ -101,7 +97,6 @@ class SSHConfig:
         self.__proxyjump: typing.Optional[str] = proxyjump
         self.__controlpath: typing.Optional[str] = controlpath
         self.__controlmaster: typing.Optional[bool] = self._parse_optional_bool(controlmaster)
-        self.__compression: typing.Optional[bool] = self._parse_optional_bool(compression)
 
     def __hash__(self) -> int:  # pragma: no cover
         """Hash for caching possibility."""
@@ -116,7 +111,6 @@ class SSHConfig:
                 self.__proxyjump,
                 self.__controlpath,
                 self.__controlmaster,
-                self.__compression,
             )
         )
 
@@ -132,7 +126,6 @@ class SSHConfig:
             f"proxyjump={self.proxyjump!r}, "
             f"controlpath={self.controlpath!r}, "
             f"controlmaster={self.controlmaster!r}, "
-            f"compression={self.compression!r}, "
             f")"
         )
 
@@ -159,7 +152,6 @@ class SSHConfig:
             f"{'':<{next_indent}}proxyjump={self.proxyjump!r},\n"
             f"{'':<{next_indent}}controlpath={self.controlpath!r},\n"
             f"{'':<{next_indent}}controlmaster={self.controlmaster!r},\n"
-            f"{'':<{next_indent}}compression={self.compression!r},\n"
             f"{'':<{0 if no_indent_start else indent}})"
         )
         return msg
@@ -197,7 +189,6 @@ class SSHConfig:
             proxyjump=ssh_config.get("proxyjump", None),  # type: ignore
             controlpath=ssh_config.get("controlpath", None),  # type: ignore
             controlmaster=ssh_config.get("controlmaster", None),  # type: ignore
-            compression=ssh_config.get("compression", None),  # type: ignore
         )
 
     @property
@@ -222,8 +213,6 @@ class SSHConfig:
             result["controlpath"] = self.controlpath
         if self.controlmaster is not None:
             result["controlmaster"] = self.controlmaster
-        if self.compression is not None:
-            result["compression"] = self.compression
         return result
 
     def overridden_by(self, ssh_config: "SSHConfig") -> "SSHConfig":
@@ -244,7 +233,6 @@ class SSHConfig:
             proxyjump=ssh_config.proxyjump if ssh_config.proxyjump is not None else self.proxyjump,
             controlpath=ssh_config.controlpath if ssh_config.controlpath is not None else self.controlpath,
             controlmaster=ssh_config.controlmaster if ssh_config.controlmaster is not None else self.controlmaster,
-            compression=ssh_config.compression if ssh_config.compression is not None else self.compression,
         )
 
     def __eq__(
@@ -266,7 +254,6 @@ class SSHConfig:
                     "proxyjump",
                     "controlpath",
                     "controlmaster",
-                    "compression",
                 )
             )
         if isinstance(other, dict):
@@ -314,11 +301,6 @@ class SSHConfig:
     def controlmaster(self) -> typing.Optional[bool]:
         """Re-use connection."""
         return self.__controlmaster
-
-    @property
-    def compression(self) -> typing.Optional[bool]:
-        """Use ssh compression."""
-        return self.__compression
 
 
 class HostsSSHConfigs(typing.Dict[str, SSHConfig]):

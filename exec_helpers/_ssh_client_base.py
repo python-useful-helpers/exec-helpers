@@ -124,24 +124,22 @@ class _KeepAliveContext:
 
     __slots__ = ("__ssh", "__keepalive_status", "__enforce")
 
-    def __init__(self, ssh: "SSHClientBase", enforce: bool = True) -> None:
+    def __init__(self, ssh: "SSHClientBase", enforce: int) -> None:
         """Context manager for keepalive management.
 
         :param ssh: connection instance
         :type ssh: SSHClientBase
-        :param enforce: keepalive mode for context manager
-        :type enforce: bool
-        :param enforce: Keep connection alive after context manager exit
+        :param enforce: keepalive period for context manager
+        :type enforce: int
         """
         self.__ssh: "SSHClientBase" = ssh
-        self.__keepalive_status: bool = ssh.keepalive_mode
-        self.__enforce: typing.Optional[bool] = enforce
+        self.__keepalive_status: int = ssh.keepalive_mode
+        self.__enforce: int = enforce
 
     def __enter__(self) -> None:
         self.__ssh.__enter__()
         self.__keepalive_status = self.__ssh.keepalive_mode
-        if self.__enforce is not None:
-            self.__ssh.keepalive_mode = self.__enforce
+        self.__ssh.keepalive_mode = self.__enforce
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         # Exit before releasing!
@@ -189,7 +187,7 @@ class SSHClientBase(api.ExecHelper):
         ] = None,
         ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
-        keepalive: bool = True,
+        keepalive: typing.Union[int, bool] = 1,
     ) -> None:
         """Main SSH Client helper.
 
@@ -220,8 +218,8 @@ class SSHClientBase(api.ExecHelper):
         :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
-        :param keepalive: keepalive mode
-        :type keepalive: bool
+        :param keepalive: keepalive period
+        :type keepalive: typing.Union[int, bool]
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -234,6 +232,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
+        .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
         .. versionchanged:: 6.0.0 private_keys is deprecated
         """
         if private_keys is not None:
@@ -262,7 +261,7 @@ class SSHClientBase(api.ExecHelper):
             self.__auth_mapping[self.hostname] = self.__auth_mapping[host]
 
         self.__sudo_mode = False
-        self.__keepalive_mode: bool = keepalive
+        self.__keepalive_mode: int = int(keepalive)
         self.__verbose: bool = verbose
         self.__sock = sock
 
@@ -402,12 +401,7 @@ class SSHClientBase(api.ExecHelper):
                 self.__ssh = paramiko.SSHClient()
                 self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.auth.connect(
-                    client=self.__ssh,
-                    hostname=self.hostname,
-                    port=self.port,
-                    log=self.__verbose,
-                    sock=sock,
-                    compress=bool(self.ssh_config[self.hostname].compression),
+                    client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock,
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -434,12 +428,9 @@ class SSHClientBase(api.ExecHelper):
                 hostname=config.hostname,
                 port=config.port or 22,
                 sock=paramiko.ProxyCommand(config.proxycommand),
-                compress=bool(config.compression),
             )
         else:
-            auth.connect(
-                last_ssh_client, hostname=config.hostname, port=config.port or 22, compress=bool(config.compression)
-            )
+            auth.connect(last_ssh_client, hostname=config.hostname, port=config.port or 22)
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
@@ -449,9 +440,7 @@ class SSHClientBase(api.ExecHelper):
                 sock = last_ssh_client.get_transport().open_channel(
                     kind="direct-tcpip", dest_addr=(config.hostname, config.port or 22), src_addr=(config.proxyjump, 0),
                 )
-                auth.connect(
-                    ssh, hostname=config.hostname, port=config.port or 22, sock=sock, compress=bool(config.compression)
-                )
+                auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
                 last_ssh_client = ssh
                 continue
 
@@ -541,23 +530,25 @@ class SSHClientBase(api.ExecHelper):
         self.__sudo_mode = bool(mode)
 
     @property
-    def keepalive_mode(self) -> bool:
-        """Persistent keepalive mode for connection object.
+    def keepalive_mode(self) -> int:
+        """Keepalive period for connection object.
 
-        :rtype: bool
+        :rtype: int
+        If 0 - close connection on exit from context manager.
         """
         return self.__keepalive_mode
 
     @keepalive_mode.setter
-    def keepalive_mode(self, mode: bool) -> None:
-        """Persistent keepalive mode change for connection object.
+    def keepalive_mode(self, period: typing.Union[int, bool]) -> None:
+        """Keepalive period change for connection object.
 
-        :param mode: keepalive mode enable/disable
-        :type mode: bool
+        :param period: keepalive period change
+        :type period: typing.Union[int, bool]
+        If 0 - close connection on exit from context manager.
         """
-        self.__keepalive_mode = bool(mode)
+        self.__keepalive_mode = int(period)
         transport: paramiko.Transport = self.__ssh.get_transport()
-        transport.set_keepalive(1 if mode else 0)
+        transport.set_keepalive(int(period))
 
     def reconnect(self) -> None:
         """Reconnect SSH session."""
@@ -571,22 +562,22 @@ class SSHClientBase(api.ExecHelper):
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: typing.Optional[bool]
         :return: context manager with selected sudo state inside
-        :rtype: typing.ContextManager
+        :rtype: typing.ContextManager[None]
         """
         return _SudoContext(ssh=self, enforce=enforce)
 
-    def keepalive(self, enforce: bool = True) -> "typing.ContextManager[None]":
-        """Call contextmanager with keepalive mode change.
+    def keepalive(self, enforce: typing.Union[int, bool] = 1) -> "typing.ContextManager[None]":
+        """Call contextmanager with keepalive period change.
 
-        :param enforce: Enforce keepalive enabled or disabled.
-        :type enforce: bool
+        :param enforce: Enforce keepalive period.
+        :type enforce: typing.Union[int, bool]
         :return: context manager with selected keepalive state inside
-        :rtype: typing.ContextManager
+        :rtype: typing.ContextManager[None]
 
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
         """
-        return _KeepAliveContext(ssh=self, enforce=enforce)
+        return _KeepAliveContext(ssh=self, enforce=int(enforce))
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
@@ -811,7 +802,7 @@ class SSHClientBase(api.ExecHelper):
             None,
         ] = None,
         ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
-        keepalive: bool = True,
+        keepalive: typing.Union[int, bool] = 1,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
 
@@ -838,8 +829,8 @@ class SSHClientBase(api.ExecHelper):
             ]
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
         :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
-        :param keepalive: keepalive mode
-        :type keepalive: bool
+        :param keepalive: keepalive period
+        :type keepalive: typing.Union[int, bool]
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
@@ -866,7 +857,7 @@ class SSHClientBase(api.ExecHelper):
             ssh_config=ssh_config,
             sock=sock,
             ssh_auth_map=ssh_auth_map if ssh_auth_map is not None else self.__auth_mapping,
-            keepalive=keepalive,
+            keepalive=int(keepalive),
         )
 
     def execute_through_host(

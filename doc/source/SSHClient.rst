@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=True)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
 
         :param host: remote hostname
         :type host: ``str``
@@ -32,8 +32,8 @@ API: SSHClient and SSHAuth.
         :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
-        :param keepalive: keepalive mode
-        :type keepalive: bool
+        :param keepalive: keepalive period
+        :type keepalive: typing.Union[int, bool]
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -46,6 +46,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
+        .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
         .. versionchanged:: 6.0.0 private_keys is deprecated
 
     .. py:attribute:: log_mask_re
@@ -92,8 +93,8 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: keepalive_mode
 
-        ``bool``
-        Use keepalive mode for context manager. If `False` - close connection on exit from context manager.
+        ``typing.Union[int, bool]``
+        Keepalive period for connection object. If `0` - close connection on exit from context manager.
 
     .. py:method:: close()
 
@@ -135,15 +136,16 @@ API: SSHClient and SSHAuth.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
         :type enforce: ``typing.Optional[bool]``
-        :rtype: ``typing.ContextManager``
+        :rtype: ``typing.ContextManager[None]``
 
-    .. py:method:: keepalive(enforce=None)
+    .. py:method:: keepalive(enforce=1)
 
         Context manager getter for keepalive operation.
 
-        :param enforce: Enforce keepalive enabled or disabled. By default: True
-        :type enforce: ``typing.bool``
-        :rtype: ``typing.ContextManager``
+        :param enforce: Enforce keepalive period.
+        :type enforce: ``typing.Union[int, bool]``
+        :return: context manager with selected keepalive state inside
+        :rtype: ``typing.ContextManager[None]``
 
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
@@ -245,7 +247,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=True)
+    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=1)
 
         Start new SSH connection using current as proxy.
 
@@ -265,8 +267,8 @@ API: SSHClient and SSHAuth.
         :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
         :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
-        :param keepalive: keepalive mode
-        :type keepalive: bool
+        :param keepalive: keepalive period
+        :type keepalive: typing.Union[int, bool]
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
@@ -508,7 +510,7 @@ API: SSHClient and SSHAuth.
         :param tgt: Target
         :type tgt: file
 
-    .. py:method:: connect(client, hostname, port=22, log=True, *, sock=None, compress=False)
+    .. py:method:: connect(client, hostname, port=22, log=True, *, sock=None)
 
         Connect SSH client object using credentials.
 
@@ -522,8 +524,6 @@ API: SSHClient and SSHAuth.
         :type log: ``bool``
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: ``typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]``
-        :param compress: use SSH compression
-        :type compress: ``bool``
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
 
@@ -611,7 +611,7 @@ API: SSHClient and SSHAuth.
 
     Parsed SSH Config for creation connection.
 
-    .. py:method:: __init__(hostname, port=None, user=None, identityfile=None, proxycommand=None, proxyjump=None, *, controlpath=None, controlmaster=None, compression=None, )
+    .. py:method:: __init__(hostname, port=None, user=None, identityfile=None, proxycommand=None, proxyjump=None, *, controlpath=None, controlmaster=None, )
 
         SSH Config for creation connection.
 
@@ -631,8 +631,6 @@ API: SSHClient and SSHAuth.
         :type controlpath: typing.Optional[str]
         :param controlmaster: re-use connection
         :type controlmaster: typing.Optional[typing.Union[str, bool]]
-        :param compression: use ssh compression
-        :type compression: typing.Optional[typing.Union[str, bool]]
         :raises ValueError: Invalid argument provided.
 
         .. versionadded:: 6.0.0
@@ -697,8 +695,3 @@ API: SSHClient and SSHAuth.
 
         ``typing.Optional[bool]``
         Re-use connection.
-
-    .. py:attribute:: compression
-
-        ``typing.Optional[bool]``
-        Use ssh compression.

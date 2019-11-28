@@ -179,13 +179,13 @@ def test_008_keepalive_enforced(ssh, paramiko_ssh_client):
     ssh.keepalive_mode = False
 
     with ssh.keepalive():
-        pass
+        assert ssh.keepalive_mode == 1
 
     paramiko_ssh_client().close.assert_not_called()
 
 
 def test_009_no_keepalive_enforced(ssh, paramiko_ssh_client):
-    assert ssh.keepalive_mode is True
+    assert ssh.keepalive_mode == 1
 
     with ssh.keepalive(enforce=False):
         pass

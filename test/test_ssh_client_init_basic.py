@@ -130,11 +130,10 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
                 pkey=private_keys[-1] if private_keys else None,
                 port=port,
                 username=username,
-                compress=False,
                 key_filename=None,
             ),
             _ssh.get_transport(),
-            _ssh.get_transport().set_keepalive(1)
+            _ssh.get_transport().set_keepalive(1),
         ]
 
         assert expected_calls == paramiko_ssh_client().mock_calls

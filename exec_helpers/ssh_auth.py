@@ -150,7 +150,6 @@ class SSHAuth:
         log: bool = True,
         *,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
-        compress: bool = False,
     ) -> None:
         """Connect SSH client object using credentials.
 
@@ -164,8 +163,6 @@ class SSHAuth:
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
-        :param compress: use SSH compression
-        :type compress: bool
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -186,7 +183,6 @@ class SSHAuth:
                     username=self.username,
                     password=self.__password,
                     key_filename=self.__key_filename,
-                    compress=compress,
                     **kwargs,
                 )
                 if index != self.__key_index:

@@ -111,8 +111,6 @@ def test_no_configs(no_system_ssh_config, no_user_ssh_config):
     assert host_config.controlpath is None
     assert host_config.controlmaster is None
 
-    assert host_config.compression is None
-
 
 @pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
 def test_simple_config(system_ssh_config, user_ssh_config):
@@ -131,8 +129,6 @@ def test_simple_config(system_ssh_config, user_ssh_config):
 
     assert host_config.controlpath == f"~/.ssh/.control-{USER}@{HOST}:{PORT}"
     assert not host_config.controlmaster  # auto => False
-
-    assert host_config.compression
 
 
 @pytest.mark.xfail(sys.version_info[:2] == (3, 6), reason="Patching of config file is not functional")
