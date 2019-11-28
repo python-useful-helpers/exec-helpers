@@ -284,7 +284,9 @@ class SSHClientBase(api.ExecHelper):
 
         # Init super with host and real port and username
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(self.__class__.__name__).getChild(f"({real_auth.username}@{host}:{self.__port})")
+            logger=logging.getLogger(f"{self.__module__}.{self.__class__.__name__}").getChild(
+                f"({real_auth.username}@{host}:{self.__port})"
+            )
         )
 
         # Update config for target host: merge with data from credentials and parameters.
