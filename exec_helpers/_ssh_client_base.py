@@ -560,7 +560,7 @@ class SSHClientBase(api.ExecHelper):
         :rtype: int
         If 0 - close connection on exit from context manager.
         """
-        warnings.warn('keepalive_mode was moved to keepalive_period as time based parameter', DeprecationWarning)
+        warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
         return self.__keepalive_period
 
     @keepalive_mode.setter
