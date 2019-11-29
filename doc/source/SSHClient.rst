@@ -91,7 +91,7 @@ API: SSHClient and SSHAuth.
         ``bool``
         Use sudo for all calls, except wrapped in connection.sudo context manager.
 
-    .. py:attribute:: keepalive_mode
+    .. py:attribute:: keepalive_period
 
         ``typing.Union[int, bool]``
         Keepalive period for connection object. If `0` - close connection on exit from context manager.
