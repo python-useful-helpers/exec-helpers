@@ -561,7 +561,7 @@ class SSHClientBase(api.ExecHelper):
         If 0 - close connection on exit from context manager.
         """
         warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
-        return self.__keepalive_period
+        return self.keepalive_period
 
     @keepalive_mode.setter
     def keepalive_mode(self, period: typing.Union[int, bool]) -> None:
@@ -571,9 +571,8 @@ class SSHClientBase(api.ExecHelper):
         :type period: typing.Union[int, bool]
         If 0 - close connection on exit from context manager.
         """
-        self.__keepalive_period = int(period)
-        transport: paramiko.Transport = self.__ssh.get_transport()
-        transport.set_keepalive(int(period))
+        warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
+        self.keepalive_period = int(period)
 
     def reconnect(self) -> None:
         """Reconnect SSH session."""
