@@ -65,12 +65,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 class Subprocess(api.ExecHelper):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
-    def __init__(
-        self,
-        log_mask_re: typing.Optional[str] = None,
-        *,
-        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
-    ) -> None:
+    def __init__(self, log_mask_re: typing.Optional[str] = None,) -> None:
         """Subprocess helper with timeouts and lock-free FIFO.
 
         For excluding race-conditions we allow to run 1 command simultaneously
@@ -78,8 +73,6 @@ class Subprocess(api.ExecHelper):
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :param logger: logger instance to use
-        :type logger: logging.Logger
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
@@ -87,7 +80,10 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 4.1.0 support chroot
         .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
         """
-        super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
+        mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
+        super(Subprocess, self).__init__(
+            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"), log_mask_re=log_mask_re
+        )
 
     def _exec_command(  # type: ignore
         self,

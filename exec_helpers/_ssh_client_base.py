@@ -283,8 +283,9 @@ class SSHClientBase(api.ExecHelper):
             real_auth = self.__auth_mapping[self.hostname]
 
         # Init super with host and real port and username
+        mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
         super(SSHClientBase, self).__init__(
-            logger=logging.getLogger(f"{self.__module__}.{self.__class__.__name__}").getChild(
+            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}").getChild(
                 f"({real_auth.username}@{host}:{self.__port})"
             )
         )

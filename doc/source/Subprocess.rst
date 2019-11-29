@@ -8,14 +8,12 @@ API: Subprocess
 
 .. py:class:: Subprocess()
 
-    .. py:method:: __init__(logger, log_mask_re=None, *, logger=logging.getLogger("exec_helpers.subprocess_runner"))
+    .. py:method:: __init__(logger, log_mask_re=None)
 
         ExecHelper global API.
 
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
-        :param logger: logger instance to use
-        :type logger: logging.Logger
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.

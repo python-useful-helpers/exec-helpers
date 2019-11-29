@@ -114,7 +114,7 @@ Creation from scratch:
         password='password',  # type: typing.Optional[str]
         key=None,  # type: typing.Optional[paramiko.RSAKey]
         keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]],
-        key_filename=None,  # type: typing.Union[typing.List[str], str, None]
+        key_filename=None,  # type: typing.Union[typing.List[str], None]
         passphrase=None,  # type: typing.Optional[str]
     )
 
