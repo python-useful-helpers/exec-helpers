@@ -71,6 +71,7 @@ REQUIRES_OPTIMIZATION = [
     _extension("exec_helpers.exceptions"),
     _extension("exec_helpers.exec_result"),
     _extension("exec_helpers.proc_enums"),
+    setuptools.Extension("exec_helpers._ssh_helpers", ["exec_helpers/_ssh_helpers.pyx"]),
     setuptools.Extension("exec_helpers.ssh_auth", ["exec_helpers/ssh_auth.pyx"]),
     _extension("exec_helpers.ssh_client"),
     _extension("exec_helpers.subprocess_runner"),
