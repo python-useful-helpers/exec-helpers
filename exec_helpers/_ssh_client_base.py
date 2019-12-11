@@ -504,6 +504,10 @@ class SSHClientBase(api.ExecHelper):
             self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
+    def __enter__(self) -> "SSHClientBase":  # pylint: disable=useless-super-delegation
+        """Get context manager."""
+        return super().__enter__()  # type: ignore
+
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         """Exit context manager.
 
@@ -622,10 +626,10 @@ class SSHClientBase(api.ExecHelper):
     def _execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
+        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        *,
         chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
@@ -715,9 +719,9 @@ class SSHClientBase(api.ExecHelper):
         command: str,
         async_result: SshExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
+        *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -894,9 +898,9 @@ class SSHClientBase(api.ExecHelper):
         target_port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        stdin: typing.Union[bytes, str, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
         log_mask_re: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
@@ -918,12 +922,12 @@ class SSHClientBase(api.ExecHelper):
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
-        :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -956,15 +960,15 @@ class SSHClientBase(api.ExecHelper):
             )
             port = target_port
 
-        with self.proxy_to(  # type: ignore
+        with self.proxy_to(
             host=hostname, port=port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
         ) as conn:
             return conn(
                 command,
                 timeout=timeout,
+                stdin=stdin,
                 open_stdout=open_stdout,
                 open_stderr=open_stderr,
-                stdin=stdin,
                 log_mask_re=log_mask_re,
                 get_pty=get_pty,
                 width=width,
@@ -981,6 +985,8 @@ class SSHClientBase(api.ExecHelper):
         raise_on_err: bool = True,
         *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
@@ -1000,6 +1006,10 @@ class SSHClientBase(api.ExecHelper):
         :type raise_on_err: bool
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -1035,7 +1045,12 @@ class SSHClientBase(api.ExecHelper):
                 level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n"
             )
             async_result: SshExecuteAsyncResult = remote._execute_async(
-                command, stdin=stdin, log_mask_re=log_mask_re, **kwargs
+                command,
+                stdin=stdin,
+                log_mask_re=log_mask_re,
+                open_stdout=open_stdout,
+                open_stderr=open_stderr,
+                **kwargs,
             )
             # pylint: enable=protected-access
 

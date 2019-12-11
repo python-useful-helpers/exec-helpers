@@ -150,7 +150,7 @@ API: SSHClient and SSHAuth.
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
 
-    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, **kwargs)
 
         Execute command and wait for return code.
 
@@ -164,12 +164,16 @@ API: SSHClient and SSHAuth.
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
-    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, **kwargs)
+    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, **kwargs)
 
         Execute command and wait for return code.
 
@@ -183,12 +187,16 @@ API: SSHClient and SSHAuth.
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionadded:: 3.3.0
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
 
@@ -208,6 +216,10 @@ API: SSHClient and SSHAuth.
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
@@ -218,7 +230,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, exception_class=CalledProcessError, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -238,6 +250,10 @@ API: SSHClient and SSHAuth.
         :type log_mask_re: ``typing.Optional[str]``
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
@@ -276,7 +292,7 @@ API: SSHClient and SSHAuth.
 
         .. versionadded:: 6.0.0
 
-    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, open_stdout=True, open_stderr=True, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -294,6 +310,10 @@ API: SSHClient and SSHAuth.
         :type timeout: ``typing.Union[int, float, None]``
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
         :param get_pty: open PTY on target machine
@@ -312,7 +332,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
 
-    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, stdin=None, log_mask_re="", exception_class=ParallelCallProcessError, **kwargs)
+    .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, stdin=None, open_stdout=True, open_stderr=True, log_mask_re="", exception_class=ParallelCallProcessError, **kwargs)
 
         Execute command on multiple remotes in async mode.
 
@@ -327,9 +347,13 @@ API: SSHClient and SSHAuth.
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: ``bool``
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: ``typing.Optional[str]``
         :param exception_class: Exception to raise on error. Mandatory subclass of ParallelCallProcessError
         :type exception_class: typing.Type[ParallelCallProcessError]
         :return: dictionary {(hostname, port): result}

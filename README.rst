@@ -150,6 +150,8 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         **kwargs
     )
 
@@ -166,6 +168,8 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
         **kwargs
     )
@@ -182,6 +186,8 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         expected=(0,),  # typing.Iterable[typing.Union[int, ExitCodes]]
         log_mask_re=None,  # type: typing.Optional[str]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
     )
 
@@ -194,6 +200,8 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         # Keyword only:
         log_mask_re=None,  # type: typing.Optional[str]
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         **kwargs
     )
 
@@ -264,6 +272,8 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
         raise_on_err=True,  # type: bool
         # Keyword only:
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         exception_class=ParallelCallProcessError  # typing.Type[ParallelCallProcessError]
     )
@@ -272,6 +282,14 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 Results is a dict with keys = (hostname, port) and and results in values.
 By default execute_together raises exception if unexpected return code on any remote.
 
+To open new connection using current as proxy is accessible method `proxy_to`. Basic usage example:
+
+.. code-block:: python
+
+    conn: SSHClient = client.proxy_to(host, username="username", password="password")
+
+.. note:: for full command API please rely API documentation.
+
 For execute through SSH host can be used `execute_through_host` method:
 
 .. code-block:: python
@@ -279,12 +297,14 @@ For execute through SSH host can be used `execute_through_host` method:
     result: ExecResult = client.execute_through_host(
         hostname,  # type: str
         command,  # type: str
+        # Keyword only:
         auth=None,  # type: typing.Optional[SSHAuth]
         target_port=22,  # type: int
         timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
         verbose=False,  # type: bool
-        # Keyword only:
         stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        open_stdout=True,  # type: bool
+        open_stderr=True,  # type: bool
         log_mask_re=None,  # type: typing.Optional[str]
         get_pty=False,  # type: bool
         width=80,  # type: int

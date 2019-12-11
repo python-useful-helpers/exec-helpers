@@ -243,10 +243,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
     def _execute_async(
         self,
         command: str,
+        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        *,
         chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> ExecuteAsyncResult:
@@ -289,9 +289,9 @@ class ExecHelper(metaclass=abc.ABCMeta):
         command: str,
         async_result: ExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
+        *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -327,6 +327,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -342,6 +344,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -356,7 +362,13 @@ class ExecHelper(metaclass=abc.ABCMeta):
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n")
 
         async_result: ExecuteAsyncResult = self._execute_async(
-            command, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command,
+            verbose=verbose,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
 
         result: exec_result.ExecResult = self._exec_command(
@@ -380,6 +392,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -395,6 +409,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -404,7 +422,14 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionadded:: 3.3.0
         """
         return self.execute(
-            command=command, verbose=verbose, timeout=timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
 
     def check_call(
@@ -418,6 +443,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -440,6 +467,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -457,7 +488,14 @@ class ExecHelper(metaclass=abc.ABCMeta):
             expected
         )
         result: exec_result.ExecResult = self.execute(
-            command, verbose, timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
         append: str = error_info + "\n" if error_info else ""
         if result.exit_code not in expected_codes:
@@ -481,6 +519,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -503,6 +543,10 @@ class ExecHelper(metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -518,7 +562,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
         """
         result: exec_result.ExecResult = self.check_call(
             command,
-            verbose,
+            verbose=verbose,
             timeout=timeout,
             error_info=error_info,
             raise_on_err=raise_on_err,
@@ -526,6 +570,8 @@ class ExecHelper(metaclass=abc.ABCMeta):
             exception_class=exception_class,
             log_mask_re=log_mask_re,
             stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
             **kwargs,
         )
         return self._handle_stderr(

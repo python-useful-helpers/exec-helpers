@@ -89,14 +89,22 @@ class Subprocess(api.ExecHelper):
         """
         super(Subprocess, self).__init__(logger=logger, log_mask_re=log_mask_re)
 
+    async def __aenter__(self) -> "Subprocess":
+        """Async context manager."""
+        return await super().__aenter__()  # type: ignore
+
+    def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
+        """Get context manager."""
+        return super().__enter__()  # type: ignore
+
     async def _exec_command(  # type: ignore
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
+        *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -161,15 +169,14 @@ class Subprocess(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
-    # pylint: disable=arguments-differ
     # noinspection PyMethodOverriding
-    async def _execute_async(  # type: ignore
+    async def _execute_async(  # type: ignore  # pylint: disable=arguments-differ
         self,
         command: str,
+        *,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        *,
         chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: typing.Optional[
@@ -255,5 +262,3 @@ class Subprocess(api.ExecHelper):
             process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
-
-    # pylint: enable=arguments-differ

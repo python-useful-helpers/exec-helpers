@@ -75,6 +75,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
         self.__alock: typing.Optional[asyncio.Lock] = None
 
+    def __enter__(self) -> "ExecHelper":  # pylint: disable=useless-super-delegation
+        """Get context manager."""
+        return super().__enter__()  # type: ignore
+
     async def __aenter__(self) -> "ExecHelper":
         """Async context manager."""
         if self.__alock is None:
@@ -105,9 +109,9 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         command: str,
         async_result: api.ExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
+        *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -138,10 +142,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
     async def _execute_async(  # type: ignore
         self,
         command: str,
+        *,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        *,
         chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> api.ExecuteAsyncResult:
@@ -181,6 +185,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -196,6 +202,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -207,7 +217,13 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n")
 
         async_result: api.ExecuteAsyncResult = await self._execute_async(
-            command, verbose=verbose, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command,
+            verbose=verbose,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
 
         result: exec_result.ExecResult = await self._exec_command(
@@ -231,6 +247,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -246,6 +264,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -255,7 +277,14 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         .. versionadded:: 3.3.0
         """
         return await self.execute(
-            command=command, verbose=verbose, timeout=timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
 
     async def check_call(  # type: ignore
@@ -269,6 +298,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -291,6 +322,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -306,7 +341,14 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             expected
         )
         result: exec_result.ExecResult = await self.execute(
-            command, verbose, timeout, log_mask_re=log_mask_re, stdin=stdin, **kwargs
+            command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            **kwargs,
         )
         append: str = error_info + "\n" if error_info else ""
         if result.exit_code not in expected_codes:
@@ -330,6 +372,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -354,6 +398,10 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -365,7 +413,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         """
         result: exec_result.ExecResult = await self.check_call(
             command,
-            verbose,
+            verbose=verbose,
             timeout=timeout,
             error_info=error_info,
             raise_on_err=raise_on_err,
@@ -373,6 +421,8 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             expected=expected,
             exception_class=exception_class,
             stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
             **kwargs,
         )
         return self._handle_stderr(

@@ -85,14 +85,18 @@ class Subprocess(api.ExecHelper):
             logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"), log_mask_re=log_mask_re
         )
 
+    def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
+        """Get context manager."""
+        return super().__enter__()  # type: ignore
+
     def _exec_command(  # type: ignore
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
         timeout: typing.Union[int, float, None],
+        *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        *,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -181,10 +185,10 @@ class Subprocess(api.ExecHelper):
     def _execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
+        *,
         stdin: typing.Union[str, bytes, bytearray, None] = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        *,
         chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: typing.Optional[
