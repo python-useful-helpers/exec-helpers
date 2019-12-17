@@ -307,13 +307,13 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
             if isinstance(auth_dict, (dict, SSHAuthMapping)):
                 for hostname in auth_dict:
                     self[hostname] = auth_dict[hostname]
-            else:
+            else:  # pragma: no cover
                 raise TypeError(f"Incorrect type of auth dict! (got: {auth_dict!r})")
 
         for hostname, auth in auth_mapping.items():
             if isinstance(auth, SSHAuth):
                 self[hostname] = auth
-            else:
+            else:  # pragma: no cover
                 raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
 
     def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
@@ -325,9 +325,9 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         :type auth: SSHAuth
         :raises TypeError: key is not string or value is not SSHAuth.
         """
-        if not isinstance(hostname, str):
+        if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        if not isinstance(auth, SSHAuth):
+        if not isinstance(auth, SSHAuth):  # pragma: no cover
             raise TypeError(f"Value {auth!r} is not SSHAuth object!")
         super().__setitem__(hostname.lower(), auth)  # pylint: disable=no-member
 
@@ -340,7 +340,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         :rtype: SSHAuth
         :raises TypeError: key is not string.
         """
-        if not isinstance(hostname, str):
+        if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
         return super().__getitem__(hostname.lower())  # pylint: disable=no-member
 
@@ -369,7 +369,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
 
         Method used in cases, when 1 host share 2 or more names in config.
         """
-        if default is not None and not isinstance(default, SSHAuth):
+        if default is not None and not isinstance(default, SSHAuth):  # pragma: no cover
             raise TypeError(f"Default SSH Auth object is not SSHAuth!. (got {default!r})")
         if hostname in self:
             return self[hostname]
@@ -385,6 +385,6 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         :type hostname: str
         :raises TypeError: key is not string.
         """
-        if not isinstance(hostname, str):
+        if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
         super().__delitem__(hostname.lower())  # pylint: disable=no-member

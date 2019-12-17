@@ -321,7 +321,7 @@ class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
         """
         if isinstance(key, str):
             return SSHConfig(key)
-        raise KeyError(f"{key} is not available and not allowed.")
+        raise KeyError(f"{key} is not available and not allowed.")  # pragma: no cover
 
 
 def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHConfigs:

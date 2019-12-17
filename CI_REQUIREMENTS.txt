@@ -3,4 +3,4 @@ lxml!=3.7.0
 PyYAML>=3.12
 ruamel.yaml
 defusedxml  # PSF
-logwrap  # Apache 2
+logwrap>=7.0.0  # Apache 2

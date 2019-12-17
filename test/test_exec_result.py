@@ -309,14 +309,12 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(
             f"ExecResult(\n"
             f"    cmd='test',\n"
-            f"    stdout=\n"
-            f"        tuple((\n"
-            f"            b'{{test: data}}',\n"
-            f"        )),\n"
-            f"    stderr=\n"
-            f"        tuple((\n"
-            f"            b'{{test: stderr}}',\n"
-            f"        )),\n"
+            f"    stdout=(\n"
+            f"        b'{{test: data}}',\n"
+            f"    ),\n"
+            f"    stderr=(\n"
+            f"        b'{{test: stderr}}',\n"
+            f"    ),\n"
             f"    exit_code={result.exit_code!s},\n"
             f")",
             pretty_repr,
