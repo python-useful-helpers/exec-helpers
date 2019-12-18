@@ -19,7 +19,7 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
-__all__ = ("ExecHelper", "ExecuteAsyncResult")
+__all__ = ("ExecHelper", "ExecuteAsyncResult", "mask_command")
 
 # Standard Library
 import abc
@@ -84,6 +84,28 @@ class _ChRootContext:
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         self._conn._chroot_path = self._chroot_status
         self._conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+
+
+def mask_command(text: str, rules: str) -> str:
+    """Mask part of text using rules.
+
+    :param text: source text
+    :param rules: regex rules to mask.
+    :return: source with all MATCHED groups replaced by '<*masked*>'
+    """
+    masked: typing.List[str] = []
+
+    # places to exclude
+    prev = 0
+    for match in re.finditer(rules, text):
+        for idx, _ in enumerate(match.groups(), start=1):
+            start, end = match.span(idx)
+            masked.append(text[prev:start])
+            masked.append("<*masked*>")
+            prev = end
+    masked.append(text[prev:])
+
+    return "".join(masked)
 
 
 class ExecHelper(metaclass=abc.ABCMeta):
@@ -191,38 +213,12 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionadded:: 1.2.0
         """
 
-        def mask(text: str, rules: str) -> str:
-            """Mask part of text using rules.
-
-            :param text: source text
-            :param rules: regex rules to mask.
-            :return: source with all MATCHED groups replaced by '<*masked*>'
-            """
-            indexes: typing.List[int] = [0]  # Start of the line
-            masked: typing.List[str] = []
-
-            # places to exclude
-            for match in re.finditer(rules, text):
-                for idx, _ in enumerate(match.groups()):
-                    indexes.extend(match.span(idx + 1))
-            indexes.append(len(text))  # End
-
-            # Replace inserts
-            for idx in range(0, len(indexes) - 2, 2):
-                start: int = indexes[idx]
-                end: int = indexes[idx + 1]
-                masked.append(text[start:end] + "<*masked*>")
-
-            # noinspection PyPep8
-            masked.append(text[indexes[-2] : indexes[-1]])  # final part
-            return "".join(masked)
-
         result: str = cmd.rstrip()
 
         if self.log_mask_re is not None:
-            result = mask(result, self.log_mask_re)
+            result = mask_command(result, self.log_mask_re)
         if log_mask_re is not None:
-            result = mask(result, log_mask_re)
+            result = mask_command(result, log_mask_re)
 
         return result
 

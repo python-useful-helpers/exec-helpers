@@ -24,6 +24,7 @@ __all__ = (
     "ExecHelperTimeoutError",
     "ExecHelper",
     "SSHClient",
+    "mask_command",
     "SSHAuth",
     "SSHConfig",
     "HostsSSHConfigs",
@@ -38,6 +39,7 @@ from . import async_api
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
 from .api import ExecHelper
+from .api import mask_command
 from .exceptions import CalledProcessError
 from .exceptions import ExecCalledProcessError
 from .exceptions import ExecHelperError
