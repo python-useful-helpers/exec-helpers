@@ -21,9 +21,11 @@ __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
 # Standard Library
 import asyncio
+import copy
 import datetime
 import errno
 import logging
+import os
 import typing
 
 # Exec-Helpers Implementation
@@ -189,6 +191,7 @@ class Subprocess(api.ExecHelper):
         chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: _EnvT = None,
+        env_patch: _EnvT = None,
         **kwargs: typing.Any,
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -207,6 +210,8 @@ class Subprocess(api.ExecHelper):
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -223,6 +228,11 @@ class Subprocess(api.ExecHelper):
         :raises OSError: impossible to process STDIN
         """
         started = datetime.datetime.utcnow()
+
+        if env_patch is not None:
+            # make mutable copy
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
+            env.update(env_patch)  # type: ignore
 
         process: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(  # pylint: disable=no-member
             cmd=self._prepare_command(cmd=command, chroot_path=chroot_path),
@@ -282,6 +292,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: _EnvT = None,
+        env_patch: _EnvT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -305,6 +316,8 @@ class Subprocess(api.ExecHelper):
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -324,6 +337,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            env_patch=env_patch,
             **kwargs,
         )
 
@@ -339,6 +353,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: _EnvT = None,
+        env_patch: _EnvT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -362,6 +377,8 @@ class Subprocess(api.ExecHelper):
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -381,6 +398,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            env_patch=env_patch,
             **kwargs,
         )
 
@@ -399,6 +417,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: _EnvT = None,
+        env_patch: _EnvT = None,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -429,6 +448,8 @@ class Subprocess(api.ExecHelper):
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -455,6 +476,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            env_patch=env_patch,
             exception_class=exception_class,
             **kwargs,
         )
@@ -474,6 +496,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
         env: _EnvT = None,
+        env_patch: _EnvT = None,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -504,6 +527,8 @@ class Subprocess(api.ExecHelper):
         :type cwd: typing.Optional[typing.Union[str, bytes]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -530,6 +555,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            env_patch=env_patch,
             exception_class=exception_class,
             **kwargs,
         )
