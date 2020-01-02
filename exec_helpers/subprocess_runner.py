@@ -44,6 +44,7 @@ _EnvT = typing.Optional[
 ]
 _OptionalTimeoutT = typing.Union[int, float, None]
 _OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 # noinspection PyTypeHints
@@ -53,7 +54,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     @property
     def interface(self) -> "subprocess.Popen[bytes]":
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).interface  # type: ignore
+        return super().interface  # type: ignore
 
     @property
     def stdin(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
@@ -63,12 +64,12 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     @property
     def stderr(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stderr
+        return super().stderr
 
     @property
     def stdout(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stdout
+        return super().stdout
 
 
 class Subprocess(api.ExecHelper):
@@ -404,7 +405,7 @@ class Subprocess(api.ExecHelper):
         verbose: bool = False,
         timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
@@ -481,7 +482,7 @@ class Subprocess(api.ExecHelper):
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: _OptionalStdinT = None,
         open_stdout: bool = True,

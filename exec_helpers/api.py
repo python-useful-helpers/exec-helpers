@@ -49,10 +49,11 @@ ExecuteAsyncResult = typing.NamedTuple(
 )
 _OptionalTimeoutT = typing.Union[int, float, None]
 _OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 # noinspection PyProtectedMember
-class _ChRootContext:
+class _ChRootContext(typing.ContextManager[None]):
     """Context manager for call commands with chroot.
 
     .. versionadded:: 4.1.0
@@ -444,7 +445,7 @@ class ExecHelper(
         verbose: bool = False,
         timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
@@ -490,9 +491,7 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
-            expected
-        )
+        expected_codes: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = self.execute(
             command,
             verbose=verbose,
@@ -522,7 +521,7 @@ class ExecHelper(
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
@@ -593,7 +592,7 @@ class ExecHelper(
         result: exec_result.ExecResult,
         error_info: typing.Optional[str],
         raise_on_err: bool,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]],
+        expected: typing.Iterable[_ExitCodeT],
         exception_class: "typing.Type[exceptions.CalledProcessError]",
     ) -> exec_result.ExecResult:
         """Internal check_stderr logic (synchronous)."""

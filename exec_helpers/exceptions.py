@@ -68,7 +68,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        super(ExecHelperTimeoutProcessError, self).__init__(message)
+        super().__init__(message)
         self.result: "exec_result.ExecResult" = result
         self.timeout: typing.Union[int, float] = timeout
 
@@ -121,7 +121,7 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
             f"\tSTDERR:\n"
             f"{result.stderr_brief}"
         )
-        super(ExecHelperNoKillError, self).__init__(message, result=result, timeout=timeout)
+        super().__init__(message, result=result, timeout=timeout)
 
 
 class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
@@ -175,7 +175,7 @@ class CalledProcessError(ExecCalledProcessError):
             f"{result.stdout_brief}\n"
             f"\tSTDERR:\n{result.stderr_brief}"
         )
-        super(CalledProcessError, self).__init__(message)
+        super().__init__(message)
 
     @property
     def returncode(self) -> typing.Union[int, proc_enums.ExitCodes]:
@@ -290,8 +290,6 @@ class ParallelCallExceptions(ParallelCallProcessError):
         """
         exceptions_str: str = "\n\t".join(f"{host}:{port} - {exc} " for (host, port), exc in exceptions.items())
         message: str = _message or f"Command {command!r} during execution raised exceptions: \n\t{exceptions_str}"
-        super(ParallelCallExceptions, self).__init__(
-            command=command, errors=errors, results=results, expected=expected, _message=message
-        )
+        super().__init__(command=command, errors=errors, results=results, expected=expected, _message=message)
         self.cmd: str = command
         self.exceptions: typing.Dict[typing.Tuple[str, int], Exception] = exceptions

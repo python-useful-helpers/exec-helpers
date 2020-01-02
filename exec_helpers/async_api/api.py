@@ -34,8 +34,13 @@ from exec_helpers import exec_result
 from exec_helpers import proc_enums
 
 
+_OptionalTimeoutT = typing.Union[int, float, None]
+_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
+
+
 # noinspection PyProtectedMember
-class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
+class _ChRootContext(api._ChRootContext, typing.AsyncContextManager[None]):  # pylint: disable=protected-access
     """Async extension for chroot."""
 
     def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
@@ -46,7 +51,7 @@ class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
         :param path: chroot path or None for no chroot
         :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         """
-        super(_ChRootContext, self).__init__(conn=conn, path=path)
+        super().__init__(conn=conn, path=path)
 
     async def __aenter__(self) -> None:
         await self._conn.__aenter__()
@@ -72,7 +77,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
         """
-        super(ExecHelper, self).__init__(logger=logger, log_mask_re=log_mask_re)
+        super().__init__(logger=logger, log_mask_re=log_mask_re)
         self.__alock: typing.Optional[asyncio.Lock] = None
 
     def __enter__(self) -> "ExecHelper":  # pylint: disable=useless-super-delegation
@@ -108,11 +113,11 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         async_result: api.ExecuteAsyncResult,
-        timeout: typing.Union[int, float, None],
+        timeout: _OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -181,10 +186,10 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -247,10 +252,10 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -295,13 +300,13 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
@@ -341,9 +346,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
-            expected
-        )
+        expected_codes: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = await self.execute(
             command,
             verbose=verbose,
@@ -369,13 +372,13 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,

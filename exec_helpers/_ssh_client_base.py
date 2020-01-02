@@ -63,6 +63,7 @@ _OptionalSSHConfigArgT = typing.Union[
 _SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
 _OptionalTimeoutT = typing.Union[int, float, None]
 _OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
@@ -78,7 +79,7 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
         :param retry_on: Exceptions to retry on
         :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
         """
-        super(RetryOnExceptions, self).__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
+        super().__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
 # noinspection PyTypeHints
@@ -88,25 +89,25 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     @property
     def interface(self) -> paramiko.Channel:
         """Override original NamedTuple with proper typing."""
-        return super(SshExecuteAsyncResult, self).interface
+        return super().interface
 
     @property
     def stdin(self) -> paramiko.ChannelFile:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SshExecuteAsyncResult, self).stdin
+        return super().stdin
 
     @property
     def stderr(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SshExecuteAsyncResult, self).stderr
+        return super().stderr
 
     @property
     def stdout(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SshExecuteAsyncResult, self).stdout
+        return super().stdout
 
 
-class _SudoContext:
+class _SudoContext(typing.ContextManager[None]):
     """Context manager for call commands with sudo."""
 
     __slots__ = ("__ssh", "__sudo_status", "__enforce")
@@ -132,7 +133,7 @@ class _SudoContext:
         self.__ssh.sudo_mode = self.__sudo_status
 
 
-class _KeepAliveContext:
+class _KeepAliveContext(typing.ContextManager[None]):
     """Context manager for keepalive management."""
 
     __slots__ = ("__ssh", "__keepalive_status", "__enforce")
@@ -146,12 +147,12 @@ class _KeepAliveContext:
         :type enforce: int
         """
         self.__ssh: "SSHClientBase" = ssh
-        self.__keepalive_status: int = ssh.keepalive_mode
+        self.__keepalive_status: int = ssh.keepalive_period
         self.__enforce: int = enforce
 
     def __enter__(self) -> None:
         self.__ssh.__enter__()
-        self.__keepalive_status = self.__ssh.keepalive_mode
+        self.__keepalive_status = self.__ssh.keepalive_period
         self.__ssh.keepalive_mode = self.__enforce
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
@@ -524,7 +525,7 @@ class SSHClientBase(api.ExecHelper):
         """
         if not self.__keepalive_period:
             self.close()
-        super(SSHClientBase, self).__exit__(exc_type, exc_val, exc_tb)
+        super().__exit__(exc_type, exc_val, exc_tb)
 
     @property
     def sudo_mode(self) -> bool:
@@ -930,7 +931,7 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = False,
         timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
@@ -1011,7 +1012,7 @@ class SSHClientBase(api.ExecHelper):
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
@@ -1262,7 +1263,7 @@ class SSHClientBase(api.ExecHelper):
         remotes: typing.Iterable["SSHClientBase"],
         command: str,
         timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         stdin: _OptionalStdinT = None,
@@ -1349,9 +1350,7 @@ class SSHClientBase(api.ExecHelper):
             async_result.interface.close()
             return res
 
-        prep_expected: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
-            expected
-        )
+        prep_expected: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
 
         futures: typing.Dict["SSHClientBase", "concurrent.futures.Future[exec_result.ExecResult]"] = {
