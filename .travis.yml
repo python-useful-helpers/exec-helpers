@@ -21,22 +21,7 @@ _python:
     python: "3.8"
 
 _helpers:
-  - &install_cython pip install --upgrade Cython
   - &build_package python setup.py bdist_wheel
-  - &install_built pip install exec_helpers --no-index -f dist
-  - &test_no_cov  py.test -vvv test
-  - &test_cythonized
-    stage: Test cythonized
-    install:
-      - *upgrade_python_toolset
-      - *install_test_deps
-      - *install_deps
-      - *install_cython
-    script:
-      - *build_package
-      - *install_built
-      - *test_no_cov
-    after_success: skip
 
   - &static_analysis
     stage: Static analysis
@@ -109,14 +94,7 @@ jobs:
       <<: *python36
     - stage: test
       <<: *python37
-#    - stage: test
-#      <<: *python38
-
-    - <<: *test_cythonized
-      <<: *python36
-    - <<: *test_cythonized
-      <<: *python37
-    - <<: *test_cythonized
+    - stage: test
       <<: *python38
 
     - stage: deploy
@@ -130,8 +108,6 @@ jobs:
       install:
         - *upgrade_python_toolset
         - *install_deps
-      script:
-        - ./tools/run_docker.sh "exec_helpers"
       before_deploy:
         - *build_package
       deploy:

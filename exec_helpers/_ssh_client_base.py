@@ -506,7 +506,7 @@ class SSHClientBase(api.ExecHelper):
 
     def __enter__(self) -> "SSHClientBase":  # pylint: disable=useless-super-delegation
         """Get context manager."""
-        return super().__enter__()  # type: ignore
+        return super().__enter__()
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         """Exit context manager.
@@ -1042,7 +1042,10 @@ class SSHClientBase(api.ExecHelper):
             cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
 
             remote.logger.log(
-                level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n"
+                level=log_level,
+                msg=f"Executing command"
+                f"{'' if not remote._chroot_path else f' (with chroot to: {remote._chroot_path})'}:\n"
+                f"{cmd_for_log!r}\n",
             )
             async_result: SshExecuteAsyncResult = remote._execute_async(
                 command,
@@ -1068,6 +1071,7 @@ class SSHClientBase(api.ExecHelper):
         prep_expected: typing.Tuple[typing.Union[int, proc_enums.ExitCodes], ...] = proc_enums.exit_codes_to_enums(
             expected
         )
+        log_level: int = logging.INFO if verbose else logging.DEBUG
 
         futures: typing.Dict["SSHClientBase", "concurrent.futures.Future[exec_result.ExecResult]"] = {
             remote: get_result(remote) for remote in set(remotes)

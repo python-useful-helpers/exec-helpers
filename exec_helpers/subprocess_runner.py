@@ -87,7 +87,7 @@ class Subprocess(api.ExecHelper):
 
     def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
         """Get context manager."""
-        return super().__enter__()  # type: ignore
+        return super().__enter__()
 
     def _exec_command(  # type: ignore
         self,

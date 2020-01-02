@@ -18,26 +18,13 @@
 
 # Standard Library
 import ast
-import distutils.errors
 import os.path
-import shutil
 import sys
-from distutils.command import build_ext
 
 # External Dependencies
 import setuptools
+import typing
 
-try:
-    import typing
-except ImportError:
-    typing = None
-
-
-try:
-    # noinspection PyPackageRequirements
-    from Cython.Build import cythonize
-except ImportError:
-    cythonize = None
 
 PACKAGE_NAME = "exec_helpers"
 
@@ -49,98 +36,6 @@ with open("requirements.txt") as f:
 
 with open("README.rst") as f:
     LONG_DESCRIPTION = f.read()
-
-
-def _extension(modpath):
-    """Make setuptools.Extension."""
-    source_path = modpath.replace(".", "/") + ".py"
-    return setuptools.Extension(modpath, [source_path])
-
-
-REQUIRES_OPTIMIZATION = [
-    _extension("exec_helpers.async_api.api"),
-    _extension("exec_helpers.async_api.exec_result"),
-    _extension("exec_helpers.async_api.subprocess_runner"),
-
-    _extension("exec_helpers._log_templates"),
-    _extension("exec_helpers._ssh_client_base"),
-    _extension("exec_helpers._subprocess_helpers"),
-
-    _extension("exec_helpers.api"),
-    _extension("exec_helpers.constants"),
-    _extension("exec_helpers.exceptions"),
-    _extension("exec_helpers.exec_result"),
-    _extension("exec_helpers.proc_enums"),
-    setuptools.Extension("exec_helpers._ssh_helpers", ["exec_helpers/_ssh_helpers.pyx"]),
-    setuptools.Extension("exec_helpers.ssh_auth", ["exec_helpers/ssh_auth.pyx"]),
-    _extension("exec_helpers.ssh_client"),
-    _extension("exec_helpers.subprocess_runner"),
-]
-
-if "win32" != sys.platform:
-    REQUIRES_OPTIMIZATION.append(_extension("exec_helpers.__init__"))
-    REQUIRES_OPTIMIZATION.append(_extension("exec_helpers.async_api.__init__"))
-
-# noinspection PyCallingNonCallable
-EXT_MODULES = (
-    cythonize(
-        REQUIRES_OPTIMIZATION,
-        compiler_directives=dict(
-            always_allow_keywords=True, binding=True, embedsignature=True, overflowcheck=True, language_level=3
-        ),
-    )
-    if cythonize is not None
-    else []
-)
-
-
-class BuildFailed(Exception):
-    """For install clear scripts."""
-
-
-class AllowFailRepair(build_ext.build_ext):
-    """This class allows C extension building to fail and repairs init."""
-
-    def run(self):
-        """Run.
-
-        :raises BuildFailed: Build is failed and clean python code should be used.
-        """
-        try:
-            build_ext.build_ext.run(self)
-
-            # Copy __init__.py back to repair package.
-            build_dir = os.path.abspath(self.build_lib)
-            root_dir = os.path.abspath(os.path.join(__file__, ".."))
-            target_dir = build_dir if not self.inplace else root_dir
-
-            src_file = os.path.join(PACKAGE_NAME, "__init__.py")
-
-            src = os.path.join(root_dir, src_file)
-            dst = os.path.join(target_dir, src_file)
-
-            if src != dst:
-                shutil.copyfile(src, dst)
-        except (
-            distutils.errors.DistutilsPlatformError,
-            FileNotFoundError,
-        ):
-            raise BuildFailed()
-
-    def build_extension(self, ext):
-        """build_extension.
-
-        :raises BuildFailed: Build is failed and clean python code should be used.
-        """
-        try:
-            build_ext.build_ext.build_extension(self, ext)
-        except (
-            distutils.errors.CCompilerError,
-            distutils.errors.DistutilsExecError,
-            distutils.errors.DistutilsPlatformError,
-            ValueError,
-        ):
-            raise BuildFailed()
 
 
 # noinspection PyUnresolvedReferences
@@ -236,7 +131,8 @@ XML_DEPS = ["defusedxml"]
 LXML_DEPS = ["lxml!=3.7.0"]
 YAML_DEPS = ["PyYAML>=3.12"]
 
-SETUP_ARGS = dict(
+
+setuptools.setup(
     name="exec-helpers",
     author=VARIABLES["__author__"],
     author_email=VARIABLES["__author_email__"],
@@ -262,7 +158,7 @@ SETUP_ARGS = dict(
         "!=36.2.0",
         "setuptools_scm",
     ],
-    use_scm_version={'write_to': 'exec_helpers/_version.py'},
+    use_scm_version={"write_to": "exec_helpers/_version.py"},
     install_requires=REQUIRED,
     extras_require={
         "xml": XML_DEPS,
@@ -273,14 +169,3 @@ SETUP_ARGS = dict(
     },
     package_data={PACKAGE_NAME: ["py.typed"]},
 )
-if cythonize is not None:
-    SETUP_ARGS["ext_modules"] = EXT_MODULES
-    SETUP_ARGS["cmdclass"] = dict(build_ext=AllowFailRepair)
-
-try:
-    setuptools.setup(**SETUP_ARGS)
-except BuildFailed:
-    print("*" * 80 + "\n" "* Build Failed!\n" "* Use clear scripts version.\n" "*" * 80 + "\n")
-    del SETUP_ARGS["ext_modules"]
-    del SETUP_ARGS["cmdclass"]
-    setuptools.setup(**SETUP_ARGS)

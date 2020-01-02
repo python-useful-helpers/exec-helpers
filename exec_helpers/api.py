@@ -108,7 +108,11 @@ def mask_command(text: str, rules: str) -> str:
     return "".join(masked)
 
 
-class ExecHelper(metaclass=abc.ABCMeta):
+class ExecHelper(
+    typing.Callable[..., exec_result.ExecResult],  # type: ignore
+    typing.ContextManager["ExecHelper"],
+    metaclass=abc.ABCMeta,
+):
     """ExecHelper global API."""
 
     __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
@@ -354,8 +358,13 @@ class ExecHelper(metaclass=abc.ABCMeta):
         .. versionchanged:: 2.1.0 Allow parallel calls
         """
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        log_level: int = logging.INFO if verbose else logging.DEBUG
 
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n")
+        self.logger.log(
+            level=log_level,
+            msg=f"Executing command{'' if not self._chroot_path else f' (with chroot to: {self._chroot_path})'}:\n"
+            f"{cmd_for_log!r}\n",
+        )
 
         async_result: ExecuteAsyncResult = self._execute_async(
             command,
@@ -376,8 +385,7 @@ class ExecHelper(metaclass=abc.ABCMeta):
             stdin=stdin,
             **kwargs,
         )
-        message = f"Command {result.cmd!r} exit code: {result.exit_code!s}"
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
+        self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
     def __call__(

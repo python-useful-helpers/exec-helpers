@@ -49,16 +49,16 @@ class _ChRootContext(api._ChRootContext):  # pylint: disable=protected-access
         super(_ChRootContext, self).__init__(conn=conn, path=path)
 
     async def __aenter__(self) -> None:
-        await self._conn.__aenter__()  # type: ignore
+        await self._conn.__aenter__()
         self._chroot_status = self._conn._chroot_path
         self._conn._chroot_path = self._path
 
     async def __aexit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         self._conn._chroot_path = self._chroot_status
-        await self._conn.__aexit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+        await self._conn.__aexit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)
 
 
-class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
+class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metaclass=abc.ABCMeta):
     """Subprocess helper with timeouts and lock-free FIFO."""
 
     __slots__ = ("__alock",)
@@ -77,7 +77,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
 
     def __enter__(self) -> "ExecHelper":  # pylint: disable=useless-super-delegation
         """Get context manager."""
-        return super().__enter__()  # type: ignore
+        return super().__enter__()
 
     async def __aenter__(self) -> "ExecHelper":
         """Async context manager."""
@@ -213,8 +213,13 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        log_level: int = logging.INFO if verbose else logging.DEBUG
 
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=f"Executing command:\n{cmd_for_log!r}\n")
+        self.logger.log(
+            level=log_level,
+            msg=f"Executing command{'' if not self._chroot_path else f' (with chroot to: {self._chroot_path})'}:\n"
+            f"{cmd_for_log!r}\n",
+        )
 
         async_result: api.ExecuteAsyncResult = await self._execute_async(
             command,
@@ -235,8 +240,7 @@ class ExecHelper(api.ExecHelper, metaclass=abc.ABCMeta):
             stdin=stdin,
             **kwargs,
         )
-        message: str = f"Command {result.cmd!r} exit code: {result.exit_code!s}"
-        self.logger.log(level=logging.INFO if verbose else logging.DEBUG, msg=message)
+        self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
     async def __call__(  # type: ignore
