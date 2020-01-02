@@ -52,6 +52,19 @@ from ._ssh_helpers import SSHConfig
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
+_OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
+_OptionalSSHConfigArgT = typing.Union[
+    str,
+    paramiko.SSHConfig,
+    typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+    HostsSSHConfigs,
+    None,
+]
+_SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
+_OptionalTimeoutT = typing.Union[int, float, None]
+_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+
+
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
     """Advanced retry on exceptions."""
 
@@ -178,14 +191,8 @@ class SSHClientBase(api.ExecHelper):
         private_keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
-        ssh_config: typing.Union[
-            str,
-            paramiko.SSHConfig,
-            typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-            HostsSSHConfigs,
-            None,
-        ] = None,
-        ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
+        ssh_config: _OptionalSSHConfigArgT = None,
+        ssh_auth_map: _OptionalSSHAuthMapT = None,
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
         keepalive: typing.Union[int, bool] = 1,
     ) -> None:
@@ -296,7 +303,7 @@ class SSHClientBase(api.ExecHelper):
 
         # Build connection chain once and use it for connection later
         if sock is None:
-            self.__conn_chain: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]] = self.__build_connection_chain()
+            self.__conn_chain: _SSHConnChainT = self.__build_connection_chain()
         else:
             self.__conn_chain = []
 
@@ -310,8 +317,8 @@ class SSHClientBase(api.ExecHelper):
             )
         )
 
-    def __build_connection_chain(self) -> typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]:
-        conn_chain: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]] = []
+    def __build_connection_chain(self) -> _SSHConnChainT:
+        conn_chain: _SSHConnChainT = []
 
         config = self.ssh_config[self.hostname]
         default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
@@ -627,7 +634,7 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         *,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
@@ -718,11 +725,11 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         async_result: SshExecuteAsyncResult,
-        timeout: typing.Union[int, float, None],
+        timeout: _OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -795,6 +802,286 @@ class SSHClientBase(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    def execute(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 2.1.0 Allow parallel calls
+        """
+        return super().execute(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            get_pty=get_pty,
+            width=width,
+            height=height,
+            **kwargs,
+        )
+
+    def __call__(
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 2.1.0 Allow parallel calls
+        """
+        return super().__call__(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            get_pty=get_pty,
+            width=width,
+            height=height,
+            **kwargs,
+        )
+
+    def check_call(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: typing.Optional[str] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        raise_on_err: bool = True,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and check for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param error_info: Text for error details, if fail happens
+        :type error_info: typing.Optional[str]
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :param raise_on_err: Raise exception on unexpected return code
+        :type raise_on_err: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        """
+        return super().check_call(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            error_info=error_info,
+            expected=expected,
+            raise_on_err=raise_on_err,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            get_pty=get_pty,
+            width=width,
+            height=height,
+            exception_class=exception_class,
+            **kwargs,
+        )
+
+    def check_stderr(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: typing.Optional[str] = None,
+        raise_on_err: bool = True,
+        *,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command expecting return code 0 and empty STDERR.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param error_info: Text for error details, if fail happens
+        :type error_info: typing.Optional[str]
+        :param raise_on_err: Raise exception on unexpected return code
+        :type raise_on_err: bool
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code or stderr presents
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        """
+        return super().check_stderr(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            error_info=error_info,
+            raise_on_err=raise_on_err,
+            expected=expected,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            get_pty=get_pty,
+            width=width,
+            height=height,
+            exception_class=exception_class,
+            **kwargs,
+        )
+
     def _get_proxy_channel(self, port: typing.Optional[int], ssh_config: SSHConfig,) -> paramiko.Channel:
         """Get ssh proxy channel.
 
@@ -822,14 +1109,8 @@ class SSHClientBase(api.ExecHelper):
         *,
         auth: typing.Optional[ssh_auth.SSHAuth] = None,
         verbose: bool = True,
-        ssh_config: typing.Union[
-            str,
-            paramiko.SSHConfig,
-            typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-            HostsSSHConfigs,
-            None,
-        ] = None,
-        ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]] = None,
+        ssh_config: _OptionalSSHConfigArgT = None,
+        ssh_auth_map: _OptionalSSHAuthMapT = None,
         keepalive: typing.Union[int, bool] = 1,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
@@ -897,8 +1178,8 @@ class SSHClientBase(api.ExecHelper):
         port: typing.Optional[int] = None,
         target_port: typing.Optional[int] = None,
         verbose: bool = False,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         log_mask_re: typing.Optional[str] = None,
@@ -980,11 +1261,11 @@ class SSHClientBase(api.ExecHelper):
         cls,
         remotes: typing.Iterable["SSHClientBase"],
         command: str,
-        timeout: typing.Union[int, float, None] = constants.DEFAULT_TIMEOUT,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         verbose: bool = False,

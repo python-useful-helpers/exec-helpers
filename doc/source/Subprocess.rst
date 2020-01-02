@@ -55,7 +55,7 @@ API: Subprocess
         .. Note:: Enter and exit main context manager is produced as well.
         .. versionadded:: 4.1.0
 
-    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, cwd=None, env=None, **kwargs)
 
         Execute command and wait for return code.
 
@@ -71,9 +71,13 @@ API: Subprocess
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
+        :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
+        :type open_stderr: ``bool``
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :param env: Defines the environment variables for the new process.
+        :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -83,7 +87,7 @@ API: Subprocess
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 stdin data
 
-    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, **kwargs)
+    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, cwd=None, env=None, **kwargs)
 
         Execute command and wait for return code.
 
@@ -99,16 +103,20 @@ API: Subprocess
         :param stdin: pass STDIN text to the process
         :type stdin: ``typing.Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
+        :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
+        :type open_stderr: ``bool``
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :param env: Defines the environment variables for the new process.
+        :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. note:: stdin channel is closed after the input processing
         .. versionadded:: 3.3.0
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, cwd=None, env=None, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
 
@@ -133,6 +141,10 @@ API: Subprocess
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :param env: Defines the environment variables for the new process.
+        :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult
@@ -144,7 +156,7 @@ API: Subprocess
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, cwd=None, env=None, exception_class=CalledProcessError, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -169,6 +181,10 @@ API: Subprocess
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :param env: Defines the environment variables for the new process.
+        :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[CalledProcessError]
         :rtype: ExecResult

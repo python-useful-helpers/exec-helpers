@@ -31,6 +31,10 @@ class SSHClient(SSHClientBase):
 
     __slots__ = ()
 
+    def __enter__(self) -> "SSHClient":  # pylint: disable=useless-super-delegation
+        """Get context manager."""
+        return super().__enter__()
+
     @staticmethod
     def _path_esc(path: str) -> str:
         """Escape space character in the path.

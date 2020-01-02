@@ -33,8 +33,17 @@ import threaded
 from exec_helpers import _log_templates
 from exec_helpers import _subprocess_helpers
 from exec_helpers import api
+from exec_helpers import constants
+from exec_helpers import proc_enums
 from exec_helpers import exceptions
 from exec_helpers import exec_result
+
+
+_EnvT = typing.Optional[
+    typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
+]
+_OptionalTimeoutT = typing.Union[int, float, None]
+_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
 
 
 # noinspection PyTypeHints
@@ -93,11 +102,11 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
-        timeout: typing.Union[int, float, None],
+        timeout: _OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: typing.Union[bytes, str, bytearray, None] = None,
+        stdin: _OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -191,9 +200,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: typing.Optional[
-            typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
-        ] = None,
+        env: _EnvT = None,
         **kwargs: typing.Any,
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -276,3 +283,267 @@ class Subprocess(api.ExecHelper):
             process_stdin = None
 
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
+
+    def execute(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: _EnvT = None,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 2.1.0 Allow parallel calls
+        """
+        return super().execute(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            **kwargs,
+        )
+
+    def __call__(
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: _EnvT = None,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and wait for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 2.1.0 Allow parallel calls
+        """
+        return super().__call__(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            **kwargs,
+        )
+
+    def check_call(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: typing.Optional[str] = None,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        raise_on_err: bool = True,
+        *,
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: _EnvT = None,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command and check for return code.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param error_info: Text for error details, if fail happens
+        :type error_info: typing.Optional[str]
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :param raise_on_err: Raise exception on unexpected return code
+        :type raise_on_err: bool
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        """
+        return super().check_call(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            error_info=error_info,
+            expected=expected,
+            raise_on_err=raise_on_err,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            exception_class=exception_class,
+            **kwargs,
+        )
+
+    def check_stderr(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        verbose: bool = False,
+        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: typing.Optional[str] = None,
+        raise_on_err: bool = True,
+        *,
+        expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]] = (proc_enums.EXPECTED,),
+        log_mask_re: typing.Optional[str] = None,
+        stdin: _OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        env: _EnvT = None,
+        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        **kwargs: typing.Any,
+    ) -> exec_result.ExecResult:
+        """Execute command expecting return code 0 and empty STDERR.
+
+        :param command: Command for execution
+        :type command: str
+        :param verbose: Produce log.info records for command call and output
+        :type verbose: bool
+        :param timeout: Timeout for command execution.
+        :type timeout: typing.Union[int, float, None]
+        :param error_info: Text for error details, if fail happens
+        :type error_info: typing.Optional[str]
+        :param raise_on_err: Raise exception on unexpected return code
+        :type raise_on_err: bool
+        :param expected: expected return codes (0 by default)
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :param log_mask_re: regex lookup rule to mask command for logger.
+                            all MATCHED groups will be replaced by '<*masked*>'
+        :type log_mask_re: typing.Optional[str]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execution result
+        :rtype: ExecResult
+        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises CalledProcessError: Unexpected exit code or stderr presents
+
+        .. versionchanged:: 1.2.0 default timeout 1 hour
+        .. versionchanged:: 3.2.0 Exception class can be substituted
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        """
+        return super().check_stderr(
+            command=command,
+            verbose=verbose,
+            timeout=timeout,
+            error_info=error_info,
+            raise_on_err=raise_on_err,
+            expected=expected,
+            log_mask_re=log_mask_re,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            exception_class=exception_class,
+            **kwargs,
+        )
