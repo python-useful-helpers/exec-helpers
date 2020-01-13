@@ -218,30 +218,30 @@ def test_010_check_stdin_closed(paramiko_ssh_client, chan_makefile, auto_add_pol
 
 def test_011_execute_async_chroot_cmd(ssh, ssh_transport_channel):
     """Command-only chroot path."""
-    ssh._execute_async(command, chroot_path="/")
+    ssh._execute_async(command, chroot_path="/mnt")
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+            mock.call.exec_command(f'chroot /mnt sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
         )
     )
 
 
 def test_012_execute_async_chroot_context(ssh, ssh_transport_channel):
     """Context-managed chroot path."""
-    with ssh.chroot("/"):
+    with ssh.chroot("/mnt"):
         ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+            mock.call.exec_command(f'chroot /mnt sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
         )
     )
 
 
 def test_013_execute_async_no_chroot_context(ssh, ssh_transport_channel):
     """Context-managed chroot path override."""
-    ssh._chroot_path = "/"
+    ssh._chroot_path = "/mnt"
 
     with ssh.chroot(None):
         ssh._execute_async(command)
@@ -250,12 +250,12 @@ def test_013_execute_async_no_chroot_context(ssh, ssh_transport_channel):
 
 def test_012_execute_async_chroot_path(ssh, ssh_transport_channel):
     """Command-only chroot path."""
-    with ssh.chroot(pathlib.Path("/")):
+    with ssh.chroot(pathlib.Path("/mnt")):
         ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
         (
             mock.call.makefile_stderr("rb"),
-            mock.call.exec_command(f'chroot / sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+            mock.call.exec_command(f'chroot /mnt sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
         )
     )
 
@@ -266,3 +266,12 @@ def test_013_execute_async_chroot_path_invalid_type(ssh, ssh_transport_channel):
         with ssh.chroot(...):
             ssh._execute_async(command)
         assert str(exc.value) == f"path={...!r} is not instance of Optional[Union[str, pathlib.Path]]"
+
+
+def test_014_execute_async_no_chroot_root(ssh, ssh_transport_channel):
+    """Context-managed chroot path override."""
+    ssh._chroot_path = "/mnt"
+
+    with ssh.chroot("/"):
+        ssh._execute_async(command)
+    ssh_transport_channel.assert_has_calls((mock.call.makefile_stderr("rb"), mock.call.exec_command(f"{command}\n")))

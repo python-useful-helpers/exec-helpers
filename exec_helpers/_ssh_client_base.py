@@ -1323,11 +1323,11 @@ class SSHClientBase(api.ExecHelper):
             # pylint: disable=protected-access
             cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
 
+            target_path: typing.Optional[str] = kwargs.get("chroot_path", remote._chroot_path)
+            chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
+
             remote.logger.log(
-                level=log_level,
-                msg=f"Executing command"
-                f"{'' if not remote._chroot_path else f' (with chroot to: {remote._chroot_path})'}:\n"
-                f"{cmd_for_log!r}\n",
+                level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n",
             )
             async_result: SshExecuteAsyncResult = remote._execute_async(
                 command,

@@ -220,10 +220,11 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
         log_level: int = logging.INFO if verbose else logging.DEBUG
 
+        target_path: typing.Optional[str] = kwargs.get("chroot_path", self._chroot_path)
+        chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
+
         self.logger.log(
-            level=log_level,
-            msg=f"Executing command{'' if not self._chroot_path else f' (with chroot to: {self._chroot_path})'}:\n"
-            f"{cmd_for_log!r}\n",
+            level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n",
         )
 
         async_result: api.ExecuteAsyncResult = await self._execute_async(

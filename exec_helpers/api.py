@@ -236,10 +236,11 @@ class ExecHelper(
         :param chroot_path: path to make chroot for execution
         :return: final command, includes chroot, if required
         """
-        if any((chroot_path, self._chroot_path)):
-            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
+        target_path: typing.Optional[str] = chroot_path if chroot_path else self._chroot_path
+        if target_path and target_path != "/":
+            chroot_dst: str = shlex.quote(target_path.strip())
             quoted_command = shlex.quote(cmd)
-            return f'chroot {target_path} sh -c {shlex.quote(f"eval {quoted_command}")}'
+            return f'chroot {chroot_dst} sh -c {shlex.quote(f"eval {quoted_command}")}'
         return cmd
 
     @abc.abstractmethod
@@ -363,10 +364,11 @@ class ExecHelper(
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
         log_level: int = logging.INFO if verbose else logging.DEBUG
 
+        target_path: typing.Optional[str] = kwargs.get("chroot_path", self._chroot_path)
+        chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
+
         self.logger.log(
-            level=log_level,
-            msg=f"Executing command{'' if not self._chroot_path else f' (with chroot to: {self._chroot_path})'}:\n"
-            f"{cmd_for_log!r}\n",
+            level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n",
         )
 
         async_result: ExecuteAsyncResult = self._execute_async(
