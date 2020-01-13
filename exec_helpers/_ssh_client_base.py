@@ -22,10 +22,13 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult")
 import concurrent.futures
 import copy
 import datetime
+import getpass
 import logging
+import os
 import shlex
 import socket
 import stat
+import sys
 import time
 import typing
 import warnings
@@ -292,9 +295,11 @@ class SSHClientBase(api.ExecHelper):
 
         # Init super with host and real port and username
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
+        log_username: typing.Optional[str] = self.__get_user_for_log(real_auth)
+
         super(SSHClientBase, self).__init__(
             logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}").getChild(
-                f"({real_auth.username}@{host}:{self.__port})"
+                f"({log_username}@{host}:{self.__port})"
             )
         )
 
@@ -309,6 +314,20 @@ class SSHClientBase(api.ExecHelper):
             self.__conn_chain = []
 
         self.__connect()
+
+    @staticmethod
+    def __get_user_for_log(real_auth: ssh_auth.SSHAuth) -> typing.Optional[str]:  # pragma: no cover
+        if real_auth.username is not None:
+            return real_auth.username
+        # noinspection PyBroadException
+        try:
+            if sys.platform != "win32":
+                import pwd  # pylint: disable=import-outside-toplevel
+
+                return pwd.getpwuid(os.getuid()).pw_name  # Correct for not windows only
+            return getpass.getuser()
+        except Exception:
+            return None
 
     def __rebuild_ssh_config(self) -> None:
         """Rebuild main ssh config from available information."""
@@ -514,6 +533,7 @@ class SSHClientBase(api.ExecHelper):
 
     def __enter__(self) -> "SSHClientBase":  # pylint: disable=useless-super-delegation
         """Get context manager."""
+        # noinspection PyTypeChecker
         return super().__enter__()
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
