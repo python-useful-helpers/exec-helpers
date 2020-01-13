@@ -322,9 +322,10 @@ class SSHClientBase(api.ExecHelper):
         # noinspection PyBroadException
         try:
             if sys.platform != "win32":
-                import pwd  # pylint: disable=import-outside-toplevel
+                import pwd  # pylint: disable=import-outside-toplevel,import-error
 
-                return pwd.getpwuid(os.getuid()).pw_name  # Correct for not windows only
+                uid: int = os.getuid()  # pylint: disable=no-member
+                return pwd.getpwuid(uid).pw_name  # Correct for not windows only
             return getpass.getuser()
         except Exception:
             return None
