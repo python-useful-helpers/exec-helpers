@@ -50,6 +50,7 @@ Pros:
     Python 3.6
     Python 3.7
     Python 3.8
+    Python 3.9
 
 .. note:: Old pythons: For Python 2.7 and PyPy use versions 1.x.x, python 3.4 use versions 2.x.x, python 3.5 and PyPy 3.5 use versions 3.x.x
 
