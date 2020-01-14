@@ -556,6 +556,7 @@ class ExecResult:
         with self.stdout_lock:
             return self.__deserialize(fmt="yaml")
 
+    # noinspection PyUnresolvedReferences
     @property
     def stdout_xml(self) -> "xml.etree.ElementTree.Element":
         """XML from stdout.

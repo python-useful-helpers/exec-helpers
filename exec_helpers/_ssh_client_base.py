@@ -24,11 +24,9 @@ import copy
 import datetime
 import getpass
 import logging
-import os
 import shlex
 import socket
 import stat
-import sys
 import time
 import typing
 import warnings
@@ -238,7 +236,7 @@ class SSHClientBase(api.ExecHelper):
             for proxy connection auth information is collected from SSHConfig
             if ssh_auth_map record is not available
 
-        .. versionchanged:: 6.0.0 private_keys, auth and vebose became keyword-only arguments
+        .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
         .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
         .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
@@ -263,7 +261,10 @@ class SSHClientBase(api.ExecHelper):
 
         # Save resolved hostname and port
         self.__hostname: str = config.hostname
-        self.__port: int = port if port is not None else config.port if config.port is not None else 22
+        if port is not None:
+            self.__port: int = port
+        else:
+            self.__port = config.port if config.port is not None else 22
 
         # Store initial auth mapping
         self.__auth_mapping = ssh_auth.SSHAuthMapping(ssh_auth_map)
@@ -295,11 +296,11 @@ class SSHClientBase(api.ExecHelper):
 
         # Init super with host and real port and username
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
-        log_username: typing.Optional[str] = self.__get_user_for_log(real_auth)
+        log_username: str = real_auth.username if real_auth.username is not None else getpass.getuser()
 
-        super(SSHClientBase, self).__init__(
+        super().__init__(
             logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}").getChild(
-                f"({log_username}@{host}:{self.__port})"
+                f"({log_username}@{host}:{self.port})"
             )
         )
 
@@ -314,21 +315,6 @@ class SSHClientBase(api.ExecHelper):
             self.__conn_chain = []
 
         self.__connect()
-
-    @staticmethod
-    def __get_user_for_log(real_auth: ssh_auth.SSHAuth) -> typing.Optional[str]:  # pragma: no cover
-        if real_auth.username is not None:
-            return real_auth.username
-        # noinspection PyBroadException
-        try:
-            if sys.platform != "win32":
-                import pwd  # pylint: disable=import-outside-toplevel,import-error
-
-                uid: int = os.getuid()  # pylint: disable=no-member
-                return pwd.getpwuid(uid).pw_name  # Correct for not windows only
-            return getpass.getuser()
-        except Exception:
-            return None
 
     def __rebuild_ssh_config(self) -> None:
         """Rebuild main ssh config from available information."""
@@ -1116,7 +1102,10 @@ class SSHClientBase(api.ExecHelper):
 
         .. versionadded:: 6.0.0
         """
-        dest_port: int = port if port is not None else ssh_config.port if ssh_config.port is not None else 22
+        if port is not None:
+            dest_port: int = port
+        else:
+            dest_port = ssh_config.port if ssh_config.port is not None else 22
 
         return self._ssh.get_transport().open_channel(
             kind="direct-tcpip", dest_addr=(ssh_config.hostname, dest_port), src_addr=(self.hostname, 0)
@@ -1257,8 +1246,7 @@ class SSHClientBase(api.ExecHelper):
 
         if target_port is not None:  # pragma: no cover
             warnings.warn(
-                f'"target_port" argument was renamed to "port". '
-                f"Old version will be droppped in the next major release.",
+                f'"target_port" argument was renamed to "port". Old version will be dropped in the next major release.',
                 DeprecationWarning,
             )
             port = target_port
@@ -1343,13 +1331,8 @@ class SSHClientBase(api.ExecHelper):
             """
             # pylint: disable=protected-access
             cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
+            remote._log_command_execute(command=command, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
 
-            target_path: typing.Optional[str] = kwargs.get("chroot_path", remote._chroot_path)
-            chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
-
-            remote.logger.log(
-                level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n",
-            )
             async_result: SshExecuteAsyncResult = remote._execute_async(
                 command,
                 stdin=stdin,

@@ -142,7 +142,7 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
         :type timeout: typing.Union[int, float]
         """
         message: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
-        super(ExecHelperTimeoutError, self).__init__(message, result=result, timeout=timeout)
+        super().__init__(message, result=result, timeout=timeout)
 
 
 class CalledProcessError(ExecCalledProcessError):

@@ -50,6 +50,7 @@ ExecuteAsyncResult = typing.NamedTuple(
 _OptionalTimeoutT = typing.Union[int, float, None]
 _OptionalStdinT = typing.Union[bytes, str, bytearray, None]
 _ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
+_CalledProcessErrorSubClass = typing.Type[exceptions.CalledProcessError]
 
 
 # noinspection PyProtectedMember
@@ -323,6 +324,21 @@ class ExecHelper(
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
 
+    def _log_command_execute(
+        self,
+        command: str,
+        log_mask_re: typing.Union[str, None],
+        log_level: int,
+        chroot_path: typing.Union[str, None],
+        **_: typing.Any,
+    ) -> None:
+        """Log command execution."""
+        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        target_path: typing.Optional[str] = chroot_path if chroot_path is not None else self._chroot_path
+        chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
+
+        self.logger.log(level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n")
+
     def execute(
         self,
         command: str,
@@ -361,16 +377,8 @@ class ExecHelper(
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
         log_level: int = logging.INFO if verbose else logging.DEBUG
-
-        target_path: typing.Optional[str] = kwargs.get("chroot_path", self._chroot_path)
-        chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
-
-        self.logger.log(
-            level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n",
-        )
-
+        self._log_command_execute(command=command, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
         async_result: ExecuteAsyncResult = self._execute_async(
             command,
             verbose=verbose,
@@ -454,7 +462,7 @@ class ExecHelper(
         stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: _CalledProcessErrorSubClass = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -528,7 +536,7 @@ class ExecHelper(
         stdin: _OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: _CalledProcessErrorSubClass = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
@@ -595,7 +603,7 @@ class ExecHelper(
         error_info: typing.Optional[str],
         raise_on_err: bool,
         expected: typing.Iterable[_ExitCodeT],
-        exception_class: "typing.Type[exceptions.CalledProcessError]",
+        exception_class: _CalledProcessErrorSubClass,
     ) -> exec_result.ExecResult:
         """Internal check_stderr logic (synchronous)."""
         append: str = error_info + "\n" if error_info else ""

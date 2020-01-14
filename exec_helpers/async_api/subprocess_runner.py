@@ -61,7 +61,7 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
     @property
     def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stdin  # type: ignore
+        return super().stdin  # type: ignore
 
     @property
     def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
@@ -273,7 +273,7 @@ class Subprocess(api.ExecHelper):
                 process.stdin.close()  # type: ignore
             except OSError as exc:
                 if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
-                    pass
+                    pass  # PIPE already closed
                 else:
                     process.kill()
                     raise

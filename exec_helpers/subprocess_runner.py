@@ -47,6 +47,7 @@ _EnvT = typing.Optional[
 _OptionalTimeoutT = typing.Union[int, float, None]
 _OptionalStdinT = typing.Union[bytes, str, bytearray, None]
 _ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
+_OptionalIOBytes = typing.Optional[typing.IO[bytes]]
 
 
 # noinspection PyTypeHints
@@ -59,17 +60,17 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore
 
     @property
-    def stdin(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
+    def stdin(self) -> _OptionalIOBytes:  # type: ignore
         """Override original NamedTuple with proper typing."""
-        return super(SubprocessExecuteAsyncResult, self).stdin
+        return super().stdin
 
     @property
-    def stderr(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
+    def stderr(self) -> _OptionalIOBytes:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super().stderr
 
     @property
-    def stdout(self) -> "typing.Optional[typing.IO[bytes]]":  # type: ignore
+    def stdout(self) -> _OptionalIOBytes:  # type: ignore
         """Override original NamedTuple with proper typing."""
         return super().stdout
 
@@ -287,7 +288,7 @@ class Subprocess(api.ExecHelper):
                 process.stdin.close()
             except OSError as exc:
                 if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
-                    pass
+                    pass  # PIPE already closed
                 else:
                     process.kill()
                     raise
