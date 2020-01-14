@@ -28,7 +28,6 @@ import typing
 import paramiko  # type: ignore
 
 LOGGER = logging.getLogger(__name__)
-logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
 class SSHAuth:

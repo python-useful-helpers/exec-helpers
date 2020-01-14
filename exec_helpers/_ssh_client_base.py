@@ -50,8 +50,6 @@ from exec_helpers import ssh_auth
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
 
-logging.getLogger("paramiko").setLevel(logging.WARNING)
-
 
 _OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
 _OptionalSSHConfigArgT = typing.Union[
