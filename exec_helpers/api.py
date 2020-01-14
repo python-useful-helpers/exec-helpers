@@ -329,7 +329,7 @@ class ExecHelper(
         command: str,
         log_mask_re: typing.Union[str, None],
         log_level: int,
-        chroot_path: typing.Union[str, None],
+        chroot_path: typing.Optional[str] = None,
         **_: typing.Any,
     ) -> None:
         """Log command execution."""
