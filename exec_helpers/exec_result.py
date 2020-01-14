@@ -56,6 +56,9 @@ if typing.TYPE_CHECKING:
     import xml.etree.ElementTree  # nosec  # for typing only
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
+_OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
+_OptLoggerT = typing.Optional[logging.Logger]
+_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -156,9 +159,9 @@ class ExecResult:
         self,
         cmd: str,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        stdout: typing.Optional[typing.Iterable[bytes]] = None,
-        stderr: typing.Optional[typing.Iterable[bytes]] = None,
-        exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID,
+        stdout: _OptBytesIterableT = None,
+        stderr: _OptBytesIterableT = None,
+        exit_code: _ExitCodeT = proc_enums.INVALID,
         *,
         started: typing.Optional[datetime.datetime] = None,
     ) -> None:
@@ -198,7 +201,7 @@ class ExecResult:
         else:
             self._stderr = ()
 
-        self.__exit_code: typing.Union[int, proc_enums.ExitCodes] = proc_enums.INVALID
+        self.__exit_code: _ExitCodeT = proc_enums.INVALID
         self.__timestamp: typing.Optional[datetime.datetime] = None
         self.exit_code = exit_code
 
@@ -297,9 +300,7 @@ class ExecResult:
         return self._stderr
 
     @staticmethod
-    def _poll_stream(
-        src: typing.Iterable[bytes], log: typing.Optional[logging.Logger] = None, verbose: bool = False
-    ) -> typing.List[bytes]:
+    def _poll_stream(src: typing.Iterable[bytes], log: _OptLoggerT = None, verbose: bool = False) -> typing.List[bytes]:
         """Stream poll helper.
 
         :param src: source to read from
@@ -318,12 +319,7 @@ class ExecResult:
                     )
         return dst
 
-    def read_stdout(
-        self,
-        src: typing.Optional[typing.Iterable[bytes]] = None,
-        log: typing.Optional[logging.Logger] = None,
-        verbose: bool = False,
-    ) -> None:
+    def read_stdout(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
         """Read stdout file-like object to stdout.
 
         :param src: source
@@ -345,12 +341,7 @@ class ExecResult:
             self._stdout_str = self._stdout_brief = None
             self._stdout += tuple(self._poll_stream(src, log, verbose))
 
-    def read_stderr(
-        self,
-        src: typing.Optional[typing.Iterable[bytes]] = None,
-        log: typing.Optional[logging.Logger] = None,
-        verbose: bool = False,
-    ) -> None:
+    def read_stderr(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
         """Read stderr file-like object to stdout.
 
         :param src: source
@@ -459,7 +450,7 @@ class ExecResult:
         return LinesAccessProxy(self.stderr)
 
     @property
-    def exit_code(self) -> typing.Union[int, proc_enums.ExitCodes]:
+    def exit_code(self) -> _ExitCodeT:
         """Return(exit) code of command.
 
         :return: exit code
@@ -468,7 +459,7 @@ class ExecResult:
         return self.__exit_code
 
     @exit_code.setter
-    def exit_code(self, new_val: typing.Union[int, proc_enums.ExitCodes]) -> None:
+    def exit_code(self, new_val: _ExitCodeT) -> None:
         """Return(exit) code of command.
 
         :param new_val: new exit code
