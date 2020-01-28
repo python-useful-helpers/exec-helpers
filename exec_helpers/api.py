@@ -19,7 +19,14 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
-__all__ = ("ExecHelper", "ExecuteAsyncResult", "mask_command")
+__all__ = (
+    "ExecHelper",
+    "ExecuteAsyncResult",
+    "mask_command",
+    "CalledProcessErrorSubClassT",
+    "OptionalStdinT",
+    "OptionalTimeoutT",
+)
 
 # Standard Library
 import abc
@@ -36,6 +43,7 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
+from exec_helpers.proc_enums import ExitCodeT
 
 ExecuteAsyncResult = typing.NamedTuple(
     "ExecuteAsyncResult",
@@ -47,10 +55,9 @@ ExecuteAsyncResult = typing.NamedTuple(
         ("started", datetime.datetime),
     ],
 )
-_OptionalTimeoutT = typing.Union[int, float, None]
-_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
-_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
-_CalledProcessErrorSubClass = typing.Type[exceptions.CalledProcessError]
+OptionalTimeoutT = typing.Union[int, float, None]
+OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+CalledProcessErrorSubClassT = typing.Type[exceptions.CalledProcessError]
 
 
 # noinspection PyProtectedMember
@@ -249,7 +256,7 @@ class ExecHelper(
         self,
         command: str,
         *,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
@@ -293,11 +300,11 @@ class ExecHelper(
         self,
         command: str,
         async_result: ExecuteAsyncResult,
-        timeout: _OptionalTimeoutT,
+        timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -343,10 +350,10 @@ class ExecHelper(
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -405,10 +412,10 @@ class ExecHelper(
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -453,16 +460,16 @@ class ExecHelper(
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: _CalledProcessErrorSubClass = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -501,7 +508,7 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        expected_codes: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = self.execute(
             command,
             verbose=verbose,
@@ -527,16 +534,16 @@ class ExecHelper(
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: _CalledProcessErrorSubClass = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
@@ -602,8 +609,8 @@ class ExecHelper(
         result: exec_result.ExecResult,
         error_info: typing.Optional[str],
         raise_on_err: bool,
-        expected: typing.Iterable[_ExitCodeT],
-        exception_class: _CalledProcessErrorSubClass,
+        expected: typing.Iterable[ExitCodeT],
+        exception_class: CalledProcessErrorSubClassT,
     ) -> exec_result.ExecResult:
         """Internal check_stderr logic (synchronous)."""
         append: str = error_info + "\n" if error_info else ""

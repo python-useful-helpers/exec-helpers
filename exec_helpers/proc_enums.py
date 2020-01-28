@@ -19,7 +19,7 @@
 Linux signals, Linux & bash return codes.
 """
 
-__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID")
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID", "ExitCodeT")
 
 # Standard Library
 import enum
@@ -170,11 +170,12 @@ class ExitCodes(int, enum.Enum):
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"
 
 
-EXPECTED: typing.Union[int, ExitCodes] = 0 if "win32" == sys.platform else ExitCodes.EX_OK
-INVALID: typing.Union[int, ExitCodes] = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
+ExitCodeT = typing.Union[int, ExitCodes]
+EXPECTED: ExitCodeT = 0 if "win32" == sys.platform else ExitCodes.EX_OK
+INVALID: ExitCodeT = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
 
 
-def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, ExitCodes]:  # pragma: no cover
+def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     """Convert exit code to enum if possible.
 
     :param code: code to convert from
@@ -187,9 +188,7 @@ def exit_code_to_enum(code: typing.Union[int, ExitCodes]) -> typing.Union[int, E
     return code
 
 
-def exit_codes_to_enums(
-    codes: typing.Optional[typing.Iterable[typing.Union[int, ExitCodes]]] = None
-) -> typing.Tuple[typing.Union[int, ExitCodes], ...]:
+def exit_codes_to_enums(codes: typing.Optional[typing.Iterable[ExitCodeT]] = None) -> typing.Sequence[ExitCodeT]:
     """Convert integer exit codes to enums.
 
     :param codes: exit codes to process

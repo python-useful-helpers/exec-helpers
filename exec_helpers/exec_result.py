@@ -29,6 +29,7 @@ import typing
 # Exec-Helpers Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
+from exec_helpers.proc_enums import ExitCodeT
 
 try:
     # noinspection PyPackageRequirements
@@ -58,7 +59,6 @@ if typing.TYPE_CHECKING:
 LOGGER: logging.Logger = logging.getLogger(__name__)
 _OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
 _OptLoggerT = typing.Optional[logging.Logger]
-_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -161,7 +161,7 @@ class ExecResult:
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         stdout: _OptBytesIterableT = None,
         stderr: _OptBytesIterableT = None,
-        exit_code: _ExitCodeT = proc_enums.INVALID,
+        exit_code: ExitCodeT = proc_enums.INVALID,
         *,
         started: typing.Optional[datetime.datetime] = None,
     ) -> None:
@@ -201,7 +201,7 @@ class ExecResult:
         else:
             self._stderr = ()
 
-        self.__exit_code: _ExitCodeT = proc_enums.INVALID
+        self.__exit_code: ExitCodeT = proc_enums.INVALID
         self.__timestamp: typing.Optional[datetime.datetime] = None
         self.exit_code = exit_code
 
@@ -450,7 +450,7 @@ class ExecResult:
         return LinesAccessProxy(self.stderr)
 
     @property
-    def exit_code(self) -> _ExitCodeT:
+    def exit_code(self) -> ExitCodeT:
         """Return(exit) code of command.
 
         :return: exit code
@@ -459,7 +459,7 @@ class ExecResult:
         return self.__exit_code
 
     @exit_code.setter
-    def exit_code(self, new_val: _ExitCodeT) -> None:
+    def exit_code(self, new_val: ExitCodeT) -> None:
         """Return(exit) code of command.
 
         :param new_val: new exit code

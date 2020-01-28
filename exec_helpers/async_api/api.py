@@ -32,11 +32,10 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
-
-
-_OptionalTimeoutT = typing.Union[int, float, None]
-_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
-_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
+from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import OptionalStdinT
+from exec_helpers.api import OptionalTimeoutT
+from exec_helpers.proc_enums import ExitCodeT
 
 
 # noinspection PyProtectedMember
@@ -115,11 +114,11 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         async_result: api.ExecuteAsyncResult,
-        timeout: _OptionalTimeoutT,
+        timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -188,10 +187,10 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -248,10 +247,10 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
@@ -296,16 +295,16 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -342,7 +341,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        expected_codes: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = await self.execute(
             command,
             verbose=verbose,
@@ -368,16 +367,16 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.

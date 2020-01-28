@@ -45,11 +45,14 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
+from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import OptionalStdinT
+from exec_helpers.api import OptionalTimeoutT
+from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
-
 
 _OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
 _OptionalSSHConfigArgT = typing.Union[
@@ -61,9 +64,6 @@ _OptionalSSHConfigArgT = typing.Union[
 ]
 _SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
 _OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
-_OptTimeoutT = typing.Union[int, float, None]
-_OptStdinT = typing.Union[bytes, str, bytearray, None]
-_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
@@ -581,6 +581,7 @@ class SSHClientBase(api.ExecHelper):
         warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
         return self.keepalive_period
 
+    # noinspection PyDeprecation
     @keepalive_mode.setter
     def keepalive_mode(self, period: typing.Union[int, bool]) -> None:
         """Keepalive period change for connection object.
@@ -641,7 +642,7 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         *,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
@@ -732,11 +733,11 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         async_result: SshExecuteAsyncResult,
-        timeout: _OptTimeoutT,
+        timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -813,10 +814,10 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         get_pty: bool = False,
@@ -874,10 +875,10 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         get_pty: bool = False,
@@ -935,19 +936,19 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -1014,19 +1015,19 @@ class SSHClientBase(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
@@ -1188,8 +1189,8 @@ class SSHClientBase(api.ExecHelper):
         port: typing.Optional[int] = None,
         target_port: typing.Optional[int] = None,
         verbose: bool = False,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
-        stdin: _OptStdinT = None,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         log_mask_re: typing.Optional[str] = None,
@@ -1270,11 +1271,11 @@ class SSHClientBase(api.ExecHelper):
         cls,
         remotes: typing.Iterable["SSHClientBase"],
         command: str,
-        timeout: _OptTimeoutT = constants.DEFAULT_TIMEOUT,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        stdin: _OptStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         verbose: bool = False,
@@ -1353,7 +1354,7 @@ class SSHClientBase(api.ExecHelper):
             async_result.interface.close()
             return res
 
-        prep_expected: typing.Sequence[_ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
 
         futures: typing.Dict["SSHClientBase", "concurrent.futures.Future[exec_result.ExecResult]"] = {

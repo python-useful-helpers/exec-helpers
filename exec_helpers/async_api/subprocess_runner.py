@@ -35,15 +35,13 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers import subprocess_runner
+from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import OptionalStdinT
+from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import api
 from exec_helpers.async_api import exec_result
-
-_EnvT = typing.Optional[
-    typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
-]
-_OptionalTimeoutT = typing.Union[int, float, None]
-_OptionalStdinT = typing.Union[bytes, str, bytearray, None]
-_ExitCodeT = typing.Union[int, proc_enums.ExitCodes]
+from exec_helpers.proc_enums import ExitCodeT
+from exec_helpers.subprocess_runner import EnvT
 
 
 # noinspection PyTypeHints,PyTypeChecker
@@ -114,7 +112,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
-        timeout: _OptionalTimeoutT,
+        timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
@@ -187,13 +185,13 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         *,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: _EnvT = None,
-        env_patch: _EnvT = None,
+        env: EnvT = None,
+        env_patch: EnvT = None,
         **kwargs: typing.Any,
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -286,15 +284,15 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: _EnvT = None,
-        env_patch: _EnvT = None,
+        env: EnvT = None,
+        env_patch: EnvT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -347,15 +345,15 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: _EnvT = None,
-        env_patch: _EnvT = None,
+        env: EnvT = None,
+        env_patch: EnvT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -408,19 +406,19 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: _EnvT = None,
-        env_patch: _EnvT = None,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        env: EnvT = None,
+        env_patch: EnvT = None,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
@@ -487,19 +485,19 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         verbose: bool = False,
-        timeout: _OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[_ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: _OptionalStdinT = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: typing.Optional[typing.Union[str, bytes]] = None,
-        env: _EnvT = None,
-        env_patch: _EnvT = None,
-        exception_class: "typing.Type[exceptions.CalledProcessError]" = exceptions.CalledProcessError,
+        env: EnvT = None,
+        env_patch: EnvT = None,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
