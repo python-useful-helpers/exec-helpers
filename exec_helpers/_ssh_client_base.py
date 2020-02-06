@@ -36,7 +36,7 @@ import paramiko  # type: ignore
 import tenacity  # type: ignore
 import threaded
 
-# Exec-Helpers Implementation
+# Package Implementation
 from exec_helpers import _log_templates
 from exec_helpers import _ssh_helpers
 from exec_helpers import api

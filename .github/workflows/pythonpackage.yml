@@ -22,11 +22,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel
         pip install -r CI_REQUIREMENTS.txt
-        pip install --upgrade asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar pytest-cov
+        pip install --upgrade asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar pytest-cov coverage[toml]>=5.0
     - name: Build package and install develop
       run: |
         python setup.py develop -v
     - name: Test with pytest
       run: |
-        py.test --cov-config .coveragerc --cov-report= --cov=exec_helpers test
+        py.test --cov-report= --cov=exec_helpers test
         coverage report -m --fail-under 85

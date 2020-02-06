@@ -38,7 +38,7 @@ import shlex
 import threading
 import typing
 
-# Exec-Helpers Implementation
+# Package Implementation
 from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result

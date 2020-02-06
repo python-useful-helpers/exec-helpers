@@ -47,7 +47,7 @@ jobs:
         displayName: 'Install dependencies'
 
       - script: |
-          python setup.py --version
+          python setup.py --version clean
         displayName: 'Generate version file'
 
       - script: |

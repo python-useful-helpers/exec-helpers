@@ -20,5 +20,46 @@ force_single_line = true
 
 import_heading_stdlib = "Standard Library"
 import_heading_thirdparty = "External Dependencies"
-import_heading_firstparty = "Exec-Helpers Implementation"
+import_heading_firstparty = "Package Implementation"
 import_heading_localfolder = "Local Implementation"
+
+[tool.coverage.run]
+omit = ["test/*"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+
+  # Don't complain about missing debug-only code:
+  "def __repr__",
+
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise NotImplementedError",
+
+  # Exclude methods marked as abstract
+  "@abstractmethod",
+
+  # Exclude import statements
+  "^from\b",
+  "^import\b",
+
+  # Exclude variable declarations that are executed when file is loaded
+  "^[a-zA-Z_]+\b\\s=",
+
+  # Code for static analysis is never covered:
+  "if typing.TYPE_CHECKING:",
+
+  # Fallback code with no installed deps is almost impossible to cover properly
+  "except ImportError:",
+
+  # Don't complain if non-runnable code isn't run:
+  "if __name__ == .__main__.:",
+
+  # OS Specific
+  "if platform.system()",
+]
+
+[tool.coverage.json]
+pretty_print = true

@@ -26,7 +26,7 @@ import logging
 import threading
 import typing
 
-# Exec-Helpers Implementation
+# Package Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers.proc_enums import ExitCodeT

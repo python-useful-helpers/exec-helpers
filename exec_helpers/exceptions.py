@@ -27,7 +27,7 @@ __all__ = (
 # Standard Library
 import typing
 
-# Exec-Helpers Implementation
+# Package Implementation
 from exec_helpers import _log_templates
 from exec_helpers import proc_enums
 from exec_helpers.proc_enums import ExitCodeT
