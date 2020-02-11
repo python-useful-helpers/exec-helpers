@@ -143,7 +143,8 @@ class LinesAccessProxy:
         """Repr for debug purposes.
 
         :return: full representation for debug purposes
-        :rtype: str"""
+        :rtype: str
+        """
         return f"{self.__class__.__name__}(data={self._data!r})"
 
 
