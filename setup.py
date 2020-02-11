@@ -63,7 +63,6 @@ def get_simple_vars_from_src(
         * Executable code, including string formatting and comprehensions.
 
     Examples:
-
     >>> string_sample = "a = '1'"
     >>> get_simple_vars_from_src(string_sample)
     {'a': '1'}
@@ -160,7 +159,7 @@ setuptools.setup(
         "wheel",
         "setuptools_scm[toml]>=3.4",
     ],
-    use_scm_version={"write_to": "exec_helpers/_version.py"},
+    use_scm_version={"write_to": f'{PACKAGE_NAME}/_version.py'},
     install_requires=REQUIRED,
     extras_require={
         "xml": XML_DEPS,
