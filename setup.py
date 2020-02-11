@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog
+#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -157,7 +157,8 @@ setuptools.setup(
         "setuptools >= 21.0.0,!=24.0.0,"
         "!=34.0.0,!=34.0.1,!=34.0.2,!=34.0.3,!=34.1.0,!=34.1.1,!=34.2.0,!=34.3.0,!=34.3.1,!=34.3.2,"
         "!=36.2.0",
-        "setuptools_scm",
+        "wheel",
+        "setuptools_scm[toml]>=3.4",
     ],
     use_scm_version={"write_to": "exec_helpers/_version.py"},
     install_requires=REQUIRED,

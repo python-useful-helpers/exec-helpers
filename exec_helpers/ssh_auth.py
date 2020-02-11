@@ -202,7 +202,11 @@ class SSHAuth:
         raise paramiko.AuthenticationException(msg)
 
     def __hash__(self) -> int:
-        """Hash for usage as dict keys and comparison."""
+        """Hash for usage as dict keys and comparison.
+
+        :return: hash value
+        :rtype: int
+        """
         return hash(
             (
                 self.__class__,
@@ -218,7 +222,9 @@ class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
+        :type other: typing.Any
         :return: current object equals other
+        :rtype: bool
         """
         return hash(self) == hash(other)
 
@@ -226,7 +232,9 @@ class SSHAuth:
         """Comparison helper.
 
         :param other: other SSHAuth instance
+        :type other: typing.Any
         :return: current object not equals other
+        :rtype: bool
         """
         return not self.__eq__(other)
 
@@ -234,7 +242,9 @@ class SSHAuth:
         """Helper for copy.deepcopy.
 
         :param memo: copy.deeepcopy() memodict
+        :type memo: typing.Any
         :return: re-constructed copy of current class
+        :rtype: SSHAuth
         """
         # noinspection PyTypeChecker
         return self.__class__(
@@ -245,14 +255,22 @@ class SSHAuth:
         )
 
     def __copy__(self) -> "SSHAuth":
-        """Copy self."""
+        """Copy self.
+
+        :return: re-constructed copy of current class
+        :rtype: SSHAuth
+        """
         # noinspection PyTypeChecker
         return self.__class__(
             username=self.username, password=self.__password, key=self.__keys[self.__key_index], keys=self.__keys
         )
 
     def __repr__(self) -> str:
-        """Representation for debug purposes."""
+        """Representation for debug purposes.
+
+        :return: partial instance fields in human-friendly format
+        :rtype: str
+        """
         if self.__keys[self.__key_index] is None:
             _key: typing.Optional[str] = None
         else:
@@ -276,7 +294,11 @@ class SSHAuth:
         )
 
     def __str__(self) -> str:
-        """Representation for debug purposes."""
+        """Representation for debug purposes.
+
+        :return: user name related to class instance
+        :rtype: str
+        """
         return f"{self.__class__.__name__} for {self.username}"
 
 

@@ -124,15 +124,26 @@ class LinesAccessProxy:
         raise TypeError(f"Unexpected key type: {item!r}")
 
     def __len__(self) -> int:  # pragma: no cover
-        """Data len."""
+        """Data len.
+
+        :return: strings count
+        :rtype: int
+        """
         return len(self._data)
 
     def __str__(self) -> str:  # pragma: no cover
-        """Get string for debug purposes."""
+        """Get string for debug purposes.
+
+        :return: string representation for full content
+        :rtype: str
+        """
         return self[:]
 
     def __repr__(self) -> str:
-        """Repr for debug purposes."""
+        """Repr for debug purposes.
+
+        :return: full representation for debug purposes
+        :rtype: str"""
         return f"{self.__class__.__name__}(data={self._data!r})"
 
 
@@ -271,6 +282,7 @@ class ExecResult:
     def cmd(self) -> str:
         """Executed command.
 
+        :return: command string
         :rtype: str
         """
         return self.__cmd
@@ -279,6 +291,7 @@ class ExecResult:
     def stdin(self) -> typing.Optional[str]:
         """Stdin input as string.
 
+        :return: STDIN content if applicable.
         :rtype: typing.Optional[str]
         """
         return self.__stdin
@@ -287,6 +300,7 @@ class ExecResult:
     def stdout(self) -> typing.Tuple[bytes, ...]:
         """Stdout output as list of binaries.
 
+        :return: STDOUT as tuple of binary strings
         :rtype: typing.Tuple[bytes, ...]
         """
         return self._stdout
@@ -295,6 +309,7 @@ class ExecResult:
     def stderr(self) -> typing.Tuple[bytes, ...]:
         """Stderr output as list of binaries.
 
+        :return: STDERR as tuple of binary strings
         :rtype: typing.Tuple[bytes, ...]
         """
         return self._stderr
@@ -307,6 +322,7 @@ class ExecResult:
         :param log: logger instance, if line per line logging expected
         :param verbose: use INFO level for logging
         :return: read result as list of bytes strings
+        :rtype: typing.List[bytes]
         """
         dst: typing.List[bytes] = []
         with contextlib.suppress(IOError):
@@ -369,6 +385,7 @@ class ExecResult:
 
         Sometimes logging is used to log binary objects too (example: Session),
         and for debug purposes we can use this as data source.
+        :return: full STDOUT output as bytearray.
         :rtype: bytearray
         """
         with self.stdout_lock:
@@ -378,6 +395,7 @@ class ExecResult:
     def stderr_bin(self) -> bytearray:
         """Stderr in binary format.
 
+        :return: full STDERR output as bytearray.
         :rtype: bytearray
         """
         with self.stderr_lock:
@@ -387,6 +405,7 @@ class ExecResult:
     def stdout_str(self) -> str:
         """Stdout output as string.
 
+        :return: full STDOUT output.
         :rtype: str
         """
         with self.stdout_lock:
@@ -398,6 +417,7 @@ class ExecResult:
     def stderr_str(self) -> str:
         """Stderr output as string.
 
+        :return: full STDERR output.
         :rtype: str
         """
         with self.stderr_lock:
@@ -409,6 +429,7 @@ class ExecResult:
     def stdout_brief(self) -> str:
         """Brief stdout output (mostly for exceptions).
 
+        :return: up to 3 first and 3 last lines of output.
         :rtype: str
         """
         with self.stdout_lock:
@@ -420,6 +441,7 @@ class ExecResult:
     def stderr_brief(self) -> str:
         """Brief stderr output (mostly for exceptions).
 
+        :return: up to 3 first and 3 last lines of output.
         :rtype: str
         """
         with self.stderr_lock:
@@ -431,6 +453,7 @@ class ExecResult:
     def stdout_lines(self) -> LinesAccessProxy:
         """Get lines by indexes.
 
+        :return: proxy object for lines join by line indexes
         :rtype: LinesAccessProxy
 
         Usage example:
@@ -445,6 +468,7 @@ class ExecResult:
     def stderr_lines(self) -> LinesAccessProxy:
         """Magic to get lines human-friendly way.
 
+        :return: proxy object for lines join by line indexes
         :rtype: LinesAccessProxy
         """
         return LinesAccessProxy(self.stderr)
@@ -483,6 +507,7 @@ class ExecResult:
         """Timestamp of command start.
 
         :return: timestamp from command start, if applicable
+        :rtype: typing.Optional[datetime.datetime]
         .. versionadded:: 4.0.0
         """
         return self.__started
@@ -528,6 +553,7 @@ class ExecResult:
     ) -> typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any], str, int, float, bool, None]:
         """JSON from stdout.
 
+        :return: decoded JSON document
         :rtype: typing.Any
         :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
@@ -538,6 +564,7 @@ class ExecResult:
     def stdout_yaml(self) -> typing.Any:
         """YAML from stdout.
 
+        :return: decoded YAML document
         :rtype: typing.Any
         :raises DeserializeValueError: STDOUT can not be deserialized as YAML
         :raises AttributeError: no any yaml parser installed
@@ -552,6 +579,7 @@ class ExecResult:
     def stdout_xml(self) -> "xml.etree.ElementTree.Element":
         """XML from stdout.
 
+        :return: decoded XML document
         :rtype: xml.etree.ElementTree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
         :raises AttributeError: defusedxml is not installed
@@ -565,6 +593,7 @@ class ExecResult:
     def stdout_lxml(self) -> "lxml.etree.Element":
         """XML from stdout using lxml.
 
+        :return: decoded XML document
         :rtype: lxml.etree.Element
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
         :raises AttributeError: lxml is not installed
@@ -577,7 +606,11 @@ class ExecResult:
             return self.__deserialize(fmt="lxml")
 
     def __dir__(self) -> typing.List[str]:
-        """Override dir for IDE and as source for getitem checks."""
+        """Override dir for IDE and as source for getitem checks.
+
+        :return: list with public attributes and methods
+        :rtype: typing.List[str]
+        """
         content = [
             "cmd",
             "stdout",
@@ -616,7 +649,11 @@ class ExecResult:
         raise IndexError(f'"{item}" not found in {dir(self)}')
 
     def __repr__(self) -> str:
-        """Representation for debugging."""
+        """Representation for debugging.
+
+        :return: full representation for debug purposes
+        :rtype: str
+        """
         if self.started:
             started = f" started={self.started!r},"
         else:
@@ -654,7 +691,11 @@ class ExecResult:
         return msg
 
     def __str__(self) -> str:
-        """Representation for logging."""
+        """Representation for logging.
+
+        :return: string representation with brief information
+        :rtype: str
+        """
         if self.started:
             started = f"\tstarted={self.started.strftime('%Y-%m-%d %H:%M:%S')},\n"
             if self.timestamp:
@@ -680,7 +721,9 @@ class ExecResult:
         """Comparision.
 
         :param other: other ExecResult instance.
+        :type other: typing.Any
         :return: current object equals other
+        :rtype: bool
         """
         return (
             self.__class__ is other.__class__
@@ -698,10 +741,16 @@ class ExecResult:
         """Comparision.
 
         :param other: other ExecResult instance.
+        :type other: typing.Any
         :return: current object not equals other
+        :rtype: bool
         """
         return not self.__eq__(other)
 
     def __hash__(self) -> int:
-        """Hash for usage as dict key and in sets."""
+        """Hash for usage as dict key and in sets.
+
+        :return: calculated hash value
+        :rtype: int
+        """
         return hash((self.__class__, self.cmd, self.stdin, self.stdout, self.stderr, self.exit_code))

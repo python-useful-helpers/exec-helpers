@@ -101,8 +101,11 @@ def mask_command(text: str, rules: str) -> str:
     """Mask part of text using rules.
 
     :param text: source text
+    :type text: str
     :param rules: regex rules to mask.
+    :type rules: str
     :return: source with all MATCHED groups replaced by '<*masked*>'
+    :rtype: str
     """
     masked: typing.List[str] = []
 
@@ -151,6 +154,7 @@ class ExecHelper(
         """Instance logger access.
 
         :return: logger instance
+        :rtype: logging.Logger
         """
         return self.__logger
 
@@ -205,6 +209,9 @@ class ExecHelper(
     def __enter__(self) -> "ExecHelper":
         """Get context manager.
 
+        :return: exec helper instance with entered context manager
+        :rtype: ExecHelper
+
         .. versionchanged:: 1.1.0 lock on enter
         """
         self.lock.acquire()
@@ -241,8 +248,11 @@ class ExecHelper(
         """Prepare command: cower chroot and other cases.
 
         :param cmd: main command
+        :type cmd: str
         :param chroot_path: path to make chroot for execution
+        :type chroot_path: typing.Optional[str]
         :return: final command, includes chroot, if required
+        :rtype: str
         """
         target_path: typing.Optional[str] = chroot_path if chroot_path else self._chroot_path
         if target_path and target_path != "/":
@@ -612,7 +622,22 @@ class ExecHelper(
         expected: typing.Iterable[ExitCodeT],
         exception_class: CalledProcessErrorSubClassT,
     ) -> exec_result.ExecResult:
-        """Internal check_stderr logic (synchronous)."""
+        """Internal check_stderr logic (synchronous).
+
+        :param result: execution result for validation
+        :type result: exec_result.ExecResult
+        :param error_info: optional additional error information
+        :type error_info: typing.Optional[str]
+        :param raise_on_err: raise `exception_class` in case of error
+        :type raise_on_err: bool
+        :param expected: iterable expected exit codes
+        :type expected: typing.Iterable[ExitCodeT]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: CalledProcessErrorSubClassT
+        :return: execution result
+        :rtype: exec_result.ExecResult
+        :raises CalledProcessErrorSubClassT: stderr presents and raise_on_err enabled
+        """
         append: str = error_info + "\n" if error_info else ""
         if result.stderr:
             message = (

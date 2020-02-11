@@ -40,7 +40,9 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
         """Do not crash on already stopped process.
 
         :param proc: target process
+        :type proc: psutil.Process
         :param kill: use SIGKILL instead of SIGTERM
+        :type kill: bool
         """
         with contextlib.suppress(psutil.NoSuchProcess):
             if kill:

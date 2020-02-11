@@ -32,7 +32,11 @@ class SSHClient(SSHClientBase):
     __slots__ = ()
 
     def __enter__(self) -> "SSHClient":  # pylint: disable=useless-super-delegation
-        """Get context manager."""
+        """Get context manager.
+
+        :return: SSHClient instance with entered context
+        :rtype: SSHClient
+        """
         return super().__enter__()
 
     @staticmethod

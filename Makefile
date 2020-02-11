@@ -30,7 +30,7 @@ bdist_deb: clean fresh_toolchain check_docs
 	$$FPM -s python -t deb --python-pip pip .
 
 bdist_windows: clean fresh_toolchain check_docs
-	pip install wheel==0.26
+	pip install -U setuptools wheel
 	pip install -U -r build_requirements.txt
 	python setup.py bdist_wheel bdist_wininst
 

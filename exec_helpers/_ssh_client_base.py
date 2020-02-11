@@ -77,7 +77,9 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
         """Retry on exceptions, except several types.
 
         :param retry_on: Exceptions to retry on
+        :type retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
         :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
+        :type reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
         """
         super().__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
@@ -88,22 +90,38 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
 
     @property
     def interface(self) -> paramiko.Channel:
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: control interface
+        :rtype: paramiko.Channel
+        """
         return super().interface
 
     @property
     def stdin(self) -> paramiko.ChannelFile:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDIN interface
+        :rtype: paramiko.ChannelFile
+        """
         return super().stdin
 
     @property
     def stderr(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDERR interface
+        :rtype: typing.Optional[paramiko.ChannelFile]
+        """
         return super().stderr
 
     @property
     def stdout(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDOUT interface
+        :rtype: typing.Optional[paramiko.ChannelFile]
+        """
         return super().stdout
 
 
@@ -179,7 +197,11 @@ class SSHClientBase(api.ExecHelper):
     )
 
     def __hash__(self) -> int:
-        """Hash for usage as dict keys."""
+        """Hash for usage as dict keys.
+
+        :return: hash describing current connection
+        :rtype: int
+        """
         return hash((self.__class__, self.hostname, self.port, self.auth))
 
     def __init__(
@@ -324,6 +346,11 @@ class SSHClientBase(api.ExecHelper):
         )
 
     def __build_connection_chain(self) -> _SSHConnChainT:
+        """Build ssh connection chain to reach destination host.
+
+        :return: list of SSHConfig - SSHAuth pairs in order of connection
+        :rtype: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
+        """
         conn_chain: _SSHConnChainT = []
 
         config = self.ssh_config[self.hostname]
@@ -347,6 +374,7 @@ class SSHClientBase(api.ExecHelper):
         Calls outside SSHClient and child classes is sign of incorrect design.
         Change is completely disallowed.
 
+        :return: SSH authorisation object for current connection.
         :rtype: ssh_auth.SSHAuth
         """
         return self.__auth_mapping[self.hostname]
@@ -355,6 +383,7 @@ class SSHClientBase(api.ExecHelper):
     def hostname(self) -> str:
         """Connected remote host name.
 
+        :return: remote hostname
         :rtype: str
         """
         return self.__hostname
@@ -363,6 +392,7 @@ class SSHClientBase(api.ExecHelper):
     def port(self) -> int:
         """Connected remote port number.
 
+        :return: remote port
         :rtype: int
         """
         return self.__port
@@ -371,6 +401,7 @@ class SSHClientBase(api.ExecHelper):
     def ssh_config(self) -> HostsSSHConfigs:
         """SSH connection config.
 
+        :return: SSH config for connection
         :rtype: HostsSSHConfigs
         """
         return copy.deepcopy(self.__ssh_config)
@@ -379,16 +410,25 @@ class SSHClientBase(api.ExecHelper):
     def is_alive(self) -> bool:
         """Paramiko status: ready to use|reconnect required.
 
+        :return: Paramiko transport is available
         :rtype: bool
         """
         return self.__ssh.get_transport() is not None
 
     def __repr__(self) -> str:
-        """Representation for debug purposes."""
+        """Representation for debug purposes.
+
+        :return: brief connection information for debug purposes
+        :rtype: str
+        """
         return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth={self.auth!r})"
 
     def __str__(self) -> str:  # pragma: no cover
-        """Representation for debug purposes."""
+        """Representation for debug purposes.
+
+        :return: short string with connetction information
+        :rtype: str
+        """
         return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) " f"for user {self.auth.username}"
 
     @property
@@ -518,7 +558,11 @@ class SSHClientBase(api.ExecHelper):
         self.__sftp = None
 
     def __enter__(self) -> "SSHClientBase":  # pylint: disable=useless-super-delegation
-        """Get context manager."""
+        """Get context manager.
+
+        :return: exec helper instance with entered context manager
+        :rtype: SSHClientBase
+        """
         # noinspection PyTypeChecker
         return super().__enter__()
 
@@ -705,7 +749,7 @@ class SSHClientBase(api.ExecHelper):
         started = datetime.datetime.utcnow()
         if self.sudo_mode:
             chan.exec_command(cmd)  # nosec  # Sanitize on caller side
-            if stdout.channel.closed is False:
+            if not stdout.channel.closed:
                 # noinspection PyTypeChecker
                 self.auth.enter_password(_stdin)
                 _stdin.flush()

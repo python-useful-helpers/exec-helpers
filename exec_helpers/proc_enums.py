@@ -64,12 +64,16 @@ class SigNum(enum.IntEnum):
     SIGSYS = 31  # Bad system call.
 
     def __str__(self) -> str:
-        """Representation for logs."""
+        """Representation for logs.
+
+        :return: string with value in decimal, hex and text information
+        :rtype: str
+        """
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"  # pragma: no cover
 
 
 @enum.unique
-class ExitCodes(int, enum.Enum):
+class ExitCodes(enum.IntEnum):
     """Linux & bash exit codes."""
 
     EX_OK = 0  # successful termination
@@ -166,7 +170,11 @@ class ExitCodes(int, enum.Enum):
     SH_EX_SIGSYS = 128 + SigNum.SIGSYS
 
     def __str__(self) -> str:
-        """Representation for logs."""
+        """Representation for logs.
+
+        :return: string with value in decimal, hex and text information
+        :rtype: str
+        """
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"
 
 

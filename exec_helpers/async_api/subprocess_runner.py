@@ -51,24 +51,40 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
     # pylint: disable=no-member
     @property
     def interface(self) -> asyncio.subprocess.Process:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: control interface
+        :rtype: asyncio.subprocess.Process
+        """
         return super().interface  # type: ignore
 
     # pylint: enable=no-member
 
     @property
     def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDIN interface
+        :rtype: typing.Optional[asyncio.StreamWriter]
+        """
         return super().stdin  # type: ignore
 
     @property
     def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDERR interface
+        :rtype: typing.Optional[typing.AsyncIterable[bytes]]
+        """
         return super().stderr  # type: ignore
 
     @property
     def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDOUT interface
+        :rtype: typing.Optional[typing.AsyncIterable[bytes]]
+        """
         return super(SubprocessExecuteAsyncResult, self).stdout  # type: ignore
 
 
@@ -99,12 +115,20 @@ class Subprocess(api.ExecHelper):
         super().__init__(logger=logger, log_mask_re=log_mask_re)
 
     async def __aenter__(self) -> "Subprocess":
-        """Async context manager."""
+        """Async context manager.
+
+        :return: exec helper instance with async entered context manager
+        :rtype: Subprocess
+        """
         # noinspection PyTypeChecker
         return await super().__aenter__()
 
     def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
-        """Get context manager."""
+        """Get context manager.
+
+        :return: exec helper instance with entered context manager
+        :rtype: Subprocess
+        """
         # noinspection PyTypeChecker
         return super().__enter__()
 

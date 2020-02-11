@@ -56,22 +56,38 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
 
     @property
     def interface(self) -> "subprocess.Popen[bytes]":
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: control interface
+        :rtype: subprocess.Popen[bytes]
+        """
         return super().interface  # type: ignore
 
     @property
     def stdin(self) -> _OptionalIOBytes:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDIN interface
+        :rtype: typing.Optional[typing.IO[bytes]]
+        """
         return super().stdin
 
     @property
     def stderr(self) -> _OptionalIOBytes:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDERR interface
+        :rtype: typing.Optional[typing.IO[bytes]]
+        """
         return super().stderr
 
     @property
     def stdout(self) -> _OptionalIOBytes:  # type: ignore
-        """Override original NamedTuple with proper typing."""
+        """Override original NamedTuple with proper typing.
+
+        :return: STDOUT interface
+        :rtype: typing.Optional[typing.IO[bytes]]
+        """
         return super().stdout
 
 
@@ -99,7 +115,11 @@ class Subprocess(api.ExecHelper):
         )
 
     def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
-        """Get context manager."""
+        """Get context manager.
+
+        :return: exec helper instance with entered context manager
+        :rtype: Subprocess
+        """
         # noinspection PyTypeChecker
         return super().__enter__()
 

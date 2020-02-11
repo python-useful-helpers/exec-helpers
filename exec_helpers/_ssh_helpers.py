@@ -20,6 +20,13 @@ SSH_CONFIG_FILE_USER = pathlib.Path("~/.ssh/config").expanduser()
 
 @functools.lru_cache(maxsize=128, typed=True)
 def _parse_ssh_config_file(file_path: pathlib.Path) -> typing.Optional[paramiko.SSHConfig]:
+    """Parse ssh config file.
+
+    :param file_path: file path for parsing
+    :type file_path: pathlib.Path
+    :return: SSH config if file found and parsed else None
+    :rtype: typing.Optional[paramiko.SSHConfig]
+    """
     if not file_path.exists():
         return None
     # noinspection PyBroadException
@@ -99,7 +106,11 @@ class SSHConfig:
         self.__controlmaster: typing.Optional[bool] = self._parse_optional_bool(controlmaster)
 
     def __hash__(self) -> int:  # pragma: no cover
-        """Hash for caching possibility."""
+        """Hash for caching possibility.
+
+        :return: hash for instance
+        :rtype: int
+        """
         return hash(
             (
                 self.__class__,
@@ -115,7 +126,11 @@ class SSHConfig:
         )
 
     def __repr__(self) -> str:
-        """Debug support."""
+        """Debug support.
+
+        :return: string representation allowing to re-construct object
+        :rtype: str
+        """
         return (
             f"{self.__class__.__name__}("
             f"hostname={self.hostname!r}, "
@@ -158,12 +173,26 @@ class SSHConfig:
 
     @staticmethod
     def _parse_optional_int(value: typing.Optional[typing.Union[str, int]]) -> typing.Optional[int]:
+        """Parse optional integer field in source data.
+
+        :param value: value to process
+        :type value: typing.Optional[typing.Union[str, int]]
+        :return: integer value if applicable
+        :rtype: typing.Optional[int]
+        """
         if value is None or isinstance(value, int):
             return value
         return int(value)
 
     @staticmethod
     def _parse_optional_bool(value: typing.Optional[typing.Union[str, bool]]) -> typing.Optional[bool]:
+        """Parse optional bool field in source data.
+
+        :param value: value to process
+        :type value: typing.Optional[typing.Union[str, bool]]
+        :return: boolean value if applicable
+        :rtype: typing.Optional[bool]
+        """
         if value is None or isinstance(value, bool):
             return value
         return value.lower() == "yes"
@@ -177,8 +206,12 @@ class SSHConfig:
     ) -> "SSHConfig":
         """Construct config from Paramiko parsed file.
 
-        :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict,
+        :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict
+        :type ssh_config: typing.Union[
+            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+        ]
         :return: SSHConfig with supported values from config
+        :rtype: SSHConfig
         """
         return cls(
             hostname=ssh_config["hostname"],  # type: ignore
@@ -241,7 +274,11 @@ class SSHConfig:
             "SSHConfig", typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], typing.Any
         ],
     ) -> typing.Union[bool, type(NotImplemented)]:  # type: ignore
-        """Equality check."""
+        """Equality check.
+
+        :return: other equals self
+        :rtype: bool
+        """
         if isinstance(other, SSHConfig):
             return all(
                 getattr(self, attr) == getattr(other, attr)
@@ -262,44 +299,76 @@ class SSHConfig:
 
     @property
     def hostname(self) -> str:
-        """Hostname which config relates."""
+        """Hostname which config relates.
+
+        :return: remote hostname
+        :rtype: str
+        """
         return self.__hostname
 
     @property
     def port(self) -> typing.Optional[int]:
-        """Remote port."""
+        """Remote port.
+
+        :return: propagated remote port for connection
+        :rtype: typing.Optional[int]
+        """
         return self.__port
 
     @property
     def user(self) -> typing.Optional[str]:
-        """Remote user."""
+        """Remote user.
+
+        :return: propagated username for connection
+        :rtype: typing.Optional[str]
+        """
         return self.__user
 
     @property
     def identityfile(self) -> typing.Optional[typing.List[str]]:
-        """Connection ssh keys file names."""
+        """Connection ssh keys file names.
+
+        :return: list of ssh private keys names
+        :rtype: typing.Optional[typing.List[str]]
+        """
         if self.__identityfile is None:
             return None
         return self.__identityfile.copy()
 
     @property
     def proxycommand(self) -> typing.Optional[str]:
-        """Proxy command for ssh connection."""
+        """Proxy command for ssh connection.
+
+        :return: command to be executed for socket creation if applicable
+        :rtype: typing.Optional[str]
+        """
         return self.__proxycommand
 
     @property
     def proxyjump(self) -> typing.Optional[str]:
-        """Proxy host name."""
+        """Proxy host name.
+
+        :return: proxy hostname if applicable
+        :rtype: typing.Optional[str]
+        """
         return self.__proxyjump
 
     @property
     def controlpath(self) -> typing.Optional[str]:
-        """Shared socket file path for re-using connection by multiple instances."""
+        """Shared socket file path for re-using connection by multiple instances.
+
+        :return: shared socket filesystem path
+        :rtype: typing.Optional[str]
+        """
         return self.__controlpath
 
     @property
     def controlmaster(self) -> typing.Optional[bool]:
-        """Re-use connection."""
+        """Re-use connection.
+
+        :return: connection should be re-used if possible
+        :rtype: typing.Optional[bool]
+        """
         return self.__controlmaster
 
 

@@ -82,11 +82,19 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self.__alock: typing.Optional[asyncio.Lock] = None
 
     def __enter__(self) -> "ExecHelper":  # pylint: disable=useless-super-delegation
-        """Get context manager."""
+        """Get context manager.
+
+        :return: exec helper instance with entered context manager
+        :rtype: ExecHelper
+        """
         return super().__enter__()
 
     async def __aenter__(self) -> "ExecHelper":
-        """Async context manager."""
+        """Async context manager.
+
+        :return: exec helper instance with async entered context manager
+        :rtype: ExecHelper
+        """
         if self.__alock is None:
             self.__alock = asyncio.Lock()
         await self.__alock.acquire()
