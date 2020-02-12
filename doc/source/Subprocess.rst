@@ -75,7 +75,7 @@ API: Subprocess
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :type cwd: ``typing.Optional[typing.Union[str, bytes, pathlib.Path]]``
         :param env: Defines the environment variables for the new process.
         :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -109,7 +109,7 @@ API: Subprocess
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :type cwd: ``typing.Optional[typing.Union[str, bytes, pathlib.Path]]``
         :param env: Defines the environment variables for the new process.
         :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -146,7 +146,7 @@ API: Subprocess
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :type cwd: ``typing.Optional[typing.Union[str, bytes, pathlib.Path]]``
         :param env: Defines the environment variables for the new process.
         :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -188,7 +188,7 @@ API: Subprocess
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``typing.Optional[typing.Union[str, bytes]]``
+        :type cwd: ``typing.Optional[typing.Union[str, bytes, pathlib.Path]]``
         :param env: Defines the environment variables for the new process.
         :type env: ``typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]``
         :param env_patch: Defines the environment variables to ADD for the new process.

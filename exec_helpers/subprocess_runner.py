@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 #
@@ -16,7 +16,7 @@
 
 """Python subprocess.Popen wrapper."""
 
-__all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT")
+__all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT", "CwdT")
 
 # Standard Library
 import concurrent.futures
@@ -25,6 +25,7 @@ import datetime
 import errno
 import logging
 import os
+import pathlib
 import subprocess  # nosec  # Expected usage
 import typing
 
@@ -47,6 +48,7 @@ from exec_helpers.proc_enums import ExitCodeT
 EnvT = typing.Optional[
     typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
 ]
+CwdT = typing.Optional[typing.Union[str, bytes, pathlib.Path]]
 _OptionalIOBytes = typing.Optional[typing.IO[bytes]]
 
 
@@ -224,7 +226,7 @@ class Subprocess(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
-        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
         **kwargs: typing.Any,
@@ -242,7 +244,7 @@ class Subprocess(api.ExecHelper):
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -327,7 +329,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
         **kwargs: typing.Any,
@@ -350,7 +352,7 @@ class Subprocess(api.ExecHelper):
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -388,7 +390,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
         **kwargs: typing.Any,
@@ -411,7 +413,7 @@ class Subprocess(api.ExecHelper):
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -452,7 +454,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
         exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
@@ -482,7 +484,7 @@ class Subprocess(api.ExecHelper):
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param env_patch: Defines the environment variables to ADD for the new process.
@@ -531,7 +533,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: typing.Optional[typing.Union[str, bytes]] = None,
+        cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
         exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
@@ -561,7 +563,7 @@ class Subprocess(api.ExecHelper):
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes]]
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
         :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param env_patch: Defines the environment variables to ADD for the new process.
