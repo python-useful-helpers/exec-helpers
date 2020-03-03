@@ -66,7 +66,7 @@ _OptionalSSHConfigArgT = typing.Union[
 ]
 _SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
 _OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
-_RType = typing.TypeVar('_RType')
+_RType = typing.TypeVar("_RType")
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
@@ -190,6 +190,7 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
     :return: wrapped method
     :rtype: typing.Callable[..., _RType]
     """
+
     @functools.wraps(tgt)
     def wrapper(
         self: typing.Any, path: typing.Union[str, pathlib.Path], *args: typing.Any, **kwargs: typing.Any
@@ -208,6 +209,7 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
         :rtype: typing.Any
         """
         return tgt(self, path=pathlib.PurePath(path).as_posix(), *args, **kwargs)
+
     return wrapper
 
 
