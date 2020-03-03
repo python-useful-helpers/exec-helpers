@@ -20,10 +20,13 @@ __all__ = ("SSHClient",)
 
 # Standard Library
 import os
+import pathlib
 import posixpath
+import typing
 
 # Local Implementation
 from ._ssh_client_base import SSHClientBase
+from ._ssh_client_base import normalize_path
 
 
 class SSHClient(SSHClientBase):
@@ -50,6 +53,7 @@ class SSHClient(SSHClientBase):
         """
         return path.replace(" ", r"\ ")
 
+    @normalize_path
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.
 
@@ -61,6 +65,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"mkdir -p {self._path_esc(path)}\n")
 
+    @normalize_path
     def rm_rf(self, path: str) -> None:
         """Run 'rm -rf path' on remote.
 
@@ -70,56 +75,60 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"rm -rf {self._path_esc(path)}")
 
-    def upload(self, source: str, target: str) -> None:
+    def upload(self, source: typing.Union[str, pathlib.Path], target: typing.Union[str, pathlib.PurePath]) -> None:
         """Upload file(s) from source to target using SFTP session.
 
         :param source: local path
-        :type source: str
+        :type source: typing.Union[str, pathlib.Path]
         :param target: remote path
-        :type target: str
+        :type target: typing.Union[str, pathlib.PurePath]
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
         if self.isdir(target):
             target = posixpath.join(target, os.path.basename(source))
 
-        source = os.path.expanduser(source)
-        if not os.path.isdir(source):
-            self._sftp.put(source, target)
+        tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
+        src = pathlib.Path(source).expanduser().resolve()
+        if not src.is_dir():
+            self._sftp.put(src.as_posix(), target)
             return
 
-        for rootdir, _, files in os.walk(source):
-            targetdir: str = os.path.normpath(os.path.join(target, os.path.relpath(rootdir, source))).replace("\\", "/")
+        for pth in src.glob("**/*"):
+            relative = pth.relative_to(src).as_posix()
+            destination: str = os.path.normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")
+            if pth.is_dir():
+                self.mkdir(destination)
+                continue
 
-            self.mkdir(targetdir)
+            if self.exists(destination):
+                self._sftp.unlink(destination)
+            self._sftp.put(pth.as_posix(), destination)
 
-            for entry in files:
-                local_path: str = os.path.normpath(os.path.join(rootdir, entry))
-                remote_path: str = posixpath.join(targetdir, entry)
-                if self.exists(remote_path):
-                    self._sftp.unlink(remote_path)
-                self._sftp.put(local_path, remote_path)
-
-    def download(self, destination: str, target: str) -> bool:
+    def download(
+        self, destination: typing.Union[str, pathlib.PurePath], target: typing.Union[str, pathlib.Path]
+    ) -> bool:
         """Download file(s) to target from destination.
 
         :param destination: remote path
-        :type destination: str
+        :type destination: typing.Union[str, pathlib.PurePath]
         :param target: local path
-        :type target: str
+        :type target: typing.Union[str, pathlib.Path]
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
         self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")
 
-        if os.path.isdir(target):
-            target = posixpath.join(target, os.path.basename(destination))
+        tgt = pathlib.Path(target).expanduser().resolve()
+        dst = pathlib.PurePath(destination).as_posix()
+        if tgt.is_dir():
+            tgt = tgt.joinpath(os.path.basename(dst))
 
         if not self.isdir(destination):
             if self.exists(destination):
-                self._sftp.get(destination, target)
+                self._sftp.get(dst, tgt.as_posix())
             else:
                 self.logger.debug(f"Can't download {destination} because it does not exist")
         else:
             self.logger.debug(f"Can't download {destination} because it is a directory")
-        return os.path.exists(target)
+        return tgt.exists()

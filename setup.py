@@ -94,13 +94,10 @@ def get_simple_vars_from_src(
     result = {}
 
     for node in ast.iter_child_nodes(tree):
-        if not isinstance(node, ast.Assign):  # We parse assigns only
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast_data):  # We parse assigns only
             continue
         try:
-            if isinstance(node.value, ast_data):
-                value = ast.literal_eval(node.value)
-            else:
-                continue
+            value = ast.literal_eval(node.value)
         except ValueError:
             continue
         for tgt in node.targets:

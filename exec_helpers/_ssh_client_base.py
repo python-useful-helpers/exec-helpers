@@ -16,14 +16,16 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
-__all__ = ("SSHClientBase", "SshExecuteAsyncResult")
+__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "normalize_path")
 
 # Standard Library
 import concurrent.futures
 import copy
 import datetime
+import functools
 import getpass
 import logging
+import pathlib
 import shlex
 import socket
 import stat
@@ -64,6 +66,7 @@ _OptionalSSHConfigArgT = typing.Union[
 ]
 _SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
 _OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
+_RType = typing.TypeVar('_RType')
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
@@ -177,6 +180,35 @@ class _KeepAliveContext(typing.ContextManager[None]):
         # Exit before releasing!
         self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
         self.__ssh.keepalive_mode = self.__keepalive_status
+
+
+def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _RType]:
+    """Decorator to use path argument type-agnostic.
+
+    :param tgt: target method to wrap
+    :type tgt: typing.Callable[..., _RType]
+    :return: wrapped method
+    :rtype: typing.Callable[..., _RType]
+    """
+    @functools.wraps(tgt)
+    def wrapper(
+        self: typing.Any, path: typing.Union[str, pathlib.Path], *args: typing.Any, **kwargs: typing.Any
+    ) -> _RType:
+        """Normalize path type before use in corresponding method.
+
+        :param self: owner instance
+        :type self: typing.Any
+        :param path: target path
+        :type path: typing.Union[str, pathlib.Path]
+        :param args: target method other arguments
+        :type args: typing.Any
+        :param kwargs: target method other arguments
+        :type kwargs: typing.Any
+        :return: wrapped method result
+        :rtype: typing.Any
+        """
+        return tgt(self, path=pathlib.PurePath(path).as_posix(), *args, **kwargs)
+    return wrapper
 
 
 class SSHClientBase(api.ExecHelper):
@@ -1428,6 +1460,7 @@ class SSHClientBase(api.ExecHelper):
             raise exception_class(command, errors, results, expected=prep_expected)
         return results
 
+    @normalize_path
     def open(self, path: str, mode: str = "r") -> paramiko.SFTPFile:
         """Open file on remote using SFTP session.
 
@@ -1440,6 +1473,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return self._sftp.open(path, mode)  # pragma: no cover
 
+    @normalize_path
     def exists(self, path: str) -> bool:
         """Check for file existence using SFTP session.
 
@@ -1454,6 +1488,7 @@ class SSHClientBase(api.ExecHelper):
         except IOError:
             return False
 
+    @normalize_path
     def stat(self, path: str) -> paramiko.sftp_attr.SFTPAttributes:
         """Get stat info for path with following symlinks.
 
@@ -1464,6 +1499,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return self._sftp.stat(path)  # pragma: no cover
 
+    @normalize_path
     def utime(self, path: str, times: typing.Optional[typing.Tuple[int, int]] = None) -> None:
         """Set atime, mtime.
 
@@ -1476,6 +1512,7 @@ class SSHClientBase(api.ExecHelper):
         """
         self._sftp.utime(path, times)  # pragma: no cover
 
+    @normalize_path
     def isfile(self, path: str) -> bool:
         """Check, that path is file using SFTP session.
 
@@ -1490,6 +1527,7 @@ class SSHClientBase(api.ExecHelper):
         except IOError:
             return False
 
+    @normalize_path
     def isdir(self, path: str) -> bool:
         """Check, that path is directory using SFTP session.
 
@@ -1504,6 +1542,7 @@ class SSHClientBase(api.ExecHelper):
         except IOError:
             return False
 
+    @normalize_path
     def islink(self, path: str) -> bool:
         """Check, that path is symlink using SFTP session.
 
@@ -1518,16 +1557,17 @@ class SSHClientBase(api.ExecHelper):
         except IOError:
             return False
 
-    def symlink(self, source: str, dest: str) -> None:
+    def symlink(self, source: typing.Union[str, pathlib.PurePath], dest: typing.Union[str, pathlib.PurePath]) -> None:
         """Produce symbolic link like `os.symlink`.
 
         :param source: source path
-        :type source: str
+        :type source: typing.Union[str, pathlib.PurePath]
         :param dest: source path
-        :type dest: str
+        :type dest: typing.Union[str, pathlib.PurePath]
         """
-        self._sftp.symlink(source, dest)  # pragma: no cover
+        self._sftp.symlink(pathlib.PurePath(source).as_posix(), pathlib.PurePath(dest).as_posix())  # pragma: no cover
 
+    @normalize_path
     def chmod(self, path: str, mode: int) -> None:
         """Change the mode (permissions) of a file like `os.chmod`.
 

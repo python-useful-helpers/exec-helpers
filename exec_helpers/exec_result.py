@@ -525,7 +525,7 @@ class ExecResult:
         """
         try:
             if fmt == "json":
-                return json.loads(self.stdout_str, encoding="utf-8")
+                return json.loads(self.stdout_str)
             if fmt == "yaml":
                 if yaml is not None:
                     if yaml.__with_libyaml__:  # pragma: no cover
