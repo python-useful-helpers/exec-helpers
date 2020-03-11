@@ -290,6 +290,9 @@ class Subprocess(api.ExecHelper):
 
         if stdin is None:
             process_stdin: _OptionalIOBytes = process.stdin
+        elif process.stdin is None:
+            self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
+            process_stdin = None
         else:
             stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
             try:
