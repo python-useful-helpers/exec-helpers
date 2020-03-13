@@ -16,7 +16,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U setuptools virtualenv
           pip install -r CI_REQUIREMENTS.txt
-          pip install -U pytest pytest-sugar pytest-flake8 flake8-bugbear flake8-docstrings
+          pip install -r pytest_requirements.txt
+          pip install -U pytest-flake8 flake8-bugbear flake8-docstrings
         displayName: 'Install dependencies'
 
       - script: |

@@ -44,7 +44,7 @@ jobs:
     displayName: Build and install
 
   - script: |
-      pip install asynctest mock pytest pytest-mock pytest-asyncio pytest-sugar pytest-cov coverage[toml]>=5.0
+      pip install -r pytest_requirements.txt
 
       pytest --junitxml=unit_result.xml --cov=exec_helpers --cov-report=xml --cov-report term
     displayName: PyTest
