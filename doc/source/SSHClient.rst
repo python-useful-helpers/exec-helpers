@@ -17,23 +17,21 @@ API: SSHClient and SSHAuth.
         :param port: remote ssh port
         :type port: ``int``
         :param username: remote username.
-        :type username: ``typing.Optional[str]``
+        :type username: ``Optional[str]``
         :param password: remote password
-        :type password: ``typing.Optional[str]``
-        :param private_keys: private keys for connection
-        :type private_keys: ``typing.Optional[typing.Sequence[paramiko.RSAKey]]``
+        :type password: ``Optional[str]``
         :param auth: credentials for connection
-        :type auth: typing.Optional[SSHAuth]
+        :type auth: Optional[SSHAuth]
         :param verbose: show additional error/warning messages
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
-        :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
+        :type ssh_config: Union[str, paramiko.SSHConfig, Dict[str, Dict[str, Union[str, int, bool, List[str]]]], HostsSSHConfigs, None]
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
+        :type ssh_auth_map: Optional[Union[Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
         :param sock: socket for connection. Useful for ssh proxies support
-        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :type sock: Optional[Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
         :param keepalive: keepalive period
-        :type keepalive: typing.Union[int, bool]
+        :type keepalive: Union[int, bool]
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -48,10 +46,12 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 6.0.0 keepalive exposed to constructor
         .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
         .. versionchanged:: 6.0.0 private_keys is deprecated
+        .. versionchanged:: 7.0.0 private_keys is removed
+        .. versionchanged:: 7.0.0 keepalive_mode is removed
 
     .. py:attribute:: log_mask_re
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
 
         regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
 
@@ -93,7 +93,7 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: keepalive_period
 
-        ``typing.Union[int, bool]``
+        ``Union[int, bool]``
         Keepalive period for connection object. If `0` - close connection on exit from context manager.
 
     .. py:method:: close()
@@ -123,9 +123,9 @@ API: SSHClient and SSHAuth.
         Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+        :type path: Optional[Union[str, pathlib.Path]]
         :return: context manager with selected chroot state inside
-        :rtype: typing.ContextManager
+        :rtype: ContextManager
 
         .. Note:: Enter and exit main context manager is produced as well.
         .. versionadded:: 4.1.0
@@ -135,17 +135,17 @@ API: SSHClient and SSHAuth.
         Context manager getter for sudo operation
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
-        :type enforce: ``typing.Optional[bool]``
-        :rtype: ``typing.ContextManager[None]``
+        :type enforce: ``Optional[bool]``
+        :rtype: ``ContextManager[None]``
 
     .. py:method:: keepalive(enforce=1)
 
         Context manager getter for keepalive operation.
 
         :param enforce: Enforce keepalive period.
-        :type enforce: ``typing.Union[int, bool]``
+        :type enforce: ``Union[int, bool]``
         :return: context manager with selected keepalive state inside
-        :rtype: ``typing.ContextManager[None]``
+        :rtype: ``ContextManager[None]``
 
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
@@ -155,15 +155,15 @@ API: SSHClient and SSHAuth.
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
+        :type log_mask_re: ``Optional[str]``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
@@ -184,15 +184,15 @@ API: SSHClient and SSHAuth.
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
+        :type log_mask_re: ``Optional[str]``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
@@ -213,21 +213,21 @@ API: SSHClient and SSHAuth.
         Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param error_info: Text for error details, if fail happens
-        :type error_info: ``typing.Optional[str]``
+        :type error_info: ``Optional[str]``
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
+        :type log_mask_re: ``Optional[str]``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
@@ -239,7 +239,7 @@ API: SSHClient and SSHAuth.
         :param height: PTY height
         :type height: ``int``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[CalledProcessError]
+        :type exception_class: Type[CalledProcessError]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
@@ -253,21 +253,21 @@ API: SSHClient and SSHAuth.
         Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param error_info: Text for error details, if fail happens
-        :type error_info: ``typing.Optional[str]``
+        :type error_info: ``Optional[str]``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
+        :type log_mask_re: ``Optional[str]``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
@@ -279,7 +279,7 @@ API: SSHClient and SSHAuth.
         :param height: PTY height
         :type height: ``int``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[CalledProcessError]
+        :type exception_class: Type[CalledProcessError]
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code or stderr presents
@@ -292,23 +292,23 @@ API: SSHClient and SSHAuth.
         Start new SSH connection using current as proxy.
 
         :param host: remote hostname
-        :type host: str
+        :type host: ``str``
         :param port: remote ssh port
-        :type port: typing.Optional[int]
+        :type port: ``Optional[int]``
         :param username: remote username.
-        :type username: typing.Optional[str]
+        :type username: ``Optional[str]``
         :param password: remote password
-        :type password: typing.Optional[str]
+        :type password: ``Optional[str]``
         :param auth: credentials for connection
-        :type auth: typing.Optional[ssh_auth.SSHAuth]
+        :type auth: Optional[ssh_auth.SSHAuth]
         :param verbose: show additional error/warning messages
-        :type verbose: bool
+        :type verbose: ``bool``
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
-        :type ssh_config: typing.Union[str, paramiko.SSHConfig, typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], HostsSSHConfigs, None]
+        :type ssh_config: Union[str, paramiko.SSHConfig, Dict[str, Dict[str, Union[str, int, bool, List[str]]]], HostsSSHConfigs, None]
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
+        :type ssh_auth_map: Optional[Union[Dict[str, SSHAuth], SSHAuthMapping]]
         :param keepalive: keepalive period
-        :type keepalive: typing.Union[int, bool]
+        :type keepalive: ``Union[int, bool]``
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
@@ -323,29 +323,29 @@ API: SSHClient and SSHAuth.
         :param hostname: target hostname
         :type hostname: ``str``
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param auth: credentials for target machine
-        :type auth: typing.Optional[SSHAuth]
+        :type auth: Optional[SSHAuth]
         :param port: target port
         :type port: ``int``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: ``Optional[str]``
         :param get_pty: open PTY on target machine
         :type get_pty: ``bool``
         :param width: PTY width
-        :type width: int
+        :type width: ``int``
         :param height: PTY height
-        :type height: int
+        :type height: ``int``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -361,27 +361,27 @@ API: SSHClient and SSHAuth.
         Execute command on multiple remotes in async mode.
 
         :param remotes: Connections to execute on
-        :type remotes: typing.Iterable[SSHClient]
+        :type remotes: Iterable[SSHClient]
         :param command: Command for execution
-        :type command: ``str``
+        :type command: ``Union[str, Iterable[str]]``
         :param timeout: Timeout for command execution.
-        :type timeout: ``typing.Union[int, float, None]``
+        :type timeout: ``Union[int, float, None]``
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``typing.Optional[str]``
+        :type log_mask_re: ``Optional[str]``
         :param exception_class: Exception to raise on error. Mandatory subclass of ParallelCallProcessError
-        :type exception_class: typing.Type[ParallelCallProcessError]
+        :type exception_class: Type[ParallelCallProcessError]
         :return: dictionary {(hostname, port): result}
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :rtype: Dict[Tuple[str, int], ExecResult]
         :raises ParallelCallProcessError: Unexpected any code at lest on one target
         :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
 
@@ -426,7 +426,7 @@ API: SSHClient and SSHAuth.
         :param path: filesystem object path
         :type path: ``str``
         :param times: (atime, mtime)
-        :type times: ``typing.Optional[typing.Tuple[int, int]]``
+        :type times: ``Optional[Tuple[int, int]]``
         :rtype: None
 
         .. versionadded:: 1.0.0
@@ -518,33 +518,33 @@ API: SSHClient and SSHAuth.
     .. py:method:: __init__(username=None, password=None, key=None, keys=None, )
 
         :param username: remote username.
-        :type username: ``typing.Optional[str]``
+        :type username: ``Optional[str]``
         :param password: remote password
-        :type password: ``typing.Optional[str]``
+        :type password: ``Optional[str]``
         :param key: Main connection key
-        :type key: ``typing.Optional[paramiko.RSAKey]``
+        :type key: ``Optional[paramiko.RSAKey]``
         :param keys: Alternate connection keys
-        :type keys: ``typing.Optional[typing.Sequence[paramiko.RSAKey]]``
+        :type keys: ``Optional[Sequence[paramiko.RSAKey]]``
         :param key_filename: filename(s) for additional key files
-        :type key_filename: ``typing.Union[typing.List[str], str, None]``
+        :type key_filename: ``Union[List[str], str, None]``
         :param passphrase: passphrase for keys. Need, if differs from password
-        :type passphrase: ``typing.Optional[str]``
+        :type passphrase: ``Optional[str]``
 
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
 
     .. py:attribute:: username
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
 
     .. py:attribute:: public_key
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         public key for stored private key if presents else None
 
     .. py:attribute:: key_filename
 
-        ``typing.Union[typing.List[str], str, None]``
+        ``Union[List[str], str, None]``
         Key filename(s).
 
         .. versionadded:: 1.0.0
@@ -571,12 +571,12 @@ API: SSHClient and SSHAuth.
         :param log: Log on generic connection failure
         :type log: ``bool``
         :param sock: socket for connection. Useful for ssh proxies support
-        :type sock: ``typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]``
+        :type sock: ``Optional[Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]``
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
 
 
-.. py:class::SSHAuthMapping(typing.Dict[str, SSHAuth])
+.. py:class::SSHAuthMapping(Dict[str, SSHAuth])
 
     Specific dictionary for  ssh hostname - auth mapping.
 
@@ -587,7 +587,7 @@ API: SSHClient and SSHAuth.
         Specific dictionary for  ssh hostname - auth mapping.
 
         :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
-        :type auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
+        :type auth_dict: Optional[Union[Dict[str, SSHAuth], SSHAuthMapping]]
         :param auth_mapping: SSHAuth setting via **kwargs
         :type auth_mapping: SSHAuth
         :raises TypeError: Incorrect type of auth dict or auth object
@@ -601,9 +601,9 @@ API: SSHClient and SSHAuth.
         :param host_names: alternate host names
         :type host_names: str
         :param default: credentials if hostname not found
-        :type default: typing.Optional[SSHAuth]
+        :type default: Optional[SSHAuth]
         :return: guessed credentials
-        :rtype: typing.Optional[SSHAuth]
+        :rtype: Optional[SSHAuth]
         :raises TypeError: Default SSH Auth object is not SSHAuth
 
         Method used in cases, when 1 host share 2 or more names in config.
@@ -623,11 +623,11 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: stderr
 
-        ``typing.Optional[paramiko.ChannelFile]``
+        ``Optional[paramiko.ChannelFile]``
 
     .. py:attribute:: stdout
 
-        ``typing.Optional[paramiko.ChannelFile]``
+        ``Optional[paramiko.ChannelFile]``
 
     .. py:attribute:: started
 
@@ -636,7 +636,7 @@ API: SSHClient and SSHAuth.
         .. versionadded:: 3.4.1
 
 
-.. py:class:: HostsSSHConfigs(typing.Dict[str, SSHConfig])
+.. py:class:: HostsSSHConfigs(Dict[str, SSHConfig])
 
     Specific dictionary for managing SSHConfig records.
 
@@ -647,7 +647,7 @@ API: SSHClient and SSHAuth.
         Missing key handling.
 
         :param key: nonexistent key
-        :type key: str
+        :type key: ``str``
         :return: generated ssh config for host
         :rtype: SSHConfig
         :raises KeyError: key is not string
@@ -664,21 +664,21 @@ API: SSHClient and SSHAuth.
         SSH Config for creation connection.
 
         :param hostname: hostname, which config relates
-        :type hostname: str
+        :type hostname: ``str``
         :param port: remote port
-        :type port: typing.Optional[typing.Union[str, int]]
+        :type port: ``Optional[Union[str, int]]``
         :param user: remote user
-        :type user: typing.Optional[str]
+        :type user: ``Optional[str]``
         :param identityfile: connection ssh keys file names
-        :type identityfile: typing.Optional[typing.List[str]]
+        :type identityfile: ``Optional[List[str]]``
         :param proxycommand: proxy command for ssh connection
-        :type proxycommand: typing.Optional[str]
-        :type proxyjump: typing.Optional[str]
+        :type proxycommand: ``Optional[str]``
         :param proxyjump: proxy host name
+        :type proxyjump: ``Optional[str]``
         :param controlpath: shared socket file path for re-using connection by multiple instances
-        :type controlpath: typing.Optional[str]
+        :type controlpath: ``Optional[str]``
         :param controlmaster: re-use connection
-        :type controlmaster: typing.Optional[typing.Union[str, bool]]
+        :type controlmaster: ``Optional[Union[str, bool]]``
         :raises ValueError: Invalid argument provided.
 
         .. versionadded:: 6.0.0
@@ -692,7 +692,7 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: as_dict
 
-        ``typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]``
+        ``Dict[str, Union[str, int, bool, List[str]]]``
         Dictionary for rebuilding config.
 
     .. py:method:: overridden_by(ssh_config)
@@ -711,35 +711,35 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: port
 
-        ``typing.Optional[int]``
+        ``Optional[int]``
         Remote port.
 
     .. py:attribute:: user
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         Remote user.
 
     .. py:attribute:: identityfile
 
-        ``typing.Optional[typing.List[str]]``
+        ``Optional[List[str]]``
         Connection ssh keys file names.
 
     .. py:attribute:: proxycommand
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         Proxy command for ssh connection.
 
     .. py:attribute:: proxyjump
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         Proxy host name.
 
     .. py:attribute:: controlpath
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         Shared socket file path for re-using connection by multiple instances.
 
     .. py:attribute:: controlmaster
 
-        ``typing.Optional[bool]``
+        ``Optional[bool]``
         Re-use connection.

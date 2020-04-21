@@ -73,31 +73,103 @@ eshutdown_exc.errno = errno.ESHUTDOWN
 timeout_expired_exc = subprocess.TimeoutExpired(command, default_timeout)
 
 
+class CommandParameters(typing.NamedTuple):
+    """Command parameters."""
+
+    def as_dict(self):
+        return self._asdict()
+
+    command: typing.Union[str, typing.Iterable[str]] = command
+    stdin: typing.Optional[str] = None
+    verbose: typing.Optional[bool] = None
+    log_mask_re: typing.Optional[str] = None
+
+
+class MockParameters(typing.NamedTuple):
+    """Mock configuration parameters."""
+
+    write: typing.Optional[Exception] = None
+    stdin_close: typing.Optional[Exception] = None
+    ec: typing.Sequence[typing.Union[int, Exception]] = (0,)
+    poll: typing.Sequence[typing.Union[int, None]] = (0,)
+
+
 configs = {
-    "positive_simple": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n")),
-    "positive_verbose": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), verbose=True),
-    "no_stdout": dict(),
-    "IOError_on_stdout_read": dict(stdout=(b" \n", b"2\n", IOError())),
+    "positive_simple": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(),
+        mock_parameters=MockParameters(),
+    ),
+    "positive_verbose": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(verbose=True),
+        mock_parameters=MockParameters(),
+    ),
+    "positive_iterable": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(command=("echo", "hello world")),
+        mock_parameters=MockParameters(),
+        masked_cmd="echo 'hello world'",
+    ),
+    "no_stdout": dict(command_parameters=CommandParameters(), mock_parameters=MockParameters()),
+    "IOError_on_stdout_read": dict(
+        stdout=(b" \n", b"2\n", IOError()), command_parameters=CommandParameters(), mock_parameters=MockParameters()
+    ),
     "TimeoutError": dict(
-        ec=(timeout_expired_exc,), poll=(-9,), stdout=(), expect_exc=exec_helpers.ExecHelperTimeoutError
+        stdout=(),
+        command_parameters=CommandParameters(),
+        mock_parameters=MockParameters(ec=(timeout_expired_exc,), poll=(-9,)),
+        expect_exc=exec_helpers.ExecHelperTimeoutError,
     ),
     "TimeoutError_no_kill": dict(
-        ec=(timeout_expired_exc,), poll=(None,), stdout=(), expect_exc=exec_helpers.ExecHelperNoKillError
+        stdout=(),
+        command_parameters=CommandParameters(),
+        mock_parameters=MockParameters(ec=(timeout_expired_exc,), poll=(None,)),
+        expect_exc=exec_helpers.ExecHelperNoKillError,
     ),
-    "stdin_closed_PIPE_windows": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=einval_exc),
-    "stdin_broken_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=epipe_exc),
-    "stdin_closed_PIPE": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Warning", write=eshutdown_exc),
-    "stdin_error": dict(ec=(0xDEADBEEF,), stdout=(), stdin="Failed", write=OSError(), expect_exc=OSError),
-    "stdin_close_closed": dict(stdout=(b" \n", b"2\n", b"3\n", b" \n"), stdin="Stdin", stdin_close=eshutdown_exc),
-    "stdin_close_fail": dict(ec=(0xDEADBEEF,), stdout=(), stdin="Failed", stdin_close=OSError(), expect_exc=OSError),
+    "stdin_closed_PIPE_windows": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(stdin="Warning"),
+        mock_parameters=MockParameters(write=einval_exc),
+    ),
+    "stdin_broken_PIPE": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(stdin="Warning"),
+        mock_parameters=MockParameters(write=epipe_exc),
+    ),
+    "stdin_closed_PIPE": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(stdin="Warning"),
+        mock_parameters=MockParameters(write=eshutdown_exc),
+    ),
+    "stdin_error": dict(
+        mock_parameters=MockParameters(ec=(0xDEADBEEF,), write=OSError()),
+        stdout=(),
+        command_parameters=CommandParameters(stdin="Warning"),
+        expect_exc=OSError,
+    ),
+    "stdin_close_closed": dict(
+        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
+        command_parameters=CommandParameters(stdin="Stdin"),
+        mock_parameters=MockParameters(stdin_close=eshutdown_exc),
+    ),
+    "stdin_close_fail": dict(
+        stdout=(),
+        command_parameters=CommandParameters(stdin="Failed"),
+        mock_parameters=MockParameters(ec=(0xDEADBEEF,), stdin_close=OSError()),
+        expect_exc=OSError,
+    ),
     "mask_global": dict(
-        command="USE='secret=secret_pass' do task",
+        command_parameters=CommandParameters(command="USE='secret=secret_pass' do task"),
+        mock_parameters=MockParameters(),
         init_log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
         masked_cmd="USE='secret=<*masked*>' do task",
     ),
     "mask_local": dict(
-        command="USE='secret=secret_pass' do task",
-        log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
+        command_parameters=CommandParameters(
+            command="USE='secret=secret_pass' do task", log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+        ),
+        mock_parameters=MockParameters(),
         masked_cmd="USE='secret=<*masked*>' do task",
     ),
 }
@@ -111,6 +183,7 @@ def pytest_generate_tests(metafunc):
             [
                 "positive_simple",
                 "positive_verbose",
+                "positive_iterable",
                 "no_stdout",
                 "IOError_on_stdout_read",
                 "TimeoutError",
@@ -136,6 +209,8 @@ def run_parameters(request):
 
 @pytest.fixture
 def exec_result(run_parameters):
+    command_parameters: CommandParameters = run_parameters["command_parameters"]
+    mock_parameters: MockParameters = run_parameters["mock_parameters"]
     stdout = run_parameters.get("stdout", None)
     if stdout is None:
         stdout_res = None
@@ -144,23 +219,22 @@ def exec_result(run_parameters):
 
     return exec_helpers.ExecResult(
         cmd=run_parameters.get("masked_cmd", command),
-        stdin=run_parameters.get("stdin", None),
+        stdin=command_parameters.stdin,
         stdout=stdout_res,
         stderr=(),
-        exit_code=0 if 0 in run_parameters.get("ec", [0]) else exec_helpers.ExitCodes.EX_INVALID,
+        exit_code=0 if 0 in mock_parameters.ec else exec_helpers.ExitCodes.EX_INVALID,
     )
 
 
 @pytest.fixture
 def create_subprocess_shell(mocker, run_parameters):
+    command_parameters: CommandParameters = run_parameters["command_parameters"]
+    mock_parameters: MockParameters = run_parameters["mock_parameters"]
+
     mocker.patch("psutil.Process")
     mocker.patch("psutil.wait_procs", return_value=([], []))
 
-    def create_mock(
-        stdout: typing.Optional[typing.Tuple] = None,
-        stdin: typing.Optional[typing.Union[str, bytes, bytearray]] = None,
-        **kwargs,
-    ):
+    def create_mock(stdout: typing.Optional[typing.Tuple] = None, **kwargs):
         """Parametrized code."""
         proc = mock.Mock()
 
@@ -175,16 +249,16 @@ def create_subprocess_shell(mocker, run_parameters):
 
         proc.configure_mock(stderr=None)
 
-        if stdin is not None:
+        if command_parameters.stdin is not None:
             stdin_mock = mock.Mock()
 
-            stdin_mock.attach_mock(mock.Mock("write", side_effect=run_parameters.get("write", None)), "write")
-            stdin_mock.attach_mock(mock.Mock(side_effect=run_parameters.get("stdin_close", None)), "close")
+            stdin_mock.attach_mock(mock.Mock("write", side_effect=mock_parameters.write), "write")
+            stdin_mock.attach_mock(mock.Mock(side_effect=mock_parameters.stdin_close), "close")
 
             proc.attach_mock(stdin_mock, "stdin")
 
-        proc.attach_mock(mock.Mock(side_effect=run_parameters.get("ec", (0,))), "wait")
-        proc.attach_mock(mock.Mock(side_effect=run_parameters.get("poll", (0,))), "poll")
+        proc.attach_mock(mock.Mock(side_effect=mock_parameters.ec), "wait")
+        proc.attach_mock(mock.Mock(side_effect=mock_parameters.poll), "poll")
         proc.configure_mock(returncode=(0,))
 
         return run_shell
@@ -194,15 +268,11 @@ def create_subprocess_shell(mocker, run_parameters):
 
 def test_special_cases(create_subprocess_shell, exec_result, subprocess_logger, run_parameters) -> None:
     """Parametrized validation of special cases."""
+    command_parameters: CommandParameters = run_parameters["command_parameters"]
     runner = exec_helpers.Subprocess(log_mask_re=run_parameters.get("init_log_mask_re", None))
     if "expect_exc" not in run_parameters:
-        res = runner.execute(
-            command=run_parameters.get("command", command),
-            stdin=run_parameters.get("stdin", None),
-            verbose=run_parameters.get("verbose", None),
-            log_mask_re=run_parameters.get("log_mask_re", None),
-        )
-        level = logging.INFO if run_parameters.get("verbose", False) else logging.DEBUG
+        res = runner.execute(**command_parameters.as_dict())
+        level = logging.INFO if command_parameters.verbose else logging.DEBUG
 
         command_for_log = run_parameters.get("masked_cmd", command)
         command_log = f"Executing command:\n{command_for_log.rstrip()!r}\n"
@@ -215,6 +285,4 @@ def test_special_cases(create_subprocess_shell, exec_result, subprocess_logger, 
         assert res == exec_result
     else:
         with pytest.raises(run_parameters["expect_exc"]):
-            runner.execute(
-                command, stdin=run_parameters.get("stdin", None), verbose=run_parameters.get("verbose", None)
-            )
+            runner.execute(**command_parameters.as_dict())

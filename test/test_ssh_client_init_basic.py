@@ -59,11 +59,6 @@ configs = {
     "alternate_port": dict(host=host, port=2222),
     "username": dict(host=host, username="user"),
     "username_password": dict(host=host, username="user", password="password"),
-    "username_password_empty_keys": dict(host=host, username="user", password="password", private_keys=[]),
-    "username_single_key": dict(host=host, username="user", private_keys=gen_private_keys(1)),
-    "username_password_single_key": dict(
-        host=host, username="user", password="password", private_keys=gen_private_keys(1)
-    ),
     "auth": dict(
         host=host, auth=exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop())
     ),
@@ -71,7 +66,6 @@ configs = {
         host=host,
         username="Invalid",
         password="Invalid",
-        private_keys=gen_private_keys(1),
         auth=exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
     ),
 }
@@ -87,9 +81,6 @@ def pytest_generate_tests(metafunc):
                 "alternate_port",
                 "username",
                 "username_password",
-                "username_password_empty_keys",
-                "username_single_key",
-                "username_password_single_key",
                 "auth",
                 "auth_break",
             ],
@@ -111,7 +102,6 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
 
     username = run_parameters.get("username", None)
     password = run_parameters.get("password", None)
-    private_keys = run_parameters.get("private_keys", None)
 
     auth = run_parameters.get("auth", None)
 
@@ -127,7 +117,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
             _ssh.connect(
                 hostname=host,
                 password=password,
-                pkey=private_keys[-1] if private_keys else None,
+                pkey=None,
                 port=port,
                 username=username,
                 key_filename=None,
@@ -138,7 +128,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
 
         assert expected_calls == paramiko_ssh_client().mock_calls
 
-        assert ssh.auth == exec_helpers.SSHAuth(username=username, password=password, keys=private_keys)
+        assert ssh.auth == exec_helpers.SSHAuth(username=username, password=password)
     else:
         ssh_auth_logger.assert_not_called()
 

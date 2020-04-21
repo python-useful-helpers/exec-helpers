@@ -36,6 +36,7 @@ from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers import subprocess_runner
 from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import CommandT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import api
@@ -48,6 +49,8 @@ from exec_helpers.subprocess_runner import EnvT
 # noinspection PyTypeHints,PyTypeChecker
 class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
+
+    __slots__ = ()
 
     # pylint: disable=no-member
     @property
@@ -90,7 +93,19 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
 
 
 class Subprocess(api.ExecHelper):
-    """Subprocess helper with timeouts and lock-free FIFO."""
+    """Subprocess helper with timeouts and lock-free FIFO.
+
+    :param log_mask_re: regex lookup rule to mask command for logger.
+                        all MATCHED groups will be replaced by '<*masked*>'
+    :type log_mask_re: typing.Optional[str]
+    :param logger: logger instance to use
+    :type logger: logging.Logger
+
+    .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
+    .. versionchanged:: 3.2.0 Logger can be enforced.
+    .. versionchanged:: 4.1.0 support chroot
+    .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
+    """
 
     __slots__ = ()
 
@@ -100,19 +115,7 @@ class Subprocess(api.ExecHelper):
         *,
         logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
     ) -> None:
-        """Subprocess helper with timeouts and lock-free FIFO.
-
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-        :param logger: logger instance to use
-        :type logger: logging.Logger
-
-        .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
-        .. versionchanged:: 3.2.0 Logger can be enforced.
-        .. versionchanged:: 4.1.0 support chroot
-        .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
-        """
+        """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
 
     async def __aenter__(self) -> "Subprocess":
@@ -307,7 +310,7 @@ class Subprocess(api.ExecHelper):
 
     async def execute(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -323,7 +326,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -351,6 +354,7 @@ class Subprocess(api.ExecHelper):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
         return await super().execute(  # type: ignore
             command=command,
@@ -368,7 +372,7 @@ class Subprocess(api.ExecHelper):
 
     async def __call__(  # type: ignore
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -384,7 +388,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -429,7 +433,7 @@ class Subprocess(api.ExecHelper):
 
     async def check_call(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -449,7 +453,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -508,7 +512,7 @@ class Subprocess(api.ExecHelper):
 
     async def check_stderr(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -528,7 +532,7 @@ class Subprocess(api.ExecHelper):
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.

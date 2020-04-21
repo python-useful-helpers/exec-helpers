@@ -14,6 +14,7 @@
 
 # Standard Library
 import base64
+import datetime
 import logging
 import threading
 import typing
@@ -25,6 +26,7 @@ import pytest
 # Exec-Helpers Implementation
 import exec_helpers
 from exec_helpers import proc_enums
+from exec_helpers._ssh_client_base import SshExecuteAsyncResult
 
 
 class FakeFileStream:
@@ -192,3 +194,55 @@ def test_006_execute_together_exceptions(ssh, ssh2, mocker) -> None:
     assert list(sorted(exc.exceptions)) == [(host, port), (host2, port)]
     for exception in exc.exceptions.values():
         assert isinstance(exception, RuntimeError)
+
+
+def test_007_execute_command_as_chain(ssh, get_logger) -> None:
+    cmd = ("echo", "hello world")
+    decoded_cmd = "echo 'hello world'"
+    cmd_log = f"Executing command:\n{decoded_cmd!r}\n"
+    done_log = f"Command {decoded_cmd!r} exit code: {proc_enums.EXPECTED!s}"
+
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
+    res = ssh.execute(cmd)
+    assert res.cmd == decoded_cmd
+    assert log.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=cmd_log)
+    assert log.mock_calls[-1] == mock.call.log(level=logging.DEBUG, msg=done_log)
+
+
+def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
+    stdout = ("hello world",)
+    cmd = ("echo", "hello world")
+    decoded_cmd = "echo 'hello world'"
+
+    def get_patched_execute_async_retval() -> SshExecuteAsyncResult:
+        stdout_part = FakeFileStream(*stdout)
+        stderr_part = FakeFileStream()
+
+        exit_code = 0
+        chan = mock.Mock()
+        chan.attach_mock(mock.Mock(return_value=exit_code), "recv_exit_status")
+
+        status_event = mock.Mock()
+        status_event.attach_mock(mock.Mock(), "wait")
+        chan.attach_mock(status_event, "status_event")
+        chan.configure_mock(exit_status=exit_code)
+        return SshExecuteAsyncResult(
+            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
+        )
+
+    execute_async = mocker.patch(
+        "exec_helpers.ssh_client.SSHClient._execute_async",
+        side_effect=[get_patched_execute_async_retval(), get_patched_execute_async_retval()],
+    )
+
+    remotes = [ssh, ssh2]
+
+    results = exec_helpers.SSHClient.execute_together(remotes=remotes, command=cmd)
+    execute_async.assert_has_calls(
+        (
+            mock.call(decoded_cmd, stdin=None, log_mask_re=None, open_stdout=True, open_stderr=True),
+            mock.call(decoded_cmd, stdin=None, log_mask_re=None, open_stdout=True, open_stderr=True),
+        )
+    )
+    for result in results.values():
+        assert result.cmd == decoded_cmd

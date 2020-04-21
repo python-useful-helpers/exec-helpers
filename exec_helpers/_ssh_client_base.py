@@ -31,7 +31,6 @@ import socket
 import stat
 import time
 import typing
-import warnings
 
 # External Dependencies
 import paramiko  # type: ignore
@@ -48,6 +47,7 @@ from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
 from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import CommandT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.proc_enums import ExitCodeT
@@ -70,26 +70,28 @@ _RType = typing.TypeVar("_RType")
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
-    """Advanced retry on exceptions."""
+    """Advanced retry on exceptions.
+
+    :param retry_on: Exceptions to retry on
+    :type retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
+    :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
+    :type reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
+    """
 
     def __init__(
         self,
         retry_on: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
         reraise: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
     ) -> None:
-        """Retry on exceptions, except several types.
-
-        :param retry_on: Exceptions to retry on
-        :type retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
-        :param reraise: Exceptions, which should be reraised, even if subclasses retry_on
-        :type reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]
-        """
+        """Retry on exceptions, except several types."""
         super().__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
 
 
 # noinspection PyTypeHints
 class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
+
+    __slots__ = ()
 
     @property
     def interface(self) -> paramiko.Channel:
@@ -129,18 +131,18 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
 
 
 class _SudoContext(typing.ContextManager[None]):
-    """Context manager for call commands with sudo."""
+    """Context manager for call commands with sudo.
+
+    :param ssh: connection instance
+    :type ssh: SSHClientBase
+    :param enforce: sudo mode for context manager
+    :type enforce: typing.Optional[bool]
+    """
 
     __slots__ = ("__ssh", "__sudo_status", "__enforce")
 
     def __init__(self, ssh: "SSHClientBase", enforce: typing.Optional[bool] = None) -> None:
-        """Context manager for call commands with sudo.
-
-        :param ssh: connection instance
-        :type ssh: SSHClientBase
-        :param enforce: sudo mode for context manager
-        :type enforce: typing.Optional[bool]
-        """
+        """Context manager for call commands with sudo."""
         self.__ssh: "SSHClientBase" = ssh
         self.__sudo_status: bool = ssh.sudo_mode
         self.__enforce: typing.Optional[bool] = enforce
@@ -155,31 +157,31 @@ class _SudoContext(typing.ContextManager[None]):
 
 
 class _KeepAliveContext(typing.ContextManager[None]):
-    """Context manager for keepalive management."""
+    """Context manager for keepalive management.
 
-    __slots__ = ("__ssh", "__keepalive_status", "__enforce")
+    :param ssh: connection instance
+    :type ssh: SSHClientBase
+    :param enforce: keepalive period for context manager
+    :type enforce: int
+    """
+
+    __slots__ = ("__ssh", "__keepalive_period", "__enforce")
 
     def __init__(self, ssh: "SSHClientBase", enforce: int) -> None:
-        """Context manager for keepalive management.
-
-        :param ssh: connection instance
-        :type ssh: SSHClientBase
-        :param enforce: keepalive period for context manager
-        :type enforce: int
-        """
+        """Context manager for keepalive management."""
         self.__ssh: "SSHClientBase" = ssh
-        self.__keepalive_status: int = ssh.keepalive_period
+        self.__keepalive_period: int = ssh.keepalive_period
         self.__enforce: int = enforce
 
     def __enter__(self) -> None:
         self.__ssh.__enter__()
-        self.__keepalive_status = self.__ssh.keepalive_period
-        self.__ssh.keepalive_mode = self.__enforce
+        self.__keepalive_period = self.__ssh.keepalive_period
+        self.__ssh.keepalive_period = self.__enforce
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
         # Exit before releasing!
         self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
-        self.__ssh.keepalive_mode = self.__keepalive_status
+        self.__ssh.keepalive_period = self.__keepalive_period
 
 
 def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _RType]:
@@ -214,7 +216,52 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
 
 
 class SSHClientBase(api.ExecHelper):
-    """SSH Client helper."""
+    """SSH Client helper.
+
+    :param host: remote hostname
+    :type host: str
+    :param port: remote ssh port
+    :type port: typing.Optional[int]
+    :param username: remote username.
+    :type username: typing.Optional[str]
+    :param password: remote password
+    :type password: typing.Optional[str]
+    :param auth: credentials for connection
+    :type auth: typing.Optional[ssh_auth.SSHAuth]
+    :param verbose: show additional error/warning messages
+    :type verbose: bool
+    :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
+    :type ssh_config:
+        typing.Union[
+            str,
+            paramiko.SSHConfig,
+            typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+            HostsSSHConfigs,
+            None
+        ]
+    :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
+    :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
+    :param sock: socket for connection. Useful for ssh proxies support
+    :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+    :param keepalive: keepalive period
+    :type keepalive: typing.Union[int, bool]
+
+    .. note:: auth has priority over username/password/private_keys
+    .. note::
+
+        for proxy connection auth information is collected from SSHConfig
+        if ssh_auth_map record is not available
+
+    .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
+    .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
+    .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
+    .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
+    .. versionchanged:: 6.0.0 keepalive exposed to constructor
+    .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
+    .. versionchanged:: 6.0.0 private_keys is deprecated
+    .. versionchanged:: 7.0.0 private_keys is removed
+    .. versionchanged:: 7.0.0 keepalive_mode is removed
+    """
 
     __slots__ = (
         "__hostname",
@@ -245,7 +292,6 @@ class SSHClientBase(api.ExecHelper):
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         *,
-        private_keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
         auth: _OptSSHAuthT = None,
         verbose: bool = True,
         ssh_config: _OptionalSSHConfigArgT = None,
@@ -253,58 +299,7 @@ class SSHClientBase(api.ExecHelper):
         sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
         keepalive: typing.Union[int, bool] = 1,
     ) -> None:
-        """Main SSH Client helper.
-
-        :param host: remote hostname
-        :type host: str
-        :param port: remote ssh port
-        :type port: typing.Optional[int]
-        :param username: remote username.
-        :type username: typing.Optional[str]
-        :param password: remote password
-        :type password: typing.Optional[str]
-        :param private_keys: private keys for connection
-        :type private_keys: typing.Optional[typing.Sequence[paramiko.RSAKey]]
-        :param auth: credentials for connection
-        :type auth: typing.Optional[ssh_auth.SSHAuth]
-        :param verbose: show additional error/warning messages
-        :type verbose: bool
-        :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
-        :type ssh_config:
-            typing.Union[
-                str,
-                paramiko.SSHConfig,
-                typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-                HostsSSHConfigs,
-                None
-            ]
-        :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
-        :param sock: socket for connection. Useful for ssh proxies support
-        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
-        :param keepalive: keepalive period
-        :type keepalive: typing.Union[int, bool]
-
-        .. note:: auth has priority over username/password/private_keys
-        .. note::
-
-            for proxy connection auth information is collected from SSHConfig
-            if ssh_auth_map record is not available
-
-        .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
-        .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
-        .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
-        .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
-        .. versionchanged:: 6.0.0 keepalive exposed to constructor
-        .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
-        .. versionchanged:: 6.0.0 private_keys is deprecated
-        """
-        if private_keys is not None:
-            warnings.warn(
-                "private_keys setting without SSHAuth object is deprecated and will be removed at short time.",
-                DeprecationWarning,
-            )
-
+        """Main SSH Client helper."""
         # Init ssh config. It's main source for connection parameters
         if isinstance(ssh_config, HostsSSHConfigs):
             self.__ssh_config: HostsSSHConfigs = ssh_config
@@ -339,11 +334,10 @@ class SSHClientBase(api.ExecHelper):
         # Priority: auth > credentials > auth mapping
         if auth is not None:
             self.__auth_mapping[self.hostname] = real_auth = copy.copy(auth)
-        elif self.hostname not in self.__auth_mapping or any((username, password, private_keys)):
+        elif self.hostname not in self.__auth_mapping or any((username, password)):
             self.__auth_mapping[self.hostname] = real_auth = ssh_auth.SSHAuth(
                 username=username if username is not None else config.user,
                 password=password,
-                keys=private_keys,
                 key_filename=config.identityfile,
             )
         else:
@@ -587,7 +581,7 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             self.__ssh.close()
-        except BaseException as e:  # pragma: no cover
+        except BaseException as e:  # pragma: no cover  # NOSONAR
             self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
@@ -648,28 +642,6 @@ class SSHClientBase(api.ExecHelper):
         self.__keepalive_period = int(period)
         transport: paramiko.Transport = self.__ssh.get_transport()
         transport.set_keepalive(int(period))
-
-    @property
-    def keepalive_mode(self) -> int:
-        """Keepalive period for connection object.
-
-        :rtype: int
-        If 0 - close connection on exit from context manager.
-        """
-        warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
-        return self.keepalive_period
-
-    # noinspection PyDeprecation
-    @keepalive_mode.setter
-    def keepalive_mode(self, period: typing.Union[int, bool]) -> None:
-        """Keepalive period change for connection object.
-
-        :param period: keepalive period change
-        :type period: typing.Union[int, bool]
-        If 0 - close connection on exit from context manager.
-        """
-        warnings.warn("keepalive_mode was moved to keepalive_period as time based parameter", DeprecationWarning)
-        self.keepalive_period = int(period)
 
     def reconnect(self) -> None:
         """Reconnect SSH session."""
@@ -890,7 +862,7 @@ class SSHClientBase(api.ExecHelper):
 
     def execute(  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -906,7 +878,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -934,6 +906,7 @@ class SSHClientBase(api.ExecHelper):
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
         return super().execute(
             command=command,
@@ -951,7 +924,7 @@ class SSHClientBase(api.ExecHelper):
 
     def __call__(
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -967,7 +940,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1012,7 +985,7 @@ class SSHClientBase(api.ExecHelper):
 
     def check_call(  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -1032,7 +1005,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1091,7 +1064,7 @@ class SSHClientBase(api.ExecHelper):
 
     def check_stderr(  # pylint: disable=arguments-differ
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -1111,7 +1084,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1261,11 +1234,10 @@ class SSHClientBase(api.ExecHelper):
     def execute_through_host(
         self,
         hostname: str,
-        command: str,
+        command: CommandT,
         *,
         auth: _OptSSHAuthT = None,
         port: typing.Optional[int] = None,
-        target_port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         stdin: OptionalStdinT = None,
@@ -1281,13 +1253,11 @@ class SSHClientBase(api.ExecHelper):
         :param hostname: target hostname
         :type hostname: str
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param auth: credentials for target machine
         :type auth: typing.Optional[ssh_auth.SSHAuth]
         :param port: target port
         :type port: typing.Optional[int]
-        :param target_port: target port (deprecated in favor of port)
-        :type target_port: typing.Optional[int]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1317,17 +1287,11 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
+        .. versionchanged:: 7.0.0 target_port argument removed
         """
         conn: SSHClientBase
         if auth is None:
             auth = self.auth
-
-        if target_port is not None:  # pragma: no cover
-            warnings.warn(
-                f'"target_port" argument was renamed to "port". Old version will be dropped in the next major release.',
-                DeprecationWarning,
-            )
-            port = target_port
 
         with self.proxy_to(
             host=hostname, port=port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
@@ -1348,7 +1312,7 @@ class SSHClientBase(api.ExecHelper):
     def execute_together(
         cls,
         remotes: typing.Iterable["SSHClientBase"],
-        command: str,
+        command: CommandT,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
@@ -1366,7 +1330,7 @@ class SSHClientBase(api.ExecHelper):
         :param remotes: Connections to execute on
         :type remotes: typing.Iterable[SSHClientBase]
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param timeout: Timeout for command execution.
         :type timeout: typing.Union[int, float, None]
         :param expected: expected return codes (0 by default)
@@ -1408,16 +1372,11 @@ class SSHClientBase(api.ExecHelper):
             :return: execution result
             """
             # pylint: disable=protected-access
-            cmd_for_log: str = remote._mask_command(cmd=command, log_mask_re=log_mask_re)
-            remote._log_command_execute(command=command, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+            cmd_for_log: str = remote._mask_command(cmd=cmd, log_mask_re=log_mask_re)
+            remote._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
 
             async_result: SshExecuteAsyncResult = remote._execute_async(
-                command,
-                stdin=stdin,
-                log_mask_re=log_mask_re,
-                open_stdout=open_stdout,
-                open_stderr=open_stderr,
-                **kwargs,
+                cmd, stdin=stdin, log_mask_re=log_mask_re, open_stdout=open_stdout, open_stderr=open_stderr, **kwargs,
             )
             # pylint: enable=protected-access
 
@@ -1434,6 +1393,7 @@ class SSHClientBase(api.ExecHelper):
 
         prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
+        cmd = cls._cmd_to_string(command)
 
         futures: typing.Dict["SSHClientBase", "concurrent.futures.Future[exec_result.ExecResult]"] = {
             remote: get_result(remote) for remote in set(remotes)
@@ -1447,7 +1407,7 @@ class SSHClientBase(api.ExecHelper):
         for fut in not_done:  # pragma: no cover
             fut.cancel()
 
-        for (remote, future) in futures.items():
+        for remote, future in futures.items():
             try:
                 result = future.result()
                 results[(remote.hostname, remote.port)] = result
@@ -1457,9 +1417,9 @@ class SSHClientBase(api.ExecHelper):
                 raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise
-            raise exceptions.ParallelCallExceptions(command, raised_exceptions, errors, results, expected=prep_expected)
+            raise exceptions.ParallelCallExceptions(cmd, raised_exceptions, errors, results, expected=prep_expected)
         if errors and raise_on_err:
-            raise exception_class(command, errors, results, expected=prep_expected)
+            raise exception_class(cmd, errors, results, expected=prep_expected)
         return results
 
     @normalize_path

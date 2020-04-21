@@ -69,7 +69,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     private_keys = gen_private_keys(1)
 
     # Test
-    ssh = exec_helpers.SSHClient(host=host, username=username, private_keys=private_keys)
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, keys=private_keys))
 
     paramiko_ssh_client.assert_called_once()
     auto_add_policy.assert_called_once()
@@ -106,7 +106,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     private_keys = gen_private_keys(2)
 
     # Test
-    ssh = exec_helpers.SSHClient(host=host, username=username, private_keys=private_keys)
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, keys=private_keys))
 
     paramiko_ssh_client.assert_called_once()
     auto_add_policy.assert_called_once()
@@ -143,7 +143,7 @@ def test_003_password_required(paramiko_ssh_client, auto_add_policy, ssh_auth_lo
 
     # Test
     with pytest.raises(paramiko.PasswordRequiredException):
-        exec_helpers.SSHClient(host=host, username=username, private_keys=private_keys)
+        exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, keys=private_keys))
     ssh_auth_logger.assert_has_calls((mock.call.exception("No password has been set!"),))
 
 
@@ -159,7 +159,9 @@ def test_004_unexpected_password_required(paramiko_ssh_client, auto_add_policy, 
 
     # Test
     with pytest.raises(paramiko.PasswordRequiredException):
-        exec_helpers.SSHClient(host=host, username=username, password=password, private_keys=private_keys)
+        exec_helpers.SSHClient(
+            host=host, auth=exec_helpers.SSHAuth(username=username, password=password, keys=private_keys)
+        )
     ssh_auth_logger.assert_has_calls(
         (mock.call.critical("Unexpected PasswordRequiredException, when password is set!"),)
     )

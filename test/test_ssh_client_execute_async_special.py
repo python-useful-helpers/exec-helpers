@@ -161,34 +161,34 @@ def test_005_execute_async_sudo_password(ssh, ssh_transport_channel):
 
 def test_006_keepalive(ssh, paramiko_ssh_client):
     with ssh:
-        pass
+        pass  # NOSONAR
 
     paramiko_ssh_client().close.assert_not_called()
 
 
 def test_007_no_keepalive(ssh, paramiko_ssh_client):
-    ssh.keepalive_mode = False
+    ssh.keepalive_period = False
 
     with ssh:
-        pass
+        pass  # NOSONAR
 
     paramiko_ssh_client().close.assert_called_once()
 
 
 def test_008_keepalive_enforced(ssh, paramiko_ssh_client):
-    ssh.keepalive_mode = False
+    ssh.keepalive_period = False
 
     with ssh.keepalive():
-        assert ssh.keepalive_mode == 1
+        assert ssh.keepalive_period == 1
 
     paramiko_ssh_client().close.assert_not_called()
 
 
 def test_009_no_keepalive_enforced(ssh, paramiko_ssh_client):
-    assert ssh.keepalive_mode == 1
+    assert ssh.keepalive_period == 1
 
     with ssh.keepalive(enforce=False):
-        pass
+        pass  # NOSONAR
 
     paramiko_ssh_client().close.assert_called_once()
 

@@ -111,12 +111,12 @@ Creation from scratch:
 .. code-block:: python
 
     auth = exec_helpers.SSHAuth(
-        username='username',  # type: typing.Optional[str]
-        password='password',  # type: typing.Optional[str]
-        key=None,  # type: typing.Optional[paramiko.RSAKey]
-        keys=None,  # type: typing.Optional[typing.Iterable[paramiko.RSAKey]],
-        key_filename=None,  # type: typing.Union[typing.List[str], None]
-        passphrase=None,  # type: typing.Optional[str]
+        username='username',  # type: Optional[str]
+        password='password',  # type: Optional[str]
+        key=None,  # type: Optional[paramiko.RSAKey]
+        keys=None,  # type: Optional[Iterable[paramiko.RSAKey]],
+        key_filename=None,  # type: Union[List[str], None]
+        passphrase=None,  # type: Optional[str]
     )
 
 Key is a main connection key (always tried first) and keys are alternate keys.
@@ -145,12 +145,12 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
 .. code-block:: python
 
     result: ExecResult = helper.execute(
-        command,  # type: str
+        command,  # type: Union[str, Iterable[str]]
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+        timeout=1 * 60 * 60,  # type: Union[int, float, None]
         # Keyword only:
-        log_mask_re=None,  # type: typing.Optional[str]
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        log_mask_re=None,  # type: Optional[str]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         **kwargs
@@ -160,51 +160,56 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
 .. code-block:: python
 
     result: ExecResult = helper.check_call(
-        command,  # type: str
+        command,  # type: Union[str, Iterable[str]]
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
-        error_info=None,  # type: typing.Optional[str]
-        expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
+        timeout=1 * 60 * 60,  # type: type: Union[int, float, None]
+        error_info=None,  # type: Optional[str]
+        expected=(0,),  # type: Iterable[Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         # Keyword only:
-        log_mask_re=None,  # type: typing.Optional[str]
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        log_mask_re=None,  # type: Optional[str]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
-        exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
+        exception_class=CalledProcessError,  # Type[CalledProcessError]
         **kwargs
     )
 
 .. code-block:: python
 
     result: ExecResult = helper.check_stderr(
-        command,  # type: str
+        command,  # type: Union[str, Iterable[str]]
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
-        error_info=None,  # type: typing.Optional[str]
+        timeout=1 * 60 * 60,  # type: type: Union[int, float, None]
+        error_info=None,  # type: Optional[str]
         raise_on_err=True,  # type: bool
         # Keyword only:
-        expected=(0,),  # typing.Iterable[typing.Union[int, ExitCodes]]
-        log_mask_re=None,  # type: typing.Optional[str]
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        expected=(0,),  # Iterable[Union[int, ExitCodes]]
+        log_mask_re=None,  # type: Optional[str]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
-        exception_class=CalledProcessError,  # typing.Type[CalledProcessError]
+        exception_class=CalledProcessError,  # Type[CalledProcessError]
     )
 
 .. code-block:: python
 
     result: ExecResult = helper(  # Lazy way: instances are callable and uses `execute`.
-        command,  # type: str
+        command,  # type: Union[str, Iterable[str]]
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+        timeout=1 * 60 * 60,  # type: Union[int, float, None]
         # Keyword only:
-        log_mask_re=None,  # type: typing.Optional[str]
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        log_mask_re=None,  # type: Optional[str]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
         **kwargs
     )
+
+.. note::
+
+  If command is provided as `Iterable[str]`, `shell=True` will be still used,
+  but all command components will be joined with escaping to protect from shell processing.
 
 If no STDOUT or STDERR required, it is possible to disable this FIFO pipes via `**kwargs` with flags `open_stdout=False` and `open_stderr=False`.
 
@@ -217,10 +222,10 @@ All regex matched groups will be replaced by `'<*masked*>'`.
 .. code-block:: python
 
     result: ExecResult = helper.execute(
-        command="AUTH='top_secret_key'; run command",  # type: str
+        command="AUTH='top_secret_key'; run command",  # type: Union[str, Iterable[str]]
         verbose=False,  # type: bool
-        timeout=1 * 60 * 60,  # type: typing.Optional[int]
-        log_mask_re=r"AUTH\s*=\s*'(\w+)'"  # type: typing.Optional[str]
+        timeout=1 * 60 * 60,  # type: Optional[int]
+        log_mask_re=r"AUTH\s*=\s*'(\w+)'"  # type: Optional[str]
     )
 
 `result.cmd` will be equal to `AUTH='<*masked*>'; run command`
@@ -233,8 +238,8 @@ Execution result object has a set of useful properties:
 * `cmd` - Command
 * `exit_code` - Command return code. If possible to decode using enumerators for Linux -> it used.
 * `stdin` -> `str`. Text representation of stdin.
-* `stdout` -> `typing.Tuple[bytes]`. Raw stdout output.
-* `stderr` -> `typing.Tuple[bytes]`. Raw stderr output.
+* `stdout` -> `Tuple[bytes]`. Raw stdout output.
+* `stderr` -> `Tuple[bytes]`. Raw stderr output.
 * `stdout_bin` -> `bytearray`. Binary stdout output.
 * `stderr_bin` -> `bytearray`. Binary stderr output.
 * `stdout_str` -> `str`. Text representation of output.
@@ -253,7 +258,7 @@ Execution result object has a set of useful properties:
 * `stdout_lxml` - STDOUT decoded as XML to `ElementTree` using `lxml` library. Accessible only if `lxml` library installed.
   (Extras: ``lxml``) Can be insecure.
 
-* `timestamp` -> `typing.Optional(datetime.datetime)`. Timestamp for received exit code.
+* `timestamp` -> `Optional(datetime.datetime)`. Timestamp for received exit code.
 
 SSHClient specific
 ------------------
@@ -266,19 +271,19 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 .. code-block:: python
 
     results: Dict[Tuple[str, int], ExecResult] = SSHClient.execute_together(
-        remotes,  # type: typing.Iterable[SSHClient]
-        command,  # type: str
-        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
-        expected=(0,),  # type: typing.Iterable[typing.Union[int, ExitCodes]]
+        remotes,  # type: Iterable[SSHClient]
+        command,  # type: Union[str, Iterable[str]]
+        timeout=1 * 60 * 60,  # type: type: Union[int, float, None]
+        expected=(0,),  # type: Iterable[Union[int, ExitCodes]]
         raise_on_err=True,  # type: bool
         # Keyword only:
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
-        exception_class=ParallelCallProcessError  # typing.Type[ParallelCallProcessError]
+        log_mask_re=None,  # type: Optional[str]
+        exception_class=ParallelCallProcessError  # Type[ParallelCallProcessError]
     )
-    results  # type: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
+    results  # type: Dict[Tuple[str, int], exec_result.ExecResult]
 
 Results is a dict with keys = (hostname, port) and and results in values.
 By default execute_together raises exception if unexpected return code on any remote.
@@ -297,16 +302,16 @@ For execute through SSH host can be used `execute_through_host` method:
 
     result: ExecResult = client.execute_through_host(
         hostname,  # type: str
-        command,  # type: str
+        command,  # type: Union[str, Iterable[str]]
         # Keyword only:
-        auth=None,  # type: typing.Optional[SSHAuth]
-        target_port=22,  # type: int
-        timeout=1 * 60 * 60,  # type: type: typing.Union[int, float, None]
+        auth=None,  # type: Optional[SSHAuth]
+        port=22,  # type: int
+        timeout=1 * 60 * 60,  # type: type: Union[int, float, None]
         verbose=False,  # type: bool
-        stdin=None,  # type: typing.Union[bytes, str, bytearray, None]
+        stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
-        log_mask_re=None,  # type: typing.Optional[str]
+        log_mask_re=None,  # type: Optional[str]
         get_pty=False,  # type: bool
         width=80,  # type: int
         height=24  # type: int
@@ -405,9 +410,9 @@ Example:
 
     async with helper:
       result: ExecResult = await helper.execute(
-          command,  # type: str
+          command,  # type: Union[str, Iterable[str]]
           verbose=False,  # type: bool
-          timeout=1 * 60 * 60,  # type: typing.Union[int, float, None]
+          timeout=1 * 60 * 60,  # type: Union[int, float, None]
           **kwargs
       )
 

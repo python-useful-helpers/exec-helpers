@@ -33,6 +33,7 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import CommandT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.proc_enums import ExitCodeT
@@ -40,16 +41,16 @@ from exec_helpers.proc_enums import ExitCodeT
 
 # noinspection PyProtectedMember
 class _ChRootContext(api._ChRootContext, typing.AsyncContextManager[None]):  # pylint: disable=protected-access
-    """Async extension for chroot."""
+    """Async extension for chroot.
+
+    :param conn: connection instance
+    :type conn: ExecHelper
+    :param path: chroot path or None for no chroot
+    :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+    """
 
     def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
-        """Context manager for call commands with sudo.
-
-        :param conn: connection instance
-        :type conn: ExecHelper
-        :param path: chroot path or None for no chroot
-        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
-        """
+        """Context manager for call commands with sudo."""
         super().__init__(conn=conn, path=path)
 
     async def __aenter__(self) -> None:
@@ -65,19 +66,19 @@ class _ChRootContext(api._ChRootContext, typing.AsyncContextManager[None]):  # p
 
 
 class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metaclass=abc.ABCMeta):
-    """Subprocess helper with timeouts and lock-free FIFO."""
+    """Subprocess helper with timeouts and lock-free FIFO.
+
+    :param logger: logger instance to use
+    :type logger: logging.Logger
+    :param log_mask_re: regex lookup rule to mask command for logger.
+                        all MATCHED groups will be replaced by '<*masked*>'
+    :type log_mask_re: typing.Optional[str]
+    """
 
     __slots__ = ("__alock",)
 
     def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger) -> None:
-        """Subprocess helper with timeouts and lock-free FIFO.
-
-        :param logger: logger instance to use
-        :type logger: logging.Logger
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-        """
+        """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
         self.__alock: typing.Optional[asyncio.Lock] = None
 
@@ -193,7 +194,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def execute(  # type: ignore
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -206,7 +207,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -225,12 +226,15 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :return: Execution result
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
+
+        .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        self._log_command_execute(command=command, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+        cmd = self._cmd_to_string(command)
+        self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
 
         async_result: api.ExecuteAsyncResult = await self._execute_async(
-            command,
+            cmd,
             verbose=verbose,
             log_mask_re=log_mask_re,
             stdin=stdin,
@@ -240,7 +244,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         )
 
         result: exec_result.ExecResult = await self._exec_command(
-            command=command,
+            command=cmd,
             async_result=async_result,
             timeout=timeout,
             verbose=verbose,
@@ -253,7 +257,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def __call__(  # type: ignore
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -266,7 +270,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -301,7 +305,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def check_call(  # type: ignore
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -318,7 +322,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -373,7 +377,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def check_stderr(  # type: ignore
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -390,7 +394,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.

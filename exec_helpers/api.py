@@ -26,6 +26,7 @@ __all__ = (
     "CalledProcessErrorSubClassT",
     "OptionalStdinT",
     "OptionalTimeoutT",
+    "CommandT",
 )
 
 # Standard Library
@@ -45,24 +46,31 @@ from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers.proc_enums import ExitCodeT
 
-ExecuteAsyncResult = typing.NamedTuple(
-    "ExecuteAsyncResult",
-    [
-        ("interface", typing.Any),
-        ("stdin", typing.Optional[typing.Any]),
-        ("stderr", typing.Optional[typing.Any]),
-        ("stdout", typing.Optional[typing.Any]),
-        ("started", datetime.datetime),
-    ],
-)
+CommandT = typing.TypeVar("CommandT", str, typing.Iterable[str])
 OptionalTimeoutT = typing.Union[int, float, None]
 OptionalStdinT = typing.Union[bytes, str, bytearray, None]
 CalledProcessErrorSubClassT = typing.Type[exceptions.CalledProcessError]
 
 
+class ExecuteAsyncResult(typing.NamedTuple):
+    """ExecuteAsyncResult."""
+
+    interface: typing.Any
+    stdin: typing.Optional[typing.Any]
+    stderr: typing.Optional[typing.Any]
+    stdout: typing.Optional[typing.Any]
+    started: datetime.datetime
+
+
 # noinspection PyProtectedMember
 class _ChRootContext(typing.ContextManager[None]):
     """Context manager for call commands with chroot.
+
+    :param conn: connection instance
+    :type conn: ExecHelper
+    :param path: chroot path or None for no chroot
+    :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+    :raises TypeError: incorrect type of path variable
 
     .. versionadded:: 4.1.0
     """
@@ -72,10 +80,6 @@ class _ChRootContext(typing.ContextManager[None]):
     def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
         """Context manager for call commands with sudo.
 
-        :param conn: connection instance
-        :type conn: ExecHelper
-        :param path: chroot path or None for no chroot
-        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         :raises TypeError: incorrect type of path variable
         """
         self._conn: "ExecHelper" = conn
@@ -127,23 +131,23 @@ class ExecHelper(
     typing.ContextManager["ExecHelper"],
     metaclass=abc.ABCMeta,
 ):
-    """ExecHelper global API."""
+    """ExecHelper global API.
+
+    :param logger: logger instance to use
+    :type logger: logging.Logger
+    :param log_mask_re: regex lookup rule to mask command for logger.
+                        all MATCHED groups will be replaced by '<*masked*>'
+    :type log_mask_re: typing.Optional[str]
+
+    .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+    .. versionchanged:: 1.3.5 make API public to use as interface
+    .. versionchanged:: 4.1.0 support chroot
+    """
 
     __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
 
     def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger) -> None:
-        """Global ExecHelper API.
-
-        :param logger: logger instance to use
-        :type logger: logging.Logger
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
-
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 1.3.5 make API public to use as interface
-        .. versionchanged:: 4.1.0 support chroot
-        """
+        """Global ExecHelper API."""
         self.__lock = threading.RLock()
         self.__logger: logging.Logger = logger
         self.log_mask_re: typing.Optional[str] = log_mask_re
@@ -243,6 +247,19 @@ class ExecHelper(
             result = mask_command(result, log_mask_re)
 
         return result
+
+    @staticmethod
+    def _cmd_to_string(command: CommandT) -> str:
+        """Convert command to string for usage with shell.
+
+        :param command: original command.
+        :type command: typing.Union[str, typing.Iterable[str]]
+        :return: command as single string
+        :rtype: str
+        """
+        if isinstance(command, str):
+            return command
+        return " ".join(shlex.quote(elem) for elem in command)
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
@@ -358,7 +375,7 @@ class ExecHelper(
 
     def execute(
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -371,7 +388,7 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -393,11 +410,13 @@ class ExecHelper(
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        self._log_command_execute(command=command, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+        cmd = self._cmd_to_string(command)
+        self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
         async_result: ExecuteAsyncResult = self._execute_async(
-            command,
+            cmd,
             verbose=verbose,
             log_mask_re=log_mask_re,
             stdin=stdin,
@@ -407,7 +426,7 @@ class ExecHelper(
         )
 
         result: exec_result.ExecResult = self._exec_command(
-            command=command,
+            command=cmd,
             async_result=async_result,
             timeout=timeout,
             verbose=verbose,
@@ -420,7 +439,7 @@ class ExecHelper(
 
     def __call__(
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
@@ -433,7 +452,7 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -468,7 +487,7 @@ class ExecHelper(
 
     def check_call(
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -485,7 +504,7 @@ class ExecHelper(
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -542,7 +561,7 @@ class ExecHelper(
 
     def check_stderr(
         self,
-        command: str,
+        command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
@@ -559,7 +578,7 @@ class ExecHelper(
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: str
+        :type command: typing.Union[str, typing.Iterable[str]]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
