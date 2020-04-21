@@ -15,15 +15,15 @@ API: ExecResult
         :param cmd: command
         :type cmd: ``str``
         :param stdin: STDIN
-        :type stdin: ``typing.Union[bytes, str, bytearray, None]``
+        :type stdin: ``Union[bytes, str, bytearray, None]``
         :param stdout: binary STDOUT
-        :type stdout: ``typing.Optional[typing.Iterable[bytes]]``
+        :type stdout: ``Optional[Iterable[bytes]]``
         :param stderr: binary STDERR
-        :type stderr: ``typing.Optional[typing.Iterable[bytes]]``
+        :type stderr: ``Optional[Iterable[bytes]]``
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
-        :type exit_code: typing.Union[int, ExitCodes]
+        :type exit_code: Union[int, ExitCodes]
         :param started: Timestamp of command start
-        :type started: typing.Optional[datetime.datetime]
+        :type started: ``Optional[datetime.datetime]``
 
     .. py:attribute:: stdout_lock
 
@@ -41,7 +41,7 @@ API: ExecResult
 
     .. py:attribute:: timestamp
 
-        ``typing.Optional(datetime.datetime)``
+        ``Optional(datetime.datetime)``
         Timestamp
 
     .. py:method:: set_timestamp()
@@ -59,17 +59,17 @@ API: ExecResult
 
     .. py:attribute:: stdin
 
-        ``typing.Optional[str]``
+        ``Optional[str]``
         Stdin input as string.
 
     .. py:attribute:: stdout
 
-        ``typing.Tuple[bytes, ...]``
+        ``Tuple[bytes, ...]``
         Stdout output as list of binaries.
 
     .. py:attribute:: stderr
 
-        ``typing.Tuple[bytes, ...]``
+        ``Tuple[bytes, ...]``
         Stderr output as list of binaries.
 
     .. py:attribute:: stdout_bin
@@ -124,7 +124,7 @@ API: ExecResult
 
         Return(exit) code of command.
 
-        :rtype: typing.Union[int, ExitCodes]
+        :rtype: Union[int, ExitCodes]
 
     .. py:attribute:: started
 
@@ -137,14 +137,14 @@ API: ExecResult
 
         JSON from stdout.
 
-        :rtype: ``typing.Any``
+        :rtype: ``Any``
         :raises DeserializeValueError: STDOUT can not be deserialized as JSON
 
     .. py:attribute:: stdout_yaml
 
         YAML from stdout.
 
-        :rtype: ``typing.Any``
+        :rtype: ``Any``
         :raises DeserializeValueError: STDOUT can not be deserialized as YAML
         :raises AttributeError: no any yaml parser installed
 
@@ -152,7 +152,7 @@ API: ExecResult
 
         XML from stdout
 
-        :rtype: xml.etree.ElementTree.Element
+        :rtype: ``xml.etree.ElementTree.Element``
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
         :raises AttributeError: defusedxml is not installed
 
@@ -160,7 +160,7 @@ API: ExecResult
 
         XML from stdout using lxml.
 
-        :rtype: lxml.etree.Element
+        :rtype: ``lxml.etree.Element``
         :raises DeserializeValueError: STDOUT can not be deserialized as XML
         :raises AttributeError: lxml is not installed
 
@@ -171,9 +171,9 @@ API: ExecResult
         Read stdout file-like object to stdout.
 
         :param src: source
-        :type src: ``typing.Optional[typing.Iterable]``
+        :type src: ``Optional[Iterable]``
         :param log: logger
-        :type log: ``typing.Optional[logging.Logger]``
+        :type log: ``Optional[logging.Logger]``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
 
@@ -184,9 +184,9 @@ API: ExecResult
         Read stderr file-like object to stderr.
 
         :param src: source
-        :type src: ``typing.Optional[typing.Iterable]``
+        :type src: ``Optional[Iterable]``
         :param log: logger
-        :type log: ``typing.Optional[logging.Logger]``
+        :type log: ``Optional[logging.Logger]``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
 
@@ -202,16 +202,16 @@ API: ExecResult
         Lines access proxy.
 
         :param data: data to work with.
-        :type data: typing.Sequence[bytes]
+        :type data: ``Sequence[bytes]``
 
     .. py:method:: __getitem__(self, item)
 
         Access magic.
 
         :param item: index
-        :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
+        :type item: ``Union[int, slice, Iterable[Union[int, slice, ellipsis]]]``
         :return: Joined selected lines
-        :rtype: str
+        :rtype: ``str``
         :raises TypeError: Unexpected key
 
     .. py:method:: __str__(self)

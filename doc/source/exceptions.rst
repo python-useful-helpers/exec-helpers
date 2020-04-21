@@ -26,7 +26,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     .. py:attribute:: timeout
 
-        ``typing.Union[int, float]``
+        ``Union[int, float]``
 
     .. py:attribute:: result
 
@@ -58,7 +58,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+        :type timeout: ``Union[int, float]``
 
 
 .. py:exception:: ExecHelperTimeoutError(ExecHelperTimeoutProcessError)
@@ -75,7 +75,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+        :type timeout: ``Union[int, float]``
 
 
 .. py:exception:: CalledProcessError(ExecCalledProcessError)
@@ -89,7 +89,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
@@ -108,13 +108,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
         return code
 
-        :rtype: typing.Union[int, ExitCodes]
+        :rtype: Union[int, ExitCodes]
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: typing.List[typing.Union[int, ExitCodes]]
+        :rtype: List[Union[int, ExitCodes]]
 
     .. py:attribute:: stdout
 
@@ -135,11 +135,11 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param command: command
         :type command: ``str``
         :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type errors: Dict[Tuple[str, int], ExecResult]
         :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type results: Dict[Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
 
         .. versionchanged:: 1.0 - fixed inheritance
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
@@ -153,19 +153,19 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
         results with errors
 
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :rtype: Dict[Tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
         all results
 
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :rtype: Dict[Tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: typing.List[typing.Union[int, ExitCodes]]
+        :rtype: List[Union[int, ExitCodes]]
 
 .. py:exception:: ParallelCallExceptions(ParallelCallProcessError)
 
@@ -176,13 +176,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param command: command
         :type command: ``str``
         :param exceptions: Exception on connections
-        :type exceptions: ``typing.Dict[typing.Tuple[str, int], Exception]``
+        :type exceptions: ``Dict[Tuple[str, int], Exception]``
         :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type errors: Dict[Tuple[str, int], ExecResult]
         :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type results: Dict[Tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: Iterable[Union[int, ExitCodes]]
 
         .. versionchanged:: 1.0 - fixed inheritance
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
@@ -194,23 +194,23 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     .. py:attribute:: exceptions
 
-        ``typing.Dict[typing.Tuple[str, int], Exception]``
+        ``Dict[Tuple[str, int], Exception]``
         Exception on connections
 
     .. py:attribute:: errors
 
         results with errors
 
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :rtype: Dict[Tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
         all results
 
-        :rtype: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :rtype: Dict[Tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: typing.List[typing.Union[int, ExitCodes]]
+        :rtype: List[Union[int, ExitCodes]]
