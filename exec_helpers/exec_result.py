@@ -19,17 +19,19 @@
 __all__ = ("ExecResult",)
 
 # Standard Library
-import contextlib
-import datetime
-import json
-import logging
-import threading
 import typing
+from contextlib import suppress
+from datetime import datetime
+from json import loads
+from logging import DEBUG
+from logging import INFO
+from logging import getLogger
+from threading import RLock
 
 # Package Implementation
-from exec_helpers import exceptions
-from exec_helpers import proc_enums
-from exec_helpers.proc_enums import ExitCodeT
+from exec_helpers.exceptions import DeserializeValueError
+from exec_helpers.proc_enums import INVALID
+from exec_helpers.proc_enums import exit_code_to_enum
 
 try:
     # noinspection PyPackageRequirements
@@ -52,13 +54,18 @@ except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
+    # pylint: disable=ungrouped-imports
+    from logging import Logger
+
     # noinspection PyPackageRequirements
     import logwrap
     import xml.etree.ElementTree  # nosec  # for typing only
+    from exec_helpers.proc_enums import ExitCodeT
 
-LOGGER: logging.Logger = logging.getLogger(__name__)
+    _OptLoggerT = typing.Optional[Logger]
+
+LOGGER: "Logger" = getLogger(__name__)
 _OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
-_OptLoggerT = typing.Optional[logging.Logger]
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -173,9 +180,9 @@ class ExecResult:
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         stdout: _OptBytesIterableT = None,
         stderr: _OptBytesIterableT = None,
-        exit_code: ExitCodeT = proc_enums.INVALID,
+        exit_code: "ExitCodeT" = INVALID,
         *,
-        started: typing.Optional[datetime.datetime] = None,
+        started: typing.Optional[datetime] = None,
     ) -> None:
         """Command execution result.
 
@@ -188,12 +195,12 @@ class ExecResult:
         :param stderr: binary STDERR
         :type stderr: typing.Optional[typing.Iterable[bytes]]
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
-        :type exit_code: typing.Union[int, proc_enums.ExitCodes]
+        :type exit_code: typing.Union[int, ExitCodes]
         :param started: Timestamp of command start
-        :type started: typing.Optional[datetime.datetime]
+        :type started: typing.Optional[datetime]
         """
-        self.__stdout_lock = threading.RLock()
-        self.__stderr_lock = threading.RLock()
+        self.__stdout_lock = RLock()
+        self.__stderr_lock = RLock()
 
         self.__cmd: str = cmd
         if isinstance(stdin, bytes):
@@ -213,11 +220,11 @@ class ExecResult:
         else:
             self._stderr = ()
 
-        self.__exit_code: ExitCodeT = proc_enums.INVALID
-        self.__timestamp: typing.Optional[datetime.datetime] = None
+        self.__exit_code: "ExitCodeT" = INVALID
+        self.__timestamp: typing.Optional[datetime] = None
         self.exit_code = exit_code
 
-        self.__started: typing.Optional[datetime.datetime] = started
+        self.__started: typing.Optional[datetime] = started
 
         # By default is none:
         self._stdout_str: typing.Optional[str] = None
@@ -226,33 +233,33 @@ class ExecResult:
         self._stderr_brief: typing.Optional[str] = None
 
     @property
-    def stdout_lock(self) -> threading.RLock:
+    def stdout_lock(self) -> RLock:
         """Lock object for thread-safe operation.
 
         :return: internal lock for stdout
-        :rtype: threading.RLock
+        :rtype: RLock
 
         .. versionadded:: 2.2.0
         """
         return self.__stdout_lock
 
     @property
-    def stderr_lock(self) -> threading.RLock:
+    def stderr_lock(self) -> RLock:
         """Lock object for thread-safe operation.
 
         :return: internal lock for stderr
-        :rtype: threading.RLock
+        :rtype: RLock
 
         .. versionadded:: 2.2.0
         """
         return self.__stderr_lock
 
     @property
-    def timestamp(self) -> typing.Optional[datetime.datetime]:
+    def timestamp(self) -> typing.Optional[datetime]:
         """Timestamp.
 
         :return: exit code timestamp
-        :rtype: typing.Optional[datetime.datetime]
+        :rtype: typing.Optional[datetime]
         """
         return self.__timestamp
 
@@ -264,7 +271,7 @@ class ExecResult:
         .. versionadded:: 4.0.0
         """
         if self.timestamp is None:
-            self.__timestamp = datetime.datetime.utcnow()
+            self.__timestamp = datetime.utcnow()
 
     @classmethod
     def _get_brief(cls, data: typing.Tuple[bytes, ...]) -> str:
@@ -316,7 +323,9 @@ class ExecResult:
         return self._stderr
 
     @staticmethod
-    def _poll_stream(src: typing.Iterable[bytes], log: _OptLoggerT = None, verbose: bool = False) -> typing.List[bytes]:
+    def _poll_stream(
+        src: typing.Iterable[bytes], log: "_OptLoggerT" = None, verbose: bool = False
+    ) -> typing.List[bytes]:
         """Stream poll helper.
 
         :param src: source to read from
@@ -326,17 +335,16 @@ class ExecResult:
         :rtype: typing.List[bytes]
         """
         dst: typing.List[bytes] = []
-        with contextlib.suppress(IOError):
+        with suppress(IOError):
             for line in src:
                 dst.append(line)
                 if log:
                     log.log(
-                        level=logging.INFO if verbose else logging.DEBUG,
-                        msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
+                        level=INFO if verbose else DEBUG, msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
         return dst
 
-    def read_stdout(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
+    def read_stdout(self, src: _OptBytesIterableT = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
         """Read stdout file-like object to stdout.
 
         :param src: source
@@ -358,7 +366,7 @@ class ExecResult:
             self._stdout_str = self._stdout_brief = None
             self._stdout += tuple(self._poll_stream(src, log, verbose))
 
-    def read_stderr(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
+    def read_stderr(self, src: _OptBytesIterableT = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
         """Read stderr file-like object to stdout.
 
         :param src: source
@@ -475,20 +483,20 @@ class ExecResult:
         return LinesAccessProxy(self.stderr)
 
     @property
-    def exit_code(self) -> ExitCodeT:
+    def exit_code(self) -> "ExitCodeT":
         """Return(exit) code of command.
 
         :return: exit code
-        :rtype: typing.Union[int, proc_enums.ExitCodes]
+        :rtype: typing.Union[int, ExitCodes]
         """
         return self.__exit_code
 
     @exit_code.setter
-    def exit_code(self, new_val: ExitCodeT) -> None:
+    def exit_code(self, new_val: "ExitCodeT") -> None:
         """Return(exit) code of command.
 
         :param new_val: new exit code
-        :type new_val: typing.Union[int, proc_enums.ExitCodes]
+        :type new_val: typing.Union[int, ExitCodes]
         :raises RuntimeError: Exit code is already received
         :raises TypeError: exit code is not int instance
 
@@ -499,16 +507,16 @@ class ExecResult:
         if not isinstance(new_val, int):
             raise TypeError(f"Exit code is strictly int, received: {new_val!r}")
         with self.stdout_lock, self.stderr_lock:
-            self.__exit_code = proc_enums.exit_code_to_enum(new_val)
-            if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()
+            self.__exit_code = exit_code_to_enum(new_val)
+            if self.__exit_code != INVALID:
+                self.__timestamp = datetime.utcnow()
 
     @property
-    def started(self) -> typing.Optional[datetime.datetime]:
+    def started(self) -> typing.Optional[datetime]:
         """Timestamp of command start.
 
         :return: timestamp from command start, if applicable
-        :rtype: typing.Optional[datetime.datetime]
+        :rtype: typing.Optional[datetime]
         .. versionadded:: 4.0.0
         """
         return self.__started
@@ -525,7 +533,7 @@ class ExecResult:
         """
         try:
             if fmt == "json":
-                return json.loads(self.stdout_str)
+                return loads(self.stdout_str)
             if fmt == "yaml":
                 if yaml is not None:
                     if yaml.__with_libyaml__:  # pragma: no cover
@@ -540,7 +548,7 @@ class ExecResult:
             tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
             LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
 
-            raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
+            raise DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
                 e.__traceback__
             ) from e
 

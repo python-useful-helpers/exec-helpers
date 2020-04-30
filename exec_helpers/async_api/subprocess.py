@@ -20,56 +20,72 @@
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
 # Standard Library
-import asyncio
-import copy
-import datetime
-import errno
-import logging
-import os
 import typing
+from asyncio import StreamWriter
+from asyncio import TimeoutError as AsyncTimeoutError
+from asyncio import create_subprocess_shell
+from asyncio import ensure_future
+from asyncio import wait_for
+from asyncio.subprocess import DEVNULL
+from asyncio.subprocess import PIPE
+from asyncio.subprocess import Process
+from copy import deepcopy
+from datetime import datetime
+from errno import EINVAL
+from errno import EPIPE
+from errno import ESHUTDOWN
+from logging import getLogger
+from os import environ
 
 # Package Implementation
-from exec_helpers import _log_templates
-from exec_helpers import _subprocess_helpers
-from exec_helpers import constants
-from exec_helpers import exceptions
-from exec_helpers import proc_enums
-from exec_helpers import subprocess_runner
-from exec_helpers.api import CalledProcessErrorSubClassT
-from exec_helpers.api import CommandT
-from exec_helpers.api import OptionalStdinT
-from exec_helpers.api import OptionalTimeoutT
-from exec_helpers.async_api import api
-from exec_helpers.async_api import exec_result
-from exec_helpers.proc_enums import ExitCodeT
-from exec_helpers.subprocess_runner import CwdT
-from exec_helpers.subprocess_runner import EnvT
+from exec_helpers._log_templates import CMD_WAIT_ERROR
+from exec_helpers._subprocess_helpers import kill_proc_tree
+from exec_helpers._subprocess_helpers import subprocess_kw
+from exec_helpers.async_api.api import ExecHelper
+from exec_helpers.async_api.exec_result import ExecResult
+from exec_helpers.constants import DEFAULT_TIMEOUT
+from exec_helpers.exceptions import CalledProcessError
+from exec_helpers.exceptions import ExecHelperNoKillError
+from exec_helpers.exceptions import ExecHelperTimeoutError
+from exec_helpers.proc_enums import EXPECTED
+from exec_helpers.subprocess import SubprocessExecuteAsyncResult as SyncSubprocessExecuteAsyncResult
+
+if typing.TYPE_CHECKING:
+    # pylint: disable=ungrouped-imports
+    from asyncio import Future
+    from logging import Logger
+    from exec_helpers.api import CalledProcessErrorSubClassT
+    from exec_helpers.api import CommandT
+    from exec_helpers.api import OptionalStdinT
+    from exec_helpers.api import OptionalTimeoutT
+    from exec_helpers.proc_enums import ExitCodeT
+    from exec_helpers.subprocess import CwdT
+    from exec_helpers.subprocess import EnvT
 
 
 # noinspection PyTypeHints,PyTypeChecker
-class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResult):
+class SubprocessExecuteAsyncResult(SyncSubprocessExecuteAsyncResult):
     """Override original NamedTuple with proper typing."""
 
     __slots__ = ()
 
-    # pylint: disable=no-member
     @property
-    def interface(self) -> asyncio.subprocess.Process:  # type: ignore
+    def interface(self) -> Process:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: control interface
-        :rtype: asyncio.subprocess.Process
+        :rtype: Process
         """
         return super().interface  # type: ignore
 
     # pylint: enable=no-member
 
     @property
-    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
+    def stdin(self) -> typing.Optional[StreamWriter]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
-        :rtype: typing.Optional[asyncio.StreamWriter]
+        :rtype: typing.Optional[StreamWriter]
         """
         return super().stdin  # type: ignore
 
@@ -92,14 +108,14 @@ class SubprocessExecuteAsyncResult(subprocess_runner.SubprocessExecuteAsyncResul
         return super(SubprocessExecuteAsyncResult, self).stdout  # type: ignore
 
 
-class Subprocess(api.ExecHelper):
+class Subprocess(ExecHelper):
     """Subprocess helper with timeouts and lock-free FIFO.
 
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
     :type log_mask_re: typing.Optional[str]
     :param logger: logger instance to use
-    :type logger: logging.Logger
+    :type logger: Logger
 
     .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
     .. versionchanged:: 3.2.0 Logger can be enforced.
@@ -110,10 +126,7 @@ class Subprocess(api.ExecHelper):
     __slots__ = ()
 
     def __init__(
-        self,
-        log_mask_re: typing.Optional[str] = None,
-        *,
-        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
+        self, log_mask_re: typing.Optional[str] = None, *, logger: "Logger" = getLogger(__name__),  # noqa: B008
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
@@ -140,13 +153,13 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
-        timeout: OptionalTimeoutT,
+        timeout: "OptionalTimeoutT",
         *,
         verbose: bool = False,
         log_mask_re: typing.Optional[str] = None,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Command for execution
@@ -182,44 +195,44 @@ class Subprocess(api.ExecHelper):
         # Store command with hidden data
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
+        result = ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        stdout_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stdout())
-        stderr_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stderr())
+        stdout_task: "Future[None]" = ensure_future(poll_stdout())
+        stderr_task: "Future[None]" = ensure_future(poll_stderr())
 
         try:
             # Wait real timeout here
-            exit_code: int = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)
+            exit_code: int = await wait_for(async_result.interface.wait(), timeout=timeout)
             result.exit_code = exit_code
             return result
-        except asyncio.TimeoutError:
+        except AsyncTimeoutError:
             # kill -9 for all subprocesses
-            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_signal: typing.Optional[int] = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
+            kill_proc_tree(async_result.interface.pid)
+            exit_signal: typing.Optional[int] = await wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+                raise ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
             result.exit_code = exit_signal
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
             result.set_timestamp()
 
-        wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg: str = CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     # noinspection PyMethodOverriding
     async def _execute_async(  # type: ignore  # pylint: disable=arguments-differ
         self,
         command: str,
         *,
-        stdin: OptionalStdinT = None,
+        stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
+        cwd: "CwdT" = None,
+        env: "EnvT" = None,
+        env_patch: "EnvT" = None,
         **kwargs: typing.Any,
     ) -> SubprocessExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
@@ -246,35 +259,35 @@ class Subprocess(api.ExecHelper):
         :rtype: typing.NamedTuple(
                     'SubprocessExecuteAsyncResult',
                     [
-                        ('interface', asyncio.subprocess.Process),
-                        ('stdin', typing.Optional[asyncio.StreamWriter]),
-                        ('stderr', typing.Optional[asyncio.StreamReader]),
-                        ('stdout', typing.Optional[asyncio.StreamReader]),
-                        ("started", datetime.datetime),
+                        ('interface', Process),
+                        ('stdin', typing.Optional[StreamWriter]),
+                        ('stderr', typing.Optional[StreamReader]),
+                        ('stdout', typing.Optional[StreamReader]),
+                        ("started", datetime),
                     ]
                 )
         :raises OSError: impossible to process STDIN
         """
-        started = datetime.datetime.utcnow()
+        started = datetime.utcnow()
 
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
+            env = dict(deepcopy(environ) if env is None else deepcopy(env))  # type: ignore
             env.update(env_patch)  # type: ignore
 
-        process: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(  # pylint: disable=no-member
+        process: Process = await create_subprocess_shell(
             cmd=self._prepare_command(cmd=command, chroot_path=chroot_path),
-            stdout=asyncio.subprocess.PIPE if open_stdout else asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.PIPE if open_stderr else asyncio.subprocess.DEVNULL,
-            stdin=asyncio.subprocess.PIPE,
+            stdout=PIPE if open_stdout else DEVNULL,
+            stderr=PIPE if open_stderr else DEVNULL,
+            stdin=PIPE,
             cwd=cwd,
             env=env,
             universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw,
+            **subprocess_kw,
         )
 
         if stdin is None:
-            process_stdin: typing.Optional[asyncio.StreamWriter] = process.stdin
+            process_stdin: typing.Optional[StreamWriter] = process.stdin
         else:
             if isinstance(stdin, str):
                 stdin = stdin.encode(encoding="utf-8")
@@ -284,21 +297,21 @@ class Subprocess(api.ExecHelper):
                 process.stdin.write(stdin)  # type: ignore
                 await process.stdin.drain()  # type: ignore
             except OSError as exc:
-                if exc.errno == errno.EINVAL:
+                if exc.errno == EINVAL:
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
                     # with EINVAL if the child process exited or if the child
                     # process is still running but closed the pipe.
                     self.logger.warning("STDIN Send failed: closed PIPE")
-                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):
+                elif exc.errno in (EPIPE, ESHUTDOWN):
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
-                    _subprocess_helpers.kill_proc_tree(process.pid)
+                    kill_proc_tree(process.pid)
                     process.kill()
                     raise
             try:
                 process.stdin.close()  # type: ignore
             except OSError as exc:
-                if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
+                if exc.errno in (EINVAL, EPIPE, ESHUTDOWN):
                     pass  # PIPE already closed
                 else:
                     process.kill()
@@ -306,23 +319,24 @@ class Subprocess(api.ExecHelper):
 
             process_stdin = None
 
+        # noinspection PyArgumentList
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
 
     async def execute(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: CommandT,
+        command: "CommandT",
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: OptionalStdinT = None,
+        stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
+        cwd: "CwdT" = None,
+        env: "EnvT" = None,
+        env_patch: "EnvT" = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -356,7 +370,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
-        return await super().execute(  # type: ignore
+        return await super().execute(
             command=command,
             verbose=verbose,
             timeout=timeout,
@@ -372,19 +386,19 @@ class Subprocess(api.ExecHelper):
 
     async def __call__(  # type: ignore
         self,
-        command: CommandT,
+        command: "CommandT",
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: OptionalStdinT = None,
+        stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
+        cwd: "CwdT" = None,
+        env: "EnvT" = None,
+        env_patch: "EnvT" = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -417,7 +431,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         """
-        return await super().__call__(  # type: ignore
+        return await super().__call__(
             command=command,
             verbose=verbose,
             timeout=timeout,
@@ -433,23 +447,23 @@ class Subprocess(api.ExecHelper):
 
     async def check_call(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: CommandT,
+        command: "CommandT",
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
-        stdin: OptionalStdinT = None,
+        stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
-        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
+        cwd: "CwdT" = None,
+        env: "EnvT" = None,
+        env_patch: "EnvT" = None,
+        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and check for return code.
 
         :param command: Command for execution
@@ -461,7 +475,7 @@ class Subprocess(api.ExecHelper):
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -480,7 +494,7 @@ class Subprocess(api.ExecHelper):
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -492,7 +506,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        return await super().check_call(  # type: ignore
+        return await super().check_call(
             command=command,
             verbose=verbose,
             timeout=timeout,
@@ -512,23 +526,23 @@ class Subprocess(api.ExecHelper):
 
     async def check_stderr(  # type: ignore  # pylint: disable=arguments-differ
         self,
-        command: CommandT,
+        command: "CommandT",
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
-        stdin: OptionalStdinT = None,
+        stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
-        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
+        cwd: "CwdT" = None,
+        env: "EnvT" = None,
+        env_patch: "EnvT" = None,
+        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
@@ -542,7 +556,7 @@ class Subprocess(api.ExecHelper):
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -559,7 +573,7 @@ class Subprocess(api.ExecHelper):
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -571,7 +585,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        return await super().check_stderr(  # type: ignore
+        return await super().check_stderr(
             command=command,
             verbose=verbose,
             timeout=timeout,

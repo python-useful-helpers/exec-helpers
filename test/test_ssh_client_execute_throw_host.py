@@ -180,7 +180,7 @@ def test_02_execute_through_host_with_creds(
 
 
 def test_03_execute_get_pty(ssh, mocker) -> None:
-    conn = mocker.patch("paramiko.SSHClient")
+    conn = mocker.patch("exec_helpers._ssh_client_base.SSHClient")
     target = "127.0.0.2"
     ssh.execute_through_host(target, command, get_pty=True)
     final_client = conn()
@@ -189,7 +189,7 @@ def test_03_execute_get_pty(ssh, mocker) -> None:
 
 
 def test_04_execute_use_stdin(ssh, mocker, chan_makefile) -> None:
-    conn = mocker.patch("paramiko.SSHClient")
+    conn = mocker.patch("exec_helpers._ssh_client_base.SSHClient")
     conn().get_transport().open_session().makefile = chan_makefile
     target = "127.0.0.2"
     cmd = 'read line; echo "$line"'

@@ -18,6 +18,8 @@ line_length = 120
 multi_line_output = 3
 force_single_line = true
 
+known_third_party = ["threaded", "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil"]
+
 import_heading_stdlib = "Standard Library"
 import_heading_thirdparty = "External Dependencies"
 import_heading_firstparty = "Package Implementation"

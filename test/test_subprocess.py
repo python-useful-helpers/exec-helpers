@@ -26,7 +26,7 @@ import pytest
 import exec_helpers
 from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
-from exec_helpers.subprocess_runner import SubprocessExecuteAsyncResult
+from exec_helpers.subprocess import SubprocessExecuteAsyncResult
 
 # All test coroutines will be treated as marked.
 
@@ -140,12 +140,12 @@ def exec_result(run_parameters):
 
 @pytest.fixture
 def execute(mocker, exec_result):
-    return mocker.patch("exec_helpers.subprocess_runner.Subprocess.execute", name="execute", return_value=exec_result)
+    return mocker.patch("exec_helpers.subprocess.Subprocess.execute", name="execute", return_value=exec_result)
 
 
 @pytest.fixture
 def popen(mocker, run_parameters):
-    mocker.patch("psutil.Process")
+    mocker.patch("exec_helpers._subprocess_helpers.Process")
 
     def create_mock(
         ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
@@ -169,7 +169,7 @@ def popen(mocker, run_parameters):
         proc.attach_mock(mock.Mock(return_value=int(ec)), "wait")
         proc.configure_mock(returncode=int(ec))
 
-        run_shell = mocker.patch("subprocess.Popen", name="popen", return_value=proc)
+        run_shell = mocker.patch("exec_helpers.subprocess.Popen", name="popen", return_value=proc)
         return run_shell
 
     return create_mock(**run_parameters)
@@ -245,7 +245,7 @@ def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> N
 
 def test_003_context_manager(mocker, popen, subprocess_logger, exec_result, run_parameters) -> None:
     """Test context manager for threads synchronization."""
-    lock_mock = mocker.patch("threading.RLock")
+    lock_mock = mocker.patch("exec_helpers.api.RLock")
 
     with exec_helpers.Subprocess() as runner:
         res = runner.execute(command, stdin=run_parameters["stdin"])

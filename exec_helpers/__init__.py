@@ -51,7 +51,7 @@ from .exec_result import ExecResult
 from .proc_enums import ExitCodes
 from .ssh_auth import SSHAuth
 from .ssh_client import SSHClient
-from .subprocess_runner import Subprocess  # nosec  # Expected
+from .subprocess import Subprocess  # nosec  # Expected
 
 try:
     from ._version import version as __version__

@@ -1,12 +1,13 @@
 """SSH client shared helpers."""
 
 # Standard Library
-import functools
-import pathlib
 import typing
+from functools import lru_cache
+from pathlib import Path
 
 # External Dependencies
-import paramiko  # type: ignore
+from paramiko import SSHConfig as ParamikoSSHConfig  # type: ignore
+from paramiko.config import SSHConfigDict  # type: ignore
 
 if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
@@ -14,24 +15,24 @@ if typing.TYPE_CHECKING:
 
 
 # Parse default SSHConfig if available
-SSH_CONFIG_FILE_SYSTEM = pathlib.Path("/etc/ssh/ssh_config")
-SSH_CONFIG_FILE_USER = pathlib.Path("~/.ssh/config").expanduser()
+SSH_CONFIG_FILE_SYSTEM = Path("/etc/ssh/ssh_config")
+SSH_CONFIG_FILE_USER = Path("~/.ssh/config").expanduser()
 
 
-@functools.lru_cache(maxsize=128, typed=True)
-def _parse_ssh_config_file(file_path: pathlib.Path) -> typing.Optional[paramiko.SSHConfig]:
+@lru_cache(maxsize=128, typed=True)
+def _parse_ssh_config_file(file_path: Path) -> typing.Optional[ParamikoSSHConfig]:
     """Parse ssh config file.
 
     :param file_path: file path for parsing
-    :type file_path: pathlib.Path
+    :type file_path: Path
     :return: SSH config if file found and parsed else None
-    :rtype: typing.Optional[paramiko.SSHConfig]
+    :rtype: typing.Optional[ParamikoSSHConfig]
     """
     if not file_path.exists():
         return None
     # noinspection PyBroadException
     try:
-        config = paramiko.SSHConfig()
+        config = ParamikoSSHConfig()
         with file_path.open() as f_obj:
             config.parse(f_obj)
         return config
@@ -199,16 +200,13 @@ class SSHConfig:
 
     @classmethod
     def from_ssh_config(
-        cls,
-        ssh_config: typing.Union[
-            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
-        ],
+        cls, ssh_config: typing.Union[SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
     ) -> "SSHConfig":
         """Construct config from Paramiko parsed file.
 
         :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict
         :type ssh_config: typing.Union[
-            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+            SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
         ]
         :return: SSHConfig with supported values from config
         :rtype: SSHConfig
@@ -393,11 +391,11 @@ class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
         raise KeyError(f"{key} is not available and not allowed.")  # pragma: no cover
 
 
-def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHConfigs:
+def _parse_paramiko_ssh_config(conf: ParamikoSSHConfig, host: str) -> HostsSSHConfigs:
     """Parse Paramiko ssh config for specific host to dictionary.
 
     :param conf: Paramiko SSHConfig instance
-    :type conf: paramiko.SSHConfig
+    :type conf: ParamikoSSHConfig
     :param host: hostname to seek in config
     :type host: str
     :return: parsed dictionary with proxy jump path, if available
@@ -442,7 +440,7 @@ def _parse_dict_ssh_config(
 def parse_ssh_config(
     ssh_config: typing.Union[
         str,
-        paramiko.SSHConfig,
+        ParamikoSSHConfig,
         typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
         None,
     ],
@@ -454,7 +452,7 @@ def parse_ssh_config(
     :type ssh_config:
         typing.Union[
             str,
-            paramiko.SSHConfig,
+            ParamikoSSHConfig,
             typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
             None
         ]
@@ -463,22 +461,22 @@ def parse_ssh_config(
     :return: parsed ssh config if available
     :rtype: HostsSSHConfigs
     """
-    if isinstance(ssh_config, paramiko.SSHConfig):
+    if isinstance(ssh_config, ParamikoSSHConfig):
         return _parse_paramiko_ssh_config(ssh_config, host)
 
     if isinstance(ssh_config, dict):
         return _parse_dict_ssh_config(ssh_config, host)
 
     if isinstance(ssh_config, str):
-        ssh_config_path = pathlib.Path(ssh_config).expanduser()
+        ssh_config_path = Path(ssh_config).expanduser()
         if ssh_config_path.exists():
-            real_config = paramiko.SSHConfig()
+            real_config = ParamikoSSHConfig()
             with ssh_config_path.open() as f_config:
                 real_config.parse(f_config)
             return _parse_paramiko_ssh_config(real_config, host)
 
-    system_ssh_config: typing.Optional[paramiko.config.SSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_SYSTEM)
-    user_ssh_config: typing.Optional[paramiko.config.SSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_USER)
+    system_ssh_config: typing.Optional[ParamikoSSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_SYSTEM)
+    user_ssh_config: typing.Optional[ParamikoSSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_USER)
 
     if system_ssh_config is not None:
         config = _parse_paramiko_ssh_config(system_ssh_config, host)

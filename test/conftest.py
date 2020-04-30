@@ -30,14 +30,14 @@ def no_real_ssh_config(mocker):
 @pytest.fixture
 def paramiko_ssh_client(mocker, no_real_ssh_config) -> mock.MagicMock:
     """Minimal paramiko.SSHClient mock."""
-    mocker.patch("time.sleep")
-    return mocker.patch("paramiko.SSHClient", autospec=True)
+    mocker.patch("exec_helpers._ssh_client_base.sleep")
+    return mocker.patch("exec_helpers._ssh_client_base.SSHClient", autospec=True)
 
 
 @pytest.fixture
 def auto_add_policy(mocker) -> mock.MagicMock:
     """Minimal paramiko.AutoAddPolicy mock."""
-    return mocker.patch("paramiko.AutoAddPolicy", return_value="AutoAddPolicy")
+    return mocker.patch("exec_helpers._ssh_client_base.AutoAddPolicy", return_value="AutoAddPolicy")
 
 
 @pytest.fixture
@@ -48,11 +48,11 @@ def ssh_auth_logger(mocker) -> mock.MagicMock:
 
 @pytest.fixture
 def subprocess_logger(mocker) -> mock.MagicMock:
-    """Minimal exec_helpers.subprocess_runner.Subprocess.logger mock."""
-    return mocker.patch("exec_helpers.subprocess_runner.Subprocess.logger", autospec=True)
+    """Minimal exec_helpers.subprocess.Subprocess.logger mock."""
+    return mocker.patch("exec_helpers.subprocess.Subprocess.logger", autospec=True)
 
 
 @pytest.fixture
 def get_logger(mocker) -> mock.MagicMock:
     """Minimal logging.getLogger mock."""
-    return mocker.patch("logging.getLogger")
+    return mocker.patch("exec_helpers._ssh_client_base.getLogger")

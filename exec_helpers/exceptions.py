@@ -22,18 +22,22 @@ __all__ = (
     "CalledProcessError",
     "ParallelCallProcessError",
     "ParallelCallExceptions",
+    "DeserializeValueError",
 )
 
 # Standard Library
 import typing
 
 # Package Implementation
-from exec_helpers import _log_templates
-from exec_helpers import proc_enums
-from exec_helpers.proc_enums import ExitCodeT
+from exec_helpers.proc_enums import EXPECTED
+from exec_helpers.proc_enums import exit_codes_to_enums
+
+# Local Implementation
+from ._log_templates import CMD_WAIT_ERROR
 
 if typing.TYPE_CHECKING:
-    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
+    from exec_helpers.proc_enums import ExitCodeT
+    from exec_helpers.exec_result import ExecResult  # noqa: F401  # pylint: disable=cyclic-import
 
 
 class ExecHelperError(Exception):
@@ -59,18 +63,18 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     __slots__ = ("result", "timeout")
 
-    def __init__(self, message: str, *, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+    def __init__(self, message: str, *, result: "ExecResult", timeout: typing.Union[int, float]) -> None:
         """Exception for error on process calls.
 
         :param message: exception message
         :type message: str
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
         super().__init__(message)
-        self.result: "exec_result.ExecResult" = result
+        self.result: "ExecResult" = result
         self.timeout: typing.Union[int, float] = timeout
 
     @property
@@ -106,11 +110,11 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
 
     __slots__ = ()
 
-    def __init__(self, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+    def __init__(self, result: "ExecResult", timeout: typing.Union[int, float]) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
@@ -134,15 +138,15 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
 
     __slots__ = ()
 
-    def __init__(self, result: "exec_result.ExecResult", timeout: typing.Union[int, float]) -> None:
+    def __init__(self, result: "ExecResult", timeout: typing.Union[int, float]) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param timeout: timeout for command
         :type timeout: typing.Union[int, float]
         """
-        message: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        message: str = CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         super().__init__(message, result=result, timeout=timeout)
 
 
@@ -151,21 +155,19 @@ class CalledProcessError(ExecCalledProcessError):
 
     __slots__ = ("result", "expected")
 
-    def __init__(
-        self, result: "exec_result.ExecResult", expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
-    ) -> None:
+    def __init__(self, result: "ExecResult", expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param expected: expected return codes
         :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
 
         .. versionchanged:: 1.1.1 - provide full result
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        self.result: "exec_result.ExecResult" = result
-        self.expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        self.result: "ExecResult" = result
+        self.expected: "typing.Sequence[ExitCodeT]" = exit_codes_to_enums(expected)
         message: str = (
             f"Command {result.cmd!r} returned exit code {result.exit_code} while expected {expected}\n"
             f"\tSTDOUT:\n"
@@ -175,7 +177,7 @@ class CalledProcessError(ExecCalledProcessError):
         super().__init__(message)
 
     @property
-    def returncode(self) -> ExitCodeT:
+    def returncode(self) -> "ExitCodeT":
         """Command return code.
 
         :return: command return code
@@ -215,9 +217,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
     def __init__(
         self,
         command: str,
-        errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        errors: typing.Dict[typing.Tuple[str, int], "ExecResult"],
+        results: typing.Dict[typing.Tuple[str, int], "ExecResult"],
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         *,
         _message: typing.Optional[str] = None,
     ) -> None:
@@ -236,7 +238,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        prep_expected: "typing.Sequence[ExitCodeT]" = exit_codes_to_enums(expected)
         errors_str: str = "\n\t".join(f"{host}:{port} - {result.exit_code} " for (host, port), result in errors.items())
         message: str = _message or (
             f"Command {command!r} returned unexpected exit codes on several hosts\n"
@@ -246,9 +248,9 @@ class ParallelCallProcessError(ExecCalledProcessError):
         )
         super(ParallelCallProcessError, self).__init__(message)
         self.cmd: str = command
-        self.errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"] = errors
-        self.results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"] = results
-        self.expected: typing.Sequence[ExitCodeT] = prep_expected
+        self.errors: typing.Dict[typing.Tuple[str, int], "ExecResult"] = errors
+        self.results: typing.Dict[typing.Tuple[str, int], "ExecResult"] = results
+        self.expected: "typing.Sequence[ExitCodeT]" = prep_expected
 
 
 class ParallelCallExceptions(ParallelCallProcessError):
@@ -260,9 +262,9 @@ class ParallelCallExceptions(ParallelCallProcessError):
         self,
         command: str,
         exceptions: typing.Dict[typing.Tuple[str, int], Exception],
-        errors: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        results: typing.Dict[typing.Tuple[str, int], "exec_result.ExecResult"],
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        errors: typing.Dict[typing.Tuple[str, int], "ExecResult"],
+        results: typing.Dict[typing.Tuple[str, int], "ExecResult"],
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         *,
         _message: typing.Optional[str] = None,
     ) -> None:

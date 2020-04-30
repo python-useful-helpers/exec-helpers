@@ -19,10 +19,12 @@
 __all__ = ("SSHClient",)
 
 # Standard Library
-import os
-import pathlib
-import posixpath
 import typing
+from os.path import basename
+from os.path import normpath
+from pathlib import Path
+from pathlib import PurePath
+from posixpath import join as posix_path_join
 
 # Local Implementation
 from ._ssh_client_base import SSHClientBase
@@ -75,28 +77,28 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"rm -rf {self._path_esc(path)}")
 
-    def upload(self, source: typing.Union[str, pathlib.Path], target: typing.Union[str, pathlib.PurePath]) -> None:
+    def upload(self, source: typing.Union[str, PurePath], target: typing.Union[str, PurePath]) -> None:
         """Upload file(s) from source to target using SFTP session.
 
         :param source: local path
-        :type source: typing.Union[str, pathlib.Path]
+        :type source: typing.Union[str, PurePath]
         :param target: remote path
-        :type target: typing.Union[str, pathlib.PurePath]
+        :type target: typing.Union[str, PurePath]
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
         if self.isdir(target):
-            target = posixpath.join(target, os.path.basename(source))
+            target = posix_path_join(target, basename(source))
 
-        tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
-        src = pathlib.Path(source).expanduser().resolve()
+        tgt = PurePath(target)  # Remote -> No FS access, system agnostic
+        src = Path(source).expanduser().resolve()
         if not src.is_dir():
             self._sftp.put(src.as_posix(), target)
             return
 
         for pth in src.glob("**/*"):
             relative = pth.relative_to(src).as_posix()
-            destination: str = os.path.normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")
+            destination: str = normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")
             if pth.is_dir():
                 self.mkdir(destination)
                 continue
@@ -105,24 +107,22 @@ class SSHClient(SSHClientBase):
                 self._sftp.unlink(destination)
             self._sftp.put(pth.as_posix(), destination)
 
-    def download(
-        self, destination: typing.Union[str, pathlib.PurePath], target: typing.Union[str, pathlib.Path]
-    ) -> bool:
+    def download(self, destination: typing.Union[str, PurePath], target: typing.Union[str, PurePath]) -> bool:
         """Download file(s) to target from destination.
 
         :param destination: remote path
-        :type destination: typing.Union[str, pathlib.PurePath]
+        :type destination: typing.Union[str, PurePath]
         :param target: local path
-        :type target: typing.Union[str, pathlib.Path]
+        :type target: typing.Union[str, PurePath]
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
         self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")
 
-        tgt = pathlib.Path(target).expanduser().resolve()
-        dst = pathlib.PurePath(destination).as_posix()
+        tgt = Path(target).expanduser().resolve()
+        dst = PurePath(destination).as_posix()
         if tgt.is_dir():
-            tgt = tgt.joinpath(os.path.basename(dst))
+            tgt = tgt.joinpath(basename(dst))
 
         if not self.isdir(destination):
             if self.exists(destination):

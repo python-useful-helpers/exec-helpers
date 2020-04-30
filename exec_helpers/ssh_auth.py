@@ -16,18 +16,26 @@
 
 """SSH client credentials class."""
 
-__all__ = ("SSHAuth",)
+__all__ = ("SSHAuth", "SSHAuthMapping")
 
 # Standard Library
-import copy
-import logging
-import socket
 import typing
+from copy import deepcopy
+from logging import getLogger
 
 # External Dependencies
-import paramiko  # type: ignore
+from paramiko import AuthenticationException  # type: ignore
+from paramiko import BadHostKeyException
+from paramiko import PasswordRequiredException
 
-LOGGER = logging.getLogger(__name__)
+if typing.TYPE_CHECKING:
+    from socket import socket
+    from paramiko import Channel
+    from paramiko import ProxyCommand
+    from paramiko import SSHClient
+    from paramiko import PKey
+
+LOGGER = getLogger(__name__)
 
 
 class SSHAuth:
@@ -39,8 +47,8 @@ class SSHAuth:
         self,
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
-        key: typing.Optional[paramiko.RSAKey] = None,
-        keys: typing.Optional[typing.Sequence[paramiko.RSAKey]] = None,
+        key: "typing.Optional[PKey]" = None,
+        keys: "typing.Optional[typing.Sequence[PKey]]" = None,
         key_filename: typing.Union[typing.List[str], str, None] = None,
         passphrase: typing.Optional[str] = None,
     ) -> None:
@@ -55,9 +63,9 @@ class SSHAuth:
         :param password: remote password
         :type password: typing.Optional[str]
         :param key: Main connection key
-        :type key: typing.Optional[paramiko.RSAKey]
+        :type key: typing.Optional[PKey]
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Sequence[paramiko.RSAKey]]]
+        :type keys: typing.Optional[typing.Sequence[PKey]]]
         :param key_filename: filename(s) for additional key files
         :type key_filename: typing.Union[typing.List[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
@@ -69,7 +77,7 @@ class SSHAuth:
         self.__username: typing.Optional[str] = username
         self.__password: typing.Optional[str] = password
 
-        self.__keys: typing.List[typing.Union[None, paramiko.RSAKey]] = []
+        self.__keys: "typing.List[typing.Union[None, PKey]]" = []
 
         if key is not None:
             # noinspection PyTypeChecker
@@ -100,11 +108,11 @@ class SSHAuth:
         return self.__username
 
     @staticmethod
-    def __get_public_key(key: typing.Union[paramiko.RSAKey, None]) -> typing.Optional[str]:
+    def __get_public_key(key: "typing.Union[PKey, None]") -> typing.Optional[str]:
         """Internal method for get public key from private.
 
         :param key: SSH private key
-        :type key: paramiko.RSAKey
+        :type key: PKey
         :return: public key text if applicable
         :rtype: typing.Optional[str]
         """
@@ -128,7 +136,7 @@ class SSHAuth:
         :return: copy of used key filename (original should not be changed via mutability).
         .. versionadded:: 1.0.0
         """
-        return copy.deepcopy(self.__key_filename)
+        return deepcopy(self.__key_filename)
 
     def enter_password(self, tgt: typing.BinaryIO) -> None:
         """Enter password to STDIN.
@@ -143,17 +151,17 @@ class SSHAuth:
 
     def connect(
         self,
-        client: paramiko.SSHClient,
+        client: "SSHClient",
         hostname: str,
         port: int = 22,
         log: bool = True,
         *,
-        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
+        sock: "typing.Optional[typing.Union[ProxyCommand, Channel, socket]]" = None,
     ) -> None:
         """Connect SSH client object using credentials.
 
         :param client: SSH Client (low level)
-        :type client: paramiko.SSHClient
+        :type client: SSHClient
         :param hostname: remote hostname
         :type hostname: str
         :param port: remote ssh port
@@ -161,7 +169,7 @@ class SSHAuth:
         :param log: Log on generic connection failure
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
-        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :type sock: typing.Optional[typing.Union[ProxyCommand, Channel, socket]]
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -188,18 +196,18 @@ class SSHAuth:
                     self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
-            except paramiko.PasswordRequiredException:
+            except PasswordRequiredException:
                 if self.__password is None:
                     LOGGER.exception("No password has been set!")
                     raise
                 LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
-            except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
+            except (AuthenticationException, BadHostKeyException):
                 continue
         msg: str = "Connection using stored authentication info failed!"
         if log:
             LOGGER.exception(msg)
-        raise paramiko.AuthenticationException(msg)
+        raise AuthenticationException(msg)
 
     def __hash__(self) -> int:
         """Hash for usage as dict keys and comparison.
@@ -239,9 +247,9 @@ class SSHAuth:
         return not self.__eq__(other)
 
     def __deepcopy__(self, memo: typing.Any) -> "SSHAuth":
-        """Helper for copy.deepcopy.
+        """Helper for deepcopy.
 
-        :param memo: copy.deeepcopy() memodict
+        :param memo: deeepcopy() memodict
         :type memo: typing.Any
         :return: re-constructed copy of current class
         :rtype: SSHAuth
@@ -251,7 +259,7 @@ class SSHAuth:
             username=self.username,
             password=self.__password,
             key=self.__keys[self.__key_index],
-            keys=copy.deepcopy(self.__keys),
+            keys=deepcopy(self.__keys),
         )
 
     def __copy__(self) -> "SSHAuth":

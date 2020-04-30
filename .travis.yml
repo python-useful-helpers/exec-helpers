@@ -41,8 +41,9 @@ jobs:
       install:
         - *upgrade_python_toolset
         - *install_deps
-        - pip install --upgrade "pylint >= 2.3" isort[pyproject,requirements]
+        - pip install --upgrade "pylint!=2.5.0" isort[pyproject,requirements]
       script:
+        - python setup.py develop -v clean
         - python setup.py --version clean
         - pylint exec_helpers
     - <<: *static_analysis

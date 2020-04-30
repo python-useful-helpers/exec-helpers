@@ -30,26 +30,33 @@ __all__ = (
 )
 
 # Standard Library
-import abc
-import datetime
-import logging
-import pathlib
-import re
-import shlex
-import threading
 import typing
+from abc import ABCMeta
+from abc import abstractmethod
+from logging import DEBUG
+from logging import INFO
+from pathlib import Path
+from re import finditer
+from shlex import quote
+from threading import RLock
 
 # Package Implementation
-from exec_helpers import constants
-from exec_helpers import exceptions
-from exec_helpers import exec_result
-from exec_helpers import proc_enums
-from exec_helpers.proc_enums import ExitCodeT
+from exec_helpers.constants import DEFAULT_TIMEOUT
+from exec_helpers.exceptions import CalledProcessError
+from exec_helpers.proc_enums import EXPECTED
+from exec_helpers.proc_enums import exit_codes_to_enums
+
+if typing.TYPE_CHECKING:
+    # pylint: disable=ungrouped-imports
+    from datetime import datetime
+    from logging import Logger
+    from exec_helpers.exec_result import ExecResult
+    from exec_helpers.proc_enums import ExitCodeT
 
 CommandT = typing.TypeVar("CommandT", str, typing.Iterable[str])
 OptionalTimeoutT = typing.Union[int, float, None]
 OptionalStdinT = typing.Union[bytes, str, bytearray, None]
-CalledProcessErrorSubClassT = typing.Type[exceptions.CalledProcessError]
+CalledProcessErrorSubClassT = typing.Type[CalledProcessError]
 
 
 class ExecuteAsyncResult(typing.NamedTuple):
@@ -59,7 +66,7 @@ class ExecuteAsyncResult(typing.NamedTuple):
     stdin: typing.Optional[typing.Any]
     stderr: typing.Optional[typing.Any]
     stdout: typing.Optional[typing.Any]
-    started: datetime.datetime
+    started: "datetime"
 
 
 # noinspection PyProtectedMember
@@ -69,7 +76,7 @@ class _ChRootContext(typing.ContextManager[None]):
     :param conn: connection instance
     :type conn: ExecHelper
     :param path: chroot path or None for no chroot
-    :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+    :type path: typing.Optional[typing.Union[str, Path]]
     :raises TypeError: incorrect type of path variable
 
     .. versionadded:: 4.1.0
@@ -77,7 +84,7 @@ class _ChRootContext(typing.ContextManager[None]):
 
     __slots__ = ("_conn", "_chroot_status", "_path")
 
-    def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, pathlib.Path]] = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, Path]] = None) -> None:
         """Context manager for call commands with sudo.
 
         :raises TypeError: incorrect type of path variable
@@ -86,10 +93,10 @@ class _ChRootContext(typing.ContextManager[None]):
         self._chroot_status: typing.Optional[str] = conn._chroot_path
         if path is None or isinstance(path, str):
             self._path: typing.Optional[str] = path
-        elif isinstance(path, pathlib.Path):
+        elif isinstance(path, Path):
             self._path = path.as_posix()  # get absolute path
         else:
-            raise TypeError(f"path={path!r} is not instance of Optional[Union[str, pathlib.Path]]")
+            raise TypeError(f"path={path!r} is not instance of Optional[Union[str, Path]]")
 
     def __enter__(self) -> None:
         self._conn.__enter__()
@@ -101,13 +108,13 @@ class _ChRootContext(typing.ContextManager[None]):
         self._conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
 
 
-def mask_command(text: str, rules: str) -> str:
+def mask_command(text: str, pattern: str) -> str:
     """Mask part of text using rules.
 
     :param text: source text
     :type text: str
-    :param rules: regex rules to mask.
-    :type rules: str
+    :param pattern: regex rules to mask.
+    :type pattern: str
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """
@@ -115,7 +122,7 @@ def mask_command(text: str, rules: str) -> str:
 
     # places to exclude
     prev = 0
-    for match in re.finditer(rules, text):
+    for match in finditer(pattern, text):
         for idx, _ in enumerate(match.groups(), start=1):
             start, end = match.span(idx)
             masked.append(text[prev:start])
@@ -127,14 +134,14 @@ def mask_command(text: str, rules: str) -> str:
 
 
 class ExecHelper(
-    typing.Callable[..., exec_result.ExecResult],  # type: ignore
+    typing.Callable[..., "ExecResult"],  # type: ignore
     typing.ContextManager["ExecHelper"],
-    metaclass=abc.ABCMeta,
+    metaclass=ABCMeta,
 ):
     """ExecHelper global API.
 
     :param logger: logger instance to use
-    :type logger: logging.Logger
+    :type logger: Logger
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
     :type log_mask_re: typing.Optional[str]
@@ -146,27 +153,27 @@ class ExecHelper(
 
     __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
 
-    def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: logging.Logger) -> None:
+    def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: "Logger") -> None:
         """Global ExecHelper API."""
-        self.__lock = threading.RLock()
-        self.__logger: logging.Logger = logger
+        self.__lock = RLock()
+        self.__logger: "Logger" = logger
         self.log_mask_re: typing.Optional[str] = log_mask_re
         self.__chroot_path: typing.Optional[str] = None
 
     @property
-    def logger(self) -> logging.Logger:
+    def logger(self) -> "Logger":
         """Instance logger access.
 
         :return: logger instance
-        :rtype: logging.Logger
+        :rtype: Logger
         """
         return self.__logger
 
     @property
-    def lock(self) -> threading.RLock:
+    def lock(self) -> RLock:
         """Lock.
 
-        :rtype: threading.RLock
+        :rtype: RLock
         """
         return self.__lock
 
@@ -197,11 +204,11 @@ class ExecHelper(
         """
         self.__chroot_path = None
 
-    def chroot(self, path: typing.Union[str, pathlib.Path, None]) -> "typing.ContextManager[None]":
+    def chroot(self, path: typing.Union[str, Path, None]) -> "typing.ContextManager[None]":
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+        :type path: typing.Optional[typing.Union[str, Path]]
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 
@@ -259,7 +266,7 @@ class ExecHelper(
         """
         if isinstance(command, str):
             return command
-        return " ".join(shlex.quote(elem) for elem in command)
+        return " ".join(quote(elem) for elem in command)
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
@@ -273,12 +280,12 @@ class ExecHelper(
         """
         target_path: typing.Optional[str] = chroot_path if chroot_path else self._chroot_path
         if target_path and target_path != "/":
-            chroot_dst: str = shlex.quote(target_path.strip())
-            quoted_command = shlex.quote(cmd)
-            return f'chroot {chroot_dst} sh -c {shlex.quote(f"eval {quoted_command}")}'
+            chroot_dst: str = quote(target_path.strip())
+            quoted_command = quote(cmd)
+            return f'chroot {chroot_dst} sh -c {quote(f"eval {quoted_command}")}'
         return cmd
 
-    @abc.abstractmethod
+    @abstractmethod
     def _execute_async(
         self,
         command: str,
@@ -322,7 +329,7 @@ class ExecHelper(
         .. versionchanged:: 6.0.0 command start log moved to execute, verbose and log_mask_re removed as unused
         """
 
-    @abc.abstractmethod
+    @abstractmethod
     def _exec_command(
         self,
         command: str,
@@ -333,7 +340,7 @@ class ExecHelper(
         log_mask_re: typing.Optional[str] = None,
         stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Get exit status from channel with timeout.
 
         :param command: Command for execution
@@ -352,7 +359,7 @@ class ExecHelper(
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
-        :rtype: ExecResult
+        :rtype: "ExecResult"
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
@@ -377,14 +384,14 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -405,14 +412,14 @@ class ExecHelper(
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
-        :rtype: ExecResult
+        :rtype: "ExecResult"
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
-        log_level: int = logging.INFO if verbose else logging.DEBUG
+        log_level: int = INFO if verbose else DEBUG
         cmd = self._cmd_to_string(command)
         self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
         async_result: ExecuteAsyncResult = self._execute_async(
@@ -425,7 +432,7 @@ class ExecHelper(
             **kwargs,
         )
 
-        result: exec_result.ExecResult = self._exec_command(
+        result: "ExecResult" = self._exec_command(
             command=cmd,
             async_result=async_result,
             timeout=timeout,
@@ -441,14 +448,14 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -469,7 +476,7 @@ class ExecHelper(
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
-        :rtype: ExecResult
+        :rtype: "ExecResult"
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionadded:: 3.3.0
@@ -489,18 +496,18 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Execute command and check for return code.
 
         :param command: Command for execution
@@ -512,7 +519,7 @@ class ExecHelper(
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -525,11 +532,11 @@ class ExecHelper(
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
-        :rtype: ExecResult
+        :rtype: "ExecResult"
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code
 
@@ -537,8 +544,8 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
-        result: exec_result.ExecResult = self.execute(
+        expected_codes: "typing.Sequence[ExitCodeT]" = exit_codes_to_enums(expected)
+        result: "ExecResult" = self.execute(
             command,
             verbose=verbose,
             timeout=timeout,
@@ -563,18 +570,18 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
@@ -588,7 +595,7 @@ class ExecHelper(
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -599,11 +606,11 @@ class ExecHelper(
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
-        :rtype: ExecResult
+        :rtype: "ExecResult"
         :raises ExecHelperTimeoutError: Timeout exceeded
         :raises CalledProcessError: Unexpected exit code or stderr presents
 
@@ -611,7 +618,7 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        result: exec_result.ExecResult = self.check_call(
+        result: "ExecResult" = self.check_call(
             command,
             verbose=verbose,
             timeout=timeout,
@@ -635,16 +642,16 @@ class ExecHelper(
 
     def _handle_stderr(
         self,
-        result: exec_result.ExecResult,
+        result: "ExecResult",
         error_info: typing.Optional[str],
         raise_on_err: bool,
-        expected: typing.Iterable[ExitCodeT],
+        expected: "typing.Iterable[ExitCodeT]",
         exception_class: CalledProcessErrorSubClassT,
-    ) -> exec_result.ExecResult:
+    ) -> "ExecResult":
         """Internal check_stderr logic (synchronous).
 
         :param result: execution result for validation
-        :type result: exec_result.ExecResult
+        :type result: ExecResult
         :param error_info: optional additional error information
         :type error_info: typing.Optional[str]
         :param raise_on_err: raise `exception_class` in case of error
@@ -654,7 +661,7 @@ class ExecHelper(
         :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
         :type exception_class: CalledProcessErrorSubClassT
         :return: execution result
-        :rtype: exec_result.ExecResult
+        :rtype: ExecResult
         :raises CalledProcessErrorSubClassT: stderr presents and raise_on_err enabled
         """
         append: str = error_info + "\n" if error_info else ""

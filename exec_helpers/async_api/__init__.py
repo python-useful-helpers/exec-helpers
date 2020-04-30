@@ -22,4 +22,4 @@ __all__ = ("ExecHelper", "ExecResult", "Subprocess")
 # Local Implementation
 from .api import ExecHelper
 from .exec_result import ExecResult
-from .subprocess_runner import Subprocess  # nosec  # Expected
+from .subprocess import Subprocess  # nosec  # Expected
