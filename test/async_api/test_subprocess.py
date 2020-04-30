@@ -16,7 +16,6 @@
 import asyncio
 import logging
 import random
-import sys
 import typing
 from unittest import mock
 
