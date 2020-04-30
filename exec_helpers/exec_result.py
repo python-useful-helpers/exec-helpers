@@ -63,9 +63,9 @@ if typing.TYPE_CHECKING:
     from exec_helpers.proc_enums import ExitCodeT
 
     _OptLoggerT = typing.Optional[Logger]
+    _OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
 
 LOGGER: "Logger" = getLogger(__name__)
-_OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -178,8 +178,8 @@ class ExecResult:
         self,
         cmd: str,
         stdin: typing.Union[bytes, str, bytearray, None] = None,
-        stdout: _OptBytesIterableT = None,
-        stderr: _OptBytesIterableT = None,
+        stdout: "_OptBytesIterableT" = None,
+        stderr: "_OptBytesIterableT" = None,
         exit_code: "ExitCodeT" = INVALID,
         *,
         started: typing.Optional[datetime] = None,
@@ -344,7 +344,7 @@ class ExecResult:
                     )
         return dst
 
-    def read_stdout(self, src: _OptBytesIterableT = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
+    def read_stdout(self, src: "_OptBytesIterableT" = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
         """Read stdout file-like object to stdout.
 
         :param src: source
@@ -366,7 +366,7 @@ class ExecResult:
             self._stdout_str = self._stdout_brief = None
             self._stdout += tuple(self._poll_stream(src, log, verbose))
 
-    def read_stderr(self, src: _OptBytesIterableT = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
+    def read_stderr(self, src: "_OptBytesIterableT" = None, log: "_OptLoggerT" = None, verbose: bool = False,) -> None:
         """Read stderr file-like object to stdout.
 
         :param src: source

@@ -38,16 +38,19 @@ from subprocess import TimeoutExpired  # nosec  # Expected usage
 from threaded import threadpooled
 
 # Package Implementation
-from exec_helpers import constants
-from exec_helpers import exceptions
-from exec_helpers import exec_result
-from exec_helpers import proc_enums
 from exec_helpers.api import ExecHelper
 from exec_helpers.api import ExecuteAsyncResult
+from exec_helpers.constants import DEFAULT_TIMEOUT
+from exec_helpers.exceptions import CalledProcessError
+from exec_helpers.exceptions import ExecHelperNoKillError
+from exec_helpers.exceptions import ExecHelperTimeoutError
+from exec_helpers.exec_result import ExecResult
+from exec_helpers.proc_enums import EXPECTED
 
 # Local Implementation
-from . import _log_templates
-from . import _subprocess_helpers
+from ._log_templates import CMD_WAIT_ERROR
+from ._subprocess_helpers import kill_proc_tree
+from ._subprocess_helpers import subprocess_kw
 
 if typing.TYPE_CHECKING:
     # pylint: disable=ungrouped-imports
@@ -58,11 +61,12 @@ if typing.TYPE_CHECKING:
     from exec_helpers.api import OptionalTimeoutT
     from exec_helpers.proc_enums import ExitCodeT
 
+    _OptionalIOBytes = typing.Optional[typing.IO[bytes]]
+
 EnvT = typing.Optional[
     typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
 ]
 CwdT = typing.Optional[typing.Union[str, bytes, Path]]
-_OptionalIOBytes = typing.Optional[typing.IO[bytes]]
 
 
 # noinspection PyTypeHints
@@ -81,7 +85,7 @@ class SubprocessExecuteAsyncResult(ExecuteAsyncResult):
         return super().interface  # type: ignore
 
     @property
-    def stdin(self) -> _OptionalIOBytes:  # type: ignore
+    def stdin(self) -> "_OptionalIOBytes":  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
@@ -90,7 +94,7 @@ class SubprocessExecuteAsyncResult(ExecuteAsyncResult):
         return super().stdin
 
     @property
-    def stderr(self) -> _OptionalIOBytes:  # type: ignore
+    def stderr(self) -> "_OptionalIOBytes":  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -99,7 +103,7 @@ class SubprocessExecuteAsyncResult(ExecuteAsyncResult):
         return super().stderr
 
     @property
-    def stdout(self) -> _OptionalIOBytes:  # type: ignore
+    def stdout(self) -> "_OptionalIOBytes":  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
@@ -150,7 +154,7 @@ class Subprocess(ExecHelper):
         log_mask_re: typing.Optional[str] = None,
         stdin: "OptionalStdinT" = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Command for execution
@@ -197,7 +201,7 @@ class Subprocess(ExecHelper):
         # Store command with hidden data
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
 
-        result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
+        result = ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
         stdout_future: "Future[None]" = poll_stdout()
@@ -211,10 +215,10 @@ class Subprocess(ExecHelper):
             return result
         except TimeoutExpired:
             # kill -9 for all subprocesses
-            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
+            kill_proc_tree(async_result.interface.pid)
             exit_signal: typing.Optional[int] = async_result.interface.poll()
             if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+                raise ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
             result.exit_code = exit_signal
         finally:
             stdout_future.cancel()
@@ -228,9 +232,9 @@ class Subprocess(ExecHelper):
             result.set_timestamp()
             close_streams()
 
-        wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
+        wait_err_msg: str = CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     # noinspection PyMethodOverriding
     def _execute_async(  # pylint: disable=arguments-differ
@@ -300,11 +304,11 @@ class Subprocess(ExecHelper):
             cwd=cwd,
             env=env,
             universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw,
+            **subprocess_kw,
         )
 
         if stdin is None:
-            process_stdin: _OptionalIOBytes = process.stdin
+            process_stdin: "_OptionalIOBytes" = process.stdin
         elif process.stdin is None:
             self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
             process_stdin = None
@@ -321,7 +325,7 @@ class Subprocess(ExecHelper):
                 elif exc.errno in (EPIPE, ESHUTDOWN):
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 else:
-                    _subprocess_helpers.kill_proc_tree(process.pid)
+                    kill_proc_tree(process.pid)
                     process.kill()
                     raise
             try:
@@ -342,7 +346,7 @@ class Subprocess(ExecHelper):
         self,
         command: "CommandT",
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: "OptionalStdinT" = None,
@@ -352,7 +356,7 @@ class Subprocess(ExecHelper):
         env: EnvT = None,
         env_patch: EnvT = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -404,7 +408,7 @@ class Subprocess(ExecHelper):
         self,
         command: "CommandT",
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         *,
         log_mask_re: typing.Optional[str] = None,
         stdin: "OptionalStdinT" = None,
@@ -414,7 +418,7 @@ class Subprocess(ExecHelper):
         env: EnvT = None,
         env_patch: EnvT = None,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -465,9 +469,9 @@ class Subprocess(ExecHelper):
         self,
         command: "CommandT",
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         raise_on_err: bool = True,
         *,
         log_mask_re: typing.Optional[str] = None,
@@ -477,9 +481,9 @@ class Subprocess(ExecHelper):
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
-        exception_class: "CalledProcessErrorSubClassT" = exceptions.CalledProcessError,
+        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command and check for return code.
 
         :param command: Command for execution
@@ -491,7 +495,7 @@ class Subprocess(ExecHelper):
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -510,7 +514,7 @@ class Subprocess(ExecHelper):
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -544,11 +548,11 @@ class Subprocess(ExecHelper):
         self,
         command: "CommandT",
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = constants.DEFAULT_TIMEOUT,
+        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
         error_info: typing.Optional[str] = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
         log_mask_re: typing.Optional[str] = None,
         stdin: "OptionalStdinT" = None,
         open_stdout: bool = True,
@@ -556,9 +560,9 @@ class Subprocess(ExecHelper):
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
-        exception_class: "CalledProcessErrorSubClassT" = exceptions.CalledProcessError,
+        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
         **kwargs: typing.Any,
-    ) -> exec_result.ExecResult:
+    ) -> ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
@@ -572,7 +576,7 @@ class Subprocess(ExecHelper):
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -589,7 +593,7 @@ class Subprocess(ExecHelper):
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: typing.Type[CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result

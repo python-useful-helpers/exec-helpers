@@ -86,16 +86,17 @@ if typing.TYPE_CHECKING:
     from exec_helpers.api import OptionalTimeoutT
     from exec_helpers.proc_enums import ExitCodeT
 
-_OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
-_OptionalSSHConfigArgT = typing.Union[
-    str,
-    ParamikoSSHConfig,
-    typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-    HostsSSHConfigs,
-    None,
-]
-_SSHConnChainT = typing.List[typing.Tuple[SSHConfig, SSHAuth]]
-_OptSSHAuthT = typing.Optional[SSHAuth]
+    _OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
+    _OptionalSSHConfigArgT = typing.Union[
+        str,
+        ParamikoSSHConfig,
+        typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+        HostsSSHConfigs,
+        None,
+    ]
+    _SSHConnChainT = typing.List[typing.Tuple[SSHConfig, SSHAuth]]
+    _OptSSHAuthT = typing.Optional[SSHAuth]
+
 _RType = typing.TypeVar("_RType")
 
 
@@ -224,9 +225,7 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
     """
 
     @wraps(tgt)
-    def wrapper(
-        self: typing.Any, path: typing.Union[str, PurePath], *args: typing.Any, **kwargs: typing.Any
-    ) -> _RType:
+    def wrapper(self: typing.Any, path: typing.Union[str, PurePath], *args: typing.Any, **kwargs: typing.Any) -> _RType:
         """Normalize path type before use in corresponding method.
 
         :param self: owner instance
@@ -322,10 +321,10 @@ class SSHClientBase(ExecHelper):
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         *,
-        auth: _OptSSHAuthT = None,
+        auth: "_OptSSHAuthT" = None,
         verbose: bool = True,
-        ssh_config: _OptionalSSHConfigArgT = None,
-        ssh_auth_map: _OptionalSSHAuthMapT = None,
+        ssh_config: "_OptionalSSHConfigArgT" = None,
+        ssh_auth_map: "_OptionalSSHAuthMapT" = None,
         sock: "typing.Optional[typing.Union[ProxyCommand, Channel, socket]]" = None,
         keepalive: typing.Union[int, bool] = 1,
     ) -> None:
@@ -387,7 +386,7 @@ class SSHClientBase(ExecHelper):
 
         # Build connection chain once and use it for connection later
         if sock is None:
-            self.__conn_chain: _SSHConnChainT = self.__build_connection_chain()
+            self.__conn_chain: "_SSHConnChainT" = self.__build_connection_chain()
         else:
             self.__conn_chain = []
 
@@ -401,13 +400,13 @@ class SSHClientBase(ExecHelper):
             )
         )
 
-    def __build_connection_chain(self) -> _SSHConnChainT:
+    def __build_connection_chain(self) -> "_SSHConnChainT":
         """Build ssh connection chain to reach destination host.
 
         :return: list of SSHConfig - SSHAuth pairs in order of connection
         :rtype: typing.List[typing.Tuple[SSHConfig, SSHAuth]]
         """
-        conn_chain: _SSHConnChainT = []
+        conn_chain: "_SSHConnChainT" = []
 
         config = self.ssh_config[self.hostname]
         default_auth = SSHAuth(username=config.user, key_filename=config.identityfile)
@@ -1198,10 +1197,10 @@ class SSHClientBase(ExecHelper):
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         *,
-        auth: _OptSSHAuthT = None,
+        auth: "_OptSSHAuthT" = None,
         verbose: bool = True,
-        ssh_config: _OptionalSSHConfigArgT = None,
-        ssh_auth_map: _OptionalSSHAuthMapT = None,
+        ssh_config: "_OptionalSSHConfigArgT" = None,
+        ssh_auth_map: "_OptionalSSHAuthMapT" = None,
         keepalive: typing.Union[int, bool] = 1,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
@@ -1265,7 +1264,7 @@ class SSHClientBase(ExecHelper):
         hostname: str,
         command: "CommandT",
         *,
-        auth: _OptSSHAuthT = None,
+        auth: "_OptSSHAuthT" = None,
         port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
