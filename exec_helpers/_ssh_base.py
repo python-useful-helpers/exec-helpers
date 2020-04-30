@@ -225,7 +225,7 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
 
     @wraps(tgt)
     def wrapper(
-        self: typing.Any, path: "typing.Union[str, PurePath]", *args: typing.Any, **kwargs: typing.Any
+        self: typing.Any, path: typing.Union[str, PurePath], *args: typing.Any, **kwargs: typing.Any
     ) -> _RType:
         """Normalize path type before use in corresponding method.
 

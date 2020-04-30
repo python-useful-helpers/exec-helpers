@@ -27,8 +27,8 @@ from pathlib import PurePath
 from posixpath import join as posix_path_join
 
 # Local Implementation
-from ._ssh_client_base import SSHClientBase
-from ._ssh_client_base import normalize_path
+from ._ssh_base import SSHClientBase
+from ._ssh_base import normalize_path
 
 
 class SSHClient(SSHClientBase):

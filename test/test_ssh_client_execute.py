@@ -24,7 +24,7 @@ import pytest
 # Exec-Helpers Implementation
 import exec_helpers
 from exec_helpers import proc_enums
-from exec_helpers._ssh_client_base import SshExecuteAsyncResult
+from exec_helpers._ssh_base import SshExecuteAsyncResult
 
 
 class FakeFileStream:
@@ -236,7 +236,7 @@ def execute_async(mocker, run_parameters):
         )
 
     return mocker.patch(
-        "exec_helpers.ssh_client.SSHClient._execute_async",
+        "exec_helpers.ssh.SSHClient._execute_async",
         side_effect=[
             get_patched_execute_async_retval(**run_parameters),
             get_patched_execute_async_retval(**run_parameters),
@@ -246,7 +246,7 @@ def execute_async(mocker, run_parameters):
 
 @pytest.fixture
 def execute(mocker, exec_result):
-    return mocker.patch("exec_helpers.ssh_client.SSHClient.execute", name="execute", return_value=exec_result)
+    return mocker.patch("exec_helpers.ssh.SSHClient.execute", name="execute", return_value=exec_result)
 
 
 def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan_makefile, run_parameters):
@@ -368,7 +368,7 @@ def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
 
 
 def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient.execute", return_value=exec_result)
+    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")
 
@@ -393,7 +393,7 @@ def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
 
 
 def test_005_check_call_no_raise(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient.execute", return_value=exec_result)
+    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")
 
@@ -408,12 +408,12 @@ def test_005_check_call_no_raise(ssh, exec_result, get_logger, mocker) -> None:
 
 
 def test_006_check_call_expect(ssh, exec_result, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient.execute", return_value=exec_result)
+    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
     assert ssh.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
 
 
 def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient.check_call", return_value=exec_result)
+    mocker.patch("exec_helpers.ssh.SSHClient.check_call", return_value=exec_result)
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")
 
@@ -437,7 +437,7 @@ def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
 
 
 def test_008_check_stderr_no_raise(ssh, exec_result, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient.check_call", return_value=exec_result)
+    mocker.patch("exec_helpers.ssh.SSHClient.check_call", return_value=exec_result)
     assert (
         ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
         == exec_result

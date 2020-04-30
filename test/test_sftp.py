@@ -37,7 +37,7 @@ password = "pass"
 
 @mock.patch("logging.getLogger", autospec=True)
 @mock.patch("paramiko.AutoAddPolicy", autospec=True, return_value="AutoAddPolicy")
-@mock.patch("exec_helpers._ssh_client_base.SSHClient", autospec=True)
+@mock.patch("exec_helpers._ssh_base.SSHClient", autospec=True)
 class TestSftp(unittest.TestCase):
     @staticmethod
     def prepare_sftp_file_tests(client):
@@ -193,8 +193,8 @@ class TestSftp(unittest.TestCase):
         lstat.assert_called_once_with(dst)
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.exists")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.execute")
+    @mock.patch("exec_helpers.ssh.SSHClient.exists")
+    @mock.patch("exec_helpers.ssh.SSHClient.execute")
     def test_mkdir(self, execute, exists, *args):
         exists.side_effect = [False, True]
 
@@ -222,7 +222,7 @@ class TestSftp(unittest.TestCase):
         execute.assert_not_called()
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.execute")
+    @mock.patch("exec_helpers.ssh.SSHClient.execute")
     def test_rm_rf(self, execute, *args):
         dst = "~/tst"
 
@@ -249,9 +249,9 @@ class TestSftp(unittest.TestCase):
         self.assertTrue(result)
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.exists")
+    @mock.patch("exec_helpers.ssh.SSHClient.exists")
     @mock.patch("os.path.exists", autospec=True)
-    @mock.patch("exec_helpers.ssh_client.SSHClient.isdir")
+    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
     def test_download(self, isdir, remote_isdir, exists, remote_exists, client, policy, _logger):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
@@ -280,7 +280,7 @@ class TestSftp(unittest.TestCase):
         ssh.download(destination=dst, target=target)
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.isdir")
+    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
     def test_upload_file(self, isdir, remote_isdir, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
@@ -296,10 +296,10 @@ class TestSftp(unittest.TestCase):
         _sftp.assert_has_calls((mock.call.put(source, target),))
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.exists")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.mkdir")
+    @mock.patch("exec_helpers.ssh.SSHClient.exists")
+    @mock.patch("exec_helpers.ssh.SSHClient.mkdir")
     @mock.patch("os.walk")
-    @mock.patch("exec_helpers.ssh_client.SSHClient.isdir")
+    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
     def test_upload_dir(self, isdir, remote_isdir, walk, mkdir, exists, client, *args):
         ssh, _sftp = self.prepare_sftp_file_tests(client)

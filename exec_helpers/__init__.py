@@ -49,8 +49,8 @@ from .exceptions import ParallelCallExceptions
 from .exceptions import ParallelCallProcessError
 from .exec_result import ExecResult
 from .proc_enums import ExitCodes
+from .ssh import SSHClient
 from .ssh_auth import SSHAuth
-from .ssh_client import SSHClient
 from .subprocess import Subprocess  # nosec  # Expected
 
 try:

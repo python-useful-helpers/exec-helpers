@@ -26,7 +26,7 @@ import pytest
 # Exec-Helpers Implementation
 import exec_helpers
 from exec_helpers import proc_enums
-from exec_helpers._ssh_client_base import SshExecuteAsyncResult
+from exec_helpers._ssh_base import SshExecuteAsyncResult
 
 
 class FakeFileStream:
@@ -185,7 +185,7 @@ def test_005_execute_timeout_fail(ssh, ssh_transport_channel, exec_result) -> No
 
 
 def test_006_execute_together_exceptions(ssh, ssh2, mocker) -> None:
-    mocker.patch("exec_helpers.ssh_client.SSHClient._execute_async", side_effect=RuntimeError)
+    mocker.patch("exec_helpers.ssh.SSHClient._execute_async", side_effect=RuntimeError)
     remotes = [ssh, ssh2]
 
     with pytest.raises(exec_helpers.ParallelCallExceptions) as e:
@@ -231,7 +231,7 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
         )
 
     execute_async = mocker.patch(
-        "exec_helpers.ssh_client.SSHClient._execute_async",
+        "exec_helpers.ssh.SSHClient._execute_async",
         side_effect=[get_patched_execute_async_retval(), get_patched_execute_async_retval()],
     )
 
