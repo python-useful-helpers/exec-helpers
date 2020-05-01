@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import random
+import sys
 import typing
 from unittest import mock
 
@@ -154,7 +155,7 @@ def execute(monkeypatch, exec_result):
 
 @pytest.fixture
 def create_subprocess_shell(mocker, monkeypatch, run_parameters):
-    mocker.patch("exec_helpers._subprocess_helpers.Process")
+    mocker.patch("psutil.Process")
 
     def create_mock(
         ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
@@ -200,7 +201,7 @@ def logger(mocker):
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
+@pytest.mark.skipif(sys.version_info >= (3, 8), reason="Python 3.8 is not supported now by asynctest")
 async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
     """Test low level API."""
     runner = exec_helpers.async_api.Subprocess()
@@ -253,7 +254,6 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
         res.interface.stdin.drain.assert_awaited_once()
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_002_execute(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
     """Test API without checkers."""
     runner = exec_helpers.async_api.Subprocess()
@@ -266,7 +266,6 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
     )
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger, exec_result, run_parameters) -> None:
     """Test context manager for threads synchronization."""
     lock = asynctest.CoroutineMock()
@@ -284,7 +283,6 @@ async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger,
     assert res == exec_result
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_004_check_call(execute, exec_result, logger) -> None:
     """Test exit code validator."""
     runner = exec_helpers.async_api.Subprocess()
@@ -308,7 +306,6 @@ async def test_004_check_call(execute, exec_result, logger) -> None:
         )
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
     """Test exit code validator in permissive mode."""
     runner = exec_helpers.async_api.Subprocess()
@@ -322,14 +319,12 @@ async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
         )
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_006_check_call_expect(execute, exec_result, logger) -> None:
     """Test exit code validator with custom return codes."""
     runner = exec_helpers.async_api.Subprocess()
     assert await runner.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_007_check_stderr(execute, exec_result, logger) -> None:
     """Test STDERR content validator."""
     runner = exec_helpers.async_api.Subprocess()
@@ -355,7 +350,6 @@ async def test_007_check_stderr(execute, exec_result, logger) -> None:
         )
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
     """Test STDERR content validator in permissive mode."""
     runner = exec_helpers.async_api.Subprocess()
@@ -367,7 +361,6 @@ async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
     )
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_009_call(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
     """Test callable."""
     runner = exec_helpers.async_api.Subprocess()

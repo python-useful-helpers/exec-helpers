@@ -20,28 +20,25 @@
 __all__ = ("ExecResult",)
 
 # Standard Library
+import contextlib
+import logging
 import typing
-from contextlib import suppress
-from logging import DEBUG
-from logging import INFO
 
 # Package Implementation
-from exec_helpers.exec_result import ExecResult as SyncExecResult
+from exec_helpers import exec_result
 
-if typing.TYPE_CHECKING:
-    # pylint: disable=ungrouped-imports
-    from logging import Logger
+_StreamT = typing.AsyncIterable[bytes]
 
 
-class ExecResult(SyncExecResult):
+class ExecResult(exec_result.ExecResult):
     """Execution result."""
 
     __slots__ = ()
 
     @staticmethod
     async def _poll_stream(  # type: ignore
-        src: typing.AsyncIterable[bytes], log: "typing.Optional[Logger]" = None, verbose: bool = False
-    ) -> typing.List[bytes]:
+        src: _StreamT, log: "typing.Optional[logging.Logger]" = None, verbose: bool = False
+    ) -> "typing.List[bytes]":
         """Stream poll helper.
 
         :param src: source to read from
@@ -49,28 +46,29 @@ class ExecResult(SyncExecResult):
         :param verbose: use INFO level for logging
         :return: read result as list of bytes strings
         """
-        dst: typing.List[bytes] = []
-        with suppress(IOError):
+        dst: "typing.List[bytes]" = []
+        with contextlib.suppress(IOError):
             async for line in src:
                 dst.append(line)
                 if log:
                     log.log(
-                        level=INFO if verbose else DEBUG, msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
+                        level=logging.INFO if verbose else logging.DEBUG,
+                        msg=line.decode("utf-8", errors="backslashreplace").rstrip(),
                     )
         return dst
 
     async def read_stdout(  # type: ignore
         self,
-        src: typing.Optional[typing.AsyncIterable[bytes]] = None,
-        log: "typing.Optional[Logger]" = None,
+        src: "typing.Optional[_StreamT]" = None,
+        log: "typing.Optional[logging.Logger]" = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stdout transport to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.AsyncIterable]
+        :type src: typing.Optional[typing.AsyncIterable[bytes]]
         :param log: logger
-        :type log: typing.Optional[Logger]
+        :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received
@@ -88,16 +86,16 @@ class ExecResult(SyncExecResult):
 
     async def read_stderr(  # type: ignore
         self,
-        src: typing.Optional[typing.AsyncIterable[bytes]] = None,
-        log: "typing.Optional[Logger]" = None,
+        src: "typing.Optional[_StreamT]" = None,
+        log: "typing.Optional[logging.Logger]" = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stderr transport to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.AsyncIterable]
+        :type src: typing.Optional[typing.AsyncIterable[bytes]]
         :param log: logger
-        :type log: typing.Optional[Logger]
+        :type log: typing.Optional[logging.Logger]
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received

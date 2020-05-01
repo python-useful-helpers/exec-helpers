@@ -235,7 +235,7 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
     command_parameters: CommandParameters = run_parameters["command_parameters"]
     mock_parameters: MockParameters = run_parameters["mock_parameters"]
 
-    mocker.patch("exec_helpers._subprocess_helpers.Process")
+    mocker.patch("psutil.Process")
 
     def create_mock(
         stdout: typing.Optional[typing.Tuple] = None,
@@ -280,7 +280,6 @@ def logger(mocker):
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
 
 
-@pytest.mark.skip(reason="Stuck if called from CI")
 async def test_special_cases(create_subprocess_shell, exec_result, logger, run_parameters) -> None:
     """Parametrized validation of special cases."""
     command_parameters: CommandParameters = run_parameters["command_parameters"]

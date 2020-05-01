@@ -231,14 +231,14 @@ def create_subprocess_shell(mocker, run_parameters):
     command_parameters: CommandParameters = run_parameters["command_parameters"]
     mock_parameters: MockParameters = run_parameters["mock_parameters"]
 
-    mocker.patch("exec_helpers._subprocess_helpers.Process")
-    mocker.patch("exec_helpers._subprocess_helpers.wait_procs", return_value=([], []))
+    mocker.patch("psutil.Process")
+    mocker.patch("psutil.wait_procs", return_value=([], []))
 
     def create_mock(stdout: typing.Optional[typing.Tuple] = None, **kwargs):
         """Parametrized code."""
         proc = mock.Mock()
 
-        run_shell = mocker.patch("exec_helpers.subprocess.Popen", name="popen", return_value=proc)
+        run_shell = mocker.patch("subprocess.Popen", name="popen", return_value=proc)
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 

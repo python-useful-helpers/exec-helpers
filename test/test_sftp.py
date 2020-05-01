@@ -37,7 +37,7 @@ password = "pass"
 
 @mock.patch("logging.getLogger", autospec=True)
 @mock.patch("paramiko.AutoAddPolicy", autospec=True, return_value="AutoAddPolicy")
-@mock.patch("exec_helpers._ssh_base.SSHClient", autospec=True)
+@mock.patch("paramiko.SSHClient", autospec=True)
 class TestSftp(unittest.TestCase):
     @staticmethod
     def prepare_sftp_file_tests(client):

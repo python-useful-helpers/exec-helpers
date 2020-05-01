@@ -17,14 +17,12 @@
 __all__ = ("kill_proc_tree", "subprocess_kw")
 
 # Standard Library
-import typing
-from contextlib import suppress
-from platform import system
+import contextlib
+import platform
+import typing  # pylint: disable=unused-import
 
 # External Dependencies
-from psutil import NoSuchProcess  # type: ignore
-from psutil import Process
-from psutil import wait_procs
+import psutil  # type: ignore
 
 
 # Adopt from:
@@ -38,30 +36,30 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
     :type including_parent: bool
     """
 
-    def safe_stop(proc: Process, kill: bool = False) -> None:
+    def safe_stop(proc: psutil.Process, kill: bool = False) -> None:
         """Do not crash on already stopped process.
 
         :param proc: target process
-        :type proc: Process
+        :type proc: psutil.Process
         :param kill: use SIGKILL instead of SIGTERM
         :type kill: bool
         """
-        with suppress(NoSuchProcess):
+        with contextlib.suppress(psutil.NoSuchProcess):
             if kill:
                 proc.kill()
             proc.terminate()
 
-    parent = Process(pid)
-    children: typing.List[Process] = parent.children(recursive=True)
-    child: Process
+    parent = psutil.Process(pid)
+    children: "typing.List[psutil.Process]" = parent.children(recursive=True)
+    child: psutil.Process
     for child in children:
         safe_stop(child)  # SIGTERM to allow cleanup
-    _, alive = wait_procs(children, timeout=1)
+    _, alive = psutil.wait_procs(children, timeout=1)
     for child in alive:
         safe_stop(child, kill=True)  # 2nd shot: SIGKILL
     if including_parent:
         safe_stop(parent)  # SIGTERM to allow cleanup
-        _, alive = wait_procs((parent,), timeout=1)
+        _, alive = psutil.wait_procs((parent,), timeout=1)
         if alive:
             safe_stop(parent, kill=True)  # 2nd shot: SIGKILL
         parent.wait(5)
@@ -70,8 +68,8 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 # Subprocess extra arguments.
 # Flags from:
 # https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
-subprocess_kw: typing.Dict[str, typing.Any] = {}
-if system() == "Windows":
+subprocess_kw: "typing.Dict[str, typing.Any]" = {}
+if platform.system() == "Windows":
     subprocess_kw["creationflags"] = 0x00000200
 else:  # pragma: no cover
     subprocess_kw["start_new_session"] = True

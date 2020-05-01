@@ -145,7 +145,7 @@ def execute(mocker, exec_result):
 
 @pytest.fixture
 def popen(mocker, run_parameters):
-    mocker.patch("exec_helpers._subprocess_helpers.Process")
+    mocker.patch("psutil.Process")
 
     def create_mock(
         ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
@@ -169,7 +169,7 @@ def popen(mocker, run_parameters):
         proc.attach_mock(mock.Mock(return_value=int(ec)), "wait")
         proc.configure_mock(returncode=int(ec))
 
-        run_shell = mocker.patch("exec_helpers.subprocess.Popen", name="popen", return_value=proc)
+        run_shell = mocker.patch("subprocess.Popen", name="popen", return_value=proc)
         return run_shell
 
     return create_mock(**run_parameters)
@@ -245,7 +245,7 @@ def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> N
 
 def test_003_context_manager(mocker, popen, subprocess_logger, exec_result, run_parameters) -> None:
     """Test context manager for threads synchronization."""
-    lock_mock = mocker.patch("exec_helpers.api.RLock")
+    lock_mock = mocker.patch("threading.RLock")
 
     with exec_helpers.Subprocess() as runner:
         res = runner.execute(command, stdin=run_parameters["stdin"])

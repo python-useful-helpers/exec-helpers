@@ -20,47 +20,38 @@
 __all__ = ("ExecHelper",)
 
 # Standard Library
+import abc
+import asyncio
+import logging
 import typing
-from abc import ABCMeta
-from abc import abstractmethod
-from asyncio import Lock
-from logging import DEBUG
-from logging import INFO
-from pathlib import Path
 
 # Package Implementation
-from exec_helpers.api import ExecHelper as SyncExecHelper
-
-# noinspection PyProtectedMember
-from exec_helpers.api import _ChRootContext as _SyncChRootContext
-from exec_helpers.async_api.exec_result import ExecResult
-from exec_helpers.constants import DEFAULT_TIMEOUT
-from exec_helpers.exceptions import CalledProcessError
-from exec_helpers.proc_enums import EXPECTED
-from exec_helpers.proc_enums import exit_codes_to_enums
+from exec_helpers import api
+from exec_helpers import constants
+from exec_helpers import exceptions
+from exec_helpers import proc_enums
+from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import CommandT
+from exec_helpers.api import OptionalStdinT
+from exec_helpers.api import OptionalTimeoutT
+from exec_helpers.async_api import exec_result
+from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
 
 if typing.TYPE_CHECKING:
-    # pylint: disable=ungrouped-imports
-    from logging import Logger
-    from exec_helpers.api import ExecuteAsyncResult
-    from exec_helpers.api import CalledProcessErrorSubClassT
-    from exec_helpers.api import CommandT
-    from exec_helpers.api import OptionalStdinT
-    from exec_helpers.api import OptionalTimeoutT
-    from exec_helpers.proc_enums import ExitCodeT
+    import pathlib
 
 
 # noinspection PyProtectedMember
-class _ChRootContext(_SyncChRootContext, typing.AsyncContextManager[None]):
+class _ChRootContext(api._ChRootContext, typing.AsyncContextManager[None]):  # pylint: disable=protected-access
     """Async extension for chroot.
 
     :param conn: connection instance
     :type conn: ExecHelper
     :param path: chroot path or None for no chroot
-    :type path: typing.Optional[typing.Union[str, Path]]
+    :type path: typing.Optional[typing.Union[str, pathlib.Path]]
     """
 
-    def __init__(self, conn: "ExecHelper", path: typing.Optional[typing.Union[str, Path]] = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: "typing.Optional[typing.Union[str, pathlib.Path]]" = None) -> None:
         """Context manager for call commands with sudo."""
         super().__init__(conn=conn, path=path)
 
@@ -76,11 +67,11 @@ class _ChRootContext(_SyncChRootContext, typing.AsyncContextManager[None]):
         await self._conn.__aexit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)
 
 
-class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metaclass=ABCMeta):
+class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metaclass=abc.ABCMeta):
     """Subprocess helper with timeouts and lock-free FIFO.
 
     :param logger: logger instance to use
-    :type logger: Logger
+    :type logger: logging.Logger
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
     :type log_mask_re: typing.Optional[str]
@@ -88,10 +79,10 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     __slots__ = ("__alock",)
 
-    def __init__(self, log_mask_re: typing.Optional[str] = None, *, logger: "Logger") -> None:
+    def __init__(self, log_mask_re: "typing.Optional[str]" = None, *, logger: logging.Logger) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
-        self.__alock: typing.Optional[Lock] = None
+        self.__alock: "typing.Optional[asyncio.Lock]" = None
 
     def __enter__(self) -> "ExecHelper":  # pylint: disable=useless-super-delegation
         """Get context manager.
@@ -108,7 +99,7 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :rtype: ExecHelper
         """
         if self.__alock is None:
-            self.__alock = Lock()
+            self.__alock = asyncio.Lock()
         await self.__alock.acquire()
         return self
 
@@ -116,11 +107,11 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Async context manager."""
         self.__alock.release()  # type: ignore
 
-    def chroot(self, path: typing.Union[str, Path, None]) -> "typing.ContextManager[None]":
+    def chroot(self, path: "typing.Union[str, pathlib.Path, None]") -> "typing.ContextManager[None]":
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[typing.Union[str, Path]]
+        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 
@@ -129,18 +120,18 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """
         return _ChRootContext(conn=self, path=path)
 
-    @abstractmethod
+    @abc.abstractmethod
     async def _exec_command(  # type: ignore
         self,
         command: str,
-        async_result: "ExecuteAsyncResult",
-        timeout: "OptionalTimeoutT",
+        async_result: api.ExecuteAsyncResult,
+        timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
-        log_mask_re: typing.Optional[str] = None,
-        stdin: "OptionalStdinT" = None,
+        log_mask_re: "typing.Optional[str]" = None,
+        stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
-    ) -> ExecResult:
+    ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Command for execution
@@ -164,17 +155,17 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :raises ExecHelperTimeoutError: Timeout exceeded
         """
 
-    @abstractmethod
+    @abc.abstractmethod
     async def _execute_async(  # type: ignore
         self,
         command: str,
         *,
-        stdin: typing.Union[str, bytes, bytearray, None] = None,
+        stdin: "typing.Union[str, bytes, bytearray, None]" = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: "typing.Optional[str]" = None,
         **kwargs: typing.Any,
-    ) -> "ExecuteAsyncResult":
+    ) -> api.ExecuteAsyncResult:
         """Execute command in async mode and return Popen with IO objects.
 
         :param command: Command for execution
@@ -205,16 +196,16 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def execute(  # type: ignore
         self,
-        command: "CommandT",
+        command: CommandT,
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: typing.Optional[str] = None,
-        stdin: "OptionalStdinT" = None,
+        log_mask_re: "typing.Optional[str]" = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
-    ) -> ExecResult:
+    ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -240,11 +231,11 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         """
-        log_level: int = INFO if verbose else DEBUG
+        log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = self._cmd_to_string(command)
         self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
 
-        async_result: "ExecuteAsyncResult" = await self._execute_async(
+        async_result: api.ExecuteAsyncResult = await self._execute_async(
             cmd,
             verbose=verbose,
             log_mask_re=log_mask_re,
@@ -254,7 +245,7 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
             **kwargs,
         )
 
-        result: ExecResult = await self._exec_command(
+        result: exec_result.ExecResult = await self._exec_command(
             command=cmd,
             async_result=async_result,
             timeout=timeout,
@@ -268,16 +259,16 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def __call__(  # type: ignore
         self,
-        command: "CommandT",
+        command: CommandT,
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: typing.Optional[str] = None,
-        stdin: "OptionalStdinT" = None,
+        log_mask_re: "typing.Optional[str]" = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         **kwargs: typing.Any,
-    ) -> ExecResult:
+    ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
         :param command: Command for execution
@@ -316,20 +307,20 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def check_call(  # type: ignore
         self,
-        command: "CommandT",
+        command: CommandT,
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
-        error_info: typing.Optional[str] = None,
-        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: "typing.Optional[str]" = None,
+        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        log_mask_re: typing.Optional[str] = None,
-        stdin: "OptionalStdinT" = None,
+        log_mask_re: "typing.Optional[str]" = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
-    ) -> ExecResult:
+    ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
         :param command: Command for execution
@@ -341,7 +332,7 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :param error_info: Text for error details, if fail happens
         :type error_info: typing.Optional[str]
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -354,7 +345,7 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[CalledProcessError]
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -364,8 +355,8 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: "typing.Sequence[ExitCodeT]" = exit_codes_to_enums(expected)
-        result: ExecResult = await self.execute(
+        expected_codes: "typing.Sequence[ExitCodeT]" = proc_enums.exit_codes_to_enums(expected)
+        result: exec_result.ExecResult = await self.execute(
             command,
             verbose=verbose,
             timeout=timeout,
@@ -388,20 +379,20 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     async def check_stderr(  # type: ignore
         self,
-        command: "CommandT",
+        command: CommandT,
         verbose: bool = False,
-        timeout: "OptionalTimeoutT" = DEFAULT_TIMEOUT,
-        error_info: typing.Optional[str] = None,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        error_info: "typing.Optional[str]" = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (EXPECTED,),
-        log_mask_re: typing.Optional[str] = None,
-        stdin: "OptionalStdinT" = None,
+        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        log_mask_re: "typing.Optional[str]" = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        exception_class: "CalledProcessErrorSubClassT" = CalledProcessError,
+        exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
-    ) -> ExecResult:
+    ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
@@ -415,12 +406,12 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, ExitCodes]]
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[CalledProcessError]
+        :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
@@ -436,7 +427,7 @@ class ExecHelper(SyncExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        result: ExecResult = await self.check_call(
+        result: exec_result.ExecResult = await self.check_call(
             command,
             verbose=verbose,
             timeout=timeout,

@@ -19,19 +19,16 @@
 __all__ = ("SSHClient",)
 
 # Standard Library
-import typing
-from os.path import basename
-from os.path import normpath
-from pathlib import Path
-from pathlib import PurePath
-from posixpath import join as posix_path_join
+import os
+import pathlib
+import posixpath
+import typing  # pylint: disable=unused-import
 
 # Local Implementation
-from ._ssh_base import SSHClientBase
-from ._ssh_base import normalize_path
+from . import _ssh_base
 
 
-class SSHClient(SSHClientBase):
+class SSHClient(_ssh_base.SSHClientBase):
     """SSH Client helper."""
 
     __slots__ = ()
@@ -55,7 +52,7 @@ class SSHClient(SSHClientBase):
         """
         return path.replace(" ", r"\ ")
 
-    @normalize_path
+    @_ssh_base.normalize_path
     def mkdir(self, path: str) -> None:
         """Run 'mkdir -p path' on remote.
 
@@ -67,7 +64,7 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"mkdir -p {self._path_esc(path)}\n")
 
-    @normalize_path
+    @_ssh_base.normalize_path
     def rm_rf(self, path: str) -> None:
         """Run 'rm -rf path' on remote.
 
@@ -77,28 +74,30 @@ class SSHClient(SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"rm -rf {self._path_esc(path)}")
 
-    def upload(self, source: typing.Union[str, PurePath], target: typing.Union[str, PurePath]) -> None:
+    def upload(
+        self, source: "typing.Union[str, pathlib.PurePath]", target: "typing.Union[str, pathlib.PurePath]"
+    ) -> None:
         """Upload file(s) from source to target using SFTP session.
 
         :param source: local path
-        :type source: typing.Union[str, PurePath]
+        :type source: typing.Union[str, pathlib.PurePath]
         :param target: remote path
-        :type target: typing.Union[str, PurePath]
+        :type target: typing.Union[str, pathlib.PurePath]
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
         if self.isdir(target):
-            target = posix_path_join(target, basename(source))
+            target = posixpath.join(target, os.path.basename(source))
 
-        tgt = PurePath(target)  # Remote -> No FS access, system agnostic
-        src = Path(source).expanduser().resolve()
+        tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
+        src = pathlib.Path(source).expanduser().resolve()
         if not src.is_dir():
             self._sftp.put(src.as_posix(), target)
             return
 
         for pth in src.glob("**/*"):
             relative = pth.relative_to(src).as_posix()
-            destination: str = normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")
+            destination: str = os.path.normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")
             if pth.is_dir():
                 self.mkdir(destination)
                 continue
@@ -107,22 +106,24 @@ class SSHClient(SSHClientBase):
                 self._sftp.unlink(destination)
             self._sftp.put(pth.as_posix(), destination)
 
-    def download(self, destination: typing.Union[str, PurePath], target: typing.Union[str, PurePath]) -> bool:
+    def download(
+        self, destination: "typing.Union[str, pathlib.PurePath]", target: "typing.Union[str, pathlib.PurePath]"
+    ) -> bool:
         """Download file(s) to target from destination.
 
         :param destination: remote path
-        :type destination: typing.Union[str, PurePath]
+        :type destination: typing.Union[str, pathlib.PurePath]
         :param target: local path
-        :type target: typing.Union[str, PurePath]
+        :type target: typing.Union[str, pathlib.PurePath]
         :return: downloaded file present on local filesystem
         :rtype: bool
         """
         self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")
 
-        tgt = Path(target).expanduser().resolve()
-        dst = PurePath(destination).as_posix()
+        tgt = pathlib.Path(target).expanduser().resolve()
+        dst = pathlib.PurePath(destination).as_posix()
         if tgt.is_dir():
-            tgt = tgt.joinpath(basename(dst))
+            tgt = tgt.joinpath(os.path.basename(dst))
 
         if not self.isdir(destination):
             if self.exists(destination):

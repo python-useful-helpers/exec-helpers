@@ -1,13 +1,12 @@
 """SSH client shared helpers."""
 
 # Standard Library
+import functools
+import pathlib
 import typing
-from functools import lru_cache
-from pathlib import Path
 
 # External Dependencies
-from paramiko import SSHConfig as ParamikoSSHConfig  # type: ignore
-from paramiko.config import SSHConfigDict  # type: ignore
+import paramiko  # type: ignore
 
 if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
@@ -15,24 +14,24 @@ if typing.TYPE_CHECKING:
 
 
 # Parse default SSHConfig if available
-SSH_CONFIG_FILE_SYSTEM = Path("/etc/ssh/ssh_config")
-SSH_CONFIG_FILE_USER = Path("~/.ssh/config").expanduser()
+SSH_CONFIG_FILE_SYSTEM = pathlib.Path("/etc/ssh/ssh_config")
+SSH_CONFIG_FILE_USER = pathlib.Path("~/.ssh/config").expanduser()
 
 
-@lru_cache(maxsize=128, typed=True)
-def _parse_ssh_config_file(file_path: Path) -> typing.Optional[ParamikoSSHConfig]:
+@functools.lru_cache(maxsize=128, typed=True)
+def _parse_ssh_config_file(file_path: pathlib.Path) -> "typing.Optional[paramiko.SSHConfig]":
     """Parse ssh config file.
 
     :param file_path: file path for parsing
-    :type file_path: Path
+    :type file_path: pathlib.Path
     :return: SSH config if file found and parsed else None
-    :rtype: typing.Optional[ParamikoSSHConfig]
+    :rtype: typing.Optional[paramiko.SSHConfig]
     """
     if not file_path.exists():
         return None
     # noinspection PyBroadException
     try:
-        config = ParamikoSSHConfig()
+        config = paramiko.SSHConfig()
         with file_path.open() as f_obj:
             config.parse(f_obj)
         return config
@@ -57,14 +56,14 @@ class SSHConfig:
     def __init__(
         self,
         hostname: str,
-        port: typing.Optional[typing.Union[str, int]] = None,
-        user: typing.Optional[str] = None,
-        identityfile: typing.Optional[typing.List[str]] = None,
-        proxycommand: typing.Optional[str] = None,
-        proxyjump: typing.Optional[str] = None,
+        port: "typing.Optional[typing.Union[str, int]]" = None,
+        user: "typing.Optional[str]" = None,
+        identityfile: "typing.Optional[typing.List[str]]" = None,
+        proxycommand: "typing.Optional[str]" = None,
+        proxyjump: "typing.Optional[str]" = None,
         *,
-        controlpath: typing.Optional[str] = None,
-        controlmaster: typing.Optional[typing.Union[str, bool]] = None,
+        controlpath: "typing.Optional[str]" = None,
+        controlmaster: "typing.Optional[typing.Union[str, bool]]" = None,
     ):
         """SSH Config for creation connection.
 
@@ -89,22 +88,22 @@ class SSHConfig:
         .. versionadded:: 6.0.0
         """
         self.__hostname: str = hostname
-        self.__port: typing.Optional[int] = self._parse_optional_int(port)
+        self.__port: "typing.Optional[int]" = self._parse_optional_int(port)
         if isinstance(self.__port, int) and not 0 < self.__port < 65535:
             raise ValueError(f"port {self.__port} if not in range [1, 65535], which is incorrect.")
 
-        self.__user: typing.Optional[str] = user
-        self.__identityfile: typing.Optional[typing.List[str]] = identityfile
+        self.__user: "typing.Optional[str]" = user
+        self.__identityfile: "typing.Optional[typing.List[str]]" = identityfile
 
         if proxycommand and proxyjump:
             raise ValueError(
                 f"ProxyCommand ({proxycommand}) and ProxyJump ({proxyjump}) is mixed for single connection!"
             )
 
-        self.__proxycommand: typing.Optional[str] = proxycommand
-        self.__proxyjump: typing.Optional[str] = proxyjump
-        self.__controlpath: typing.Optional[str] = controlpath
-        self.__controlmaster: typing.Optional[bool] = self._parse_optional_bool(controlmaster)
+        self.__proxycommand: "typing.Optional[str]" = proxycommand
+        self.__proxyjump: "typing.Optional[str]" = proxyjump
+        self.__controlpath: "typing.Optional[str]" = controlpath
+        self.__controlmaster: "typing.Optional[bool]" = self._parse_optional_bool(controlmaster)
 
     def __hash__(self) -> int:  # pragma: no cover
         """Hash for caching possibility.
@@ -173,7 +172,7 @@ class SSHConfig:
         return msg
 
     @staticmethod
-    def _parse_optional_int(value: typing.Optional[typing.Union[str, int]]) -> typing.Optional[int]:
+    def _parse_optional_int(value: "typing.Optional[typing.Union[str, int]]") -> "typing.Optional[int]":
         """Parse optional integer field in source data.
 
         :param value: value to process
@@ -186,7 +185,7 @@ class SSHConfig:
         return int(value)
 
     @staticmethod
-    def _parse_optional_bool(value: typing.Optional[typing.Union[str, bool]]) -> typing.Optional[bool]:
+    def _parse_optional_bool(value: "typing.Optional[typing.Union[str, bool]]") -> "typing.Optional[bool]":
         """Parse optional bool field in source data.
 
         :param value: value to process
@@ -200,13 +199,16 @@ class SSHConfig:
 
     @classmethod
     def from_ssh_config(
-        cls, ssh_config: typing.Union[SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
+        cls,
+        ssh_config: typing.Union[
+            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+        ],
     ) -> "SSHConfig":
         """Construct config from Paramiko parsed file.
 
         :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict
         :type ssh_config: typing.Union[
-            SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
         ]
         :return: SSHConfig with supported values from config
         :rtype: SSHConfig
@@ -223,13 +225,13 @@ class SSHConfig:
         )
 
     @property
-    def as_dict(self) -> typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]:
+    def as_dict(self) -> "typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]":
         """Dictionary for rebuilding config.
 
         :return: config as dictionary with only not None values
         :rtype: typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
         """
-        result: typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]] = {"hostname": self.hostname}
+        result: "typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]" = {"hostname": self.hostname}
         if self.port is not None:
             result["port"] = self.port
         if self.user is not None:
@@ -254,7 +256,7 @@ class SSHConfig:
         :return: Composite from 2 configs with priority of second one
         :rtype: SSHConfig
         """
-        cls: typing.Type["SSHConfig"] = self.__class__
+        cls: "typing.Type[SSHConfig]" = self.__class__
         return cls(
             hostname=ssh_config.hostname,
             port=ssh_config.port if ssh_config.port is not None else self.port,
@@ -271,7 +273,7 @@ class SSHConfig:
         other: typing.Union[
             "SSHConfig", typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], typing.Any
         ],
-    ) -> typing.Union[bool, type(NotImplemented)]:  # type: ignore
+    ) -> "typing.Union[bool, type(NotImplemented)]":  # type: ignore
         """Equality check.
 
         :return: other equals self
@@ -305,7 +307,7 @@ class SSHConfig:
         return self.__hostname
 
     @property
-    def port(self) -> typing.Optional[int]:
+    def port(self) -> "typing.Optional[int]":
         """Remote port.
 
         :return: propagated remote port for connection
@@ -314,7 +316,7 @@ class SSHConfig:
         return self.__port
 
     @property
-    def user(self) -> typing.Optional[str]:
+    def user(self) -> "typing.Optional[str]":
         """Remote user.
 
         :return: propagated username for connection
@@ -323,7 +325,7 @@ class SSHConfig:
         return self.__user
 
     @property
-    def identityfile(self) -> typing.Optional[typing.List[str]]:
+    def identityfile(self) -> "typing.Optional[typing.List[str]]":
         """Connection ssh keys file names.
 
         :return: list of ssh private keys names
@@ -334,7 +336,7 @@ class SSHConfig:
         return self.__identityfile.copy()
 
     @property
-    def proxycommand(self) -> typing.Optional[str]:
+    def proxycommand(self) -> "typing.Optional[str]":
         """Proxy command for ssh connection.
 
         :return: command to be executed for socket creation if applicable
@@ -343,16 +345,16 @@ class SSHConfig:
         return self.__proxycommand
 
     @property
-    def proxyjump(self) -> typing.Optional[str]:
+    def proxyjump(self) -> "typing.Optional[str]":
         """Proxy host name.
 
         :return: proxy hostname if applicable
-        :rtype: typing.Optional[str]
+        :rtype: "typing.Optional[str]"
         """
         return self.__proxyjump
 
     @property
-    def controlpath(self) -> typing.Optional[str]:
+    def controlpath(self) -> "typing.Optional[str]":
         """Shared socket file path for re-using connection by multiple instances.
 
         :return: shared socket filesystem path
@@ -361,7 +363,7 @@ class SSHConfig:
         return self.__controlpath
 
     @property
-    def controlmaster(self) -> typing.Optional[bool]:
+    def controlmaster(self) -> "typing.Optional[bool]":
         """Re-use connection.
 
         :return: connection should be re-used if possible
@@ -391,11 +393,11 @@ class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
         raise KeyError(f"{key} is not available and not allowed.")  # pragma: no cover
 
 
-def _parse_paramiko_ssh_config(conf: ParamikoSSHConfig, host: str) -> HostsSSHConfigs:
+def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHConfigs:
     """Parse Paramiko ssh config for specific host to dictionary.
 
     :param conf: Paramiko SSHConfig instance
-    :type conf: ParamikoSSHConfig
+    :type conf: paramiko.SSHConfig
     :param host: hostname to seek in config
     :type host: str
     :return: parsed dictionary with proxy jump path, if available
@@ -406,7 +408,7 @@ def _parse_paramiko_ssh_config(conf: ParamikoSSHConfig, host: str) -> HostsSSHCo
     config.setdefault(config[host].hostname, config[host])
 
     # Expand proxy info
-    proxy_jump: typing.Optional[str] = config[host].proxyjump
+    proxy_jump: "typing.Optional[str]" = config[host].proxyjump
     while proxy_jump is not None:
         config[proxy_jump] = SSHConfig.from_ssh_config(conf.lookup(proxy_jump))
         proxy_jump = config[proxy_jump].proxyjump
@@ -414,7 +416,7 @@ def _parse_paramiko_ssh_config(conf: ParamikoSSHConfig, host: str) -> HostsSSHCo
 
 
 def _parse_dict_ssh_config(
-    conf: typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], host: str
+    conf: "typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]]", host: str
 ) -> HostsSSHConfigs:
     """Extract required data from pre-parsed ssh config for specific host to dictionary.
 
@@ -430,7 +432,7 @@ def _parse_dict_ssh_config(
     config.setdefault(config[host].hostname, config[host])
 
     # Expand proxy info
-    proxy_jump: typing.Optional[str] = config[host].proxyjump
+    proxy_jump: "typing.Optional[str]" = config[host].proxyjump
     while proxy_jump is not None:
         config[proxy_jump] = SSHConfig.from_ssh_config(conf.get(proxy_jump, {"hostname": proxy_jump}))
         proxy_jump = config[proxy_jump].proxyjump
@@ -440,7 +442,7 @@ def _parse_dict_ssh_config(
 def parse_ssh_config(
     ssh_config: typing.Union[
         str,
-        ParamikoSSHConfig,
+        paramiko.SSHConfig,
         typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
         None,
     ],
@@ -452,7 +454,7 @@ def parse_ssh_config(
     :type ssh_config:
         typing.Union[
             str,
-            ParamikoSSHConfig,
+            paramiko.SSHConfig,
             typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
             None
         ]
@@ -461,22 +463,22 @@ def parse_ssh_config(
     :return: parsed ssh config if available
     :rtype: HostsSSHConfigs
     """
-    if isinstance(ssh_config, ParamikoSSHConfig):
+    if isinstance(ssh_config, paramiko.SSHConfig):
         return _parse_paramiko_ssh_config(ssh_config, host)
 
     if isinstance(ssh_config, dict):
         return _parse_dict_ssh_config(ssh_config, host)
 
     if isinstance(ssh_config, str):
-        ssh_config_path = Path(ssh_config).expanduser()
+        ssh_config_path = pathlib.Path(ssh_config).expanduser()
         if ssh_config_path.exists():
-            real_config = ParamikoSSHConfig()
+            real_config = paramiko.SSHConfig()
             with ssh_config_path.open() as f_config:
                 real_config.parse(f_config)
             return _parse_paramiko_ssh_config(real_config, host)
 
-    system_ssh_config: typing.Optional[ParamikoSSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_SYSTEM)
-    user_ssh_config: typing.Optional[ParamikoSSHConfig] = _parse_ssh_config_file(SSH_CONFIG_FILE_USER)
+    system_ssh_config: "typing.Optional[paramiko.config.SSHConfig]" = _parse_ssh_config_file(SSH_CONFIG_FILE_SYSTEM)
+    user_ssh_config: "typing.Optional[paramiko.config.SSHConfig]" = _parse_ssh_config_file(SSH_CONFIG_FILE_USER)
 
     if system_ssh_config is not None:
         config = _parse_paramiko_ssh_config(system_ssh_config, host)

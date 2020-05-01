@@ -350,7 +350,7 @@ def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
     if "height" in run_parameters:
         kwargs["height"] = run_parameters["height"]
 
-    lock_mock = mocker.patch("exec_helpers.api.RLock")
+    lock_mock = mocker.patch("threading.RLock")
 
     with ssh:
         res = ssh.execute(

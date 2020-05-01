@@ -29,4 +29,4 @@ jobs:
     - name: Test with pytest
       run: |
         py.test --cov-report= --cov=exec_helpers test
-        coverage report -m --fail-under 80
+        coverage report -m --fail-under 85
