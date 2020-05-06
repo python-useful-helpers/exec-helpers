@@ -533,7 +533,7 @@ class SSHClientBase(api.ExecHelper):
             if config.proxycommand:
                 raise ValueError(f"ProxyCommand found in connection chain after first host reached!\n{config}")
 
-            raise RuntimeError(f"Unexpected state: Final host by configuration, but requested host is not reached")
+            raise RuntimeError("Unexpected state: Final host by configuration, but requested host is not reached")
         return last_ssh_client
 
     def __connect_sftp(self) -> None:

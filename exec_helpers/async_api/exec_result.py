@@ -36,7 +36,7 @@ class ExecResult(exec_result.ExecResult):
     __slots__ = ()
 
     @staticmethod
-    async def _poll_stream(  # type: ignore
+    async def _poll_stream(  # type: ignore  # pylint: disable=invalid-overridden-method
         src: _StreamT, log: "typing.Optional[logging.Logger]" = None, verbose: bool = False
     ) -> "typing.List[bytes]":
         """Stream poll helper.
@@ -57,7 +57,7 @@ class ExecResult(exec_result.ExecResult):
                     )
         return dst
 
-    async def read_stdout(  # type: ignore
+    async def read_stdout(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         src: "typing.Optional[_StreamT]" = None,
         log: "typing.Optional[logging.Logger]" = None,
@@ -84,7 +84,7 @@ class ExecResult(exec_result.ExecResult):
             self._stdout_str = self._stdout_brief = None
             self._stdout += tuple(await self._poll_stream(src, log, verbose))
 
-    async def read_stderr(  # type: ignore
+    async def read_stderr(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         src: "typing.Optional[_StreamT]" = None,
         log: "typing.Optional[logging.Logger]" = None,

@@ -121,7 +121,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         return _ChRootContext(conn=self, path=path)
 
     @abc.abstractmethod
-    async def _exec_command(  # type: ignore
+    async def _exec_command(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: str,
         async_result: api.ExecuteAsyncResult,
@@ -156,7 +156,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """
 
     @abc.abstractmethod
-    async def _execute_async(  # type: ignore
+    async def _execute_async(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: str,
         *,
@@ -194,7 +194,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         :raises OSError: impossible to process STDIN
         """
 
-    async def execute(  # type: ignore
+    async def execute(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: CommandT,
         verbose: bool = False,
@@ -257,7 +257,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    async def __call__(  # type: ignore
+    async def __call__(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: CommandT,
         verbose: bool = False,
@@ -305,7 +305,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
             **kwargs,
         )
 
-    async def check_call(  # type: ignore
+    async def check_call(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: CommandT,
         verbose: bool = False,
@@ -377,7 +377,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
                 raise exception_class(result=result, expected=expected_codes)
         return result
 
-    async def check_stderr(  # type: ignore
+    async def check_stderr(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: CommandT,
         verbose: bool = False,
