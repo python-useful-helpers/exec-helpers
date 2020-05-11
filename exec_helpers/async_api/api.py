@@ -31,14 +31,14 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers.api import CalledProcessErrorSubClassT
+from exec_helpers.api import ChRootPathSetT
 from exec_helpers.api import CommandT
+from exec_helpers.api import ExpectedExitCodesT
+from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import exec_result
 from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 
 # noinspection PyProtectedMember
@@ -51,7 +51,7 @@ class _ChRootContext(api._ChRootContext, typing.AsyncContextManager[None]):  # p
     :type path: typing.Optional[typing.Union[str, pathlib.Path]]
     """
 
-    def __init__(self, conn: "ExecHelper", path: "typing.Optional[typing.Union[str, pathlib.Path]]" = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: ChRootPathSetT = None) -> None:
         """Context manager for call commands with sudo."""
         super().__init__(conn=conn, path=path)
 
@@ -79,7 +79,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
 
     __slots__ = ("__alock",)
 
-    def __init__(self, log_mask_re: "typing.Optional[str]" = None, *, logger: logging.Logger) -> None:
+    def __init__(self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
         self.__alock: "typing.Optional[asyncio.Lock]" = None
@@ -107,7 +107,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """Async context manager."""
         self.__alock.release()  # type: ignore
 
-    def chroot(self, path: "typing.Union[str, pathlib.Path, None]") -> "typing.ContextManager[None]":
+    def chroot(self, path: ChRootPathSetT) -> _ChRootContext:
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
@@ -128,7 +128,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -160,7 +160,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         self,
         command: str,
         *,
-        stdin: "typing.Union[str, bytes, bytearray, None]" = None,
+        stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: "typing.Optional[str]" = None,
@@ -200,7 +200,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -263,7 +263,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -311,10 +311,10 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: "typing.Optional[str]" = None,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -385,8 +385,8 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         error_info: "typing.Optional[str]" = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
-        log_mask_re: "typing.Optional[str]" = None,
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,

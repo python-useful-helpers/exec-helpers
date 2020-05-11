@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2019 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 #
@@ -13,6 +13,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+"""ExecResult object tests."""
 
 # pylint: disable=no-self-use
 
@@ -54,6 +56,8 @@ cmd = "ls -la | awk '{print $1}'"
 
 # noinspection PyTypeChecker
 class TestExecResult(unittest.TestCase):
+    """Most common scenarios."""
+
     @mock.patch("exec_helpers.exec_result.LOGGER")
     def test_create_minimal(self, logger):
         """Test defaults."""
@@ -286,24 +290,28 @@ class TestExecResult(unittest.TestCase):
 
     @unittest.skipIf(defusedxml is None, "defusedxml is not installed")
     def test_stdout_xml(self):
+        """Test xml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
         self.assertEqual(xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml))
 
     @unittest.skipIf(lxml is None, "no lxml installed")
     def test_stdout_lxml(self):
+        """Test lxml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         expect = lxml.etree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
         self.assertEqual(lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml))
 
     @unittest.skipUnless(yaml is not None, "PyYAML parser should be installed")
     def test_stdout_yaml_pyyaml(self):
+        """Test yaml decode with pyyaml."""
         result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         expect = {"test": "data"}
         self.assertEqual(expect, result.stdout_yaml)
 
     @unittest.skipIf(logwrap is None, "logwrap is not installed")
     def test_pretty_repr(self):
+        """Test repr with logwrap."""
         result = exec_helpers.ExecResult("test", stdout=[b"{test: data}"], stderr=[b"{test: stderr}"])
         pretty_repr = logwrap.pretty_repr(result)
         self.assertEqual(
@@ -323,6 +331,8 @@ class TestExecResult(unittest.TestCase):
 
 # noinspection PyTypeChecker
 class TestExecResultRuamelYaml(unittest.TestCase):
+    """Ruamel.yaml specific check."""
+
     def setUp(self) -> None:
         self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
 
@@ -331,6 +341,7 @@ class TestExecResultRuamelYaml(unittest.TestCase):
 
     @unittest.skipUnless(ruamel_yaml is not None, "Ruamel.YAML parser should be installed")
     def test_stdout_yaml_ruamel(self):
+        """Test yaml decode with ruamel.yaml."""
         result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         expect = {"test": "data"}
         result = result.stdout_yaml
@@ -338,6 +349,8 @@ class TestExecResultRuamelYaml(unittest.TestCase):
 
 
 class TestExecResultNoExtras(unittest.TestCase):
+    """No extras installed behavior checks."""
+
     def setUp(self) -> None:
         self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
         self._orig_ruamel_yaml, exec_helpers.exec_result.ruamel_yaml = exec_helpers.exec_result.ruamel_yaml, None
@@ -351,11 +364,13 @@ class TestExecResultNoExtras(unittest.TestCase):
         exec_helpers.exec_result.defusedxml = self._orig_defusedxml
 
     def test_stdout_yaml(self):
+        """Test yaml decode not supported."""
         result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
         with self.assertRaises(AttributeError):
             getattr(result, "stdout_yaml")  # noqa: B009
 
     def test_stdout_xmls(self):
+        """Test xml decode not supported."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         with self.assertRaises(AttributeError):
             getattr(result, "stdout_xml")  # noqa: B009

@@ -1,4 +1,4 @@
-#    Copyright 2019 Alexey Stepanov aka penguinolog.
+#    Copyright 2019 - 2020 Alexey Stepanov aka penguinolog.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""Shared pytest logic."""
+
 # Standard Library
 from unittest import mock
 
@@ -21,6 +23,7 @@ import pytest
 
 @pytest.fixture
 def no_real_ssh_config(mocker):
+    """Do not allow real host ssh config usage."""
     conf_sys: mock.MagicMock = mocker.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True)
     conf_user: mock.MagicMock = mocker.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True)
     conf_sys.exists.return_value = False

@@ -27,6 +27,9 @@ __all__ = (
     "OptionalStdinT",
     "OptionalTimeoutT",
     "CommandT",
+    "LogMaskReT",
+    "ChRootPathSetT",
+    "ExpectedExitCodesT",
 )
 
 # Standard Library
@@ -47,7 +50,10 @@ from exec_helpers import proc_enums
 from exec_helpers.exec_result import OptionalStdinT
 from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
 
-CommandT = typing.TypeVar("CommandT", str, typing.Iterable[str])
+CommandT = typing.Union[str, typing.Iterable[str]]
+LogMaskReT = typing.Optional[str]
+ChRootPathSetT = typing.Optional[typing.Union[str, pathlib.Path]]
+ExpectedExitCodesT = typing.Iterable[ExitCodeT]
 OptionalTimeoutT = typing.Union[int, float, None]
 CalledProcessErrorSubClassT = typing.Type[exceptions.CalledProcessError]
 
@@ -77,7 +83,7 @@ class _ChRootContext(typing.ContextManager[None]):
 
     __slots__ = ("_conn", "_chroot_status", "_path")
 
-    def __init__(self, conn: "ExecHelper", path: "typing.Optional[typing.Union[str, pathlib.Path]]" = None) -> None:
+    def __init__(self, conn: "ExecHelper", path: ChRootPathSetT = None) -> None:
         """Context manager for call commands with sudo.
 
         :raises TypeError: incorrect type of path variable
@@ -146,11 +152,11 @@ class ExecHelper(
 
     __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
 
-    def __init__(self, log_mask_re: "typing.Optional[str]" = None, *, logger: logging.Logger) -> None:
+    def __init__(self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger) -> None:
         """Global ExecHelper API."""
         self.__lock = threading.RLock()
         self.__logger: logging.Logger = logger
-        self.log_mask_re: "typing.Optional[str]" = log_mask_re
+        self.log_mask_re: LogMaskReT = log_mask_re
         self.__chroot_path: "typing.Optional[str]" = None
 
     @property
@@ -180,14 +186,20 @@ class ExecHelper(
         return self.__chroot_path
 
     @_chroot_path.setter
-    def _chroot_path(self, new_state: "typing.Optional[str]") -> None:
+    def _chroot_path(self, new_state: ChRootPathSetT) -> None:
         """Path for chroot if set.
 
         :param new_state: new path
         :type new_state: typing.Optional[str]
+        :raises TypeError: Not supported path information
         .. versionadded:: 4.1.0
         """
-        self.__chroot_path = new_state
+        if new_state is None or isinstance(new_state, str):
+            self.__chroot_path = new_state
+        elif isinstance(new_state, pathlib.Path):
+            self.__chroot_path = new_state.as_posix()
+        else:
+            raise TypeError(f"chroot_path is expected to be string, but set {new_state!r}")
 
     @_chroot_path.deleter
     def _chroot_path(self) -> None:
@@ -197,7 +209,7 @@ class ExecHelper(
         """
         self.__chroot_path = None
 
-    def chroot(self, path: "typing.Union[str, pathlib.Path, None]") -> "typing.ContextManager[None]":
+    def chroot(self, path: ChRootPathSetT) -> _ChRootContext:
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
@@ -225,7 +237,7 @@ class ExecHelper(
         """Context manager usage."""
         self.lock.release()
 
-    def _mask_command(self, cmd: str, log_mask_re: "typing.Optional[str]" = None) -> str:
+    def _mask_command(self, cmd: str, log_mask_re: LogMaskReT = None) -> str:
         """Log command with masking and return parsed cmd.
 
         :param cmd: command
@@ -330,7 +342,7 @@ class ExecHelper(
         timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -379,7 +391,7 @@ class ExecHelper(
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -443,7 +455,7 @@ class ExecHelper(
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -491,10 +503,10 @@ class ExecHelper(
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: "typing.Optional[str]" = None,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -567,8 +579,8 @@ class ExecHelper(
         error_info: "typing.Optional[str]" = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
-        log_mask_re: "typing.Optional[str]" = None,
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -638,7 +650,7 @@ class ExecHelper(
         result: exec_result.ExecResult,
         error_info: "typing.Optional[str]",
         raise_on_err: bool,
-        expected: "typing.Iterable[ExitCodeT]",
+        expected: ExpectedExitCodesT,
         exception_class: CalledProcessErrorSubClassT,
     ) -> exec_result.ExecResult:
         """Internal check_stderr logic (synchronous).

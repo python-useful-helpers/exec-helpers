@@ -66,9 +66,9 @@ jobs:
       name: "PEP8"
       install:
         - *upgrade_python_toolset
-        - pip install --upgrade flake8 flake8-bugbear
+        - pip install --upgrade -r flake8_requirements.txt
       script:
-        - flake8
+        - flake8 exec_helpers
 
     #  - <<: *code_style_check
     #    name: "PEP257"

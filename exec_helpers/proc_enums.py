@@ -204,5 +204,5 @@ def exit_codes_to_enums(codes: "typing.Optional[typing.Iterable[ExitCodeT]]" = N
     """
     if codes is None:
         # noinspection PyRedundantParentheses
-        return (EXPECTED,)
+        return (EXPECTED,)  # NOSONAR
     return tuple(exit_code_to_enum(code) for code in codes)

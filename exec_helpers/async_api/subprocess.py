@@ -35,11 +35,12 @@ from exec_helpers import proc_enums
 from exec_helpers import subprocess
 from exec_helpers.api import CalledProcessErrorSubClassT
 from exec_helpers.api import CommandT
+from exec_helpers.api import ExpectedExitCodesT
+from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import api
 from exec_helpers.async_api import exec_result
 from exec_helpers.exec_result import OptionalStdinT
-from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
 from exec_helpers.subprocess import CwdT
 from exec_helpers.subprocess import EnvT
 
@@ -112,10 +113,7 @@ class Subprocess(api.ExecHelper):
     __slots__ = ()
 
     def __init__(
-        self,
-        log_mask_re: "typing.Optional[str]" = None,
-        *,
-        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
+        self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
@@ -145,7 +143,7 @@ class Subprocess(api.ExecHelper):
         timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -308,6 +306,7 @@ class Subprocess(api.ExecHelper):
 
             process_stdin = None
 
+        # noinspection PyArgumentList
         return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
 
     async def execute(  # type: ignore  # pylint: disable=arguments-differ
@@ -316,7 +315,7 @@ class Subprocess(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -378,7 +377,7 @@ class Subprocess(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -439,10 +438,10 @@ class Subprocess(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: "typing.Optional[str]" = None,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -520,8 +519,8 @@ class Subprocess(api.ExecHelper):
         error_info: "typing.Optional[str]" = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
-        log_mask_re: "typing.Optional[str]" = None,
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,

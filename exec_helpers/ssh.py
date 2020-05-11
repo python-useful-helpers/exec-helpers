@@ -22,10 +22,10 @@ __all__ = ("SSHClient",)
 import os
 import pathlib
 import posixpath
-import typing  # pylint: disable=unused-import
 
 # Local Implementation
 from . import _ssh_base
+from ._ssh_base import SupportPathT
 
 
 class SSHClient(_ssh_base.SSHClientBase):
@@ -74,9 +74,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         # noinspection PyTypeChecker
         self.execute(f"rm -rf {self._path_esc(path)}")
 
-    def upload(
-        self, source: "typing.Union[str, pathlib.PurePath]", target: "typing.Union[str, pathlib.PurePath]"
-    ) -> None:
+    def upload(self, source: SupportPathT, target: SupportPathT) -> None:
         """Upload file(s) from source to target using SFTP session.
 
         :param source: local path
@@ -106,9 +104,7 @@ class SSHClient(_ssh_base.SSHClientBase):
                 self._sftp.unlink(destination)
             self._sftp.put(pth.as_posix(), destination)
 
-    def download(
-        self, destination: "typing.Union[str, pathlib.PurePath]", target: "typing.Union[str, pathlib.PurePath]"
-    ) -> bool:
+    def download(self, destination: SupportPathT, target: SupportPathT) -> bool:
         """Download file(s) to target from destination.
 
         :param destination: remote path

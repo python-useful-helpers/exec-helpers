@@ -12,6 +12,9 @@ if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
     import logwrap
 
+SSHConfigDictLikeT = typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+SSHConfigsDictT = typing.Dict[str, SSHConfigDictLikeT]
+
 
 # Parse default SSHConfig if available
 SSH_CONFIG_FILE_SYSTEM = pathlib.Path("/etc/ssh/ssh_config")
@@ -199,10 +202,7 @@ class SSHConfig:
 
     @classmethod
     def from_ssh_config(
-        cls,
-        ssh_config: typing.Union[
-            paramiko.config.SSHConfigDict, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
-        ],
+        cls, ssh_config: typing.Union[paramiko.config.SSHConfigDict, SSHConfigDictLikeT],
     ) -> "SSHConfig":
         """Construct config from Paramiko parsed file.
 
@@ -225,13 +225,13 @@ class SSHConfig:
         )
 
     @property
-    def as_dict(self) -> "typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]":
+    def as_dict(self) -> SSHConfigDictLikeT:
         """Dictionary for rebuilding config.
 
         :return: config as dictionary with only not None values
         :rtype: typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
         """
-        result: "typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]" = {"hostname": self.hostname}
+        result: SSHConfigDictLikeT = {"hostname": self.hostname}
         if self.port is not None:
             result["port"] = self.port
         if self.user is not None:
@@ -269,10 +269,7 @@ class SSHConfig:
         )
 
     def __eq__(
-        self,
-        other: typing.Union[
-            "SSHConfig", typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]], typing.Any
-        ],
+        self, other: typing.Union["SSHConfig", SSHConfigDictLikeT, typing.Any],
     ) -> "typing.Union[bool, type(NotImplemented)]":  # type: ignore
         """Equality check.
 
@@ -415,9 +412,7 @@ def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHC
     return config
 
 
-def _parse_dict_ssh_config(
-    conf: "typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]]", host: str
-) -> HostsSSHConfigs:
+def _parse_dict_ssh_config(conf: SSHConfigsDictT, host: str) -> HostsSSHConfigs:
     """Extract required data from pre-parsed ssh config for specific host to dictionary.
 
     :param conf: pre-parsed dictionary
@@ -440,13 +435,7 @@ def _parse_dict_ssh_config(
 
 
 def parse_ssh_config(
-    ssh_config: typing.Union[
-        str,
-        paramiko.SSHConfig,
-        typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-        None,
-    ],
-    host: str,
+    ssh_config: typing.Union[str, paramiko.SSHConfig, SSHConfigsDictT, None], host: str,
 ) -> HostsSSHConfigs:
     """Parse ssh config to get real connection parameters.
 

@@ -16,7 +16,7 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
-__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "normalize_path")
+__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "normalize_path", "SupportPathT")
 
 # Standard Library
 import concurrent.futures
@@ -45,6 +45,8 @@ from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
 from exec_helpers.api import CalledProcessErrorSubClassT
 from exec_helpers.api import CommandT
+from exec_helpers.api import ExpectedExitCodesT
+from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
@@ -52,21 +54,18 @@ from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
 # Local Implementation
 from . import _log_templates
 from . import _ssh_helpers
-from ._ssh_helpers import HostsSSHConfigs
-from ._ssh_helpers import SSHConfig
+from ._ssh_helpers import SSHConfigsDictT
 
 if typing.TYPE_CHECKING:
     import socket
 
+KeepAlivePeriodT = typing.Union[int, bool]
+SupportPathT = typing.Union[str, pathlib.PurePath]
 _OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
 _OptionalSSHConfigArgT = typing.Union[
-    str,
-    paramiko.SSHConfig,
-    typing.Dict[str, typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]],
-    HostsSSHConfigs,
-    None,
+    str, paramiko.SSHConfig, SSHConfigsDictT, _ssh_helpers.HostsSSHConfigs, None,
 ]
-_SSHConnChainT = typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
+_SSHConnChainT = typing.List[typing.Tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]
 _OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
 _RType = typing.TypeVar("_RType")
 
@@ -196,9 +195,7 @@ def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _R
     """
 
     @functools.wraps(tgt)
-    def wrapper(
-        self: typing.Any, path: "typing.Union[str, pathlib.PurePath]", *args: typing.Any, **kwargs: typing.Any
-    ) -> _RType:
+    def wrapper(self: typing.Any, path: SupportPathT, *args: typing.Any, **kwargs: typing.Any) -> _RType:
         """Normalize path type before use in corresponding method.
 
         :param self: owner instance
@@ -299,17 +296,17 @@ class SSHClientBase(api.ExecHelper):
         ssh_config: _OptionalSSHConfigArgT = None,
         ssh_auth_map: _OptionalSSHAuthMapT = None,
         sock: "typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]" = None,
-        keepalive: "typing.Union[int, bool]" = 1,
+        keepalive: KeepAlivePeriodT = 1,
     ) -> None:
         """Main SSH Client helper."""
         # Init ssh config. It's main source for connection parameters
-        if isinstance(ssh_config, HostsSSHConfigs):
-            self.__ssh_config: HostsSSHConfigs = ssh_config
+        if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
+            self.__ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
         else:
             self.__ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
         # Get config. We are not resolving full chain. If you are have a chain by some reason - init config manually.
-        config: SSHConfig = self.__ssh_config[host]
+        config: _ssh_helpers.SSHConfig = self.__ssh_config[host]
 
         # Save resolved hostname and port
         self.__hostname: str = config.hostname
@@ -428,7 +425,7 @@ class SSHClientBase(api.ExecHelper):
         return self.__port
 
     @property
-    def ssh_config(self) -> HostsSSHConfigs:
+    def ssh_config(self) -> _ssh_helpers.HostsSSHConfigs:
         """SSH connection config.
 
         :return: SSH config for connection
@@ -634,7 +631,7 @@ class SSHClientBase(api.ExecHelper):
         return self.__keepalive_period
 
     @keepalive_period.setter
-    def keepalive_period(self, period: "typing.Union[int, bool]") -> None:
+    def keepalive_period(self, period: KeepAlivePeriodT) -> None:
         """Keepalive period change for connection object.
 
         :param period: keepalive period change
@@ -651,7 +648,7 @@ class SSHClientBase(api.ExecHelper):
             self.close()
             self.__connect()
 
-    def sudo(self, enforce: "typing.Optional[bool]" = None) -> "typing.ContextManager[None]":
+    def sudo(self, enforce: "typing.Optional[bool]" = None) -> _SudoContext:
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -661,7 +658,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return _SudoContext(ssh=self, enforce=enforce)
 
-    def keepalive(self, enforce: "typing.Union[int, bool]" = 1) -> "typing.ContextManager[None]":
+    def keepalive(self, enforce: KeepAlivePeriodT = 1) -> _KeepAliveContext:
         """Call contextmanager with keepalive period change.
 
         :param enforce: Enforce keepalive period.
@@ -779,6 +776,7 @@ class SSHClientBase(api.ExecHelper):
             stdout.close()
             res_stdout = None
 
+        # noinspection PyArgumentList
         return SshExecuteAsyncResult(interface=chan, stdin=_stdin, stderr=stderr, stdout=res_stdout, started=started)
 
     def _exec_command(  # type: ignore
@@ -788,7 +786,7 @@ class SSHClientBase(api.ExecHelper):
         timeout: OptionalTimeoutT,
         *,
         verbose: bool = False,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -868,7 +866,7 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -930,7 +928,7 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -991,10 +989,10 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         error_info: "typing.Optional[str]" = None,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -1072,8 +1070,8 @@ class SSHClientBase(api.ExecHelper):
         error_info: "typing.Optional[str]" = None,
         raise_on_err: bool = True,
         *,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
-        log_mask_re: "typing.Optional[str]" = None,
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
+        log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -1143,7 +1141,7 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def _get_proxy_channel(self, port: "typing.Optional[int]", ssh_config: SSHConfig,) -> paramiko.Channel:
+    def _get_proxy_channel(self, port: "typing.Optional[int]", ssh_config: _ssh_helpers.SSHConfig,) -> paramiko.Channel:
         """Get ssh proxy channel.
 
         :param port: target port
@@ -1175,7 +1173,7 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = True,
         ssh_config: _OptionalSSHConfigArgT = None,
         ssh_auth_map: _OptionalSSHAuthMapT = None,
-        keepalive: "typing.Union[int, bool]" = 1,
+        keepalive: KeepAlivePeriodT = 1,
     ) -> "SSHClientBase":
         """Start new SSH connection using current as proxy.
 
@@ -1211,8 +1209,8 @@ class SSHClientBase(api.ExecHelper):
 
         .. versionadded:: 6.0.0
         """
-        if isinstance(ssh_config, HostsSSHConfigs):
-            parsed_ssh_config: HostsSSHConfigs = ssh_config
+        if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
+            parsed_ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
         else:
             parsed_ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
@@ -1245,7 +1243,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1316,14 +1314,14 @@ class SSHClientBase(api.ExecHelper):
         remotes: "typing.Iterable[SSHClientBase]",
         command: CommandT,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         verbose: bool = False,
-        log_mask_re: "typing.Optional[str]" = None,
+        log_mask_re: LogMaskReT = None,
         exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any,
     ) -> "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]":
@@ -1521,9 +1519,7 @@ class SSHClientBase(api.ExecHelper):
         except IOError:
             return False
 
-    def symlink(
-        self, source: "typing.Union[str, pathlib.PurePath]", dest: "typing.Union[str, pathlib.PurePath]"
-    ) -> None:
+    def symlink(self, source: SupportPathT, dest: SupportPathT) -> None:
         """Produce symbolic link like `os.symlink`.
 
         :param source: source path
