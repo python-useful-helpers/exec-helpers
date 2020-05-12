@@ -97,7 +97,7 @@ class _ChRootContext(typing.ContextManager[None]):
         elif isinstance(path, pathlib.Path):
             self._path = path.as_posix()  # get absolute path
         else:
-            raise TypeError(f"path={path!r} is not instance of Optional[Union[str, pathlib.Path]]")
+            raise TypeError(f"path={path!r} is not instance of {ChRootPathSetT}")
 
     def __enter__(self) -> None:
         self._conn.__enter__()
