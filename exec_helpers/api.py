@@ -28,6 +28,7 @@ __all__ = (
     "OptionalTimeoutT",
     "CommandT",
     "LogMaskReT",
+    "ErrorInfoT",
     "ChRootPathSetT",
     "ExpectedExitCodesT",
 )
@@ -52,6 +53,7 @@ from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
 
 CommandT = typing.Union[str, typing.Iterable[str]]
 LogMaskReT = typing.Optional[str]
+ErrorInfoT = typing.Optional[str]
 ChRootPathSetT = typing.Optional[typing.Union[str, pathlib.Path]]
 ExpectedExitCodesT = typing.Iterable[ExitCodeT]
 OptionalTimeoutT = typing.Union[int, float, None]
@@ -502,7 +504,7 @@ class ExecHelper(
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
@@ -560,6 +562,39 @@ class ExecHelper(
             open_stderr=open_stderr,
             **kwargs,
         )
+        return self._handle_exit_code(
+            result=result,
+            error_info=error_info,
+            expected_codes=expected_codes,
+            raise_on_err=raise_on_err,
+            exception_class=exception_class,
+        )
+
+    def _handle_exit_code(
+        self,
+        *,
+        result: exec_result.ExecResult,
+        error_info: ErrorInfoT,
+        expected_codes: ExpectedExitCodesT,
+        raise_on_err: bool,
+        exception_class: CalledProcessErrorSubClassT,
+    ) -> exec_result.ExecResult:
+        """Internal check_call logic (synchronous).
+
+        :param result: execution result for validation
+        :type result: exec_result.ExecResult
+        :param error_info: optional additional error information
+        :type error_info: typing.Optional[str]
+        :param raise_on_err: raise `exception_class` in case of error
+        :type raise_on_err: bool
+        :param expected_codes: iterable expected exit codes
+        :type expected_codes: typing.Iterable[ExitCodeT]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: CalledProcessErrorSubClassT
+        :return: execution result
+        :rtype: exec_result.ExecResult
+        :raises CalledProcessErrorSubClassT: stderr presents and raise_on_err enabled
+        """
         append: str = error_info + "\n" if error_info else ""
         if result.exit_code not in expected_codes:
             message = (
@@ -576,7 +611,7 @@ class ExecHelper(
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         raise_on_err: bool = True,
         *,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
@@ -647,8 +682,9 @@ class ExecHelper(
 
     def _handle_stderr(
         self,
+        *,
         result: exec_result.ExecResult,
-        error_info: "typing.Optional[str]",
+        error_info: ErrorInfoT,
         raise_on_err: bool,
         expected: ExpectedExitCodesT,
         exception_class: CalledProcessErrorSubClassT,

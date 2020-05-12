@@ -33,6 +33,7 @@ from exec_helpers import proc_enums
 from exec_helpers.api import CalledProcessErrorSubClassT
 from exec_helpers.api import ChRootPathSetT
 from exec_helpers.api import CommandT
+from exec_helpers.api import ErrorInfoT
 from exec_helpers.api import ExpectedExitCodesT
 from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
@@ -310,7 +311,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
@@ -366,23 +367,20 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
             open_stderr=open_stderr,
             **kwargs,
         )
-        append: str = error_info + "\n" if error_info else ""
-        if result.exit_code not in expected_codes:
-            message = (
-                f"{append}Command {result.cmd!r} returned exit code "
-                f"{result.exit_code!s} while expected {expected_codes!s}"
-            )
-            self.logger.error(msg=message)
-            if raise_on_err:
-                raise exception_class(result=result, expected=expected_codes)
-        return result
+        return self._handle_exit_code(
+            result=result,
+            error_info=error_info,
+            expected_codes=expected_codes,
+            raise_on_err=raise_on_err,
+            exception_class=exception_class,
+        )
 
     async def check_stderr(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         raise_on_err: bool = True,
         *,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),

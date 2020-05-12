@@ -45,6 +45,7 @@ from exec_helpers import proc_enums
 from exec_helpers import ssh_auth
 from exec_helpers.api import CalledProcessErrorSubClassT
 from exec_helpers.api import CommandT
+from exec_helpers.api import ErrorInfoT
 from exec_helpers.api import ExpectedExitCodesT
 from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
@@ -988,7 +989,7 @@ class SSHClientBase(api.ExecHelper):
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
         *,
@@ -1067,7 +1068,7 @@ class SSHClientBase(api.ExecHelper):
         command: CommandT,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
-        error_info: "typing.Optional[str]" = None,
+        error_info: ErrorInfoT = None,
         raise_on_err: bool = True,
         *,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
