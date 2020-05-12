@@ -367,7 +367,7 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
             open_stderr=open_stderr,
             **kwargs,
         )
-        return self._handle_exit_code(
+        return self._handle_exit_code(  # type: ignore
             result=result,
             error_info=error_info,
             expected_codes=expected_codes,
