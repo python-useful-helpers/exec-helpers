@@ -16,13 +16,12 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
-__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "normalize_path", "SupportPathT")
+__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
 # Standard Library
 import concurrent.futures
 import copy
 import datetime
-import functools
 import getpass
 import logging
 import pathlib
@@ -184,35 +183,6 @@ class _KeepAliveContext(typing.ContextManager[None]):
         # Exit before releasing!
         self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
         self.__ssh.keepalive_period = self.__keepalive_period
-
-
-def normalize_path(tgt: typing.Callable[..., _RType]) -> typing.Callable[..., _RType]:
-    """Decorator to use path argument type-agnostic.
-
-    :param tgt: target method to wrap
-    :type tgt: typing.Callable[..., _RType]
-    :return: wrapped method
-    :rtype: typing.Callable[..., _RType]
-    """
-
-    @functools.wraps(tgt)
-    def wrapper(self: typing.Any, path: SupportPathT, *args: typing.Any, **kwargs: typing.Any) -> _RType:
-        """Normalize path type before use in corresponding method.
-
-        :param self: owner instance
-        :type self: typing.Any
-        :param path: target path
-        :type path: typing.Union[str, pathlib.PurePath]
-        :param args: target method other arguments
-        :type args: typing.Any
-        :param kwargs: target method other arguments
-        :type kwargs: typing.Any
-        :return: wrapped method result
-        :rtype: typing.Any
-        """
-        return tgt(self, path=pathlib.PurePath(path).as_posix(), *args, **kwargs)
-
-    return wrapper
 
 
 class SSHClientBase(api.ExecHelper):
@@ -454,7 +424,7 @@ class SSHClientBase(api.ExecHelper):
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes.
 
-        :return: short string with connetction information
+        :return: short string with connection information
         :rtype: str
         """
         return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) " f"for user {self.auth.username}"
@@ -1423,99 +1393,92 @@ class SSHClientBase(api.ExecHelper):
             raise exception_class(cmd, errors, results, expected=prep_expected)
         return results
 
-    @normalize_path
-    def open(self, path: str, mode: str = "r") -> paramiko.SFTPFile:
+    def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
         """Open file on remote using SFTP session.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :param mode: open file mode ('t' is not supported)
         :type mode: str
         :return: file.open() stream
         :rtype: paramiko.SFTPFile
         """
-        return self._sftp.open(path, mode)  # pragma: no cover
+        return self._sftp.open(pathlib.PurePath(path).as_posix(), mode)  # pragma: no cover
 
-    @normalize_path
-    def exists(self, path: str) -> bool:
+    def exists(self, path: SupportPathT) -> bool:
         """Check for file existence using SFTP session.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :return: path is valid (object exists)
         :rtype: bool
         """
         try:
-            self._sftp.lstat(path)
+            self._sftp.lstat(pathlib.PurePath(path).as_posix())
             return True
         except IOError:
             return False
 
-    @normalize_path
-    def stat(self, path: str) -> paramiko.sftp_attr.SFTPAttributes:
+    def stat(self, path: SupportPathT) -> paramiko.sftp_attr.SFTPAttributes:
         """Get stat info for path with following symlinks.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :return: stat like information for remote path
         :rtype: paramiko.sftp_attr.SFTPAttributes
         """
-        return self._sftp.stat(path)  # pragma: no cover
+        return self._sftp.stat(pathlib.PurePath(path).as_posix())  # pragma: no cover
 
-    @normalize_path
-    def utime(self, path: str, times: "typing.Optional[typing.Tuple[int, int]]" = None) -> None:
+    def utime(self, path: SupportPathT, times: "typing.Optional[typing.Tuple[int, int]]" = None) -> None:
         """Set atime, mtime.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :param times: (atime, mtime)
         :type times: typing.Optional[typing.Tuple[int, int]]
 
         .. versionadded:: 1.0.0
         """
-        self._sftp.utime(path, times)  # pragma: no cover
+        self._sftp.utime(pathlib.PurePath(path).as_posix(), times)  # pragma: no cover
 
-    @normalize_path
-    def isfile(self, path: str) -> bool:
+    def isfile(self, path: SupportPathT) -> bool:
         """Check, that path is file using SFTP session.
 
         :param path: remote path to validate
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :return: path is file
         :rtype: bool
         """
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(path)
+            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
             return stat.S_ISREG(attrs.st_mode)
         except IOError:
             return False
 
-    @normalize_path
-    def isdir(self, path: str) -> bool:
+    def isdir(self, path: SupportPathT) -> bool:
         """Check, that path is directory using SFTP session.
 
         :param path: remote path to validate
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :return: path is directory
         :rtype: bool
         """
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(path)
+            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
             return stat.S_ISDIR(attrs.st_mode)
         except IOError:
             return False
 
-    @normalize_path
-    def islink(self, path: str) -> bool:
+    def islink(self, path: SupportPathT) -> bool:
         """Check, that path is symlink using SFTP session.
 
         :param path: remote path to validate
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :return: path is symlink
         :rtype: bool
         """
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(path)
+            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
             return stat.S_ISLNK(attrs.st_mode)
         except IOError:
             return False
@@ -1530,13 +1493,12 @@ class SSHClientBase(api.ExecHelper):
         """
         self._sftp.symlink(pathlib.PurePath(source).as_posix(), pathlib.PurePath(dest).as_posix())  # pragma: no cover
 
-    @normalize_path
-    def chmod(self, path: str, mode: int) -> None:
+    def chmod(self, path: SupportPathT, mode: int) -> None:
         """Change the mode (permissions) of a file like `os.chmod`.
 
         :param path: filesystem object path
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         :param mode: new permissions
         :type mode: int
         """
-        self._sftp.chmod(path, mode)  # pragma: no cover
+        self._sftp.chmod(pathlib.PurePath(path).as_posix(), mode)  # pragma: no cover

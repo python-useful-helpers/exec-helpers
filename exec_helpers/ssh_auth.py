@@ -243,7 +243,7 @@ class SSHAuth:
     def __deepcopy__(self, memo: typing.Any) -> "SSHAuth":
         """Helper for copy.deepcopy.
 
-        :param memo: copy.deeepcopy() memodict
+        :param memo: copy.deepcopy() memodict
         :type memo: typing.Any
         :return: re-constructed copy of current class
         :rtype: SSHAuth

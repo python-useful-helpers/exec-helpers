@@ -49,7 +49,7 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 from exec_helpers.exec_result import OptionalStdinT
-from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
+from exec_helpers.proc_enums import ExitCodeT
 
 CommandT = typing.Union[str, typing.Iterable[str]]
 LogMaskReT = typing.Optional[str]

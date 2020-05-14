@@ -52,27 +52,25 @@ class SSHClient(_ssh_base.SSHClientBase):
         """
         return path.replace(" ", r"\ ")
 
-    @_ssh_base.normalize_path
-    def mkdir(self, path: str) -> None:
+    def mkdir(self, path: SupportPathT) -> None:
         """Run 'mkdir -p path' on remote.
 
         :param path: path to create
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         """
         if self.exists(path):
             return
         # noinspection PyTypeChecker
-        self.execute(f"mkdir -p {self._path_esc(path)}\n")
+        self.execute(f"mkdir -p {self._path_esc(pathlib.PurePath(path).as_posix())}\n")
 
-    @_ssh_base.normalize_path
-    def rm_rf(self, path: str) -> None:
+    def rm_rf(self, path: SupportPathT) -> None:
         """Run 'rm -rf path' on remote.
 
         :param path: path to remove
-        :type path: str
+        :type path: typing.Union[str, pathlib.PurePath]
         """
         # noinspection PyTypeChecker
-        self.execute(f"rm -rf {self._path_esc(path)}")
+        self.execute(f"rm -rf {self._path_esc(pathlib.PurePath(path).as_posix())}")
 
     def upload(self, source: SupportPathT, target: SupportPathT) -> None:
         """Upload file(s) from source to target using SFTP session.
