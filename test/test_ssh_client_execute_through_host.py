@@ -192,7 +192,7 @@ def test_04_execute_use_stdin(ssh, mocker, chan_makefile) -> None:
     conn = mocker.patch("paramiko.SSHClient")
     conn().get_transport().open_session().makefile = chan_makefile
     target = "127.0.0.2"
-    cmd = 'read line; echo "$line"'
+    cmd = print_stdin
     stdin = "test"
     res = ssh.execute_through_host(target, cmd, stdin=stdin, get_pty=True)
     assert res.stdin == stdin
@@ -202,7 +202,7 @@ def test_04_execute_use_stdin(ssh, mocker, chan_makefile) -> None:
 
 def test_05_execute_closed_stdin(ssh, ssh_transport_channel, get_logger) -> None:
     target = "127.0.0.2"
-    cmd = 'read line; echo "$line"'
+    cmd = print_stdin
     stdin = "test"
     ssh_transport_channel.closed = True
 
