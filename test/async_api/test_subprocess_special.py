@@ -238,8 +238,7 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
     mocker.patch("psutil.Process")
 
     def create_mock(
-        stdout: typing.Optional[typing.Tuple] = None,
-        **kwargs,
+        stdout: typing.Optional[typing.Tuple] = None, **kwargs,
     ):
         """Parametrized code."""
         proc = asynctest.CoroutineMock()

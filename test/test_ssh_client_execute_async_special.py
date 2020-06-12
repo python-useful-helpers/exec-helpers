@@ -75,7 +75,7 @@ def chan_makefile():
             self.channel = None
 
         def __call__(self, flags: str):
-            if "wb" == flags:
+            if flags == "wb":
                 self.stdin = mock.Mock()
                 self.stdin.channel = self.channel
                 return self.stdin
@@ -120,7 +120,10 @@ def test_001_execute_async_sudo(ssh, ssh_transport_channel):
 
     ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
-        (mock.call.makefile_stderr("rb"), mock.call.exec_command(f'sudo -S sh -c "eval {shlex.quote(command)}"\n'))
+        (
+            mock.call.makefile_stderr("rb"),
+            mock.call.exec_command(f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+        )
     )
 
 
@@ -130,7 +133,10 @@ def test_002_execute_async_with_sudo_enforce(ssh, ssh_transport_channel):
     with ssh.sudo(enforce=True):
         ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
-        (mock.call.makefile_stderr("rb"), mock.call.exec_command(f'sudo -S sh -c "eval {shlex.quote(command)}"\n'))
+        (
+            mock.call.makefile_stderr("rb"),
+            mock.call.exec_command(f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+        )
     )
 
 
@@ -155,7 +161,10 @@ def test_005_execute_async_sudo_password(ssh, ssh_transport_channel):
 
     ssh._execute_async(command)
     ssh_transport_channel.assert_has_calls(
-        (mock.call.makefile_stderr("rb"), mock.call.exec_command(f'sudo -S sh -c "eval {shlex.quote(command)}"\n'))
+        (
+            mock.call.makefile_stderr("rb"),
+            mock.call.exec_command(f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}\n'),
+        )
     )
 
 

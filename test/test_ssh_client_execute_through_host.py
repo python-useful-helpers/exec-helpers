@@ -74,7 +74,7 @@ def chan_makefile():
             self.channel = None
 
         def __call__(self, flags: str):
-            if "wb" == flags:
+            if flags == "wb":
                 self.stdin = mock.MagicMock()
                 self.stdin.channel = self.channel
                 return self.stdin

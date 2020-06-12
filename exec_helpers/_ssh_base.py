@@ -651,11 +651,11 @@ class SSHClientBase(api.ExecHelper):
         """
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
+        quoted_command: str = shlex.quote(cmd)
         if any((chroot_path, self._chroot_path)):
             target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
-            quoted_command: str = shlex.quote(cmd)
             return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
-        return f'sudo -S sh -c "eval {shlex.quote(cmd)}"'
+        return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
 
     # noinspection PyMethodOverriding
     def _execute_async(  # pylint: disable=arguments-differ
