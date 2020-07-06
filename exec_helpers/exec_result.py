@@ -33,28 +33,35 @@ from exec_helpers.proc_enums import ExitCodeT
 
 try:
     # noinspection PyPackageRequirements
+    # External Dependencies
     import yaml
 except ImportError:
     yaml = None  # type:ignore
 try:
-    import ruamel.yaml as ruamel_yaml
+    # External Dependencies
+    from ruamel import yaml as ruamel_yaml
 except ImportError:
     ruamel_yaml = None  # type:ignore
 try:
+    # External Dependencies
     # noinspection PyPackageRequirements
     import defusedxml.ElementTree  # type: ignore
 except ImportError:
     defusedxml = None  # pylint: disable=invalid-name
 try:
+    # External Dependencies
     # noinspection PyPackageRequirements
     import lxml.etree  # type: ignore  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
+    # Standard Library
+    import xml.etree.ElementTree  # nosec  # for typing only
+
+    # External Dependencies
     # noinspection PyPackageRequirements
     import logwrap
-    import xml.etree.ElementTree  # nosec  # for typing only
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 

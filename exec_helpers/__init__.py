@@ -54,6 +54,7 @@ from .ssh_auth import SSHAuth
 from .subprocess import Subprocess  # nosec  # Expected
 
 try:
+    # Local Implementation
     from ._version import version as __version__
 except ImportError:
     pass

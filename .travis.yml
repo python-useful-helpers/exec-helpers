@@ -41,7 +41,7 @@ jobs:
       install:
         - *upgrade_python_toolset
         - *install_deps
-        - pip install --upgrade "pylint>=2.5.2" isort[pyproject,requirements]
+        - pip install --upgrade "pylint>=2.5.2"
       script:
         - python setup.py develop -v clean
         - python setup.py --version clean

@@ -57,6 +57,7 @@ from . import _ssh_helpers
 from ._ssh_helpers import SSHConfigsDictT
 
 if typing.TYPE_CHECKING:
+    # Standard Library
     import socket
 
 KeepAlivePeriodT = typing.Union[int, bool]

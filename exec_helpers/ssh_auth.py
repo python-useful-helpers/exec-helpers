@@ -27,6 +27,7 @@ import typing
 import paramiko  # type: ignore
 
 if typing.TYPE_CHECKING:
+    # Standard Library
     import socket
 
 LOGGER = logging.getLogger(__name__)

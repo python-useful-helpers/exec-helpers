@@ -45,7 +45,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U setuptools virtualenv
           pip install -r CI_REQUIREMENTS.txt
-          pip install -U pylint>=2.5.2 pylint_junit isort[pyproject,requirements]
+          pip install -U pylint>=2.5.2 pylint_junit
         displayName: 'Install dependencies'
 
       - script: |
