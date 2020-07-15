@@ -732,7 +732,7 @@ class ExecResult:
         )
 
     def __eq__(self, other: typing.Any) -> bool:
-        """Comparision.
+        """Comparison.
 
         :param other: other ExecResult instance.
         :type other: typing.Any
@@ -752,7 +752,7 @@ class ExecResult:
         )
 
     def __ne__(self, other: typing.Any) -> bool:
-        """Comparision.
+        """Comparison.
 
         :param other: other ExecResult instance.
         :type other: typing.Any

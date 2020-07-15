@@ -39,7 +39,7 @@ API: SSHClient and SSHAuth.
             for proxy connection auth information is collected from SSHConfig
             if ssh_auth_map record is not available
 
-        .. versionchanged:: 6.0.0 private_keys, auth and vebose became keyword-only arguments
+        .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
         .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
         .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
         .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
