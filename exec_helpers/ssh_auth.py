@@ -44,7 +44,7 @@ class SSHAuth:
         password: "typing.Optional[str]" = None,
         key: "typing.Optional[paramiko.PKey]" = None,
         keys: "typing.Optional[typing.Sequence[paramiko.PKey]]" = None,
-        key_filename: "typing.Union[typing.List[str], str, None]" = None,
+        key_filename: "typing.Union[typing.Iterable[str], str, None]" = None,
         passphrase: "typing.Optional[str]" = None,
     ) -> None:
         """SSH credentials object.
@@ -62,7 +62,7 @@ class SSHAuth:
         :param keys: Alternate connection keys
         :type keys: typing.Optional[typing.Sequence[paramiko.PKey]]]
         :param key_filename: filename(s) for additional key files
-        :type key_filename: typing.Union[typing.List[str], str, None]
+        :type key_filename: typing.Union[typing.Iterable[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: "typing.Optional[str]"
 
@@ -87,10 +87,12 @@ class SSHAuth:
 
         self.__key_index: int = 0
 
-        if key_filename is None or isinstance(key_filename, list):
-            self.__key_filename: "typing.Optional[typing.List[str]]" = key_filename
+        if key_filename is None:
+            self.__key_filename: "typing.Collection[str]" = ()
+        elif isinstance(key_filename, str):
+            self.__key_filename = (key_filename,)
         else:
-            self.__key_filename = [key_filename]
+            self.__key_filename = tuple(key_filename)
         self.__passphrase: "typing.Optional[str]" = passphrase
 
     @property
@@ -125,13 +127,14 @@ class SSHAuth:
         return self.__get_public_key(self.__keys[self.__key_index])
 
     @property
-    def key_filename(self) -> "typing.Optional[typing.List[str]]":
+    def key_filename(self) -> "typing.Collection[str]":
         """Key filename(s).
 
         :return: copy of used key filename (original should not be changed via mutability).
         .. versionadded:: 1.0.0
+        .. versionchanged:: 7.0.5 changed type relying on paramiko sources
         """
-        return copy.deepcopy(self.__key_filename)
+        return self.__key_filename
 
     def enter_password(self, tgt: typing.BinaryIO) -> None:
         """Enter password to STDIN.
@@ -255,6 +258,8 @@ class SSHAuth:
             password=self.__password,
             key=self.__keys[self.__key_index],
             keys=copy.deepcopy(self.__keys),
+            key_filename=copy.deepcopy(self.key_filename),
+            passphrase=self.__passphrase,
         )
 
     def __copy__(self) -> "SSHAuth":
@@ -265,7 +270,12 @@ class SSHAuth:
         """
         # noinspection PyTypeChecker
         return self.__class__(
-            username=self.username, password=self.__password, key=self.__keys[self.__key_index], keys=self.__keys
+            username=self.username,
+            password=self.__password,
+            key=self.__keys[self.__key_index],
+            keys=self.__keys,
+            key_filename=self.key_filename,
+            passphrase=self.__passphrase,
         )
 
     def __repr__(self) -> str:

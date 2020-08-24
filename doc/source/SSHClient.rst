@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, *, private_keys=None, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
 
         :param host: remote hostname
         :type host: ``str``
@@ -526,7 +526,7 @@ API: SSHClient and SSHAuth.
         :param keys: Alternate connection keys
         :type keys: ``Optional[Sequence[paramiko.RSAKey]]``
         :param key_filename: filename(s) for additional key files
-        :type key_filename: ``Union[List[str], str, None]``
+        :type key_filename: ``Union[Iterable[str], str, None]``
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: ``Optional[str]``
 
@@ -544,7 +544,7 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: key_filename
 
-        ``Union[List[str], str, None]``
+        ``Collection[str]``
         Key filename(s).
 
         .. versionadded:: 1.0.0
@@ -670,7 +670,7 @@ API: SSHClient and SSHAuth.
         :param user: remote user
         :type user: ``Optional[str]``
         :param identityfile: connection ssh keys file names
-        :type identityfile: ``Optional[List[str]]``
+        :type identityfile: ``Optional[Collection[str]]``
         :param proxycommand: proxy command for ssh connection
         :type proxycommand: ``Optional[str]``
         :param proxyjump: proxy host name
@@ -721,7 +721,7 @@ API: SSHClient and SSHAuth.
 
     .. py:attribute:: identityfile
 
-        ``Optional[List[str]]``
+        ``Collection[str]``
         Connection ssh keys file names.
 
     .. py:attribute:: proxycommand

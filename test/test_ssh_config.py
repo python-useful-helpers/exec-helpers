@@ -103,7 +103,7 @@ def test_no_configs(no_system_ssh_config, no_user_ssh_config):
     assert host_config.port is None
 
     assert host_config.user is None
-    assert host_config.identityfile is None
+    assert host_config.identityfile == ()
 
     assert host_config.proxycommand is None
     assert host_config.proxyjump is None
@@ -125,7 +125,7 @@ def test_simple_config(system_ssh_config, user_ssh_config):
     assert host_config.port == PORT
 
     assert host_config.user == USER
-    assert host_config.identityfile == IDENTIFY_FILES
+    assert host_config.identityfile == tuple(IDENTIFY_FILES)
 
     assert host_config.controlpath == f"~/.ssh/.control-{USER}@{HOST}:{PORT}"
     assert not host_config.controlmaster  # auto => False

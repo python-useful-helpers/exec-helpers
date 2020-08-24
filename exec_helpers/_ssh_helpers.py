@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
     import logwrap
 
-SSHConfigDictLikeT = typing.Dict[str, typing.Union[str, int, bool, typing.List[str]]]
+SSHConfigDictLikeT = typing.Dict[str, typing.Union[str, int, bool, typing.Collection[str]]]
 SSHConfigsDictT = typing.Dict[str, SSHConfigDictLikeT]
 
 
@@ -62,7 +62,7 @@ class SSHConfig:
         hostname: str,
         port: "typing.Optional[typing.Union[str, int]]" = None,
         user: "typing.Optional[str]" = None,
-        identityfile: "typing.Optional[typing.List[str]]" = None,
+        identityfile: "typing.Optional[typing.Collection[str]]" = None,
         proxycommand: "typing.Optional[str]" = None,
         proxyjump: "typing.Optional[str]" = None,
         *,
@@ -78,7 +78,7 @@ class SSHConfig:
         :param user: remote user
         :type user: typing.Optional[str]
         :param identityfile: connection ssh keys file names
-        :type identityfile: typing.Optional[typing.List[str]]
+        :type identityfile: typing.Optional[typing.Collection[str]]
         :param proxycommand: proxy command for ssh connection
         :type proxycommand: typing.Optional[str]
         :type proxyjump: typing.Optional[str]
@@ -97,7 +97,7 @@ class SSHConfig:
             raise ValueError(f"port {self.__port} if not in range [1, 65535], which is incorrect.")
 
         self.__user: "typing.Optional[str]" = user
-        self.__identityfile: "typing.Optional[typing.List[str]]" = identityfile
+        self.__identityfile: "typing.Optional[typing.Collection[str]]" = identityfile
 
         if proxycommand and proxyjump:
             raise ValueError(
@@ -292,7 +292,7 @@ class SSHConfig:
                 )
             )
         if isinstance(other, dict):
-            return self.as_dict == other
+            return self == self.from_ssh_config(other)
         return NotImplemented
 
     @property
@@ -323,15 +323,17 @@ class SSHConfig:
         return self.__user
 
     @property
-    def identityfile(self) -> "typing.Optional[typing.List[str]]":
+    def identityfile(self) -> "typing.Collection[str]":
         """Connection ssh keys file names.
 
         :return: list of ssh private keys names
-        :rtype: typing.Optional[typing.List[str]]
+        :rtype: typing.Collection[str]
         """
         if self.__identityfile is None:
-            return None
-        return self.__identityfile.copy()
+            return ()
+        if isinstance(self.__identityfile, str):
+            return (self.__identityfile,)
+        return tuple(self.__identityfile)
 
     @property
     def proxycommand(self) -> "typing.Optional[str]":

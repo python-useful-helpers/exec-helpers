@@ -107,7 +107,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     if auth is None:
         expected_calls = [
             _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-            _ssh.connect(hostname=host, password=password, pkey=None, port=port, username=username, key_filename=None),
+            _ssh.connect(hostname=host, password=password, pkey=None, port=port, username=username, key_filename=()),
             _ssh.get_transport(),
             _ssh.get_transport().set_keepalive(1),
         ]
@@ -131,5 +131,6 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     if ssh.auth.username:
         expected_config_dict[host]["user"] = ssh.auth.username
 
+    assert ssh.ssh_config[host] == expected_config_dict[host]
     assert ssh.ssh_config == expected_config_dict
     assert ssh.ssh_config[host].hostname == host

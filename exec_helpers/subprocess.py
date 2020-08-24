@@ -119,9 +119,7 @@ class Subprocess(api.ExecHelper):
     def __init__(self, log_mask_re: LogMaskReT = None) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
-        super(Subprocess, self).__init__(
-            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"), log_mask_re=log_mask_re
-        )
+        super().__init__(logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"), log_mask_re=log_mask_re)
 
     def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
         """Get context manager.
@@ -201,12 +199,12 @@ class Subprocess(api.ExecHelper):
             concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
             result.exit_code = exit_code
             return result
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_signal: "typing.Optional[int]" = async_result.interface.poll()
             if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
             result.exit_code = exit_signal
         finally:
             stdout_future.cancel()

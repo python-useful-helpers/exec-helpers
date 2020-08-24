@@ -247,7 +247,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
             f"Got:\n"
             f"\t{errors_str}"
         )
-        super(ParallelCallProcessError, self).__init__(message)
+        super().__init__(message)
         self.cmd: str = command
         self.errors: "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]" = errors
         self.results: "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]" = results

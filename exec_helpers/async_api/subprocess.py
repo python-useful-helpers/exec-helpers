@@ -93,7 +93,7 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
         :return: STDOUT interface
         :rtype: typing.Optional[typing.AsyncIterable[bytes]]
         """
-        return super(SubprocessExecuteAsyncResult, self).stdout  # type: ignore
+        return super().stdout  # type: ignore
 
 
 class Subprocess(api.ExecHelper):
@@ -193,12 +193,12 @@ class Subprocess(api.ExecHelper):
             exit_code: int = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)
             result.exit_code = exit_code
             return result
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_signal: "typing.Optional[int]" = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout)  # type: ignore
+                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
             result.exit_code = exit_signal
         finally:
             stdout_task.cancel()

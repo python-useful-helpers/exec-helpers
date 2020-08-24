@@ -78,7 +78,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
 
     pkey = private_keys[0]
 
-    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=None)
+    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=())
     kwargs_full = {key: kwargs_no_key[key] for key in kwargs_no_key}
     kwargs_full["pkey"] = pkey
 
@@ -113,7 +113,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
-    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=None)
+    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=())
     kwargs_key_0 = {key: kwargs_no_key[key] for key in kwargs_no_key}
     kwargs_key_0["pkey"] = private_keys[0]
     kwargs_key_1 = {key: kwargs_no_key[key] for key in kwargs_no_key}
@@ -320,7 +320,7 @@ def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
         _ssh.close(),
         _ssh,
         _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-        _ssh.connect(hostname="127.0.0.1", password=None, pkey=None, port=22, username=None, key_filename=None),
+        _ssh.connect(hostname="127.0.0.1", password=None, pkey=None, port=22, username=None, key_filename=()),
         _ssh.get_transport(),
         _ssh.get_transport().set_keepalive(1),
     ]
