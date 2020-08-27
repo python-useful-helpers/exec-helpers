@@ -203,7 +203,8 @@ class SSHConfig:
 
     @classmethod
     def from_ssh_config(
-        cls, ssh_config: typing.Union[paramiko.config.SSHConfigDict, SSHConfigDictLikeT],
+        cls,
+        ssh_config: typing.Union[paramiko.config.SSHConfigDict, SSHConfigDictLikeT],
     ) -> "SSHConfig":
         """Construct config from Paramiko parsed file.
 
@@ -270,7 +271,8 @@ class SSHConfig:
         )
 
     def __eq__(
-        self, other: typing.Union["SSHConfig", SSHConfigDictLikeT, typing.Any],
+        self,
+        other: typing.Union["SSHConfig", SSHConfigDictLikeT, typing.Any],
     ) -> "typing.Union[bool, type(NotImplemented)]":  # type: ignore
         """Equality check.
 
@@ -438,7 +440,8 @@ def _parse_dict_ssh_config(conf: SSHConfigsDictT, host: str) -> HostsSSHConfigs:
 
 
 def parse_ssh_config(
-    ssh_config: typing.Union[str, paramiko.SSHConfig, SSHConfigsDictT, None], host: str,
+    ssh_config: typing.Union[str, paramiko.SSHConfig, SSHConfigsDictT, None],
+    host: str,
 ) -> HostsSSHConfigs:
     """Parse ssh config to get real connection parameters.
 

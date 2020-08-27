@@ -114,7 +114,10 @@ class Subprocess(api.ExecHelper):
     __slots__ = ()
 
     def __init__(
-        self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
+        self,
+        log_mask_re: LogMaskReT = None,
+        *,
+        logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)

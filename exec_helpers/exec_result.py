@@ -106,7 +106,8 @@ class LinesAccessProxy:
         self._data: "typing.Tuple[bytes, ...]" = tuple(data)
 
     def __getitem__(
-        self, item: "typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]",  # noqa: F821
+        self,
+        item: "typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]",  # noqa: F821
     ) -> str:
         """Access magic.
 
@@ -349,7 +350,12 @@ class ExecResult:
                     )
         return dst
 
-    def read_stdout(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
+    def read_stdout(
+        self,
+        src: _OptBytesIterableT = None,
+        log: _OptLoggerT = None,
+        verbose: bool = False,
+    ) -> None:
         """Read stdout file-like object to stdout.
 
         :param src: source
@@ -371,7 +377,12 @@ class ExecResult:
             self._stdout_str = self._stdout_brief = None
             self._stdout += tuple(self._poll_stream(src, log, verbose))
 
-    def read_stderr(self, src: _OptBytesIterableT = None, log: _OptLoggerT = None, verbose: bool = False,) -> None:
+    def read_stderr(
+        self,
+        src: _OptBytesIterableT = None,
+        log: _OptLoggerT = None,
+        verbose: bool = False,
+    ) -> None:
         """Read stderr file-like object to stdout.
 
         :param src: source

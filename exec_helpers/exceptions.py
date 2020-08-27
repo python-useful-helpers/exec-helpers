@@ -155,7 +155,9 @@ class CalledProcessError(ExecCalledProcessError):
     __slots__ = ("result", "expected")
 
     def __init__(
-        self, result: "exec_result.ExecResult", expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
+        self,
+        result: "exec_result.ExecResult",
+        expected: "typing.Iterable[ExitCodeT]" = (proc_enums.EXPECTED,),
     ) -> None:
         """Exception for error on process calls.
 

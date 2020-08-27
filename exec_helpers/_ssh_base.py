@@ -64,7 +64,11 @@ KeepAlivePeriodT = typing.Union[int, bool]
 SupportPathT = typing.Union[str, pathlib.PurePath]
 _OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
 _OptionalSSHConfigArgT = typing.Union[
-    str, paramiko.SSHConfig, SSHConfigsDictT, _ssh_helpers.HostsSSHConfigs, None,
+    str,
+    paramiko.SSHConfig,
+    SSHConfigsDictT,
+    _ssh_helpers.HostsSSHConfigs,
+    None,
 ]
 _SSHConnChainT = typing.List[typing.Tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]
 _OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
@@ -340,7 +344,10 @@ class SSHClientBase(api.ExecHelper):
         """Rebuild main ssh config from available information."""
         self.__ssh_config[self.hostname] = self.__ssh_config[self.hostname].overridden_by(
             _ssh_helpers.SSHConfig(
-                hostname=self.hostname, port=self.port, user=self.auth.username, identityfile=self.auth.key_filename,
+                hostname=self.hostname,
+                port=self.port,
+                user=self.auth.username,
+                identityfile=self.auth.key_filename,
             )
         )
 
@@ -456,7 +463,11 @@ class SSHClientBase(api.ExecHelper):
                 self.__ssh = paramiko.SSHClient()
                 self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.auth.connect(
-                    client=self.__ssh, hostname=self.hostname, port=self.port, log=self.__verbose, sock=sock,
+                    client=self.__ssh,
+                    hostname=self.hostname,
+                    port=self.port,
+                    log=self.__verbose,
+                    sock=sock,
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -493,7 +504,9 @@ class SSHClientBase(api.ExecHelper):
 
             if config.proxyjump:
                 sock = last_ssh_client.get_transport().open_channel(
-                    kind="direct-tcpip", dest_addr=(config.hostname, config.port or 22), src_addr=(config.proxyjump, 0),
+                    kind="direct-tcpip",
+                    dest_addr=(config.hostname, config.port or 22),
+                    src_addr=(config.proxyjump, 0),
                 )
                 auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
                 last_ssh_client = ssh
@@ -1113,7 +1126,11 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def _get_proxy_channel(self, port: "typing.Optional[int]", ssh_config: _ssh_helpers.SSHConfig,) -> paramiko.Channel:
+    def _get_proxy_channel(
+        self,
+        port: "typing.Optional[int]",
+        ssh_config: _ssh_helpers.SSHConfig,
+    ) -> paramiko.Channel:
         """Get ssh proxy channel.
 
         :param port: target port
@@ -1348,7 +1365,12 @@ class SSHClientBase(api.ExecHelper):
             remote._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
 
             async_result: SshExecuteAsyncResult = remote._execute_async(
-                cmd, stdin=stdin, log_mask_re=log_mask_re, open_stdout=open_stdout, open_stderr=open_stderr, **kwargs,
+                cmd,
+                stdin=stdin,
+                log_mask_re=log_mask_re,
+                open_stdout=open_stdout,
+                open_stderr=open_stderr,
+                **kwargs,
             )
             # pylint: enable=protected-access
 
