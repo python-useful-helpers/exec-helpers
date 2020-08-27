@@ -62,7 +62,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     __slots__ = ("result", "timeout")
 
-    def __init__(self, message: str, *, result: "exec_result.ExecResult", timeout: "typing.Union[int, float]") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        result: "exec_result.ExecResult",
+        timeout: "typing.Union[int, float]",
+    ) -> None:
         """Exception for error on process calls.
 
         :param message: exception message
@@ -109,7 +115,11 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
 
     __slots__ = ()
 
-    def __init__(self, result: "exec_result.ExecResult", timeout: "typing.Union[int, float]") -> None:
+    def __init__(
+        self,
+        result: "exec_result.ExecResult",
+        timeout: "typing.Union[int, float]",
+    ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
@@ -137,7 +147,11 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
 
     __slots__ = ()
 
-    def __init__(self, result: "exec_result.ExecResult", timeout: "typing.Union[int, float]") -> None:
+    def __init__(
+        self,
+        result: "exec_result.ExecResult",
+        timeout: "typing.Union[int, float]",
+    ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
@@ -290,6 +304,12 @@ class ParallelCallExceptions(ParallelCallProcessError):
         """
         exceptions_str: str = "\n\t".join(f"{host}:{port} - {exc} " for (host, port), exc in exceptions.items())
         message: str = _message or f"Command {command!r} during execution raised exceptions: \n\t{exceptions_str}"
-        super().__init__(command=command, errors=errors, results=results, expected=expected, _message=message)
+        super().__init__(
+            command=command,
+            errors=errors,
+            results=results,
+            expected=expected,
+            _message=message,
+        )
         self.cmd: str = command
         self.exceptions: "typing.Dict[typing.Tuple[str, int], Exception]" = exceptions

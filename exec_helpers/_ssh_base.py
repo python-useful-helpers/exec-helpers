@@ -435,7 +435,7 @@ class SSHClientBase(api.ExecHelper):
         :return: short string with connection information
         :rtype: str
         """
-        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) " f"for user {self.auth.username}"
+        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) for user {self.auth.username}"
 
     @property
     def _ssh(self) -> paramiko.SSHClient:
@@ -762,7 +762,13 @@ class SSHClientBase(api.ExecHelper):
             res_stdout = None
 
         # noinspection PyArgumentList
-        return SshExecuteAsyncResult(interface=chan, stdin=_stdin, stderr=stderr, stdout=res_stdout, started=started)
+        return SshExecuteAsyncResult(
+            interface=chan,
+            stdin=_stdin,
+            stderr=stderr,
+            stdout=res_stdout,
+            started=started,
+        )
 
     def _exec_command(  # type: ignore
         self,
@@ -1148,7 +1154,9 @@ class SSHClientBase(api.ExecHelper):
             dest_port = ssh_config.port if ssh_config.port is not None else 22
 
         return self._ssh.get_transport().open_channel(
-            kind="direct-tcpip", dest_addr=(ssh_config.hostname, dest_port), src_addr=(self.hostname, 0)
+            kind="direct-tcpip",
+            dest_addr=(ssh_config.hostname, dest_port),
+            src_addr=(self.hostname, 0),
         )
 
     def proxy_to(
@@ -1283,7 +1291,12 @@ class SSHClientBase(api.ExecHelper):
             auth = self.auth
 
         with self.proxy_to(
-            host=hostname, port=port, auth=auth, verbose=verbose, ssh_config=self.ssh_config, keepalive=False
+            host=hostname,
+            port=port,
+            auth=auth,
+            verbose=verbose,
+            ssh_config=self.ssh_config,
+            keepalive=False,
         ) as conn:
             return conn(
                 command,
@@ -1362,7 +1375,12 @@ class SSHClientBase(api.ExecHelper):
             """
             # pylint: disable=protected-access
             cmd_for_log: str = remote._mask_command(cmd=cmd, log_mask_re=log_mask_re)
-            remote._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+            remote._log_command_execute(
+                command=cmd,
+                log_mask_re=log_mask_re,
+                log_level=log_level,
+                **kwargs,
+            )
 
             async_result: SshExecuteAsyncResult = remote._execute_async(
                 cmd,
@@ -1411,7 +1429,13 @@ class SSHClientBase(api.ExecHelper):
                 raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise
-            raise exceptions.ParallelCallExceptions(cmd, raised_exceptions, errors, results, expected=prep_expected)
+            raise exceptions.ParallelCallExceptions(
+                command=cmd,
+                exceptions=raised_exceptions,
+                errors=errors,
+                results=results,
+                expected=prep_expected,
+            )
         if errors and raise_on_err:
             raise exception_class(cmd, errors, results, expected=prep_expected)
         return results

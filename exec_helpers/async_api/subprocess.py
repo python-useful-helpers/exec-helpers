@@ -311,7 +311,13 @@ class Subprocess(api.ExecHelper):
             process_stdin = None
 
         # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
+        return SubprocessExecuteAsyncResult(
+            interface=process,
+            stdin=process_stdin,
+            stderr=process.stderr,
+            stdout=process.stdout,
+            started=started,
+        )
 
     async def execute(  # type: ignore  # pylint: disable=arguments-differ
         self,

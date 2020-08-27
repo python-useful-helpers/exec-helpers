@@ -37,7 +37,9 @@ class ExecResult(exec_result.ExecResult):
 
     @staticmethod
     async def _poll_stream(  # type: ignore  # pylint: disable=invalid-overridden-method
-        src: _StreamT, log: "typing.Optional[logging.Logger]" = None, verbose: bool = False
+        src: _StreamT,
+        log: "typing.Optional[logging.Logger]" = None,
+        verbose: bool = False,
     ) -> "typing.List[bytes]":
         """Stream poll helper.
 

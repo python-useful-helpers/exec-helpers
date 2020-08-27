@@ -148,7 +148,12 @@ class SSHConfig:
             f")"
         )
 
-    def __pretty_repr__(self, log_wrap: "logwrap.PrettyRepr", indent: int = 0, no_indent_start: bool = False) -> str:
+    def __pretty_repr__(
+        self,
+        log_wrap: "logwrap.PrettyRepr",
+        indent: int = 0,
+        no_indent_start: bool = False,
+    ) -> str:
         """Make human readable representation of object.
 
         :param log_wrap: logwrap instance

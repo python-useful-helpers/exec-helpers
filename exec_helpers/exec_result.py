@@ -329,7 +329,9 @@ class ExecResult:
 
     @staticmethod
     def _poll_stream(
-        src: "typing.Iterable[bytes]", log: _OptLoggerT = None, verbose: bool = False
+        src: "typing.Iterable[bytes]",
+        log: _OptLoggerT = None,
+        verbose: bool = False,
     ) -> "typing.List[bytes]":
         """Stream poll helper.
 
@@ -688,7 +690,12 @@ class ExecResult:
             f"cmd={self.cmd!r}, stdout={self.stdout!r}, stderr={self.stderr!r}, exit_code={self.exit_code!s},{started})"
         )
 
-    def __pretty_repr__(self, log_wrap: "logwrap.PrettyRepr", indent: int = 0, no_indent_start: bool = False) -> str:
+    def __pretty_repr__(
+        self,
+        log_wrap: "logwrap.PrettyRepr",
+        indent: int = 0,
+        no_indent_start: bool = False,
+    ) -> str:
         """Make human readable representation of object.
 
         :param log_wrap: logwrap instance

@@ -234,7 +234,12 @@ class ExecHelper(api.ExecHelper, typing.AsyncContextManager["ExecHelper"], metac
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = self._cmd_to_string(command)
-        self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+        self._log_command_execute(
+            command=cmd,
+            log_mask_re=log_mask_re,
+            log_level=log_level,
+            **kwargs,
+        )
 
         async_result: api.ExecuteAsyncResult = await self._execute_async(
             cmd,

@@ -428,7 +428,12 @@ class ExecHelper(
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = self._cmd_to_string(command)
-        self._log_command_execute(command=cmd, log_mask_re=log_mask_re, log_level=log_level, **kwargs)
+        self._log_command_execute(
+            command=cmd,
+            log_mask_re=log_mask_re,
+            log_level=log_level,
+            **kwargs,
+        )
         async_result: ExecuteAsyncResult = self._execute_async(
             cmd,
             verbose=verbose,

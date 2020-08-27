@@ -116,10 +116,16 @@ class Subprocess(api.ExecHelper):
     .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
     """
 
-    def __init__(self, log_mask_re: LogMaskReT = None) -> None:
+    def __init__(
+        self,
+        log_mask_re: LogMaskReT = None,
+    ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
-        super().__init__(logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"), log_mask_re=log_mask_re)
+        super().__init__(
+            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"),
+            log_mask_re=log_mask_re,
+        )
 
     def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
         """Get context manager.
@@ -326,7 +332,13 @@ class Subprocess(api.ExecHelper):
             process_stdin = None
 
         # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(process, process_stdin, process.stderr, process.stdout, started)
+        return SubprocessExecuteAsyncResult(
+            interface=process,
+            stdin=process_stdin,
+            stderr=process.stderr,
+            stdout=process.stdout,
+            started=started,
+        )
 
     def execute(  # pylint: disable=arguments-differ
         self,

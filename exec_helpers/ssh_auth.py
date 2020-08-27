@@ -379,17 +379,28 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         return super().__getitem__(hostname.lower())  # pylint: disable=no-member
 
     @typing.overload
-    def get_with_alt_hostname(self, hostname: str, *host_names: str, default: SSHAuth) -> SSHAuth:
+    def get_with_alt_hostname(
+        self,
+        hostname: str,
+        *host_names: str,
+        default: SSHAuth,
+    ) -> SSHAuth:
         """Try to guess hostname with credentials."""
 
     @typing.overload
     def get_with_alt_hostname(
-        self, hostname: str, *host_names: str, default: None = None
+        self,
+        hostname: str,
+        *host_names: str,
+        default: None = None,
     ) -> "typing.Optional[SSHAuth]":
         """Try to guess hostname with credentials."""
 
     def get_with_alt_hostname(
-        self, hostname: str, *host_names: str, default: "typing.Optional[SSHAuth]" = None
+        self,
+        hostname: str,
+        *host_names: str,
+        default: "typing.Optional[SSHAuth]" = None,
     ) -> "typing.Optional[SSHAuth]":
         """Try to guess hostname with credentials.
 
