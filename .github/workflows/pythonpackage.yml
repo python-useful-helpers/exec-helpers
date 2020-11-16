@@ -76,6 +76,7 @@ jobs:
           black --check exec_helpers
 
   Test:
+    needs: [PEP8, PyLint, MyPy, Black]
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 6
