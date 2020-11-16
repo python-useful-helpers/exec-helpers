@@ -16,7 +16,7 @@
 
 """SSH client helper based on Paramiko. Base class."""
 
-__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
+from __future__ import annotations
 
 # Standard Library
 import concurrent.futures
@@ -49,7 +49,7 @@ from exec_helpers.api import ExpectedExitCodesT
 from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
-from exec_helpers.proc_enums import ExitCodeT  # pylint: disable=unused-import
+from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
 from . import _log_templates
@@ -59,6 +59,8 @@ from ._ssh_helpers import SSHConfigsDictT
 if typing.TYPE_CHECKING:
     # Standard Library
     import socket
+
+__all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
 KeepAlivePeriodT = typing.Union[int, bool]
 SupportPathT = typing.Union[str, pathlib.PurePath]
@@ -86,8 +88,8 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
 
     def __init__(
         self,
-        retry_on: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
-        reraise: "typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]]",
+        retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
+        reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
     ) -> None:
         """Retry on exceptions, except several types."""
         super().__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
@@ -118,7 +120,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin
 
     @property
-    def stderr(self) -> "typing.Optional[paramiko.ChannelFile]":  # type: ignore
+    def stderr(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -127,7 +129,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
-    def stdout(self) -> "typing.Optional[paramiko.ChannelFile]":  # type: ignore
+    def stdout(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
@@ -147,11 +149,11 @@ class _SudoContext(typing.ContextManager[None]):
 
     __slots__ = ("__ssh", "__sudo_status", "__enforce")
 
-    def __init__(self, ssh: "SSHClientBase", enforce: "typing.Optional[bool]" = None) -> None:
+    def __init__(self, ssh: SSHClientBase, enforce: typing.Optional[bool] = None) -> None:
         """Context manager for call commands with sudo."""
-        self.__ssh: "SSHClientBase" = ssh
+        self.__ssh: SSHClientBase = ssh
         self.__sudo_status: bool = ssh.sudo_mode
-        self.__enforce: "typing.Optional[bool]" = enforce
+        self.__enforce: typing.Optional[bool] = enforce
 
     def __enter__(self) -> None:
         self.__sudo_status = self.__ssh.sudo_mode
@@ -173,9 +175,9 @@ class _KeepAliveContext(typing.ContextManager[None]):
 
     __slots__ = ("__ssh", "__keepalive_period", "__enforce")
 
-    def __init__(self, ssh: "SSHClientBase", enforce: int) -> None:
+    def __init__(self, ssh: SSHClientBase, enforce: int) -> None:
         """Context manager for keepalive management."""
-        self.__ssh: "SSHClientBase" = ssh
+        self.__ssh: SSHClientBase = ssh
         self.__keepalive_period: int = ssh.keepalive_period
         self.__enforce: int = enforce
 
@@ -263,15 +265,15 @@ class SSHClientBase(api.ExecHelper):
     def __init__(
         self,
         host: str,
-        port: "typing.Optional[int]" = None,
-        username: "typing.Optional[str]" = None,
-        password: "typing.Optional[str]" = None,
+        port: typing.Optional[int] = None,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
         *,
         auth: _OptSSHAuthT = None,
         verbose: bool = True,
         ssh_config: _OptionalSSHConfigArgT = None,
         ssh_auth_map: _OptionalSSHAuthMapT = None,
-        sock: "typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]" = None,
+        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> None:
         """Main SSH Client helper."""
@@ -303,7 +305,7 @@ class SSHClientBase(api.ExecHelper):
         self.__sock = sock
 
         self.__ssh: paramiko.SSHClient
-        self.__sftp: "typing.Optional[paramiko.SFTPClient]" = None
+        self.__sftp: typing.Optional[paramiko.SFTPClient] = None
 
         # Rebuild SSHAuth object if required.
         # Priority: auth > credentials > auth mapping
@@ -569,7 +571,7 @@ class SSHClientBase(api.ExecHelper):
             self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
-    def __enter__(self) -> "SSHClientBase":  # pylint: disable=useless-super-delegation
+    def __enter__(self) -> SSHClientBase:  # pylint: disable=useless-super-delegation
         """Get context manager.
 
         :return: exec helper instance with entered context manager
@@ -633,7 +635,7 @@ class SSHClientBase(api.ExecHelper):
             self.close()
             self.__connect()
 
-    def sudo(self, enforce: "typing.Optional[bool]" = None) -> _SudoContext:
+    def sudo(self, enforce: typing.Optional[bool] = None) -> _SudoContext:
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -656,7 +658,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return _KeepAliveContext(ssh=self, enforce=int(enforce))
 
-    def _prepare_command(self, cmd: str, chroot_path: "typing.Optional[str]" = None) -> str:
+    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
 
         :param cmd: main command
@@ -679,7 +681,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: "typing.Optional[str]" = None,
+        chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -732,7 +734,7 @@ class SSHClientBase(api.ExecHelper):
 
         _stdin: paramiko.ChannelFile = chan.makefile("wb")
         stdout: paramiko.ChannelFile = chan.makefile("rb")
-        stderr: "typing.Optional[paramiko.ChannelFile]" = chan.makefile_stderr("rb") if open_stderr else None
+        stderr: typing.Optional[paramiko.ChannelFile] = chan.makefile_stderr("rb") if open_stderr else None
 
         cmd = f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n"
 
@@ -831,7 +833,7 @@ class SSHClientBase(api.ExecHelper):
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        future: "concurrent.futures.Future[None]" = poll_pipes()
+        future: concurrent.futures.Future[None] = poll_pipes()
 
         concurrent.futures.wait([future], timeout)
 
@@ -1134,7 +1136,7 @@ class SSHClientBase(api.ExecHelper):
 
     def _get_proxy_channel(
         self,
-        port: "typing.Optional[int]",
+        port: typing.Optional[int],
         ssh_config: _ssh_helpers.SSHConfig,
     ) -> paramiko.Channel:
         """Get ssh proxy channel.
@@ -1162,16 +1164,16 @@ class SSHClientBase(api.ExecHelper):
     def proxy_to(
         self,
         host: str,
-        port: "typing.Optional[int]" = None,
-        username: "typing.Optional[str]" = None,
-        password: "typing.Optional[str]" = None,
+        port: typing.Optional[int] = None,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
         *,
         auth: _OptSSHAuthT = None,
         verbose: bool = True,
         ssh_config: _OptionalSSHConfigArgT = None,
         ssh_auth_map: _OptionalSSHAuthMapT = None,
         keepalive: KeepAlivePeriodT = 1,
-    ) -> "SSHClientBase":
+    ) -> SSHClientBase:
         """Start new SSH connection using current as proxy.
 
         :param host: remote hostname
@@ -1214,7 +1216,7 @@ class SSHClientBase(api.ExecHelper):
         hostname = parsed_ssh_config[host].hostname
 
         sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
-        cls: "typing.Type[SSHClientBase]" = self.__class__
+        cls: typing.Type[SSHClientBase] = self.__class__
         return cls(
             host=host,
             port=port,
@@ -1234,7 +1236,7 @@ class SSHClientBase(api.ExecHelper):
         command: CommandT,
         *,
         auth: _OptSSHAuthT = None,
-        port: "typing.Optional[int]" = None,
+        port: typing.Optional[int] = None,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         stdin: OptionalStdinT = None,
@@ -1313,7 +1315,7 @@ class SSHClientBase(api.ExecHelper):
     @classmethod
     def execute_together(
         cls,
-        remotes: "typing.Iterable[SSHClientBase]",
+        remotes: typing.Iterable[SSHClientBase],
         command: CommandT,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
@@ -1324,9 +1326,9 @@ class SSHClientBase(api.ExecHelper):
         open_stderr: bool = True,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
-        exception_class: "typing.Type[exceptions.ParallelCallProcessError]" = exceptions.ParallelCallProcessError,
+        exception_class: typing.Type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any,
-    ) -> "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]":
+    ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
 
         :param remotes: Connections to execute on
@@ -1367,7 +1369,7 @@ class SSHClientBase(api.ExecHelper):
         """
 
         @threaded.threadpooled
-        def get_result(remote: "SSHClientBase") -> exec_result.ExecResult:
+        def get_result(remote: SSHClientBase) -> exec_result.ExecResult:
             """Get result from remote call.
 
             :param remote: SSH connection instance
@@ -1403,16 +1405,16 @@ class SSHClientBase(api.ExecHelper):
             async_result.interface.close()
             return res
 
-        prep_expected: "typing.Sequence[ExitCodeT]" = proc_enums.exit_codes_to_enums(expected)
+        prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = cls._cmd_to_string(command)
 
-        futures: "typing.Dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]]" = {
+        futures: typing.Dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]] = {
             remote: get_result(remote) for remote in set(remotes)
         }  # Use distinct remotes
-        results: "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]" = {}
-        errors: "typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]" = {}
-        raised_exceptions: "typing.Dict[typing.Tuple[str, int], Exception]" = {}
+        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
+        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
+        raised_exceptions: typing.Dict[typing.Tuple[str, int], Exception] = {}
 
         _, not_done = concurrent.futures.wait(list(futures.values()), timeout=timeout)
 
@@ -1476,7 +1478,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return self._sftp.stat(pathlib.PurePath(path).as_posix())  # pragma: no cover
 
-    def utime(self, path: SupportPathT, times: "typing.Optional[typing.Tuple[int, int]]" = None) -> None:
+    def utime(self, path: SupportPathT, times: typing.Optional[typing.Tuple[int, int]] = None) -> None:
         """Set atime, mtime.
 
         :param path: filesystem object path

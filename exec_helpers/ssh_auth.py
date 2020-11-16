@@ -16,7 +16,7 @@
 
 """SSH client credentials class."""
 
-__all__ = ("SSHAuth",)
+from __future__ import annotations
 
 # Standard Library
 import copy
@@ -30,6 +30,8 @@ if typing.TYPE_CHECKING:
     # Standard Library
     import socket
 
+__all__ = ("SSHAuth",)
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -40,12 +42,12 @@ class SSHAuth:
 
     def __init__(
         self,
-        username: "typing.Optional[str]" = None,
-        password: "typing.Optional[str]" = None,
-        key: "typing.Optional[paramiko.PKey]" = None,
-        keys: "typing.Optional[typing.Sequence[paramiko.PKey]]" = None,
-        key_filename: "typing.Union[typing.Iterable[str], str, None]" = None,
-        passphrase: "typing.Optional[str]" = None,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
+        key: typing.Optional[paramiko.PKey] = None,
+        keys: typing.Optional[typing.Sequence[paramiko.PKey]] = None,
+        key_filename: typing.Union[typing.Iterable[str], str, None] = None,
+        passphrase: typing.Optional[str] = None,
     ) -> None:
         """SSH credentials object.
 
@@ -64,15 +66,15 @@ class SSHAuth:
         :param key_filename: filename(s) for additional key files
         :type key_filename: typing.Union[typing.Iterable[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
-        :type passphrase: "typing.Optional[str]"
+        :type passphrase: typing.Optional[str]
 
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
         """
-        self.__username: "typing.Optional[str]" = username
-        self.__password: "typing.Optional[str]" = password
+        self.__username: typing.Optional[str] = username
+        self.__password: typing.Optional[str] = password
 
-        self.__keys: "typing.List[typing.Union[None, paramiko.PKey]]" = []
+        self.__keys: typing.List[typing.Union[None, paramiko.PKey]] = []
 
         if key is not None:
             # noinspection PyTypeChecker
@@ -88,15 +90,15 @@ class SSHAuth:
         self.__key_index: int = 0
 
         if key_filename is None:
-            self.__key_filename: "typing.Collection[str]" = ()
+            self.__key_filename: typing.Collection[str] = ()
         elif isinstance(key_filename, str):
             self.__key_filename = (key_filename,)
         else:
             self.__key_filename = tuple(key_filename)
-        self.__passphrase: "typing.Optional[str]" = passphrase
+        self.__passphrase: typing.Optional[str] = passphrase
 
     @property
-    def username(self) -> "typing.Optional[str]":
+    def username(self) -> typing.Optional[str]:
         """Username for auth.
 
         :return: auth username
@@ -105,7 +107,7 @@ class SSHAuth:
         return self.__username
 
     @staticmethod
-    def __get_public_key(key: "typing.Union[paramiko.PKey, None]") -> "typing.Optional[str]":
+    def __get_public_key(key: typing.Union[paramiko.PKey, None]) -> typing.Optional[str]:
         """Internal method for get public key from private.
 
         :param key: SSH private key
@@ -118,7 +120,7 @@ class SSHAuth:
         return f"{key.get_name()} {key.get_base64()}"
 
     @property
-    def public_key(self) -> "typing.Optional[str]":
+    def public_key(self) -> typing.Optional[str]:
         """Public key for stored private key if presents else None.
 
         :return: public key for current private key
@@ -127,7 +129,7 @@ class SSHAuth:
         return self.__get_public_key(self.__keys[self.__key_index])
 
     @property
-    def key_filename(self) -> "typing.Collection[str]":
+    def key_filename(self) -> typing.Collection[str]:
         """Key filename(s).
 
         :return: copy of used key filename (original should not be changed via mutability).
@@ -154,7 +156,7 @@ class SSHAuth:
         port: int = 22,
         log: bool = True,
         *,
-        sock: "typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]" = None,
+        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
     ) -> None:
         """Connect SSH client object using credentials.
 
@@ -171,7 +173,7 @@ class SSHAuth:
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
-        kwargs: "typing.Dict[str, typing.Any]" = {}
+        kwargs: typing.Dict[str, typing.Any] = {}
 
         if self.__passphrase is not None:
             kwargs["passphrase"] = self.__passphrase
@@ -244,7 +246,7 @@ class SSHAuth:
         """
         return not self.__eq__(other)
 
-    def __deepcopy__(self, memo: typing.Any) -> "SSHAuth":
+    def __deepcopy__(self, memo: typing.Any) -> SSHAuth:
         """Helper for copy.deepcopy.
 
         :param memo: copy.deepcopy() memodict
@@ -262,7 +264,7 @@ class SSHAuth:
             passphrase=self.__passphrase,
         )
 
-    def __copy__(self) -> "SSHAuth":
+    def __copy__(self) -> SSHAuth:
         """Copy self.
 
         :return: re-constructed copy of current class
@@ -285,10 +287,10 @@ class SSHAuth:
         :rtype: str
         """
         if self.__keys[self.__key_index] is None:
-            _key: "typing.Optional[str]" = None
+            _key: typing.Optional[str] = None
         else:
             _key = f"<private for pub: {self.public_key}>"
-        _keys: "typing.List[typing.Union[str, None]]" = []
+        _keys: typing.List[typing.Union[str, None]] = []
         for idx, k in enumerate(self.__keys):
             if idx == self.__key_index:
                 continue
@@ -325,7 +327,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
 
     def __init__(
         self,
-        auth_dict: "typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]" = None,
+        auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]] = None,
         **auth_mapping: SSHAuth,
     ) -> None:
         """Specific dictionary for  ssh hostname - auth mapping.
@@ -393,15 +395,15 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         hostname: str,
         *host_names: str,
         default: None = None,
-    ) -> "typing.Optional[SSHAuth]":
+    ) -> typing.Optional[SSHAuth]:
         """Try to guess hostname with credentials."""
 
     def get_with_alt_hostname(
         self,
         hostname: str,
         *host_names: str,
-        default: "typing.Optional[SSHAuth]" = None,
-    ) -> "typing.Optional[SSHAuth]":
+        default: typing.Optional[SSHAuth] = None,
+    ) -> typing.Optional[SSHAuth]:
         """Try to guess hostname with credentials.
 
         :param hostname: expected target hostname

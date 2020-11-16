@@ -19,19 +19,7 @@
 .. versionchanged:: 1.3.5 make API public to use as interface
 """
 
-__all__ = (
-    "ExecHelper",
-    "ExecuteAsyncResult",
-    "mask_command",
-    "CalledProcessErrorSubClassT",
-    "OptionalStdinT",
-    "OptionalTimeoutT",
-    "CommandT",
-    "LogMaskReT",
-    "ErrorInfoT",
-    "ChRootPathSetT",
-    "ExpectedExitCodesT",
-)
+from __future__ import annotations
 
 # Standard Library
 import abc
@@ -51,6 +39,20 @@ from exec_helpers import proc_enums
 from exec_helpers.exec_result import OptionalStdinT
 from exec_helpers.proc_enums import ExitCodeT
 
+__all__ = (
+    "ExecHelper",
+    "ExecuteAsyncResult",
+    "mask_command",
+    "CalledProcessErrorSubClassT",
+    "OptionalStdinT",
+    "OptionalTimeoutT",
+    "CommandT",
+    "LogMaskReT",
+    "ErrorInfoT",
+    "ChRootPathSetT",
+    "ExpectedExitCodesT",
+)
+
 CommandT = typing.Union[str, typing.Iterable[str]]
 LogMaskReT = typing.Optional[str]
 ErrorInfoT = typing.Optional[str]
@@ -64,9 +66,9 @@ class ExecuteAsyncResult(typing.NamedTuple):
     """ExecuteAsyncResult."""
 
     interface: typing.Any
-    stdin: "typing.Optional[typing.Any]"
-    stderr: "typing.Optional[typing.Any]"
-    stdout: "typing.Optional[typing.Any]"
+    stdin: typing.Optional[typing.Any]
+    stderr: typing.Optional[typing.Any]
+    stdout: typing.Optional[typing.Any]
     started: datetime.datetime
 
 
@@ -85,15 +87,15 @@ class _ChRootContext(typing.ContextManager[None]):
 
     __slots__ = ("_conn", "_chroot_status", "_path")
 
-    def __init__(self, conn: "ExecHelper", path: ChRootPathSetT = None) -> None:
+    def __init__(self, conn: ExecHelper, path: ChRootPathSetT = None) -> None:
         """Context manager for call commands with sudo.
 
         :raises TypeError: incorrect type of path variable
         """
-        self._conn: "ExecHelper" = conn
-        self._chroot_status: "typing.Optional[str]" = conn._chroot_path
+        self._conn: ExecHelper = conn
+        self._chroot_status: typing.Optional[str] = conn._chroot_path
         if path is None or isinstance(path, str):
-            self._path: "typing.Optional[str]" = path
+            self._path: typing.Optional[str] = path
         elif isinstance(path, pathlib.Path):
             self._path = path.as_posix()  # get absolute path
         else:
@@ -119,7 +121,7 @@ def mask_command(text: str, rules: str) -> str:
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """
-    masked: "typing.List[str]" = []
+    masked: typing.List[str] = []
 
     # places to exclude
     prev = 0
@@ -159,7 +161,7 @@ class ExecHelper(
         self.__lock = threading.RLock()
         self.__logger: logging.Logger = logger
         self.log_mask_re: LogMaskReT = log_mask_re
-        self.__chroot_path: "typing.Optional[str]" = None
+        self.__chroot_path: typing.Optional[str] = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -179,7 +181,7 @@ class ExecHelper(
         return self.__lock
 
     @property
-    def _chroot_path(self) -> "typing.Optional[str]":
+    def _chroot_path(self) -> typing.Optional[str]:
         """Path for chroot if set.
 
         :rtype: typing.Optional[str]
@@ -224,7 +226,7 @@ class ExecHelper(
         """
         return _ChRootContext(conn=self, path=path)
 
-    def __enter__(self) -> "ExecHelper":
+    def __enter__(self) -> ExecHelper:
         """Get context manager.
 
         :return: exec helper instance with entered context manager
@@ -275,7 +277,7 @@ class ExecHelper(
             return command
         return " ".join(shlex.quote(elem) for elem in command)
 
-    def _prepare_command(self, cmd: str, chroot_path: "typing.Optional[str]" = None) -> str:
+    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
 
         :param cmd: main command
@@ -285,7 +287,7 @@ class ExecHelper(
         :return: final command, includes chroot, if required
         :rtype: str
         """
-        target_path: "typing.Optional[str]" = chroot_path if chroot_path else self._chroot_path
+        target_path: typing.Optional[str] = chroot_path if chroot_path else self._chroot_path
         if target_path and target_path != "/":
             chroot_dst: str = shlex.quote(target_path.strip())
             quoted_command = shlex.quote(cmd)
@@ -300,7 +302,7 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: "typing.Optional[str]" = None,
+        chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> ExecuteAsyncResult:
         """Execute command in async mode and return remote interface with IO objects.
@@ -375,14 +377,14 @@ class ExecHelper(
     def _log_command_execute(
         self,
         command: str,
-        log_mask_re: "typing.Union[str, None]",
+        log_mask_re: typing.Union[str, None],
         log_level: int,
-        chroot_path: "typing.Optional[str]" = None,
+        chroot_path: typing.Optional[str] = None,
         **_: typing.Any,
     ) -> None:
         """Log command execution."""
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-        target_path: "typing.Optional[str]" = chroot_path if chroot_path is not None else self._chroot_path
+        target_path: typing.Optional[str] = chroot_path if chroot_path is not None else self._chroot_path
         chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
 
         self.logger.log(level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n")
@@ -556,7 +558,7 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: "typing.Sequence[ExitCodeT]" = proc_enums.exit_codes_to_enums(expected)
+        expected_codes: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = self.execute(
             command,
             verbose=verbose,
@@ -722,7 +724,7 @@ class ExecHelper(
         return result
 
     @staticmethod
-    def _string_bytes_bytearray_as_bytes(src: "typing.Union[str, bytes, bytearray]") -> bytes:
+    def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
         """Get bytes string from string/bytes/bytearray union.
 
         :param src: source string or bytes-like object

@@ -114,7 +114,6 @@ CLASSIFIERS = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -143,7 +142,7 @@ setuptools.setup(
     long_description_content_type="text/x-rst",
     classifiers=CLASSIFIERS,
     keywords=KEYWORDS,
-    python_requires=">=3.6.0",
+    python_requires=">=3.7.0",
     # While setuptools cannot deal with pre-installed incompatible versions,
     # setting a lower bound is not harmful - it makes error messages cleaner. DO
     # NOT set an upper bound on setuptools, as that will lead to uninstallable

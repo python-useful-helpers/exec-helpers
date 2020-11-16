@@ -1,12 +1,8 @@
 exec-helpers
 ============
 
-.. image:: https://travis-ci.com/python-useful-helpers/exec-helpers.svg?branch=master
-    :target: https://travis-ci.com/python-useful-helpers/exec-helpers
-.. image:: https://dev.azure.com/python-useful-helpers/exec-helpers/_apis/build/status/python-useful-helpers.exec-helpers?branchName=master
-    :target: https://dev.azure.com/python-useful-helpers/exec-helpers/_build
-.. image:: https://coveralls.io/repos/github/python-useful-helpers/exec-helpers/badge.svg?branch=master
-    :target: https://coveralls.io/github/python-useful-helpers/exec-helpers?branch=master
+.. image:: https://github.com/python-useful-helpers/exec-helpers/workflows/Python%20package/badge.svg
+    :target: https://github.com/python-useful-helpers/exec-helpers/actions
 .. image:: https://readthedocs.org/projects/exec-helpers/badge/?version=latest
     :target: https://exec-helpers.readthedocs.io/
     :alt: Documentation Status
@@ -425,8 +421,4 @@ CI systems
 ==========
 For code checking several CI systems is used in parallel:
 
-1. `Travis CI: <https://travis-ci.com/python-useful-helpers/exec-helpers>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests. Also it's publishes coverage on coveralls.
-
-2. `Azure Pipelines: <https://dev.azure.com/python-useful-helpers/exec-helpers/_build>`_ is used for windows compatibility checking.
-
-3. `coveralls: <https://coveralls.io/github/python-useful-helpers/exec-helpers>`_ is used for coverage display.
+1. `GitHub actions: <https://github.com/python-useful-helpers/exec-helpers/actions>`_ is used for checking: PEP8, pylint, bandit, installation possibility and unit tests.

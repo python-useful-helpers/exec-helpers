@@ -14,6 +14,8 @@
 
 """Global constants."""
 
+from __future__ import annotations
+
 MINUTE: int = 60
 HOUR: int = 60 * MINUTE
 

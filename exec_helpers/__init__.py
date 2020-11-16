@@ -14,25 +14,7 @@
 
 """Execution helpers for simplified usage of subprocess and ssh."""
 
-__all__ = (
-    "ExecHelperError",
-    "ExecCalledProcessError",
-    "CalledProcessError",
-    "ParallelCallExceptions",
-    "ParallelCallProcessError",
-    "ExecHelperNoKillError",
-    "ExecHelperTimeoutError",
-    "ExecHelper",
-    "SSHClient",
-    "mask_command",
-    "SSHAuth",
-    "SSHConfig",
-    "HostsSSHConfigs",
-    "Subprocess",
-    "ExitCodes",
-    "ExecResult",
-    "async_api",
-)
+from __future__ import annotations
 
 # Local Implementation
 from . import async_api
@@ -58,6 +40,26 @@ try:
     from ._version import version as __version__
 except ImportError:
     pass
+
+__all__ = (
+    "ExecHelperError",
+    "ExecCalledProcessError",
+    "CalledProcessError",
+    "ParallelCallExceptions",
+    "ParallelCallProcessError",
+    "ExecHelperNoKillError",
+    "ExecHelperTimeoutError",
+    "ExecHelper",
+    "SSHClient",
+    "mask_command",
+    "SSHAuth",
+    "SSHConfig",
+    "HostsSSHConfigs",
+    "Subprocess",
+    "ExitCodes",
+    "ExecResult",
+    "async_api",
+)
 
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"

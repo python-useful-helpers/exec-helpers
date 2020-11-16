@@ -16,7 +16,7 @@
 
 """SSH client helper based on Paramiko. Extended API helpers."""
 
-__all__ = ("SSHClient",)
+from __future__ import annotations
 
 # Standard Library
 import os
@@ -27,13 +27,15 @@ import posixpath
 from . import _ssh_base
 from ._ssh_base import SupportPathT
 
+__all__ = ("SSHClient",)
+
 
 class SSHClient(_ssh_base.SSHClientBase):
     """SSH Client helper."""
 
     __slots__ = ()
 
-    def __enter__(self) -> "SSHClient":  # pylint: disable=useless-super-delegation
+    def __enter__(self) -> SSHClient:  # pylint: disable=useless-super-delegation
         """Get context manager.
 
         :return: SSHClient instance with entered context

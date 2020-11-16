@@ -14,15 +14,17 @@
 
 """Python subprocess shared code."""
 
-__all__ = ("kill_proc_tree", "subprocess_kw")
+from __future__ import annotations
 
 # Standard Library
 import contextlib
 import platform
-import typing  # pylint: disable=unused-import
+import typing
 
 # External Dependencies
 import psutil  # type: ignore
+
+__all__ = ("kill_proc_tree", "subprocess_kw")
 
 
 # Adopt from:
@@ -50,7 +52,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
             proc.terminate()
 
     parent = psutil.Process(pid)
-    children: "typing.List[psutil.Process]" = parent.children(recursive=True)
+    children: typing.List[psutil.Process] = parent.children(recursive=True)
     child: psutil.Process
     for child in children:
         safe_stop(child)  # SIGTERM to allow cleanup
@@ -68,7 +70,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 # Subprocess extra arguments.
 # Flags from:
 # https://stackoverflow.com/questions/13243807/popen-waiting-for-child-process-even-when-the-immediate-child-has-terminated
-subprocess_kw: "typing.Dict[str, typing.Any]" = {}
+subprocess_kw: typing.Dict[str, typing.Any] = {}
 if platform.system() == "Windows":
     subprocess_kw["creationflags"] = 0x00000200
 else:  # pragma: no cover

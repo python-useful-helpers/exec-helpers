@@ -16,7 +16,7 @@
 
 """Python subprocess.Popen wrapper."""
 
-__all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT", "CwdT")
+from __future__ import annotations
 
 # Standard Library
 import concurrent.futures
@@ -50,6 +50,8 @@ from exec_helpers.api import OptionalTimeoutT
 from . import _log_templates
 from . import _subprocess_helpers
 
+__all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT", "CwdT")
+
 EnvT = typing.Optional[
     typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
 ]
@@ -64,7 +66,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> "subprocess.Popen[bytes]":
+    def interface(self) -> subprocess.Popen[bytes]:  # pylint: disable=unsubscriptable-object
         """Override original NamedTuple with proper typing.
 
         :return: control interface
@@ -127,7 +129,7 @@ class Subprocess(api.ExecHelper):
             log_mask_re=log_mask_re,
         )
 
-    def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
+    def __enter__(self) -> Subprocess:  # pylint: disable=useless-super-delegation
         """Get context manager.
 
         :return: exec helper instance with entered context manager
@@ -196,9 +198,9 @@ class Subprocess(api.ExecHelper):
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stdout_future: "concurrent.futures.Future[None]" = poll_stdout()
+        stdout_future: concurrent.futures.Future[None] = poll_stdout()  # pylint: disable=unsubscriptable-object
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stderr_future: "concurrent.futures.Future[None]" = poll_stderr()
+        stderr_future: concurrent.futures.Future[None] = poll_stderr()  # pylint: disable=unsubscriptable-object
 
         try:
             exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
@@ -208,7 +210,7 @@ class Subprocess(api.ExecHelper):
         except subprocess.TimeoutExpired as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_signal: "typing.Optional[int]" = async_result.interface.poll()
+            exit_signal: typing.Optional[int] = async_result.interface.poll()
             if exit_signal is None:
                 raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
             result.exit_code = exit_signal
@@ -236,7 +238,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: "typing.Optional[str]" = None,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -287,7 +289,7 @@ class Subprocess(api.ExecHelper):
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
             env.update(env_patch)  # type: ignore
 
-        process: "subprocess.Popen[bytes]" = subprocess.Popen(
+        process: subprocess.Popen[bytes] = subprocess.Popen(  # pylint: disable=unsubscriptable-object
             args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,

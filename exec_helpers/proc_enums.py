@@ -19,12 +19,14 @@
 Linux signals, Linux & bash return codes.
 """
 
-__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID", "ExitCodeT")
+from __future__ import annotations
 
 # Standard Library
 import enum
 import sys
 import typing
+
+__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID", "ExitCodeT")
 
 
 @enum.unique
@@ -196,7 +198,7 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     return code
 
 
-def exit_codes_to_enums(codes: "typing.Optional[typing.Iterable[ExitCodeT]]" = None) -> "typing.Sequence[ExitCodeT]":
+def exit_codes_to_enums(codes: typing.Optional[typing.Iterable[ExitCodeT]] = None) -> typing.Sequence[ExitCodeT]:
     """Convert integer exit codes to enums.
 
     :param codes: exit codes to process

@@ -16,6 +16,8 @@
 
 """Text templates for logging."""
 
+from __future__ import annotations
+
 CMD_WAIT_ERROR: str = (
     "Wait for {result.cmd!r} during {timeout!s}s: no return code!\n"
     "\tSTDOUT:\n"
