@@ -1,7 +1,7 @@
 asynctest
 pytest
+pytest-cov
 pytest-mock
 pytest-asyncio
-pytest-cov
 # pytest-sugar
 coverage[toml]>=5.0
