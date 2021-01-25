@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 #
@@ -24,7 +24,7 @@ import logging
 import typing
 
 # External Dependencies
-import paramiko  # type: ignore
+import paramiko
 
 if typing.TYPE_CHECKING:
     # Standard Library
@@ -45,7 +45,7 @@ class SSHAuth:
         username: typing.Optional[str] = None,
         password: typing.Optional[str] = None,
         key: typing.Optional[paramiko.PKey] = None,
-        keys: typing.Optional[typing.Sequence[paramiko.PKey]] = None,
+        keys: typing.Optional[typing.Sequence[typing.Union[paramiko.PKey, None]]] = None,
         key_filename: typing.Union[typing.Iterable[str], str, None] = None,
         passphrase: typing.Optional[str] = None,
     ) -> None:
@@ -62,7 +62,7 @@ class SSHAuth:
         :param key: Main connection key
         :type key: typing.Optional[paramiko.PKey]
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Sequence[paramiko.PKey]]]
+        :type keys: typing.Optional[typing.Sequence[typing.Union[paramiko.PKey, None]]]
         :param key_filename: filename(s) for additional key files
         :type key_filename: typing.Union[typing.Iterable[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
@@ -189,7 +189,7 @@ class SSHAuth:
                     port=port,
                     username=self.username,
                     password=self.__password,
-                    key_filename=self.__key_filename,
+                    key_filename=self.__key_filename,  # type: ignore  # types verified by code (not signature)
                     **kwargs,
                 )
                 if index != self.__key_index:

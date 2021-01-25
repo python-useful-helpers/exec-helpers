@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 #
@@ -90,7 +90,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
         src = pathlib.Path(source).expanduser().resolve()
         if not src.is_dir():
-            self._sftp.put(src.as_posix(), target)
+            self._sftp.put(src.as_posix(), tgt.as_posix())
             return
 
         for pth in src.glob("**/*"):

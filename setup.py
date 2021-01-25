@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -15,6 +15,8 @@
 #    under the License.
 
 """Execution helpers for simplified usage of subprocess and ssh."""
+
+from __future__ import annotations
 
 # Standard Library
 import ast
@@ -40,8 +42,8 @@ with open("README.rst") as f:
 
 # noinspection PyUnresolvedReferences
 def get_simple_vars_from_src(
-    src: str
-) -> "typing.Dict[str, typing.Union[str, bytes, int, float, complex, list, set, dict, tuple, None, bool, Ellipsis]]":
+    src: str,
+) -> typing.Dict[str, typing.Union[str, bytes, int, float, complex, list, set, dict, tuple, None, bool, Ellipsis]]:
     """Get simple (string/number/boolean and None) assigned values from source.
 
     :param src: Source code
@@ -94,15 +96,19 @@ def get_simple_vars_from_src(
     result = {}
 
     for node in ast.iter_child_nodes(tree):
-        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast_data):  # We parse assigns only
+        # We parse assigns only
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or not isinstance(node.value, ast_data):
             continue
         try:
             value = ast.literal_eval(node.value)
         except ValueError:
             continue
-        for tgt in node.targets:
-            if isinstance(tgt, ast.Name) and isinstance(tgt.ctx, ast.Store):
-                result[tgt.id] = value
+        if isinstance(node, ast.Assign):
+            for tgt in node.targets:
+                if isinstance(tgt, ast.Name) and isinstance(tgt.ctx, ast.Store):
+                    result[tgt.id] = value
+        else:
+            result[node.target.id] = value
     return result
 
 
@@ -156,7 +162,7 @@ setuptools.setup(
         "wheel",
         "setuptools_scm[toml]>=3.4",
     ],
-    use_scm_version={"write_to": f'{PACKAGE_NAME}/_version.py'},
+    use_scm_version={"write_to": f"{PACKAGE_NAME}/_version.py"},
     install_requires=REQUIRED,
     extras_require={
         "xml": XML_DEPS,

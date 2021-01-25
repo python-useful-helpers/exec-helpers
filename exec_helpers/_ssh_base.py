@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 #
@@ -31,7 +31,7 @@ import time
 import typing
 
 # External Dependencies
-import paramiko  # type: ignore
+import paramiko
 import tenacity
 import threaded
 
@@ -108,7 +108,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: control interface
         :rtype: paramiko.Channel
         """
-        return super().interface
+        return super().interface  # type: ignore
 
     @property
     def stdin(self) -> paramiko.ChannelFile:  # type: ignore
@@ -415,6 +415,26 @@ class SSHClientBase(api.ExecHelper):
         return copy.deepcopy(self.__ssh_config)
 
     @property
+    def _ssh_transport(self) -> paramiko.Transport:
+        """Paramiko transport object getter.
+
+        :return: Paramiko transport.
+        :rtype: paramiko.Transport
+        :raises ConnectionError: Can not get SSH transport (with reconnect)
+        Used internally.
+        """
+        with self.lock:
+            transport = self.__ssh.get_transport()
+            if transport is not None:
+                return transport
+
+            self.reconnect()
+            transport = self.__ssh.get_transport()
+            if transport is not None:
+                return transport
+            raise ConnectionError("Can not get SSH transport (with reconnect)")
+
+    @property
     def is_alive(self) -> bool:
         """Paramiko status: ready to use|reconnect required.
 
@@ -474,7 +494,7 @@ class SSHClientBase(api.ExecHelper):
             else:
                 self.__ssh = self.__get_client()
 
-            transport: paramiko.Transport = self.__ssh.get_transport()
+            transport: paramiko.Transport = self._ssh_transport
             transport.set_keepalive(1 if self.__keepalive_period else 0)  # send keepalive packets
 
     def __get_client(self) -> paramiko.SSHClient:
@@ -484,6 +504,7 @@ class SSHClientBase(api.ExecHelper):
         :rtype: paramiko.SSHClient
         :raises ValueError: ProxyCommand found in connection chain after first host reached
         :raises RuntimeError: Unexpected state
+        :raises ConnectionError: Can not get SSH transport
         """
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
@@ -505,7 +526,10 @@ class SSHClientBase(api.ExecHelper):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
             if config.proxyjump:
-                sock = last_ssh_client.get_transport().open_channel(
+                transport = last_ssh_client.get_transport()
+                if transport is None:
+                    raise ConnectionError("Can not get SSH transport")
+                sock = transport.open_channel(
                     kind="direct-tcpip",
                     dest_addr=(config.hostname, config.port or 22),
                     src_addr=(config.proxyjump, 0),
@@ -626,7 +650,7 @@ class SSHClientBase(api.ExecHelper):
         If 0 - close connection on exit from context manager.
         """
         self.__keepalive_period = int(period)
-        transport: paramiko.Transport = self.__ssh.get_transport()
+        transport: paramiko.Transport = self._ssh_transport
         transport.set_keepalive(int(period))
 
     def reconnect(self) -> None:
@@ -726,15 +750,18 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
-        chan: paramiko.Channel = self._ssh.get_transport().open_session()
+        chan: paramiko.Channel = self._ssh_transport.open_session()
 
         if get_pty:
             # Open PTY
             chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
-        _stdin: paramiko.ChannelFile = chan.makefile("wb")
-        stdout: paramiko.ChannelFile = chan.makefile("rb")
-        stderr: typing.Optional[paramiko.ChannelFile] = chan.makefile_stderr("rb") if open_stderr else None
+        _stdin: paramiko.ChannelFile = chan.makefile("wb")  # type: ignore
+        stdout: paramiko.ChannelFile = chan.makefile("rb")  # type: ignore
+        if open_stderr:
+            stderr: typing.Optional[paramiko.ChannelFile] = chan.makefile_stderr("rb")  # type: ignore
+        else:
+            stderr = None
 
         cmd = f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n"
 
@@ -1155,7 +1182,7 @@ class SSHClientBase(api.ExecHelper):
         else:
             dest_port = ssh_config.port if ssh_config.port is not None else 22
 
-        return self._ssh.get_transport().open_channel(
+        return self._ssh_transport.open_channel(
             kind="direct-tcpip",
             dest_addr=(ssh_config.hostname, dest_port),
             src_addr=(self.hostname, 0),
@@ -1500,8 +1527,8 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISREG(attrs.st_mode)
-        except IOError:
+            return stat.S_ISREG(attrs.st_mode)  # type: ignore  # in case of None we will handle except
+        except (TypeError, IOError):
             return False
 
     def isdir(self, path: SupportPathT) -> bool:
@@ -1514,8 +1541,8 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISDIR(attrs.st_mode)
-        except IOError:
+            return stat.S_ISDIR(attrs.st_mode)  # type: ignore  # in case of None we will handle except
+        except (TypeError, IOError):
             return False
 
     def islink(self, path: SupportPathT) -> bool:
@@ -1528,8 +1555,8 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISLNK(attrs.st_mode)
-        except IOError:
+            return stat.S_ISLNK(attrs.st_mode)  # type: ignore  # in case of None we will handle except
+        except (TypeError, IOError):
             return False
 
     def symlink(self, source: SupportPathT, dest: SupportPathT) -> None:
