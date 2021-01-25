@@ -1,5 +1,5 @@
 -r requirements.txt
-lxml!=3.7.0
+lxml>=4.6.2
 PyYAML>=3.12
 ruamel.yaml
 defusedxml  # PSF

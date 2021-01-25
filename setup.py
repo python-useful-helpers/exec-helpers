@@ -130,7 +130,7 @@ CLASSIFIERS = [
 KEYWORDS = ["logging", "debugging", "development"]
 
 XML_DEPS = ["defusedxml"]
-LXML_DEPS = ["lxml!=3.7.0"]
+LXML_DEPS = ["lxml>=4.6.2"]
 YAML_DEPS = ["PyYAML>=3.12"]
 
 
