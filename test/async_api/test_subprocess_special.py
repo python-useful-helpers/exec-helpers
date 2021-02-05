@@ -122,13 +122,17 @@ configs = {
     "TimeoutError": dict(
         stdout=(),
         command_parameters=CommandParameters(),
-        mock_parameters=MockParameters(ec=(asyncio.TimeoutError(), -9),),
+        mock_parameters=MockParameters(
+            ec=(asyncio.TimeoutError(), -9),
+        ),
         expect_exc=exec_helpers.ExecHelperTimeoutError,
     ),
     "TimeoutError_no_kill": dict(
         stdout=(),
         command_parameters=CommandParameters(),
-        mock_parameters=MockParameters(ec=(asyncio.TimeoutError(), None),),
+        mock_parameters=MockParameters(
+            ec=(asyncio.TimeoutError(), None),
+        ),
         expect_exc=exec_helpers.ExecHelperNoKillError,
     ),
     "stdin_closed_PIPE_windows": dict(
@@ -238,7 +242,8 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
     mocker.patch("psutil.Process")
 
     def create_mock(
-        stdout: typing.Optional[typing.Tuple] = None, **kwargs,
+        stdout: typing.Optional[typing.Tuple] = None,
+        **kwargs,
     ):
         """Parametrized code."""
         proc = asynctest.CoroutineMock()

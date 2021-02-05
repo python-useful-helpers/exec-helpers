@@ -304,7 +304,9 @@ class ParallelCallExceptions(ParallelCallProcessError):
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        exceptions_str: str = "\n\t".join(f"{host}:{port} - {exc} " for (host, port), exc in exceptions.items())
+        exceptions_str: str = "\n\t".join(
+            f"{host}:{port} - {str(exc) if str(exc) else repr(exc)}" for (host, port), exc in exceptions.items()
+        )
         message: str = _message or f"Command {command!r} during execution raised exceptions: \n\t{exceptions_str}"
         super().__init__(
             command=command,

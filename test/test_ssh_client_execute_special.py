@@ -240,8 +240,22 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
     results = exec_helpers.SSHClient.execute_together(remotes=remotes, command=cmd)
     execute_async.assert_has_calls(
         (
-            mock.call(decoded_cmd, stdin=None, log_mask_re=None, open_stdout=True, open_stderr=True),
-            mock.call(decoded_cmd, stdin=None, log_mask_re=None, open_stdout=True, open_stderr=True),
+            mock.call(
+                decoded_cmd,
+                stdin=None,
+                log_mask_re=None,
+                open_stdout=True,
+                open_stderr=True,
+                timeout=default_timeout,
+            ),
+            mock.call(
+                decoded_cmd,
+                stdin=None,
+                log_mask_re=None,
+                open_stdout=True,
+                open_stderr=True,
+                timeout=default_timeout,
+            ),
         )
     )
     for result in results.values():

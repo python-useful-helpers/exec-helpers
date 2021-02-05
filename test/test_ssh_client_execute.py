@@ -464,6 +464,7 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
                     log_mask_re=None,
                     open_stdout=run_parameters["open_stdout"],
                     open_stderr=run_parameters["open_stderr"],
+                    timeout=default_timeout,
                 ),
                 mock.call(
                     command,
@@ -471,6 +472,7 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
                     log_mask_re=None,
                     open_stdout=run_parameters["open_stdout"],
                     open_stderr=run_parameters["open_stderr"],
+                    timeout=default_timeout,
                 ),
             )
         )
@@ -503,6 +505,7 @@ def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, ru
                 log_mask_re=None,
                 open_stdout=run_parameters["open_stdout"],
                 open_stderr=run_parameters["open_stderr"],
+                timeout=default_timeout,
             ),
             mock.call(
                 command,
@@ -510,6 +513,7 @@ def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, ru
                 log_mask_re=None,
                 open_stdout=run_parameters["open_stdout"],
                 open_stderr=run_parameters["open_stderr"],
+                timeout=default_timeout,
             ),
         )
     )

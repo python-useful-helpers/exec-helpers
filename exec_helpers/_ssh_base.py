@@ -709,6 +709,7 @@ class SSHClientBase(api.ExecHelper):
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
+        timeout: OptionalTimeoutT = None,
         **kwargs: typing.Any,
     ) -> SshExecuteAsyncResult:
         """Execute command in async mode and return channel with IO objects.
@@ -729,6 +730,8 @@ class SSHClientBase(api.ExecHelper):
         :type width: int
         :param height: PTY height
         :type height: int
+        :param timeout: timeout before stop execution with TimeoutError (will be set on channel)
+        :type timeout: typing.Union[int, float, None]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -751,6 +754,8 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 4.1.0 support chroot
         """
         chan: paramiko.Channel = self._ssh_transport.open_session()
+        if timeout is not None:
+            chan.settimeout(timeout)
 
         if get_pty:
             # Open PTY
@@ -1401,6 +1406,7 @@ class SSHClientBase(api.ExecHelper):
 
             :param remote: SSH connection instance
             :return: execution result
+            :raises ExecHelperTimeoutError: Timeout exceeded
             """
             # pylint: disable=protected-access
             cmd_for_log: str = remote._mask_command(cmd=cmd, log_mask_re=log_mask_re)
@@ -1417,20 +1423,28 @@ class SSHClientBase(api.ExecHelper):
                 log_mask_re=log_mask_re,
                 open_stdout=open_stdout,
                 open_stderr=open_stderr,
+                timeout=timeout,
                 **kwargs,
             )
             # pylint: enable=protected-access
 
-            async_result.interface.status_event.wait(timeout)
-            exit_code = async_result.interface.recv_exit_status()
+            done = async_result.interface.status_event.wait(timeout)
 
             res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
             res.read_stdout(src=async_result.stdout)
             res.read_stderr(src=async_result.stderr)
-            res.exit_code = exit_code
+            if done:
+                res.exit_code = async_result.interface.recv_exit_status()
 
             async_result.interface.close()
-            return res
+            if done:
+                return res
+            async_result.interface.status_event.set()
+            result.set_timestamp()
+
+            wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=res, timeout=timeout)
+            remote.logger.debug(wait_err_msg)
+            raise exceptions.ExecHelperTimeoutError(result=res, timeout=timeout)  # type: ignore
 
         prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
@@ -1443,14 +1457,15 @@ class SSHClientBase(api.ExecHelper):
         errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
         raised_exceptions: typing.Dict[typing.Tuple[str, int], Exception] = {}
 
-        _, not_done = concurrent.futures.wait(list(futures.values()), timeout=timeout)
+        not_done: typing.Set[concurrent.futures.Future[exec_result.ExecResult]]
+        _done, not_done = concurrent.futures.wait(futures.values(), timeout=timeout)
 
         for fut in not_done:  # pragma: no cover
             fut.cancel()
 
         for remote, future in futures.items():
             try:
-                result = future.result()
+                result = future.result(timeout=0.1)
                 results[(remote.hostname, remote.port)] = result
                 if result.exit_code not in prep_expected:
                     errors[(remote.hostname, remote.port)] = result
