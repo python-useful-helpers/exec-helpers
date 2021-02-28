@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 #
@@ -193,7 +193,7 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     """
     if "win32" == sys.platform:
         return int(code)
-    if isinstance(code, int) and code in ExitCodes.__members__.values():
+    if isinstance(code, int) and code in ExitCodes.__members__.values():  # pylint: disable=no-member
         return ExitCodes(code)
     return code
 

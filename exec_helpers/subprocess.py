@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 #
@@ -66,7 +66,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> subprocess.Popen[bytes]:  # pylint: disable=unsubscriptable-object
+    def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
         :return: control interface
@@ -198,9 +198,9 @@ class Subprocess(api.ExecHelper):
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stdout_future: concurrent.futures.Future[None] = poll_stdout()  # pylint: disable=unsubscriptable-object
+        stdout_future: concurrent.futures.Future[None] = poll_stdout()
         # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stderr_future: concurrent.futures.Future[None] = poll_stderr()  # pylint: disable=unsubscriptable-object
+        stderr_future: concurrent.futures.Future[None] = poll_stderr()
 
         try:
             exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
@@ -289,7 +289,7 @@ class Subprocess(api.ExecHelper):
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
             env.update(env_patch)  # type: ignore
 
-        process: subprocess.Popen[bytes] = subprocess.Popen(  # pylint: disable=unsubscriptable-object
+        process: subprocess.Popen[bytes] = subprocess.Popen(
             args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,

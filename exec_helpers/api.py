@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2020 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
