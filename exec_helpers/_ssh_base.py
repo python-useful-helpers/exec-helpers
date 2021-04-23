@@ -1593,3 +1593,15 @@ class SSHClientBase(api.ExecHelper):
         :type mode: int
         """
         self._sftp.chmod(pathlib.PurePath(path).as_posix(), mode)  # pragma: no cover
+
+    def chown(self, path: SupportPathT, uid: int, gid: int) -> None:
+        """Change ownership for remote file.
+
+        :param path: filesystem object path
+        :type path: typing.Union[str, pathlib.PurePath]
+        :param uid: user identifier
+        :type uid: int
+        :param gid: group identifier
+        :type gid: int
+        """
+        self._sftp.chown(path=pathlib.PurePath(path).as_posix(), uid=uid, gid=gid)  # pragma: no cover

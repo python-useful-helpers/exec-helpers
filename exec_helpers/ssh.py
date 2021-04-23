@@ -90,7 +90,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
         src = pathlib.Path(source).expanduser().resolve()
         if not src.is_dir():
-            self._sftp.put(src.as_posix(), tgt.as_posix())
+            self._sftp.put(src.as_posix(), tgt.as_posix(), confirm=True)
             return
 
         for pth in src.glob("**/*"):
@@ -102,7 +102,7 @@ class SSHClient(_ssh_base.SSHClientBase):
 
             if self.exists(destination):
                 self._sftp.unlink(destination)
-            self._sftp.put(pth.as_posix(), destination)
+            self._sftp.put(pth.as_posix(), destination, confirm=True)
 
     def download(self, destination: SupportPathT, target: SupportPathT) -> bool:
         """Download file(s) to target from destination.
