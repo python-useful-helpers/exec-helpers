@@ -234,7 +234,7 @@ class ExecHelper(
 
         .. versionchanged:: 1.1.0 lock on enter
         """
-        self.lock.acquire()
+        self.lock.acquire()  # pylint: disable=consider-using-with
         return self
 
     def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:

@@ -412,7 +412,6 @@ def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHC
     :return: parsed dictionary with proxy jump path, if available
     :rtype: HostsSSHConfigs
     """
-    # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
     config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.lookup(host))})
     config.setdefault(config[host].hostname, config[host])
 
@@ -434,7 +433,6 @@ def _parse_dict_ssh_config(conf: SSHConfigsDictT, host: str) -> HostsSSHConfigs:
     :return: parsed dictionary with proxy jump path, if available
     :rtype: HostsSSHConfigs
     """
-    # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
     config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.get(host, {"hostname": host}))})
     config.setdefault(config[host].hostname, config[host])
 
@@ -488,7 +486,6 @@ def parse_ssh_config(
         config = HostsSSHConfigs({host: SSHConfig(host)})
 
     if user_ssh_config is not None:
-        # pylint: disable=no-member,unsubscriptable-object,unsupported-assignment-operation
         user_config = _parse_paramiko_ssh_config(user_ssh_config, host)
         for hostname, cfg in user_config.items():
             config[hostname] = config[hostname].overridden_by(cfg)

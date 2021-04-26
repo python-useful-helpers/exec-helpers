@@ -365,7 +365,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
         if not isinstance(auth, SSHAuth):  # pragma: no cover
             raise TypeError(f"Value {auth!r} is not SSHAuth object!")
-        super().__setitem__(hostname.lower(), auth)  # pylint: disable=no-member
+        super().__setitem__(hostname.lower(), auth)
 
     def __getitem__(self, hostname: str) -> SSHAuth:
         """Dict-like access.
@@ -378,7 +378,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         """
         if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        return super().__getitem__(hostname.lower())  # pylint: disable=no-member
+        return super().__getitem__(hostname.lower())
 
     @typing.overload
     def get_with_alt_hostname(
@@ -436,4 +436,4 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         """
         if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        super().__delitem__(hostname.lower())  # pylint: disable=no-member
+        super().__delitem__(hostname.lower())

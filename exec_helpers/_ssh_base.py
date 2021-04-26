@@ -367,7 +367,6 @@ class SSHClientBase(api.ExecHelper):
         conn_chain.append((config, auth))
 
         while config.proxyjump is not None:
-            # pylint: disable=no-member
             config = self.ssh_config[config.proxyjump]
             default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
             conn_chain.append((config, self.__auth_mapping.get(config.hostname, default_auth)))
