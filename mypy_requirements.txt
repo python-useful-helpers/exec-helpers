@@ -1,0 +1,3 @@
+mypy>=0.901
+types-paramiko
+types-PyYAML

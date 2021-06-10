@@ -33,7 +33,6 @@ import typing
 # External Dependencies
 import paramiko
 import tenacity
-import threaded
 
 # Package Implementation
 from exec_helpers import api
@@ -845,7 +844,6 @@ class SSHClientBase(api.ExecHelper):
             if async_result.stderr and async_result.interface.recv_stderr_ready():
                 result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled
         def poll_pipes() -> None:
             """Polling task for FIFO buffers."""
             while not async_result.interface.status_event.is_set():
@@ -863,21 +861,22 @@ class SSHClientBase(api.ExecHelper):
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        future: concurrent.futures.Future[None] = poll_pipes()
+        with concurrent.futures.ThreadPoolExecutor(thread_name_prefix="exec-helpers_ssh_poll_") as executor:
+            future: concurrent.futures.Future[None] = executor.submit(poll_pipes)
 
-        concurrent.futures.wait([future], timeout)
+            concurrent.futures.wait([future], timeout)
 
-        # Process closed?
-        if async_result.interface.status_event.is_set():
+            # Process closed?
+            if async_result.interface.status_event.is_set():
+                async_result.interface.close()
+                return result
+
             async_result.interface.close()
-            return result
+            async_result.interface.status_event.set()
+            future.cancel()
 
-        async_result.interface.close()
-        async_result.interface.status_event.set()
-        future.cancel()
+            concurrent.futures.wait([future], 0.001)
 
-        concurrent.futures.wait([future], 0.001)
         result.set_timestamp()
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
@@ -1399,7 +1398,6 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         """
 
-        @threaded.threadpooled
         def get_result(remote: SSHClientBase) -> exec_result.ExecResult:
             """Get result from remote call.
 
@@ -1449,18 +1447,20 @@ class SSHClientBase(api.ExecHelper):
         log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = cls._cmd_to_string(command)
 
-        futures: typing.Dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]] = {
-            remote: get_result(remote) for remote in set(remotes)
-        }  # Use distinct remotes
         results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
         errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
         raised_exceptions: typing.Dict[typing.Tuple[str, int], Exception] = {}
-
         not_done: typing.Set[concurrent.futures.Future[exec_result.ExecResult]]
-        _done, not_done = concurrent.futures.wait(futures.values(), timeout=timeout)
 
-        for fut in not_done:  # pragma: no cover
-            fut.cancel()
+        with concurrent.futures.ThreadPoolExecutor(thread_name_prefix="exec-helpers_ssh_multiple_poll_") as executor:
+            futures: typing.Dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]] = {
+                remote: executor.submit(get_result, remote) for remote in set(remotes)
+            }  # Use distinct remotes
+
+            _done, not_done = concurrent.futures.wait(futures.values(), timeout=timeout)
+
+            for fut in not_done:  # pragma: no cover
+                fut.cancel()
 
         for remote, future in futures.items():
             try:

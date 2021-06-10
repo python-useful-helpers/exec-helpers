@@ -29,9 +29,6 @@ import pathlib
 import subprocess  # nosec  # Expected usage
 import typing
 
-# External Dependencies
-import threaded
-
 # Package Implementation
 from exec_helpers import api
 from exec_helpers import constants
@@ -175,12 +172,10 @@ class Subprocess(api.ExecHelper):
         .. versionadded:: 1.2.0
         """
 
-        @threaded.threadpooled
         def poll_stdout() -> None:
             """Sync stdout poll."""
             result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
 
-        @threaded.threadpooled
         def poll_stderr() -> None:
             """Sync stderr poll."""
             result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
@@ -197,34 +192,34 @@ class Subprocess(api.ExecHelper):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stdout_future: concurrent.futures.Future[None] = poll_stdout()
-        # noinspection PyNoneFunctionAssignment,PyTypeChecker
-        stderr_future: concurrent.futures.Future[None] = poll_stderr()
+        with concurrent.futures.ThreadPoolExecutor(thread_name_prefix="exec-helpers_subprocess_poll_") as executor:
+            stdout_future: concurrent.futures.Future[None] = executor.submit(poll_stdout)
+            stderr_future: concurrent.futures.Future[None] = executor.submit(poll_stderr)
 
-        try:
-            exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
-            concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)  # Minimal timeout to complete polling
-            result.exit_code = exit_code
-            return result
-        except subprocess.TimeoutExpired as exc:
-            # kill -9 for all subprocesses
-            _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_signal: typing.Optional[int] = async_result.interface.poll()
-            if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
-            result.exit_code = exit_signal
-        finally:
-            stdout_future.cancel()
-            stderr_future.cancel()
-            _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
-            if not_done and async_result.interface.returncode:
-                self.logger.critical(
-                    f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
-                    f"but FIFO buffers are still open"
-                )
-            result.set_timestamp()
-            close_streams()
+            try:
+                exit_code: int = async_result.interface.wait(timeout=timeout)  # Wait real timeout here
+                # Minimal timeout to complete polling
+                concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
+                result.exit_code = exit_code
+                return result
+            except subprocess.TimeoutExpired as exc:
+                # kill -9 for all subprocesses
+                _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
+                exit_signal: typing.Optional[int] = async_result.interface.poll()
+                if exit_signal is None:
+                    raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
+                result.exit_code = exit_signal
+            finally:
+                stdout_future.cancel()
+                stderr_future.cancel()
+                _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
+                if not_done and async_result.interface.returncode:
+                    self.logger.critical(
+                        f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
+                        f"but FIFO buffers are still open"
+                    )
+                result.set_timestamp()
+                close_streams()
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
