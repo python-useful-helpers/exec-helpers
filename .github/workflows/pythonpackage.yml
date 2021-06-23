@@ -57,7 +57,7 @@ jobs:
           python setup.py --version clean
       - name: Lint with MyPy
         run: |
-          mypy --strict exec_helpers
+          mypy --strict --install-types --non-interactive exec_helpers
 
   Black:
     runs-on: ubuntu-latest
