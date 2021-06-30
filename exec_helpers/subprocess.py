@@ -1,13 +1,13 @@
 #    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
-#
+
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
-#
+
 #         http://www.apache.org/licenses/LICENSE-2.0
-#
+
 #    Unless required by applicable law or agreed to in writing, software
 #    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -284,7 +284,7 @@ class Subprocess(api.ExecHelper):
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
             env.update(env_patch)  # type: ignore
 
-        process: subprocess.Popen[bytes] = subprocess.Popen(
+        process: subprocess.Popen[bytes] = subprocess.Popen(  # pylint: disable=consider-using-with
             args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
             stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,

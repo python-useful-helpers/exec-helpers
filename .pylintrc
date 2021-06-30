@@ -33,7 +33,11 @@ load-plugins=pylint.extensions.docparams,
              pylint.extensions.overlapping_exceptions,
              pylint.extensions.emptystring,
              pylint.extensions.comparetozero,
-             pylint.extensions.check_elif
+             pylint.extensions.check_elif,
+             pylint.extensions.code_style,
+             pylint.extensions.redefined_variable_type,
+             pylint.extensions.typing,
+             pylint.extensions.empty_comment
 
 # Pickle collected data for later comparisons.
 persistent=yes
