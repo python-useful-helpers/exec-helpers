@@ -470,8 +470,8 @@ class SSHClientBase(api.ExecHelper):
 
     @tenacity.retry(
         retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
-        stop=tenacity.stop.stop_after_attempt(3),
-        wait=tenacity.wait.wait_fixed(3),
+        stop=tenacity.stop.stop_after_attempt(3),  # type: ignore
+        wait=tenacity.wait.wait_fixed(3),  # type: ignore
         reraise=True,
     )
     def __connect(self) -> None:
