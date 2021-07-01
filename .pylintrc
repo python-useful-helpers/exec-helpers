@@ -71,9 +71,7 @@ confidence=
 # --disable=W".
 enable=all
 
-disable=non-ascii-bytes-literal,
-        raw-checker-failed,
-        locally-disabled,
+disable=locally-disabled,
         file-ignored,
         suppressed-message,
         similarities,
@@ -88,7 +86,6 @@ disable=non-ascii-bytes-literal,
         too-many-instance-attributes,
         too-many-lines,
         misplaced-comparison-constant,
-        bad-continuation,
         broad-except,
         logging-fstring-interpolation,
         logging-format-interpolation
