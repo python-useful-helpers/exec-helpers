@@ -188,8 +188,8 @@ class Subprocess(api.ExecHelper):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        stdout_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stdout())
-        stderr_task: "asyncio.Future[None]" = asyncio.ensure_future(poll_stderr())
+        stdout_task: "asyncio.Task[None]" = asyncio.create_task(poll_stdout())
+        stderr_task: "asyncio.Task[None]" = asyncio.create_task(poll_stderr())
 
         try:
             # Wait real timeout here
