@@ -17,7 +17,7 @@
 .. versionadded:: 3.0.0
 """
 
-__all__ = ("ExecResult",)
+from __future__ import annotations
 
 # Standard Library
 import contextlib
@@ -26,6 +26,8 @@ import typing
 
 # Package Implementation
 from exec_helpers import exec_result
+
+__all__ = ("ExecResult",)
 
 _StreamT = typing.AsyncIterable[bytes]
 
@@ -38,9 +40,9 @@ class ExecResult(exec_result.ExecResult):
     @staticmethod
     async def _poll_stream(  # type: ignore  # pylint: disable=invalid-overridden-method
         src: _StreamT,
-        log: "typing.Optional[logging.Logger]" = None,
+        log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
-    ) -> "typing.List[bytes]":
+    ) -> typing.List[bytes]:
         """Stream poll helper.
 
         :param src: source to read from
@@ -48,7 +50,7 @@ class ExecResult(exec_result.ExecResult):
         :param verbose: use INFO level for logging
         :return: read result as list of bytes strings
         """
-        dst: "typing.List[bytes]" = []
+        dst: typing.List[bytes] = []
         with contextlib.suppress(IOError):
             async for line in src:
                 dst.append(line)
@@ -61,8 +63,8 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stdout(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
-        src: "typing.Optional[_StreamT]" = None,
-        log: "typing.Optional[logging.Logger]" = None,
+        src: typing.Optional[_StreamT] = None,
+        log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stdout transport to stdout.
@@ -88,8 +90,8 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stderr(  # type: ignore  # pylint: disable=invalid-overridden-method
         self,
-        src: "typing.Optional[_StreamT]" = None,
-        log: "typing.Optional[logging.Logger]" = None,
+        src: typing.Optional[_StreamT] = None,
+        log: typing.Optional[logging.Logger] = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stderr transport to stdout.

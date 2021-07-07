@@ -167,7 +167,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
         :rtype: List[Union[int, ExitCodes]]
 
-.. py:exception:: ParallelCallExceptions(ParallelCallProcessError)
+.. py:exception:: ParallelCallExceptionsError(ParallelCallProcessError)
 
     Exception raised during parallel call as result of exceptions.
 

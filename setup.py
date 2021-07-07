@@ -22,11 +22,10 @@ from __future__ import annotations
 import ast
 import os.path
 import sys
+import typing
 
 # External Dependencies
 import setuptools
-import typing
-
 
 PACKAGE_NAME = "exec_helpers"
 

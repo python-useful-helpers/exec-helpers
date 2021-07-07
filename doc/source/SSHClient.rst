@@ -383,7 +383,7 @@ API: SSHClient and SSHAuth.
         :return: dictionary {(hostname, port): result}
         :rtype: Dict[Tuple[str, int], ExecResult]
         :raises ParallelCallProcessError: Unexpected any code at lest on one target
-        :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
+        :raises ParallelCallExceptionsError: At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted

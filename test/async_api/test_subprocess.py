@@ -24,14 +24,16 @@ from unittest import mock
 import asynctest
 import pytest
 
-# Exec-Helpers Implementation
+# Package Implementation
 import exec_helpers
 from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
 from exec_helpers.async_api.subprocess import SubprocessExecuteAsyncResult
 
+pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
+
 # All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
+# pytestmark = pytest.mark.asyncio
 
 command = "ls ~\nline 2\nline 3\nline с кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 # Standard Library
 import typing
+import warnings
 
 # Package Implementation
 from exec_helpers import proc_enums
@@ -37,7 +38,7 @@ __all__ = (
     "ExecCalledProcessError",
     "CalledProcessError",
     "ParallelCallProcessError",
-    "ParallelCallExceptions",
+    "ParallelCallExceptionsError",
 )
 
 
@@ -272,7 +273,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         self.expected: typing.Sequence[ExitCodeT] = prep_expected
 
 
-class ParallelCallExceptions(ParallelCallProcessError):  # noqa: N818
+class ParallelCallExceptionsError(ParallelCallProcessError):
     """Exception raised during parallel call as result of exceptions."""
 
     __slots__ = ("cmd", "exceptions")
@@ -317,3 +318,46 @@ class ParallelCallExceptions(ParallelCallProcessError):  # noqa: N818
         )
         self.cmd: str = command
         self.exceptions: typing.Dict[typing.Tuple[str, int], Exception] = exceptions
+
+
+class ParallelCallExceptions(ParallelCallExceptionsError):  # noqa: N818
+    """Exception raised during parallel call as result of exceptions."""
+
+    __slots__ = ()
+
+    def __init__(
+        self,
+        command: str,
+        exceptions: typing.Dict[typing.Tuple[str, int], Exception],
+        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
+        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
+        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        *,
+        _message: typing.Optional[str] = None,
+    ) -> None:
+        """Exception raised during parallel call as result of exceptions.
+
+        :param command: command
+        :type command: str
+        :param exceptions: Exceptions on connections
+        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
+        :param errors: results with errors
+        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param results: all results
+        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :param expected: expected return codes
+        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :param _message: message override
+        :type _message: typing.Optional[str]
+
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        """
+        warnings.warn("ParallelCallExceptions is deprecated and will be dropped soon", DeprecationWarning)
+        super().__init__(
+            command=command,
+            exceptions=exceptions,
+            errors=errors,
+            results=results,
+            expected=expected,
+            _message=_message,
+        )

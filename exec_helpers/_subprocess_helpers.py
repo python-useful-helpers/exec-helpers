@@ -51,7 +51,11 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
                 proc.kill()
             proc.terminate()
 
-    parent = psutil.Process(pid)
+    try:
+        parent = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        # Process is already closed
+        return
     children: typing.List[psutil.Process] = parent.children(recursive=True)
     child: psutil.Process
     for child in children:

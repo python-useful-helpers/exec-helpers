@@ -18,16 +18,16 @@ from __future__ import annotations
 
 # Local Implementation
 from . import async_api
+from ._helpers import mask_command
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
 from .api import ExecHelper
-from .api import mask_command
 from .exceptions import CalledProcessError
 from .exceptions import ExecCalledProcessError
 from .exceptions import ExecHelperError
 from .exceptions import ExecHelperNoKillError
 from .exceptions import ExecHelperTimeoutError
-from .exceptions import ParallelCallExceptions
+from .exceptions import ParallelCallExceptionsError
 from .exceptions import ParallelCallProcessError
 from .exec_result import ExecResult
 from .proc_enums import ExitCodes
@@ -45,7 +45,7 @@ __all__ = (
     "ExecHelperError",
     "ExecCalledProcessError",
     "CalledProcessError",
-    "ParallelCallExceptions",
+    "ParallelCallExceptionsError",
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",

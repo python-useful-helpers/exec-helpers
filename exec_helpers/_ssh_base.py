@@ -29,6 +29,7 @@ import shlex
 import stat
 import time
 import typing
+import warnings
 
 # External Dependencies
 import paramiko
@@ -51,6 +52,7 @@ from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
+from . import _helpers
 from . import _log_templates
 from . import _ssh_helpers
 from ._ssh_helpers import SSHConfigsDictT
@@ -58,6 +60,7 @@ from ._ssh_helpers import SSHConfigsDictT
 if typing.TYPE_CHECKING:
     # Standard Library
     import socket
+    import types
 
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
@@ -116,6 +119,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: STDIN interface
         :rtype: paramiko.ChannelFile
         """
+        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
         return super().stdin
 
     @property
@@ -135,6 +139,230 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         :rtype: typing.Optional[paramiko.ChannelFile]
         """
         return super().stdout
+
+
+class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsyncResult]):
+    """SSH Execute context."""
+
+    __slots__ = (
+        "__transport",
+        "__get_pty",
+        "__width",
+        "__height",
+        "__timeout",
+        "__sudo_mode",
+        "__auth",
+        "__chan",
+        "__stdout_f",
+        "__stderr_f",
+    )
+
+    def __init__(
+        self,
+        *,
+        transport: paramiko.Transport,
+        command: str,
+        stdin: typing.Optional[bytes] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        timeout: OptionalTimeoutT = None,
+        sudo_mode: bool = False,
+        auth: ssh_auth.SSHAuth,
+        logger: logging.Logger,
+        **kwargs: typing.Any,
+    ) -> None:
+        """Execute async context manager.
+
+        :param transport: Executor instance (low level)
+        :type transport: paramiko.Transport
+        :param command: Command for execution (fully formatted)
+        :type command: str
+        :param stdin: pass STDIN text to the process (fully formatted)
+        :type stdin: bytes
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param timeout: timeout for connection (will be set on channel)
+        :type timeout: typing.Union[int, float, None]
+        :param sudo_mode: use sudo for command execution
+        :type sudo_mode: bool
+        :param logger: instance logger
+        :type logger: logging.Logger
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        """
+        super().__init__(
+            command=command,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            logger=logger,
+            **kwargs,
+        )
+        self.__transport = transport
+        self.__get_pty = get_pty
+        self.__width = width
+        self.__height = height
+        self.__timeout = timeout
+        self.__sudo_mode = sudo_mode
+        self.__auth = auth
+        self.__chan: typing.Optional[paramiko.Channel] = None
+        self.__stdout_f: typing.Optional[paramiko.channel.ChannelFile] = None
+        self.__stderr_f: typing.Optional[paramiko.channel.ChannelFile] = None
+
+    def __repr__(self) -> str:
+        """Debug string.
+
+        :return: reproduce for debug
+        :rtype: str
+        """
+        return (
+            f"<SSHClient().open_execute_context("
+            f"command={self.command!r}, "
+            f"stdin={self.stdin!r}, "
+            f"open_stdout={self.open_stdout!r}, "
+            f"open_stderr={self.open_stderr!r}, "
+            f"get_pty={self.__get_pty!r}, "
+            f"width={self.__width!r}, "
+            f"height={self.__height!r}, "
+            f"timeout={self.__timeout!r}, "
+            f"sudo_mode={self.__sudo_mode!r}, "
+            f"auth={self.__auth!r}, "
+            f"transport={self.__transport!r}, "
+            f"logger={self.logger!r}) "
+            f"at {id(self)}>"
+        )
+
+    @property
+    def get_pty(self) -> bool:
+        """Get PTY for connection.
+
+        :return: PTY should be opened
+        :rtype: bool
+        """
+        return self.__get_pty
+
+    @property
+    def width(self) -> int:
+        """PTY width.
+
+        :return: width in symbols
+        :rtype: int
+        """
+        return self.__width
+
+    @property
+    def height(self) -> int:
+        """PTY height.
+
+        :return: height in symbols
+        :rtype: int
+        """
+        return self.__height
+
+    @property
+    def timeout(self) -> OptionalTimeoutT:
+        """Timeout for connection (will be set on channel).
+
+        :return: connection timeout
+        :rtype: typing.Union[int, float, None]
+        """
+        return self.__timeout
+
+    @property
+    def sudo_mode(self) -> bool:
+        """Use sudo for command execution.
+
+        :return: require sudo
+        :rtype: bool
+        """
+        return self.__sudo_mode
+
+    def __enter__(self) -> SshExecuteAsyncResult:
+        """Context manager enter.
+
+        :return: raw execution information
+        :rtype: SshExecuteAsyncResult
+
+        Command is executed only in context manager to be sure, that everything will be cleaned up properly.
+        """
+        self.__chan = self.__transport.open_session()
+        chan: paramiko.Channel = self.__chan.__enter__()
+        if self.__timeout is not None:
+            chan.settimeout(self.__timeout)
+
+        if self.__get_pty:
+            # Open PTY
+            chan.get_pty(term="vt100", width=self.__width, height=self.__height, width_pixels=0, height_pixels=0)
+
+        self.__stdout_f = chan.makefile("rb")
+        stdout: paramiko.channel.ChannelFile = self.__stdout_f.__enter__()
+        if self.open_stderr:
+            self.__stderr_f = chan.makefile_stderr("rb")
+            stderr: typing.Optional[paramiko.channel.ChannelFile] = self.__stderr_f.__enter__()
+        else:
+            stderr = None
+        _stdin: paramiko.channel.ChannelFile
+        with chan.makefile("wb") as _stdin:
+            started = datetime.datetime.utcnow()
+            if self.__sudo_mode:
+                chan.exec_command(self.command)  # nosec  # Sanitize on caller side
+                if not stdout.channel.closed:
+                    # noinspection PyTypeChecker
+                    self.__auth.enter_password(_stdin)  # type: ignore
+                    _stdin.flush()
+            else:
+                chan.exec_command(self.command)  # nosec  # Sanitize on caller side
+
+            if self.stdin is not None:
+                if not _stdin.channel.closed:
+
+                    _stdin.write(self.stdin)
+                    _stdin.flush()
+                else:
+                    self.logger.warning("STDIN Send failed: closed channel")
+
+        if self.open_stdout:
+            res_stdout: typing.Optional[paramiko.channel.ChannelFile] = stdout
+        else:
+            self.__stdout_f.__exit__(None, None, None)
+            self.__stdout_f = None
+            res_stdout = None
+
+        # noinspection PyArgumentList
+        return SshExecuteAsyncResult(
+            interface=chan,
+            stdin=_stdin,
+            stderr=stderr,
+            stdout=res_stdout,
+            started=started,
+        )
+
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
+        if self.__stdout_f is not None:
+            self.__stdout_f.__exit__(exc_type, exc_val, exc_tb)
+            self.__stdout_f = None
+        if self.__stderr_f is not None:
+            self.__stderr_f.__exit__(exc_type, exc_val, exc_tb)
+            self.__stderr_f = None
+        if self.__chan is not None:
+            self.__chan.__exit__(exc_type, exc_val, exc_tb)
+            self.__chan = None
 
 
 class _SudoContext(typing.ContextManager[None]):
@@ -159,7 +387,12 @@ class _SudoContext(typing.ContextManager[None]):
         if self.__enforce is not None:
             self.__ssh.sudo_mode = self.__enforce
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
         self.__ssh.sudo_mode = self.__sudo_status
 
 
@@ -185,7 +418,12 @@ class _KeepAliveContext(typing.ContextManager[None]):
         self.__keepalive_period = self.__ssh.keepalive_period
         self.__ssh.keepalive_period = self.__enforce
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
         # Exit before releasing!
         self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
         self.__ssh.keepalive_period = self.__keepalive_period
@@ -470,8 +708,8 @@ class SSHClientBase(api.ExecHelper):
 
     @tenacity.retry(
         retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
-        stop=tenacity.stop.stop_after_attempt(3),  # type: ignore
-        wait=tenacity.wait.wait_fixed(3),  # type: ignore
+        stop=tenacity.stop.stop_after_attempt(3),
+        wait=tenacity.wait.wait_fixed(3),
         reraise=True,
     )
     def __connect(self) -> None:
@@ -602,7 +840,12 @@ class SSHClientBase(api.ExecHelper):
         # noinspection PyTypeChecker
         return super().__enter__()
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
         """Exit context manager.
 
         .. versionchanged:: 1.0.0 disconnect enforced on close
@@ -751,6 +994,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
         chan: paramiko.Channel = self._ssh_transport.open_session()
         if timeout is not None:
             chan.settimeout(timeout)
@@ -883,6 +1127,62 @@ class SSHClientBase(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
+    def open_execute_context(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        *,
+        stdin: OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
+        get_pty: bool = False,
+        width: int = 80,
+        height: int = 24,
+        timeout: OptionalTimeoutT = None,
+        **kwargs: typing.Any,
+    ) -> _SSHExecuteContext:
+        """Get execution context manager.
+
+        :param command: Command for execution
+        :type command: typing.Union[str, typing.Iterable[str]]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
+        :param get_pty: Get PTY for connection
+        :type get_pty: bool
+        :param width: PTY width
+        :type width: int
+        :param height: PTY height
+        :type height: int
+        :param timeout: Timeout for **connection open**.
+        :type timeout: typing.Union[int, float, None]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execute context
+        :rtype: _SSHExecuteContext
+        .. versionadded:: 8.0.0
+        """
+        return _SSHExecuteContext(
+            transport=self._ssh_transport,
+            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
+            stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            get_pty=get_pty,
+            width=width,
+            height=height,
+            timeout=timeout,
+            sudo_mode=self.sudo_mode,
+            auth=self.auth,
+            logger=self.logger,
+            **kwargs,
+        )
+
     def execute(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
@@ -893,6 +1193,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -915,6 +1216,8 @@ class SSHClientBase(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -930,6 +1233,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
+        .. versionchanged:: 8.0.0 chroot path exposed.
         """
         return super().execute(
             command=command,
@@ -939,6 +1243,7 @@ class SSHClientBase(api.ExecHelper):
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             get_pty=get_pty,
             width=width,
             height=height,
@@ -955,6 +1260,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -977,6 +1283,8 @@ class SSHClientBase(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1354,6 +1662,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
         exception_class: typing.Type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
@@ -1377,6 +1686,8 @@ class SSHClientBase(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -1389,7 +1700,7 @@ class SSHClientBase(api.ExecHelper):
         :return: dictionary {(hostname, port): result}
         :rtype: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]
         :raises ParallelCallProcessError: Unexpected any code at lest on one target
-        :raises ParallelCallExceptions: At lest one exception raised during execution (including timeout)
+        :raises ParallelCallExceptionsError: At lest one exception raised during execution (including timeout)
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
@@ -1411,32 +1722,28 @@ class SSHClientBase(api.ExecHelper):
                 command=cmd,
                 log_mask_re=log_mask_re,
                 log_level=log_level,
-                **kwargs,
-            )
-
-            async_result: SshExecuteAsyncResult = remote._execute_async(
-                cmd,
-                stdin=stdin,
-                log_mask_re=log_mask_re,
-                open_stdout=open_stdout,
-                open_stderr=open_stderr,
-                timeout=timeout,
+                chroot_path=chroot_path,
                 **kwargs,
             )
             # pylint: enable=protected-access
 
-            done = async_result.interface.status_event.wait(timeout)
+            with remote.open_execute_context(
+                cmd,
+                stdin=stdin,
+                open_stdout=open_stdout,
+                open_stderr=open_stderr,
+                chroot_path=chroot_path,
+                timeout=timeout,
+                **kwargs,
+            ) as async_result:
+                done = async_result.interface.status_event.wait(timeout)
 
-            res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
-            res.read_stdout(src=async_result.stdout)
-            res.read_stderr(src=async_result.stderr)
-            if done:
-                res.exit_code = async_result.interface.recv_exit_status()
-
-            async_result.interface.close()
-            if done:
-                return res
-            async_result.interface.status_event.set()
+                res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
+                res.read_stdout(src=async_result.stdout)
+                res.read_stderr(src=async_result.stderr)
+                if done:
+                    res.exit_code = async_result.interface.recv_exit_status()
+                    return res
             result.set_timestamp()
 
             wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=res, timeout=timeout)
@@ -1445,7 +1752,7 @@ class SSHClientBase(api.ExecHelper):
 
         prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        cmd = cls._cmd_to_string(command)
+        cmd = _helpers.cmd_to_string(command)
 
         results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
         errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
@@ -1472,7 +1779,7 @@ class SSHClientBase(api.ExecHelper):
                 raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise
-            raise exceptions.ParallelCallExceptions(
+            raise exceptions.ParallelCallExceptionsError(
                 command=cmd,
                 exceptions=raised_exceptions,
                 errors=errors,

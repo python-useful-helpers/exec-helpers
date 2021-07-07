@@ -21,7 +21,7 @@ from unittest import mock
 import paramiko
 import pytest
 
-# Exec-Helpers Implementation
+# Package Implementation
 import exec_helpers
 
 

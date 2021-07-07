@@ -699,7 +699,7 @@ class ExecResult:
         indent: int = 0,
         no_indent_start: bool = False,
     ) -> str:
-        """Make human readable representation of object.
+        """Make human-readable representation of object.
 
         :param log_wrap: logwrap instance
         :type log_wrap: logwrap.PrettyRepr

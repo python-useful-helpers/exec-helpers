@@ -26,7 +26,7 @@ from unittest import mock
 # External Dependencies
 import paramiko
 
-# Exec-Helpers Implementation
+# Package Implementation
 import exec_helpers
 
 host = "127.0.0.1"

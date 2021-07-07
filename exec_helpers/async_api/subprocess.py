@@ -17,7 +17,7 @@
 .. versionadded:: 3.0.0
 """
 
-__all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
+from __future__ import annotations
 
 # Standard Library
 import asyncio
@@ -27,6 +27,7 @@ import errno
 import logging
 import os
 import typing
+import warnings
 
 # Package Implementation
 from exec_helpers import constants
@@ -49,6 +50,12 @@ from exec_helpers.subprocess import EnvT
 from .. import _log_templates
 from .. import _subprocess_helpers
 
+if typing.TYPE_CHECKING:
+    # Standard Library
+    import types
+
+__all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
+
 
 # noinspection PyTypeHints,PyTypeChecker
 class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
@@ -69,16 +76,17 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
     # pylint: enable=no-member
 
     @property
-    def stdin(self) -> "typing.Optional[asyncio.StreamWriter]":  # type: ignore
+    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
         :rtype: typing.Optional[asyncio.StreamWriter]
         """
+        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
         return super().stdin  # type: ignore
 
     @property
-    def stderr(self) -> "typing.Optional[typing.AsyncIterable[bytes]]":  # type: ignore
+    def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -87,13 +95,148 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
         return super().stderr  # type: ignore
 
     @property
-    def stdout(self) -> "typing.Optional[typing.AsyncIterable[bytes]]":  # type: ignore
+    def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
         :rtype: typing.Optional[typing.AsyncIterable[bytes]]
         """
         return super().stdout  # type: ignore
+
+
+class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[SubprocessExecuteAsyncResult]):
+    """Subprocess Execute context."""
+
+    __slots__ = ("__cwd", "__env", "__process")
+
+    def __init__(
+        self,
+        *,
+        command: str,
+        stdin: typing.Optional[bytes] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: CwdT = None,
+        env: EnvT = None,
+        logger: logging.Logger,
+        **kwargs: typing.Any,
+    ) -> None:
+        """Subprocess Execute context.
+
+        :param command: Command for execution (fully formatted)
+        :type command: str
+        :param stdin: pass STDIN text to the process (fully formatted)
+        :type stdin: bytes
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param logger: instance logger
+        :type logger: logging.Logger
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        """
+        super().__init__(
+            command=command,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            logger=logger,
+            **kwargs,
+        )
+        self.__cwd = cwd
+        self.__env = env
+        self.__process: typing.Optional[asyncio.subprocess.Process] = None  # pylint: disable=no-member
+
+    def __repr__(self) -> str:
+        """Debug string.
+
+        :return: reproduce for debug
+        :rtype: str
+        """
+        return (
+            f"<Subprocess().open_execute_context("
+            f"command={self.command!r}, "
+            f"stdin={self.stdin!r}, "
+            f"open_stdout={self.open_stdout!r}, "
+            f"open_stderr={self.open_stderr!r}, "
+            f"cwd={self.__cwd!r}, "
+            f"env={self.__env!r}, "
+            f"logger={self.logger!r}) "
+            f"at {id(self)}>"
+        )
+
+    async def __aenter__(self) -> SubprocessExecuteAsyncResult:
+        """Context manager enter.
+
+        :return: raw execution information
+        :rtype: SshExecuteAsyncResult
+        :raises OSError: stdin write failed/stdin close failed
+
+        Command is executed only in context manager to be sure, that everything will be cleaned up properly.
+        """
+        started = datetime.datetime.utcnow()
+
+        self.__process = await asyncio.create_subprocess_shell(
+            cmd=self.command,
+            stdout=asyncio.subprocess.PIPE if self.open_stdout else asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE if self.open_stderr else asyncio.subprocess.DEVNULL,
+            stdin=asyncio.subprocess.PIPE,
+            cwd=self.__cwd,
+            env=self.__env,
+            universal_newlines=False,
+            **_subprocess_helpers.subprocess_kw,
+        )
+        process = self.__process
+
+        if self.stdin is not None:
+            if process.stdin is None:
+                self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
+            else:
+                try:
+                    process.stdin.write(self.stdin)
+                    await process.stdin.drain()
+                except BrokenPipeError:
+                    self.logger.warning("STDIN Send failed: broken PIPE")
+                except ConnectionResetError:
+                    self.logger.warning("STDIN Send failed: closed PIPE")
+                try:
+                    process.stdin.close()
+                except BrokenPipeError:
+                    self.logger.warning("STDIN Send failed: broken PIPE")
+                except OSError as exc:
+                    if exc.errno != errno.EINVAL:
+                        _subprocess_helpers.kill_proc_tree(process.pid)
+                        process.kill()
+                        raise
+
+        # noinspection PyArgumentList
+        return SubprocessExecuteAsyncResult(
+            interface=process,
+            stdin=None,
+            stderr=process.stderr,
+            stdout=process.stdout,
+            started=started,
+        )
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
+        process = self.__process
+        if process is not None:
+            _subprocess_helpers.kill_proc_tree(process.pid)
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass  # process already closed
+            self.__process = None
 
 
 class Subprocess(api.ExecHelper):
@@ -122,7 +265,7 @@ class Subprocess(api.ExecHelper):
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
 
-    async def __aenter__(self) -> "Subprocess":
+    async def __aenter__(self) -> Subprocess:
         """Async context manager.
 
         :return: exec helper instance with async entered context manager
@@ -131,14 +274,14 @@ class Subprocess(api.ExecHelper):
         # noinspection PyTypeChecker
         return await super().__aenter__()
 
-    def __enter__(self) -> "Subprocess":  # pylint: disable=useless-super-delegation
+    def __enter__(self) -> Subprocess:  # pylint: disable=useless-super-delegation
         """Get context manager.
 
         :return: exec helper instance with entered context manager
         :rtype: Subprocess
         """
         # noinspection PyTypeChecker
-        return super().__enter__()
+        return super().__enter__()  # type: ignore  # pylint: disable=no-member
 
     async def _exec_command(  # type: ignore
         self,
@@ -171,8 +314,8 @@ class Subprocess(api.ExecHelper):
         :return: Execution result
         :rtype: ExecResult
         :raises OSError: exception during process kill (and not regarding to already closed process)
-        :raises ExecHelperTimeoutError: Timeout exceeded
         :raises ExecHelperNoKillError: Process not dies on SIGTERM & SIGKILL
+        :raises ExecHelperTimeoutError: Timeout exceeded
         """
 
         async def poll_stdout() -> None:
@@ -188,8 +331,8 @@ class Subprocess(api.ExecHelper):
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
-        stdout_task: "asyncio.Task[None]" = asyncio.create_task(poll_stdout())
-        stderr_task: "asyncio.Task[None]" = asyncio.create_task(poll_stderr())
+        stdout_task: asyncio.Task[None] = asyncio.create_task(poll_stdout())
+        stderr_task: asyncio.Task[None] = asyncio.create_task(poll_stderr())
 
         try:
             # Wait real timeout here
@@ -199,7 +342,7 @@ class Subprocess(api.ExecHelper):
         except asyncio.TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_signal: "typing.Optional[int]" = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
+            exit_signal: typing.Optional[int] = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_signal is None:
                 raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
             result.exit_code = exit_signal
@@ -213,14 +356,14 @@ class Subprocess(api.ExecHelper):
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
 
     # noinspection PyMethodOverriding
-    async def _execute_async(  # type: ignore  # pylint: disable=arguments-differ
+    async def _execute_async(  # pylint: disable=arguments-differ
         self,
         command: str,
         *,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: "typing.Optional[str]" = None,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -259,6 +402,7 @@ class Subprocess(api.ExecHelper):
                 )
         :raises OSError: impossible to process STDIN
         """
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
         started = datetime.datetime.utcnow()
 
         if env_patch is not None:
@@ -278,14 +422,11 @@ class Subprocess(api.ExecHelper):
         )
 
         if stdin is None:
-            process_stdin: "typing.Optional[asyncio.StreamWriter]" = process.stdin
+            process_stdin: typing.Optional[asyncio.StreamWriter] = process.stdin
         else:
-            if isinstance(stdin, str):
-                stdin = stdin.encode(encoding="utf-8")
-            elif isinstance(stdin, bytearray):
-                stdin = bytes(stdin)
+            stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
             try:
-                process.stdin.write(stdin)  # type: ignore
+                process.stdin.write(stdin_str)  # type: ignore
                 await process.stdin.drain()  # type: ignore
             except OSError as exc:
                 if exc.errno == errno.EINVAL:
@@ -305,6 +446,7 @@ class Subprocess(api.ExecHelper):
                 if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
                     pass  # PIPE already closed
                 else:
+                    _subprocess_helpers.kill_proc_tree(process.pid)
                     process.kill()
                     raise
 
@@ -319,7 +461,59 @@ class Subprocess(api.ExecHelper):
             started=started,
         )
 
-    async def execute(  # type: ignore  # pylint: disable=arguments-differ
+    def open_execute_context(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        *,
+        stdin: OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
+        cwd: CwdT = None,
+        env: EnvT = None,
+        env_patch: EnvT = None,
+        **kwargs: typing.Any,
+    ) -> _SubprocessExecuteContext:
+        """Get execution context manager.
+
+        :param command: Command for execution
+        :type command: typing.Union[str, typing.Iterable[str]]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execute context
+        :rtype: _SubprocessExecuteContext
+        .. versionadded:: 8.0.0
+        """
+        if env_patch is not None:
+            # make mutable copy
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
+            env.update(env_patch)  # type: ignore
+        return _SubprocessExecuteContext(
+            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
+            stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            logger=self.logger,
+            **kwargs,
+        )
+
+    async def execute(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,
@@ -329,6 +523,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -351,6 +546,8 @@ class Subprocess(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
@@ -366,6 +563,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
+        .. versionchanged:: 8.0.0 chroot path exposed.
         """
         return await super().execute(
             command=command,
@@ -375,13 +573,14 @@ class Subprocess(api.ExecHelper):
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             cwd=cwd,
             env=env,
             env_patch=env_patch,
             **kwargs,
         )
 
-    async def __call__(  # type: ignore
+    async def __call__(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -391,6 +590,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -413,6 +613,8 @@ class Subprocess(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
@@ -436,13 +638,14 @@ class Subprocess(api.ExecHelper):
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             cwd=cwd,
             env=env,
             env_patch=env_patch,
             **kwargs,
         )
 
-    async def check_call(  # type: ignore  # pylint: disable=arguments-differ
+    async def check_call(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,
@@ -521,7 +724,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    async def check_stderr(  # type: ignore  # pylint: disable=arguments-differ
+    async def check_stderr(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,

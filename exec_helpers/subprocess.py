@@ -28,6 +28,7 @@ import os
 import pathlib
 import subprocess  # nosec  # Expected usage
 import typing
+import warnings
 
 # Package Implementation
 from exec_helpers import api
@@ -47,6 +48,10 @@ from exec_helpers.api import OptionalTimeoutT
 from . import _log_templates
 from . import _subprocess_helpers
 
+if typing.TYPE_CHECKING:
+    # Standard Library
+    import types
+
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT", "CwdT")
 
 EnvT = typing.Optional[
@@ -63,7 +68,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> subprocess.Popen[bytes]:  # noqa: E1136
+    def interface(self) -> subprocess.Popen[bytes]:  # noqa: E1136  # pylint: disable=unsubscriptable-object
         """Override original NamedTuple with proper typing.
 
         :return: control interface
@@ -78,6 +83,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: STDIN interface
         :rtype: typing.Optional[typing.IO[bytes]]
         """
+        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
         return super().stdin
 
     @property
@@ -97,6 +103,143 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         :rtype: typing.Optional[typing.IO[bytes]]
         """
         return super().stdout
+
+
+class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[SubprocessExecuteAsyncResult]):
+    """Subprocess Execute context."""
+
+    __slots__ = ("__cwd", "__env", "__process")
+
+    def __init__(
+        self,
+        *,
+        command: str,
+        stdin: typing.Optional[bytes] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        cwd: CwdT = None,
+        env: EnvT = None,
+        logger: logging.Logger,
+        **kwargs: typing.Any,
+    ) -> None:
+        """Subprocess Execute context.
+
+        :param command: Command for execution (fully formatted)
+        :type command: str
+        :param stdin: pass STDIN text to the process (fully formatted)
+        :type stdin: bytes
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param logger: instance logger
+        :type logger: logging.Logger
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        """
+        super().__init__(
+            command=command,
+            stdin=stdin,
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            logger=logger,
+            **kwargs,
+        )
+        self.__cwd = cwd
+        self.__env = env
+        self.__process: typing.Optional[subprocess.Popen[bytes]] = None
+
+    def __repr__(self) -> str:
+        """Debug string.
+
+        :return: reproduce for debug
+        :rtype: str
+        """
+        return (
+            f"<Subprocess().open_execute_context("
+            f"command={self.command!r}, "
+            f"stdin={self.stdin!r}, "
+            f"open_stdout={self.open_stdout!r}, "
+            f"open_stderr={self.open_stderr!r}, "
+            f"cwd={self.__cwd!r}, "
+            f"env={self.__env!r}, "
+            f"logger={self.logger!r}) "
+            f"at {id(self)}>"
+        )
+
+    def __enter__(self) -> SubprocessExecuteAsyncResult:
+        """Context manager enter.
+
+        :return: raw execution information
+        :rtype: SshExecuteAsyncResult
+        :raises OSError: stdin write failed/stdin close failed
+
+        Command is executed only in context manager to be sure, that everything will be cleaned up properly.
+        """
+        started = datetime.datetime.utcnow()
+
+        self.__process = subprocess.Popen(
+            args=self.command,
+            stdout=subprocess.PIPE if self.open_stdout else subprocess.DEVNULL,
+            stderr=subprocess.PIPE if self.open_stderr else subprocess.DEVNULL,
+            stdin=subprocess.PIPE,
+            shell=True,
+            cwd=self.__cwd,
+            env=self.__env,
+            universal_newlines=False,
+            **_subprocess_helpers.subprocess_kw,
+        )
+        process = self.__process.__enter__()
+
+        if self.stdin is not None:
+            if process.stdin is None:
+                self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
+            else:
+                try:
+                    process.stdin.write(self.stdin)
+                except BrokenPipeError:
+                    self.logger.warning("STDIN Send failed: broken PIPE")
+                except OSError as exc:
+                    if exc.errno == errno.EINVAL:
+                        # bpo-19612, bpo-30418: On Windows, stdin.write() fails
+                        # with EINVAL if the child process exited or if the child
+                        # process is still running but closed the pipe.
+                        self.logger.warning("STDIN Send failed: closed PIPE")
+                    else:
+                        _subprocess_helpers.kill_proc_tree(process.pid)
+                        process.kill()
+                        raise
+                try:
+                    process.stdin.close()
+                except BrokenPipeError:
+                    self.logger.warning("STDIN Send failed: broken PIPE")
+                except OSError as exc:
+                    if exc.errno != errno.EINVAL:
+                        process.kill()
+                        raise
+
+        # noinspection PyArgumentList
+        return SubprocessExecuteAsyncResult(
+            interface=process,
+            stdin=None,
+            stderr=process.stderr,
+            stdout=process.stdout,
+            started=started,
+        )
+
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
+        if self.__process is not None:
+            self.__process.__exit__(exc_type, exc_val, exc_tb)
+            self.__process = None
 
 
 class Subprocess(api.ExecHelper):
@@ -277,6 +420,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
         started = datetime.datetime.utcnow()
 
         if env_patch is not None:
@@ -337,6 +481,58 @@ class Subprocess(api.ExecHelper):
             started=started,
         )
 
+    def open_execute_context(  # pylint: disable=arguments-differ
+        self,
+        command: str,
+        *,
+        stdin: OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
+        cwd: CwdT = None,
+        env: EnvT = None,
+        env_patch: EnvT = None,
+        **kwargs: typing.Any,
+    ) -> _SubprocessExecuteContext:
+        """Get execution context manager.
+
+        :param command: Command for execution
+        :type command: typing.Union[str, typing.Iterable[str]]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
+        :param cwd: Sets the current directory before the child is executed.
+        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :param env: Defines the environment variables for the new process.
+        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param env_patch: Defines the environment variables to ADD for the new process.
+        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        :return: Execute context
+        :rtype: _SubprocessExecuteContext
+        .. versionadded:: 8.0.0
+        """
+        if env_patch is not None:
+            # make mutable copy
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
+            env.update(env_patch)  # type: ignore
+        return _SubprocessExecuteContext(
+            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
+            stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
+            open_stdout=open_stdout,
+            open_stderr=open_stderr,
+            cwd=cwd,
+            env=env,
+            logger=self.logger,
+            **kwargs,
+        )
+
     def execute(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
@@ -347,6 +543,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -369,6 +566,8 @@ class Subprocess(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
@@ -384,6 +583,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
+        .. versionchanged:: 8.0.0 chroot path exposed.
         """
         return super().execute(
             command=command,
@@ -393,6 +593,7 @@ class Subprocess(api.ExecHelper):
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             cwd=cwd,
             env=env,
             env_patch=env_patch,
@@ -409,6 +610,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -431,6 +633,8 @@ class Subprocess(api.ExecHelper):
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
         :param env: Defines the environment variables for the new process.
@@ -454,6 +658,7 @@ class Subprocess(api.ExecHelper):
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             cwd=cwd,
             env=env,
             env_patch=env_patch,

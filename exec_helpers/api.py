@@ -25,8 +25,6 @@ import abc
 import datetime
 import logging
 import pathlib
-import re
-import shlex
 import threading
 import typing
 
@@ -38,10 +36,16 @@ from exec_helpers import proc_enums
 from exec_helpers.exec_result import OptionalStdinT
 from exec_helpers.proc_enums import ExitCodeT
 
+# Local Implementation
+from . import _helpers
+
+if typing.TYPE_CHECKING:
+    # Standard Library
+    import types
+
 __all__ = (
     "ExecHelper",
     "ExecuteAsyncResult",
-    "mask_command",
     "CalledProcessErrorSubClassT",
     "OptionalStdinT",
     "OptionalTimeoutT",
@@ -69,6 +73,96 @@ class ExecuteAsyncResult(typing.NamedTuple):
     stderr: typing.Optional[typing.Any]
     stdout: typing.Optional[typing.Any]
     started: datetime.datetime
+
+
+class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
+    """Execute context manager."""
+
+    __slots__ = (
+        "__command",
+        "__stdin",
+        "__open_stdout",
+        "__open_stderr",
+        "__logger",
+    )
+
+    def __init__(
+        self,
+        *,
+        command: str,
+        stdin: typing.Optional[bytes] = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        logger: logging.Logger,
+        **kwargs: typing.Any,
+    ) -> None:
+        """Execute async context manager.
+
+        :param command: Command for execution (fully formatted)
+        :type command: str
+        :param stdin: pass STDIN text to the process (fully formatted)
+        :type stdin: bytes
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param logger: instance logger
+        :type logger: logging.Logger
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+        """
+        self.__command = command
+        self.__stdin = stdin
+        self.__open_stdout = open_stdout
+        self.__open_stderr = open_stderr
+        self.__logger = logger
+        if kwargs:
+            self.__logger.warning(f"Unexpected arguments: {kwargs!r}.", stack_info=True)
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Instance logger.
+
+        :return: logger
+        :rtype: logging.Logger
+        """
+        return self.__logger
+
+    @property
+    def command(self) -> str:
+        """Command for execution (fully formatted).
+
+        :return: command as string
+        :rtype: str
+        """
+        return self.__command
+
+    @property
+    def stdin(self) -> typing.Optional[bytes]:
+        """Pass STDIN text to the process (fully formatted).
+
+        :return: pass STDIN text to the process
+        :rtype: typing.Optional[str]
+        """
+        return self.__stdin
+
+    @property
+    def open_stdout(self) -> bool:
+        """Open STDOUT stream for read.
+
+        :return: Open STDOUT for handling
+        :rtype: bool
+        """
+        return self.__open_stdout
+
+    @property
+    def open_stderr(self) -> bool:
+        """Open STDERR stream for read.
+
+        :return: Open STDERR for handling
+        :rtype: bool
+        """
+        return self.__open_stderr
 
 
 # noinspection PyProtectedMember
@@ -105,40 +199,20 @@ class _ChRootContext(typing.ContextManager[None]):
         self._chroot_status = self._conn._chroot_path
         self._conn._chroot_path = self._path
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
         self._conn._chroot_path = self._chroot_status
         self._conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
-
-
-def mask_command(text: str, rules: str) -> str:
-    """Mask part of text using rules.
-
-    :param text: source text
-    :type text: str
-    :param rules: regex rules to mask.
-    :type rules: str
-    :return: source with all MATCHED groups replaced by '<*masked*>'
-    :rtype: str
-    """
-    masked: typing.List[str] = []
-
-    # places to exclude
-    prev = 0
-    for match in re.finditer(rules, text):
-        for idx, _ in enumerate(match.groups(), start=1):
-            start, end = match.span(idx)
-            masked.append(text[prev:start])
-            masked.append("<*masked*>")
-            prev = end
-    masked.append(text[prev:])
-
-    return "".join(masked)
 
 
 class ExecHelper(
     typing.Callable[..., exec_result.ExecResult],  # type: ignore
     typing.ContextManager["ExecHelper"],
-    metaclass=abc.ABCMeta,
+    abc.ABC,
 ):
     """ExecHelper global API.
 
@@ -236,7 +310,12 @@ class ExecHelper(
         self.lock.acquire()
         return self
 
-    def __exit__(self, exc_type: typing.Any, exc_val: typing.Any, exc_tb: typing.Any) -> None:
+    def __exit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_val: typing.Optional[BaseException],
+        exc_tb: typing.Optional[types.TracebackType],
+    ) -> None:
         """Context manager usage."""
         self.lock.release()
 
@@ -254,27 +333,7 @@ class ExecHelper(
         .. versionadded:: 1.2.0
         """
 
-        result: str = cmd.rstrip()
-
-        if self.log_mask_re is not None:
-            result = mask_command(result, self.log_mask_re)
-        if log_mask_re is not None:
-            result = mask_command(result, log_mask_re)
-
-        return result
-
-    @staticmethod
-    def _cmd_to_string(command: CommandT) -> str:
-        """Convert command to string for usage with shell.
-
-        :param command: original command.
-        :type command: typing.Union[str, typing.Iterable[str]]
-        :return: command as single string
-        :rtype: str
-        """
-        if isinstance(command, str):
-            return command
-        return " ".join(shlex.quote(elem) for elem in command)
+        return _helpers.mask_command(cmd.rstrip(), self.log_mask_re, log_mask_re)
 
     def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
         """Prepare command: cower chroot and other cases.
@@ -286,14 +345,8 @@ class ExecHelper(
         :return: final command, includes chroot, if required
         :rtype: str
         """
-        target_path: typing.Optional[str] = chroot_path if chroot_path else self._chroot_path
-        if target_path and target_path != "/":
-            chroot_dst: str = shlex.quote(target_path.strip())
-            quoted_command = shlex.quote(cmd)
-            return f'chroot {chroot_dst} sh -c {shlex.quote(f"eval {quoted_command}")}'
-        return cmd
+        return _helpers.chroot_command(cmd, chroot_path=chroot_path if chroot_path else self._chroot_path)
 
-    @abc.abstractmethod
     def _execute_async(
         self,
         command: str,
@@ -368,6 +421,7 @@ class ExecHelper(
         :type kwargs: typing.Any
         :return: Execution result
         :rtype: ExecResult
+        :raises OSError: exception during process kill (and not regarding already closed process)
         :raises ExecHelperTimeoutError: Timeout exceeded
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
@@ -388,6 +442,35 @@ class ExecHelper(
 
         self.logger.log(level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n")
 
+    @abc.abstractmethod
+    def open_execute_context(
+        self,
+        command: str,
+        *,
+        stdin: OptionalStdinT = None,
+        open_stdout: bool = True,
+        open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
+        **kwargs: typing.Any,
+    ) -> ExecuteContext:
+        """Get execution context manager.
+
+        :param command: Command for execution
+        :type command: typing.Union[str, typing.Iterable[str]]
+        :param stdin: pass STDIN text to the process
+        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param open_stdout: open STDOUT stream for read
+        :type open_stdout: bool
+        :param open_stderr: open STDERR stream for read
+        :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
+        :param kwargs: additional parameters for call.
+        :type kwargs: typing.Any
+
+        .. versionadded:: 8.0.0
+        """
+
     def execute(
         self,
         command: CommandT,
@@ -398,6 +481,7 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -417,6 +501,8 @@ class ExecHelper(
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -426,34 +512,34 @@ class ExecHelper(
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
+        .. versionchanged:: 8.0.0 chroot path exposed.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        cmd = self._cmd_to_string(command)
+        cmd = _helpers.cmd_to_string(command)
         self._log_command_execute(
             command=cmd,
             log_mask_re=log_mask_re,
             log_level=log_level,
+            chroot_path=chroot_path,
             **kwargs,
         )
-        async_result: ExecuteAsyncResult = self._execute_async(
+        with self.open_execute_context(
             cmd,
-            verbose=verbose,
-            log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             **kwargs,
-        )
-
-        result: exec_result.ExecResult = self._exec_command(
-            command=cmd,
-            async_result=async_result,
-            timeout=timeout,
-            verbose=verbose,
-            log_mask_re=log_mask_re,
-            stdin=stdin,
-            **kwargs,
-        )
+        ) as async_result:
+            result: exec_result.ExecResult = self._exec_command(
+                command=cmd,
+                async_result=async_result,
+                timeout=timeout,
+                verbose=verbose,
+                log_mask_re=log_mask_re,
+                stdin=stdin,
+                **kwargs,
+            )
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
@@ -467,6 +553,7 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
+        chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -486,6 +573,8 @@ class ExecHelper(
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param chroot_path: chroot path override
+        :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -502,6 +591,7 @@ class ExecHelper(
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
+            chroot_path=chroot_path,
             **kwargs,
         )
 
@@ -731,10 +821,4 @@ class ExecHelper(
         :rtype: bytes
         :raises TypeError: unexpected source type.
         """
-        if isinstance(src, bytes):
-            return src
-        if isinstance(src, bytearray):
-            return bytes(src)
-        if isinstance(src, str):
-            return src.encode("utf-8")
-        raise TypeError(f"{src!r} has unexpected type: not conform to Union[str, bytes, bytearray]")  # pragma: no cover
+        return _helpers.string_bytes_bytearray_as_bytes(src)
