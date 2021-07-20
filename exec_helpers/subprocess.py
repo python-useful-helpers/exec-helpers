@@ -63,7 +63,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> subprocess.Popen[bytes]:  # pylint: disable=unsubscriptable-object
+    def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
         :return: control interface
