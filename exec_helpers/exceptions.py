@@ -272,7 +272,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         self.expected: typing.Sequence[ExitCodeT] = prep_expected
 
 
-class ParallelCallExceptions(ParallelCallProcessError):
+class ParallelCallExceptions(ParallelCallProcessError):  # noqa: N818
     """Exception raised during parallel call as result of exceptions."""
 
     __slots__ = ("cmd", "exceptions")

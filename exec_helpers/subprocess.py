@@ -63,7 +63,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> subprocess.Popen[bytes]:
+    def interface(self) -> subprocess.Popen[bytes]:  # noqa: E1136
         """Override original NamedTuple with proper typing.
 
         :return: control interface
