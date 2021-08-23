@@ -18,7 +18,6 @@ from __future__ import annotations
 
 # Standard Library
 import typing
-import warnings
 
 # Package Implementation
 from exec_helpers import proc_enums
@@ -320,44 +319,75 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         self.exceptions: typing.Dict[typing.Tuple[str, int], Exception] = exceptions
 
 
-class ParallelCallExceptions(ParallelCallExceptionsError):  # noqa: N818
-    """Exception raised during parallel call as result of exceptions."""
+ParallelCallExceptions = ParallelCallExceptionsError  # noqa: N818
 
-    __slots__ = ()
+
+class StopExecution(Exception):  # noqa:N818
+    """Stop execution without waiting for exit code."""
 
     def __init__(
         self,
-        command: str,
-        exceptions: typing.Dict[typing.Tuple[str, int], Exception],
-        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
-        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
-        *,
-        _message: typing.Optional[str] = None,
+        trigger_line: bytes,
+        result: exec_result.ExecResult,
+        message: str = "StopExecution raised",
     ) -> None:
-        """Exception raised during parallel call as result of exceptions.
+        self.__trigger_line = trigger_line
+        self.__result = result
+        super().__init__(message)
 
-        :param command: command
-        :type command: str
-        :param exceptions: Exceptions on connections
-        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
-        :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
-        :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
-        :param _message: message override
-        :type _message: typing.Optional[str]
+    @property
+    def trigger_line(self) -> bytes:
+        """Trigger line for exception.
 
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        :return: original line triggered StopExecution as bytes
+        :rtype: bytes
         """
-        warnings.warn("ParallelCallExceptions is deprecated and will be dropped soon", DeprecationWarning)
+        return self.__trigger_line
+
+    @property
+    def trigger_string(self) -> str:
+        """Decoded trigger line for exception.
+
+        :return: original line triggered StopExecution as str
+        :rtype: str
+        """
+        return self.__trigger_line.decode("utf-8", errors="backslashreplace")
+
+    @property
+    def result(self) -> exec_result.ExecResult:
+        """Execution result object.
+
+        :return: execution result object
+        :rtype: exec_result.ExecResult
+        """
+        return self.__result
+
+
+class StopExecutionGraceful(StopExecution):  # noqa:N818
+    """Stop execution without raising exception."""
+
+    def __init__(
+        self,
+        trigger_line: bytes,
+        result: exec_result.ExecResult,
+    ) -> None:
         super().__init__(
-            command=command,
-            exceptions=exceptions,
-            errors=errors,
-            results=results,
-            expected=expected,
-            _message=_message,
+            trigger_line=trigger_line,
+            result=result,
+            message="Graceful early stop of execution.",
+        )
+
+
+class StopExecutionError(StopExecution, ExecHelperError):
+    """Stop execution and raise exception."""
+
+    def __init__(
+        self,
+        trigger_line: bytes,
+        result: exec_result.ExecResult,
+    ) -> None:
+        super().__init__(
+            trigger_line=trigger_line,
+            result=result,
+            message="Unexpected command output caused stop of execution.",
         )
