@@ -17,9 +17,51 @@
 .. versionadded:: 3.0.0
 """
 
-__all__ = ("ExecHelper", "ExecResult", "Subprocess")
+# noinspection PyUnresolvedReferences
+__all__ = (
+    # pylint: disable=undefined-all-variable
+    # lazy load
+    # API
+    "ExecHelper",
+    "ExecResult",
+    # Expensive
+    "Subprocess",
+)
 
-# Local Implementation
-from .api import ExecHelper
-from .exec_result import ExecResult
-from .subprocess import Subprocess  # nosec  # Expected
+# Standard Library
+import importlib
+import typing
+import warnings
+
+__locals: typing.Dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
+
+__lazy_load_modules: typing.Sequence[str] = ()
+
+__lazy_load_parent_modules: typing.Dict[str, str] = {
+    "Subprocess": "subprocess",
+    # API
+    "ExecResult": "exec_result",
+    "ExecHelper": "api",
+}
+
+_deprecated: typing.Dict[str, str] = {}
+
+
+def __getattr__(name: str) -> typing.Any:
+    """Get attributes lazy.
+
+    :return: attribute by name
+    :raises AttributeError: attribute is not defined for lazy load
+    """
+    if name in _deprecated:
+        warnings.warn(f"{name} is deprecated in favor of {_deprecated[name]}", DeprecationWarning)
+    if name in __lazy_load_modules:
+        mod = importlib.import_module(f"{__package__}.{name}")
+        __locals[name] = mod
+        return mod
+    if name in __lazy_load_parent_modules:
+        mod = importlib.import_module(f"{__package__}.{__lazy_load_parent_modules[name]}")
+        obj = getattr(mod, name)
+        __locals[name] = obj
+        return obj
+    raise AttributeError(f"{name} not found in {__package__}")

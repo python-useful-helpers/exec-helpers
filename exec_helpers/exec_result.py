@@ -29,7 +29,6 @@ import typing
 # Package Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
-from exec_helpers.proc_enums import ExitCodeT
 
 try:
     # noinspection PyPackageRequirements
@@ -62,6 +61,9 @@ if typing.TYPE_CHECKING:
     # External Dependencies
     # noinspection PyPackageRequirements
     import logwrap
+
+    # Package Implementation
+    from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = ("ExecResult", "OptionalStdinT")
 

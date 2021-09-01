@@ -16,12 +16,12 @@
 
 from __future__ import annotations
 
+# Standard Library
+import importlib
+import typing
+import warnings
+
 # Local Implementation
-from . import async_api
-from ._helpers import mask_command
-from ._ssh_helpers import HostsSSHConfigs
-from ._ssh_helpers import SSHConfig
-from .api import ExecHelper
 from .exceptions import CalledProcessError
 from .exceptions import ExecCalledProcessError
 from .exceptions import ExecHelperError
@@ -29,11 +29,6 @@ from .exceptions import ExecHelperNoKillError
 from .exceptions import ExecHelperTimeoutError
 from .exceptions import ParallelCallExceptionsError
 from .exceptions import ParallelCallProcessError
-from .exec_result import ExecResult
-from .proc_enums import ExitCodes
-from .ssh import SSHClient
-from .ssh_auth import SSHAuth
-from .subprocess import Subprocess  # nosec  # Expected
 
 try:
     # Local Implementation
@@ -41,6 +36,7 @@ try:
 except ImportError:
     pass
 
+# noinspection PyUnresolvedReferences
 __all__ = (
     "ExecHelperError",
     "ExecCalledProcessError",
@@ -49,17 +45,64 @@ __all__ = (
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
+    # pylint: disable=undefined-all-variable
+    # lazy load
+    # API
+    "async_api",
+    "ExitCodes",
+    "ExecResult",
     "ExecHelper",
-    "SSHClient",
     "mask_command",
+    # Expensive
+    "Subprocess",
+    "SSHClient",
     "SSHAuth",
     "SSHConfig",
     "HostsSSHConfigs",
-    "Subprocess",
-    "ExitCodes",
-    "ExecResult",
-    "async_api",
+    # deprecated
+    "ParallelCallExceptions",
 )
+
+__locals: typing.Dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
+
+__lazy_load_modules: typing.Sequence[str] = ("async_api",)
+
+__lazy_load_parent_modules: typing.Dict[str, str] = {
+    "HostsSSHConfigs": "_ssh_helpers",
+    "SSHConfig": "_ssh_helpers",
+    "SSHClient": "ssh",
+    "SSHAuth": "ssh_auth",
+    "Subprocess": "subprocess",
+    # API
+    "ExitCodes": "proc_enums",
+    "ExecResult": "exec_result",
+    "ExecHelper": "api",
+    "mask_command": "_helpers",
+    "ParallelCallExceptions": "exceptions",
+}
+
+_deprecated: typing.Dict[str, str] = {"ParallelCallExceptions": "ParallelCallExceptionsError"}
+
+
+def __getattr__(name: str) -> typing.Any:
+    """Get attributes lazy.
+
+    :return: attribute by name
+    :raises AttributeError: attribute is not defined for lazy load
+    """
+    if name in _deprecated:
+        warnings.warn(f"{name} is deprecated in favor of {_deprecated[name]}", DeprecationWarning)
+    if name in __lazy_load_modules:
+        mod = importlib.import_module(f"{__package__}.{name}")
+        __locals[name] = mod
+        return mod
+    if name in __lazy_load_parent_modules:
+        mod = importlib.import_module(f"{__package__}.{__lazy_load_parent_modules[name]}")
+        obj = getattr(mod, name)
+        __locals[name] = obj
+        return obj
+    raise AttributeError(f"{name} not found in {__package__}")
+
 
 __author__ = "Alexey Stepanov"
 __author_email__ = "penguinolog@gmail.com"

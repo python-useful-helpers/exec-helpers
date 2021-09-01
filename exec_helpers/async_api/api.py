@@ -40,7 +40,6 @@ from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import exec_result
-from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
 from .. import _helpers
@@ -49,7 +48,20 @@ if typing.TYPE_CHECKING:
     # Standard Library
     import types
 
-__all__ = ("ExecHelper",)
+    # Package Implementation
+    from exec_helpers.proc_enums import ExitCodeT
+
+__all__ = (
+    "ExecHelper",
+    "CalledProcessErrorSubClassT",
+    "OptionalStdinT",
+    "OptionalTimeoutT",
+    "CommandT",
+    "LogMaskReT",
+    "ErrorInfoT",
+    "ChRootPathSetT",
+    "ExpectedExitCodesT",
+)
 
 
 class ExecuteContext(typing.AsyncContextManager[api.ExecuteAsyncResult], abc.ABC):

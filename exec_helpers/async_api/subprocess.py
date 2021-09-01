@@ -34,17 +34,8 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 from exec_helpers import subprocess
-from exec_helpers.api import CalledProcessErrorSubClassT
-from exec_helpers.api import CommandT
-from exec_helpers.api import ErrorInfoT
-from exec_helpers.api import ExpectedExitCodesT
-from exec_helpers.api import LogMaskReT
-from exec_helpers.api import OptionalTimeoutT
 from exec_helpers.async_api import api
 from exec_helpers.async_api import exec_result
-from exec_helpers.exec_result import OptionalStdinT
-from exec_helpers.subprocess import CwdT
-from exec_helpers.subprocess import EnvT
 
 # Local Implementation
 from .. import _log_templates
@@ -53,6 +44,17 @@ from .. import _subprocess_helpers
 if typing.TYPE_CHECKING:
     # Standard Library
     import types
+
+    # Package Implementation
+    from exec_helpers.api import CalledProcessErrorSubClassT
+    from exec_helpers.api import CommandT
+    from exec_helpers.api import ErrorInfoT
+    from exec_helpers.api import ExpectedExitCodesT
+    from exec_helpers.api import LogMaskReT
+    from exec_helpers.api import OptionalTimeoutT
+    from exec_helpers.exec_result import OptionalStdinT
+    from exec_helpers.subprocess import CwdT
+    from exec_helpers.subprocess import EnvT
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 

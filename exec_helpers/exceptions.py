@@ -21,7 +21,6 @@ import typing
 
 # Package Implementation
 from exec_helpers import proc_enums
-from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
 from . import _log_templates
@@ -29,6 +28,7 @@ from . import _log_templates
 if typing.TYPE_CHECKING:
     # Package Implementation
     from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
+    from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = (
     "ExecHelperError",

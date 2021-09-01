@@ -22,10 +22,13 @@ from __future__ import annotations
 import os
 import pathlib
 import posixpath
+import typing
 
 # Local Implementation
 from . import _ssh_base
-from ._ssh_base import SupportPathT
+
+if typing.TYPE_CHECKING:
+    from ._ssh_base import SupportPathT
 
 __all__ = ("SSHClient",)
 
