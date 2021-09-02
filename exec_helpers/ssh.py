@@ -28,6 +28,7 @@ import typing
 from . import _ssh_base
 
 if typing.TYPE_CHECKING:
+    # Local Implementation
     from ._ssh_base import SupportPathT
 
 __all__ = ("SSHClient",)

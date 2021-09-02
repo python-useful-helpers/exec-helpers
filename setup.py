@@ -172,5 +172,5 @@ setuptools.setup(
         "all_formats": XML_DEPS + LXML_DEPS + YAML_DEPS,
         "all-formats": XML_DEPS + LXML_DEPS + YAML_DEPS,
     },
-    package_data={PACKAGE_NAME: ["py.typed"]},
+    package_data={PACKAGE_NAME: ["py.typed"], "": ["*.pyi"]},
 )

@@ -21,15 +21,6 @@ import importlib
 import typing
 import warnings
 
-# Local Implementation
-from .exceptions import CalledProcessError
-from .exceptions import ExecCalledProcessError
-from .exceptions import ExecHelperError
-from .exceptions import ExecHelperNoKillError
-from .exceptions import ExecHelperTimeoutError
-from .exceptions import ParallelCallExceptionsError
-from .exceptions import ParallelCallProcessError
-
 try:
     # Local Implementation
     from ._version import version as __version__
@@ -38,13 +29,6 @@ except ImportError:
 
 # noinspection PyUnresolvedReferences
 __all__ = (
-    "ExecHelperError",
-    "ExecCalledProcessError",
-    "CalledProcessError",
-    "ParallelCallExceptionsError",
-    "ParallelCallProcessError",
-    "ExecHelperNoKillError",
-    "ExecHelperTimeoutError",
     # pylint: disable=undefined-all-variable
     # lazy load
     # API
@@ -59,13 +43,26 @@ __all__ = (
     "SSHAuth",
     "SSHConfig",
     "HostsSSHConfigs",
+    # Exceptions
+    "exceptions",
+    "ExecHelperError",
+    "ExecCalledProcessError",
+    "CalledProcessError",
+    "ParallelCallExceptionsError",
+    "ParallelCallProcessError",
+    "ExecHelperNoKillError",
+    "ExecHelperTimeoutError",
     # deprecated
     "ParallelCallExceptions",
 )
 
 __locals: typing.Dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
 
-__lazy_load_modules: typing.Sequence[str] = ("async_api",)
+__lazy_load_modules: typing.Sequence[str] = (
+    "async_api",
+    "exceptions",
+    "exec_result",
+)
 
 __lazy_load_parent_modules: typing.Dict[str, str] = {
     "HostsSSHConfigs": "_ssh_helpers",
@@ -78,6 +75,14 @@ __lazy_load_parent_modules: typing.Dict[str, str] = {
     "ExecResult": "exec_result",
     "ExecHelper": "api",
     "mask_command": "_helpers",
+    # Exceptions
+    "ExecHelperError": "exceptions",
+    "ExecCalledProcessError": "exceptions",
+    "CalledProcessError": "exceptions",
+    "ParallelCallExceptionsError": "exceptions",
+    "ParallelCallProcessError": "exceptions",
+    "ExecHelperNoKillError": "exceptions",
+    "ExecHelperTimeoutError": "exceptions",
     "ParallelCallExceptions": "exceptions",
 }
 

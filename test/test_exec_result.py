@@ -110,15 +110,6 @@ class TestExecResult(unittest.TestCase):
 
         self.assertEqual(hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)))
 
-    @mock.patch("exec_helpers.exec_result.LOGGER", autospec=True)
-    def test_not_implemented(self, logger):
-        """Test assertion on non implemented deserializer."""
-        result = exec_helpers.ExecResult(cmd=cmd)
-        deserialize = getattr(result, "_ExecResult__deserialize")  # noqa: B009
-        with self.assertRaises(NotImplementedError):
-            deserialize("tst")
-        logger.assert_has_calls((mock.call.error(f"{'tst'} deserialize target is not implemented"),))
-
     def test_setters(self):
         """Test setters: unlocked and final."""
         result = exec_helpers.ExecResult(cmd=cmd)
@@ -352,34 +343,3 @@ class TestExecResultRuamelYaml(unittest.TestCase):
         expect = {"test": "data"}
         result = result.stdout_yaml
         self.assertEqual(expect, result)
-
-
-class TestExecResultNoExtras(unittest.TestCase):
-    """No extras installed behavior checks."""
-
-    def setUp(self) -> None:
-        self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
-        self._orig_ruamel_yaml, exec_helpers.exec_result.ruamel_yaml = exec_helpers.exec_result.ruamel_yaml, None
-        self._orig_lxml, exec_helpers.exec_result.lxml = exec_helpers.exec_result.lxml, None
-        self._orig_defusedxml, exec_helpers.exec_result.defusedxml = exec_helpers.exec_result.defusedxml, None
-
-    def tearDown(self) -> None:
-        exec_helpers.exec_result.yaml = self._orig_yaml
-        exec_helpers.exec_result.ruamel_yaml = self._orig_ruamel_yaml
-        exec_helpers.exec_result.lxml = self._orig_lxml
-        exec_helpers.exec_result.defusedxml = self._orig_defusedxml
-
-    def test_stdout_yaml(self):
-        """Test yaml decode not supported."""
-        result = exec_helpers.ExecResult("test", stdout=[b"{test: data}\n"])
-        with self.assertRaises(AttributeError):
-            getattr(result, "stdout_yaml")  # noqa: B009
-
-    def test_stdout_xmls(self):
-        """Test xml decode not supported."""
-        result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
-        with self.assertRaises(AttributeError):
-            getattr(result, "stdout_xml")  # noqa: B009
-
-        with self.assertRaises(AttributeError):
-            getattr(result, "stdout_lxml")  # noqa: B009

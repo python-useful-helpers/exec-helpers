@@ -21,6 +21,7 @@ from __future__ import annotations
 # Standard Library
 import contextlib
 import datetime
+import functools
 import json
 import logging
 import threading
@@ -72,6 +73,42 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 OptionalStdinT = typing.Union[bytes, str, bytearray, None]
 _OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
 _OptLoggerT = typing.Optional[logging.Logger]
+_T = typing.TypeVar("_T")
+
+
+def _handle_deserialize(
+    fmt: str,
+) -> typing.Callable[[typing.Callable[["ExecResult"], _T]], typing.Callable[["ExecResult"], _T]]:
+    """Decorator fabric for decoder getters.
+
+    :return: real decorator
+    """
+
+    def decorator(method: typing.Callable[["ExecResult"], _T]) -> typing.Callable[["ExecResult"], _T]:
+        """Decorator for decoder getter.
+
+        :return: wrapped to try/except getter
+        """
+
+        @functools.wraps(method)
+        def wrapper(self: "ExecResult") -> _T:
+            """Getter wrapper.
+
+            :return: getter output
+            """
+            try:
+                return method(self)
+            except Exception as exc:
+                tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
+                LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
+
+                raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
+                    exc.__traceback__
+                ) from exc
+
+        return wrapper
+
+    return decorator
 
 
 def _get_str_from_bin(src: bytearray) -> str:
@@ -544,42 +581,8 @@ class ExecResult:
         """
         return self.__started
 
-    def __deserialize(self, fmt: str) -> typing.Any:
-        """Deserialize stdout as data format.
-
-        :param fmt: format to decode from
-        :type fmt: str
-        :return: decoded object
-        :rtype: typing.Any
-        :raises NotImplementedError: fmt deserialization not implemented
-        :raises DeserializeValueError: Not valid source format
-        """
-        try:
-            if fmt == "json":
-                return json.loads(self.stdout_str)
-            if fmt == "yaml":
-                if yaml is not None:
-                    if yaml.__with_libyaml__:  # pragma: no cover
-                        return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
-                    return yaml.safe_load(self.stdout_str)  # pragma: no cover
-                return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
-            if fmt == "xml":
-                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))
-            if fmt == "lxml":
-                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec
-        except Exception as e:
-            tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
-            LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
-
-            raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
-                e.__traceback__
-            ) from e
-
-        msg = f"{fmt} deserialize target is not implemented"
-        LOGGER.error(msg)
-        raise NotImplementedError(msg)
-
-    @property
+    @property  # type: ignore
+    @_handle_deserialize("json")
     def stdout_json(
         self,
     ) -> typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any], str, int, float, bool, None]:
@@ -590,52 +593,55 @@ class ExecResult:
         :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
         with self.stdout_lock:
-            return self.__deserialize(fmt="json")  # type:ignore
+            return json.loads(self.stdout_str)  # type:ignore
 
-    @property
-    def stdout_yaml(self) -> typing.Any:
-        """YAML from stdout.
+    if yaml is not None or ruamel_yaml is not None:
 
-        :return: decoded YAML document
-        :rtype: typing.Any
-        :raises DeserializeValueError: STDOUT can not be deserialized as YAML
-        :raises AttributeError: no any yaml parser installed
-        """
-        if yaml is None and ruamel_yaml is None:
-            raise AttributeError("no any yaml parser installed -> attribute is not functional.")
-        with self.stdout_lock:
-            return self.__deserialize(fmt="yaml")
+        @property  # type: ignore
+        @_handle_deserialize("yaml")
+        def stdout_yaml(self) -> typing.Any:
+            """YAML from stdout.
 
-    # noinspection PyUnresolvedReferences
-    @property
-    def stdout_xml(self) -> xml.etree.ElementTree.Element:
-        """XML from stdout.
+            :return: decoded YAML document
+            :rtype: typing.Any
+            :raises DeserializeValueError: STDOUT can not be deserialized as YAML
+            """
+            with self.stdout_lock:
+                if yaml is not None:
+                    if yaml.__with_libyaml__:  # pragma: no cover
+                        return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
+                    return yaml.safe_load(self.stdout_str)  # pragma: no cover
+                return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
 
-        :return: decoded XML document
-        :rtype: xml.etree.ElementTree.Element
-        :raises DeserializeValueError: STDOUT can not be deserialized as XML
-        :raises AttributeError: defusedxml is not installed
-        """
-        if defusedxml is None:
-            raise AttributeError("defusedxml is not installed -> attribute is not functional by security reasons.")
-        with self.stdout_lock:
-            return self.__deserialize(fmt="xml")  # type: ignore
+    if defusedxml is not None:
+        # noinspection PyUnresolvedReferences
+        @property  # type: ignore
+        @_handle_deserialize("xml")
+        def stdout_xml(self) -> xml.etree.ElementTree.Element:
+            """XML from stdout.
 
-    @property
-    def stdout_lxml(self) -> lxml.etree.Element:
-        """XML from stdout using lxml.
+            :return: decoded XML document
+            :rtype: xml.etree.ElementTree.Element
+            :raises DeserializeValueError: STDOUT can not be deserialized as XML
+            """
+            with self.stdout_lock:
+                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore
 
-        :return: decoded XML document
-        :rtype: lxml.etree.Element
-        :raises DeserializeValueError: STDOUT can not be deserialized as XML
-        :raises AttributeError: lxml is not installed
+    if lxml is not None:
 
-        .. note:: Can be insecure.
-        """
-        if lxml is None:
-            raise AttributeError("lxml is not installed -> attribute is not functional.")
-        with self.stdout_lock:
-            return self.__deserialize(fmt="lxml")
+        @property  # type: ignore
+        @_handle_deserialize("lxml")
+        def stdout_lxml(self) -> lxml.etree.Element:
+            """XML from stdout using lxml.
+
+            :return: decoded XML document
+            :rtype: lxml.etree.Element
+            :raises DeserializeValueError: STDOUT can not be deserialized as XML
+
+            .. note:: Can be insecure.
+            """
+            with self.stdout_lock:
+                return lxml.etree.fromstring(b"".join(self.stdout))
 
     def __dir__(self) -> typing.List[str]:
         """Override dir for IDE and as source for getitem checks.
