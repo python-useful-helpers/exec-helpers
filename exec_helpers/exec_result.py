@@ -585,7 +585,7 @@ class ExecResult:
     @_handle_deserialize("json")
     def stdout_json(
         self,
-    ) -> typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any], str, int, float, bool, None]:
+    ) -> typing.Any:
         """JSON from stdout.
 
         :return: decoded JSON document
@@ -593,7 +593,7 @@ class ExecResult:
         :raises DeserializeValueError: STDOUT can not be deserialized as JSON
         """
         with self.stdout_lock:
-            return json.loads(self.stdout_str)  # type:ignore
+            return json.loads(self.stdout_str)
 
     if yaml is not None or ruamel_yaml is not None:
 
