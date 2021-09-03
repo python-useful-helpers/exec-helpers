@@ -1057,6 +1057,8 @@ class SSHClientBase(api.ExecHelper):
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
+        log_stdout: bool = True,
+        log_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -1074,6 +1076,10 @@ class SSHClientBase(api.ExecHelper):
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -1086,9 +1092,9 @@ class SSHClientBase(api.ExecHelper):
         def poll_streams() -> None:
             """Poll FIFO buffers if data available."""
             if async_result.stdout and async_result.interface.recv_ready():
-                result.read_stdout(src=async_result.stdout, log=self.logger, verbose=verbose)
+                result.read_stdout(src=async_result.stdout, log=self.logger if log_stdout else None, verbose=verbose)
             if async_result.stderr and async_result.interface.recv_stderr_ready():
-                result.read_stderr(src=async_result.stderr, log=self.logger, verbose=verbose)
+                result.read_stderr(src=async_result.stderr, log=self.logger if log_stderr else None, verbose=verbose)
 
         def poll_pipes() -> None:
             """Polling task for FIFO buffers."""
@@ -1194,7 +1200,9 @@ class SSHClientBase(api.ExecHelper):
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
@@ -1216,8 +1224,12 @@ class SSHClientBase(api.ExecHelper):
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
@@ -1244,7 +1256,9 @@ class SSHClientBase(api.ExecHelper):
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             chroot_path=chroot_path,
             get_pty=get_pty,
             width=width,
@@ -1261,7 +1275,9 @@ class SSHClientBase(api.ExecHelper):
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         get_pty: bool = False,
         width: int = 80,
@@ -1283,8 +1299,12 @@ class SSHClientBase(api.ExecHelper):
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param get_pty: Get PTY for connection
@@ -1309,7 +1329,9 @@ class SSHClientBase(api.ExecHelper):
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             get_pty=get_pty,
             width=width,
             height=height,
@@ -1328,7 +1350,9 @@ class SSHClientBase(api.ExecHelper):
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1356,8 +1380,12 @@ class SSHClientBase(api.ExecHelper):
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1387,7 +1415,9 @@ class SSHClientBase(api.ExecHelper):
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             get_pty=get_pty,
             width=width,
             height=height,
@@ -1407,7 +1437,9 @@ class SSHClientBase(api.ExecHelper):
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1435,8 +1467,12 @@ class SSHClientBase(api.ExecHelper):
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1466,7 +1502,9 @@ class SSHClientBase(api.ExecHelper):
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             get_pty=get_pty,
             width=width,
             height=height,
@@ -1581,7 +1619,9 @@ class SSHClientBase(api.ExecHelper):
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         log_mask_re: LogMaskReT = None,
         get_pty: bool = False,
         width: int = 80,
@@ -1605,8 +1645,12 @@ class SSHClientBase(api.ExecHelper):
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: typing.Optional[str]
@@ -1645,7 +1689,9 @@ class SSHClientBase(api.ExecHelper):
                 timeout=timeout,
                 stdin=stdin,
                 open_stdout=open_stdout,
+                log_stdout=log_stdout,
                 open_stderr=open_stderr,
+                log_stderr=log_stderr,
                 log_mask_re=log_mask_re,
                 get_pty=get_pty,
                 width=width,

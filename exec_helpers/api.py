@@ -400,6 +400,8 @@ class ExecHelper(
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
+        log_stdout: bool = True,
+        log_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
@@ -417,6 +419,10 @@ class ExecHelper(
         :type log_mask_re: typing.Optional[str]
         :param stdin: pass STDIN text to the process
         :type stdin: typing.Union[bytes, str, bytearray, None]
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -480,7 +486,9 @@ class ExecHelper(
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -499,8 +507,12 @@ class ExecHelper(
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
@@ -538,6 +550,8 @@ class ExecHelper(
                 verbose=verbose,
                 log_mask_re=log_mask_re,
                 stdin=stdin,
+                log_stdout=log_stdout,
+                log_stderr=log_stderr,
                 **kwargs,
             )
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
@@ -552,7 +566,9 @@ class ExecHelper(
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         chroot_path: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -571,8 +587,12 @@ class ExecHelper(
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: typing.Optional[str]
         :param kwargs: additional parameters for call.
@@ -590,7 +610,9 @@ class ExecHelper(
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             chroot_path=chroot_path,
             **kwargs,
         )
@@ -607,7 +629,9 @@ class ExecHelper(
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -632,8 +656,12 @@ class ExecHelper(
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -655,7 +683,9 @@ class ExecHelper(
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             **kwargs,
         )
         return self._handle_exit_code(
@@ -714,7 +744,9 @@ class ExecHelper(
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
+        log_stdout: bool = True,
         open_stderr: bool = True,
+        log_stderr: bool = True,
         exception_class: CalledProcessErrorSubClassT = exceptions.CalledProcessError,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
@@ -739,8 +771,12 @@ class ExecHelper(
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
+        :param log_stderr: log STDERR during read
+        :type log_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: typing.Type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
@@ -765,7 +801,9 @@ class ExecHelper(
             log_mask_re=log_mask_re,
             stdin=stdin,
             open_stdout=open_stdout,
+            log_stdout=log_stdout,
             open_stderr=open_stderr,
+            log_stderr=log_stderr,
             **kwargs,
         )
         return self._handle_stderr(

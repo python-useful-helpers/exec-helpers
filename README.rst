@@ -46,6 +46,7 @@ Pros:
     Python 3.7
     Python 3.8
     Python 3.9
+    Python 3.10
 
 .. note:: Old pythons: For Python 2.7 and PyPy use versions 1.x.x, python 3.4 use versions 2.x.x, python 3.5 and PyPy 3.5 use versions 3.x.x
 
@@ -147,7 +148,9 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         log_mask_re=None,  # type: Optional[str]
         stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
+        log_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        log_stderr=True,  # type: bool
         **kwargs
     )
 
@@ -165,7 +168,9 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         log_mask_re=None,  # type: Optional[str]
         stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
+        log_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        log_stderr=True,  # type: bool
         exception_class=CalledProcessError,  # Type[CalledProcessError]
         **kwargs
     )
@@ -183,7 +188,9 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         log_mask_re=None,  # type: Optional[str]
         stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
+        log_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        log_stderr=True,  # type: bool
         exception_class=CalledProcessError,  # Type[CalledProcessError]
     )
 
@@ -197,7 +204,9 @@ This methods are almost the same for `SSHClient` and `Subprocess`, except specif
         log_mask_re=None,  # type: Optional[str]
         stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
+        log_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        log_stderr=True,  # type: bool
         **kwargs
     )
 
@@ -305,7 +314,9 @@ For execute through SSH host can be used `execute_through_host` method:
         verbose=False,  # type: bool
         stdin=None,  # type: Union[bytes, str, bytearray, None]
         open_stdout=True,  # type: bool
+        log_stdout=True,  # type: bool
         open_stderr=True,  # type: bool
+        log_stderr=True,  # type: bool
         log_mask_re=None,  # type: Optional[str]
         get_pty=False,  # type: bool
         width=80,  # type: int

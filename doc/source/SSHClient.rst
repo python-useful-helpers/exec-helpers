@@ -150,7 +150,7 @@ API: SSHClient and SSHAuth.
         .. Note:: Enter and exit ssh context manager is produced as well.
         .. versionadded:: 1.2.1
 
-    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, get_pty=False, width=80, height=24, **kwargs)
 
         Execute command and wait for return code.
 
@@ -166,8 +166,12 @@ API: SSHClient and SSHAuth.
         :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param log_stderr: log STDERR during read
+        :type log_stderr: ``bool``
         :param get_pty: Get PTY for connection
         :type get_pty: ``bool``
         :param width: PTY width
@@ -179,7 +183,7 @@ API: SSHClient and SSHAuth.
 
         .. versionchanged:: 1.2.0 default timeout 1 hour
 
-    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: __call__(command, verbose=False, timeout=1*60*60, *, log_mask_re=None, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, get_pty=False, width=80, height=24, **kwargs)
 
         Execute command and wait for return code.
 
@@ -195,8 +199,12 @@ API: SSHClient and SSHAuth.
         :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param log_stderr: log STDERR during read
+        :type log_stderr: ``bool``
         :param get_pty: Get PTY for connection
         :type get_pty: ``bool``
         :param width: PTY width
@@ -208,7 +216,7 @@ API: SSHClient and SSHAuth.
 
         .. versionadded:: 3.3.0
 
-    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, get_pty=False, width=80, height=24, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_call(command, verbose=False, timeout=1*60*60, error_info=None, expected=(0,), raise_on_err=True, *, log_mask_re=None, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, get_pty=False, width=80, height=24, exception_class=CalledProcessError, **kwargs)
 
         Execute command and check for return code.
 
@@ -230,8 +238,12 @@ API: SSHClient and SSHAuth.
         :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param log_stderr: log STDERR during read
+        :type log_stderr: ``bool``
         :param get_pty: Get PTY for connection
         :type get_pty: ``bool``
         :param width: PTY width
@@ -248,7 +260,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
-    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, open_stdout=True, open_stderr=True, get_pty=False, width=80, height=24, exception_class=CalledProcessError, **kwargs)
+    .. py:method:: check_stderr(command, verbose=False, timeout=1*60*60, error_info=None, raise_on_err=True, *, expected=(0,), log_mask_re=None, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, get_pty=False, width=80, height=24, exception_class=CalledProcessError, **kwargs)
 
         Execute command expecting return code 0 and empty STDERR.
 
@@ -270,8 +282,12 @@ API: SSHClient and SSHAuth.
         :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param log_stderr: log STDERR during read
+        :type log_stderr: ``bool``
         :param get_pty: Get PTY for connection
         :type get_pty: ``bool``
         :param width: PTY width
@@ -316,7 +332,7 @@ API: SSHClient and SSHAuth.
 
         .. versionadded:: 6.0.0
 
-    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, open_stdout=True, open_stderr=True, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -336,8 +352,12 @@ API: SSHClient and SSHAuth.
         :type stdin: ``Union[bytes, str, bytearray, None]``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
+        :param log_stdout: log STDOUT during read
+        :type log_stdout: ``bool``
         :param open_stderr: open STDERR stream for read
         :type open_stderr: ``bool``
+        :param log_stderr: log STDERR during read
+        :type log_stderr: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
         :type log_mask_re: ``Optional[str]``
         :param get_pty: open PTY on target machine
