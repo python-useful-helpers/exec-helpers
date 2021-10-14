@@ -520,7 +520,7 @@ class ExecHelper(
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    async def __call__(
+    async def __call__(  # pylint: disable=invalid-overridden-method,arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,

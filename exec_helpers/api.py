@@ -557,7 +557,7 @@ class ExecHelper(
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    def __call__(
+    def __call__(  # pylint: disable=arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,
