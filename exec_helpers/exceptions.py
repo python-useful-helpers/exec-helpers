@@ -69,7 +69,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         message: str,
         *,
         result: exec_result.ExecResult,
-        timeout: typing.Union[int, float],
+        timeout: int | float,
     ) -> None:
         """Exception for error on process calls.
 
@@ -82,7 +82,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         """
         super().__init__(message)
         self.result: exec_result.ExecResult = result
-        self.timeout: typing.Union[int, float] = timeout
+        self.timeout: int | float = timeout
 
     @property
     def cmd(self) -> str:
@@ -120,7 +120,7 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
     def __init__(
         self,
         result: exec_result.ExecResult,
-        timeout: typing.Union[int, float],
+        timeout: int | float,
     ) -> None:
         """Exception for error on process calls.
 
@@ -152,7 +152,7 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
     def __init__(
         self,
         result: exec_result.ExecResult,
-        timeout: typing.Union[int, float],
+        timeout: int | float,
     ) -> None:
         """Exception for error on process calls.
 
@@ -236,11 +236,11 @@ class ParallelCallProcessError(ExecCalledProcessError):
     def __init__(
         self,
         command: str,
-        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
-        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
+        errors: dict[tuple[str, int], exec_result.ExecResult],
+        results: dict[tuple[str, int], exec_result.ExecResult],
         expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         *,
-        _message: typing.Optional[str] = None,
+        _message: str | None = None,
     ) -> None:
         """Exception during parallel execution.
 
@@ -267,8 +267,8 @@ class ParallelCallProcessError(ExecCalledProcessError):
         )
         super().__init__(message)
         self.cmd: str = command
-        self.errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = errors
-        self.results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = results
+        self.errors: dict[tuple[str, int], exec_result.ExecResult] = errors
+        self.results: dict[tuple[str, int], exec_result.ExecResult] = results
         self.expected: typing.Sequence[ExitCodeT] = prep_expected
 
 
@@ -280,12 +280,12 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
     def __init__(
         self,
         command: str,
-        exceptions: typing.Dict[typing.Tuple[str, int], Exception],
-        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
-        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult],
+        exceptions: dict[tuple[str, int], Exception],
+        errors: dict[tuple[str, int], exec_result.ExecResult],
+        results: dict[tuple[str, int], exec_result.ExecResult],
         expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         *,
-        _message: typing.Optional[str] = None,
+        _message: str | None = None,
     ) -> None:
         """Exception raised during parallel call as result of exceptions.
 
@@ -316,13 +316,13 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
             _message=message,
         )
         self.cmd: str = command
-        self.exceptions: typing.Dict[typing.Tuple[str, int], Exception] = exceptions
+        self.exceptions: dict[tuple[str, int], Exception] = exceptions
 
 
 ParallelCallExceptions = ParallelCallExceptionsError  # noqa: N818
 
 
-class StopExecution(Exception):  # noqa:N818
+class StopExecution(Exception):  # noqa: N818
     """Stop execution without waiting for exit code."""
 
     def __init__(
@@ -363,7 +363,7 @@ class StopExecution(Exception):  # noqa:N818
         return self.__result
 
 
-class StopExecutionGraceful(StopExecution):  # noqa:N818
+class StopExecutionGraceful(StopExecution):  # noqa: N818
     """Stop execution without raising exception."""
 
     def __init__(

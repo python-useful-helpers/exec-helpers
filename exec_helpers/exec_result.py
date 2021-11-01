@@ -36,22 +36,22 @@ try:
     # External Dependencies
     import yaml
 except ImportError:
-    yaml = None  # type:ignore
+    yaml = None  # type: ignore[assignment]
 try:
     # External Dependencies
     from ruamel import yaml as ruamel_yaml
 except ImportError:
-    ruamel_yaml = None  # type:ignore
+    ruamel_yaml = None  # type: ignore[assignment]
 try:
     # External Dependencies
     # noinspection PyPackageRequirements
-    import defusedxml.ElementTree  # type: ignore
+    import defusedxml.ElementTree
 except ImportError:
     defusedxml = None  # pylint: disable=invalid-name
 try:
     # External Dependencies
     # noinspection PyPackageRequirements
-    import lxml.etree  # type: ignore  # nosec
+    import lxml.etree  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
@@ -78,20 +78,20 @@ _T = typing.TypeVar("_T")
 
 def _handle_deserialize(
     fmt: str,
-) -> typing.Callable[[typing.Callable[["ExecResult"], _T]], typing.Callable[["ExecResult"], _T]]:
+) -> typing.Callable[[typing.Callable[[ExecResult], _T]], typing.Callable[[ExecResult], _T]]:
     """Decorator fabric for decoder getters.
 
     :return: real decorator
     """
 
-    def decorator(method: typing.Callable[["ExecResult"], _T]) -> typing.Callable[["ExecResult"], _T]:
+    def decorator(method: typing.Callable[[ExecResult], _T]) -> typing.Callable[[ExecResult], _T]:
         """Decorator for decoder getter.
 
         :return: wrapped to try/except getter
         """
 
         @functools.wraps(method)
-        def wrapper(self: "ExecResult") -> _T:
+        def wrapper(self: ExecResult) -> _T:
             """Getter wrapper.
 
             :return: getter output
@@ -144,12 +144,12 @@ class LinesAccessProxy:
         :param data: data to work with.
         :type data: typing.Sequence[bytes]
         """
-        self._data: typing.Tuple[bytes, ...] = tuple(data)
+        self._data: tuple[bytes, ...] = tuple(data)
 
     # pylint: disable=undefined-variable
     def __getitem__(
         self,
-        item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]],  # noqa: F821
+        item: int | slice | typing.Iterable[int | slice | ellipsis],  # noqa: F821
     ) -> str:
         """Access magic.
 
@@ -164,7 +164,7 @@ class LinesAccessProxy:
         if isinstance(item, slice):
             return _get_str_from_bin(_get_bytearray_from_array(self._data[item]))
         if isinstance(item, tuple):
-            buf: typing.List[bytes] = []
+            buf: list[bytes] = []
             for rule in item:
                 if isinstance(rule, int):
                     buf.append(self._data[rule])
@@ -229,7 +229,7 @@ class ExecResult:
         stderr: _OptBytesIterableT = None,
         exit_code: ExitCodeT = proc_enums.INVALID,
         *,
-        started: typing.Optional[datetime.datetime] = None,
+        started: datetime.datetime | None = None,
     ) -> None:
         """Command execution result.
 
@@ -251,33 +251,33 @@ class ExecResult:
 
         self.__cmd: str = cmd
         if isinstance(stdin, bytes):
-            self.__stdin: typing.Optional[str] = _get_str_from_bin(bytearray(stdin))
+            self.__stdin: str | None = _get_str_from_bin(bytearray(stdin))
         elif isinstance(stdin, bytearray):
             self.__stdin = _get_str_from_bin(stdin)
         else:
             self.__stdin = stdin
 
         if stdout is not None:
-            self._stdout: typing.Tuple[bytes, ...] = tuple(stdout)
+            self._stdout: tuple[bytes, ...] = tuple(stdout)
         else:
             self._stdout = ()
 
         if stderr is not None:
-            self._stderr: typing.Tuple[bytes, ...] = tuple(stderr)
+            self._stderr: tuple[bytes, ...] = tuple(stderr)
         else:
             self._stderr = ()
 
         self.__exit_code: ExitCodeT = proc_enums.INVALID
-        self.__timestamp: typing.Optional[datetime.datetime] = None
+        self.__timestamp: datetime.datetime | None = None
         self.exit_code = exit_code
 
-        self.__started: typing.Optional[datetime.datetime] = started
+        self.__started: datetime.datetime | None = started
 
         # By default is none:
-        self._stdout_str: typing.Optional[str] = None
-        self._stderr_str: typing.Optional[str] = None
-        self._stdout_brief: typing.Optional[str] = None
-        self._stderr_brief: typing.Optional[str] = None
+        self._stdout_str: str | None = None
+        self._stderr_str: str | None = None
+        self._stdout_brief: str | None = None
+        self._stderr_brief: str | None = None
 
     @property
     def stdout_lock(self) -> threading.RLock:
@@ -302,7 +302,7 @@ class ExecResult:
         return self.__stderr_lock
 
     @property
-    def timestamp(self) -> typing.Optional[datetime.datetime]:
+    def timestamp(self) -> datetime.datetime | None:
         """Timestamp.
 
         :return: exit code timestamp
@@ -321,7 +321,7 @@ class ExecResult:
             self.__timestamp = datetime.datetime.utcnow()
 
     @classmethod
-    def _get_brief(cls, data: typing.Tuple[bytes, ...]) -> str:
+    def _get_brief(cls, data: tuple[bytes, ...]) -> str:
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
         :param data: source to process
@@ -343,7 +343,7 @@ class ExecResult:
         return self.__cmd
 
     @property
-    def stdin(self) -> typing.Optional[str]:
+    def stdin(self) -> str | None:
         """Stdin input as string.
 
         :return: STDIN content if applicable.
@@ -352,7 +352,7 @@ class ExecResult:
         return self.__stdin
 
     @property
-    def stdout(self) -> typing.Tuple[bytes, ...]:
+    def stdout(self) -> tuple[bytes, ...]:
         """Stdout output as list of binaries.
 
         :return: STDOUT as tuple of binary strings
@@ -361,7 +361,7 @@ class ExecResult:
         return self._stdout
 
     @property
-    def stderr(self) -> typing.Tuple[bytes, ...]:
+    def stderr(self) -> tuple[bytes, ...]:
         """Stderr output as list of binaries.
 
         :return: STDERR as tuple of binary strings
@@ -374,7 +374,7 @@ class ExecResult:
         src: typing.Iterable[bytes],
         log: _OptLoggerT = None,
         verbose: bool = False,
-    ) -> typing.List[bytes]:
+    ) -> list[bytes]:
         """Stream poll helper.
 
         :param src: source to read from
@@ -383,7 +383,7 @@ class ExecResult:
         :return: read result as list of bytes strings
         :rtype: typing.List[bytes]
         """
-        dst: typing.List[bytes] = []
+        dst: list[bytes] = []
         with contextlib.suppress(IOError):
             for line in src:
                 dst.append(line)
@@ -572,7 +572,7 @@ class ExecResult:
                 self.__timestamp = datetime.datetime.utcnow()
 
     @property
-    def started(self) -> typing.Optional[datetime.datetime]:
+    def started(self) -> datetime.datetime | None:
         """Timestamp of command start.
 
         :return: timestamp from command start, if applicable
@@ -581,7 +581,7 @@ class ExecResult:
         """
         return self.__started
 
-    @property  # type: ignore
+    @property  # type: ignore[misc]
     @_handle_deserialize("json")
     def stdout_json(
         self,
@@ -597,7 +597,7 @@ class ExecResult:
 
     if yaml is not None or ruamel_yaml is not None:
 
-        @property  # type: ignore
+        @property  # type: ignore[misc]
         @_handle_deserialize("yaml")
         def stdout_yaml(self) -> typing.Any:
             """YAML from stdout.
@@ -615,7 +615,7 @@ class ExecResult:
 
     if defusedxml is not None:
         # noinspection PyUnresolvedReferences
-        @property  # type: ignore
+        @property  # type: ignore[misc]
         @_handle_deserialize("xml")
         def stdout_xml(self) -> xml.etree.ElementTree.Element:
             """XML from stdout.
@@ -625,11 +625,11 @@ class ExecResult:
             :raises DeserializeValueError: STDOUT can not be deserialized as XML
             """
             with self.stdout_lock:
-                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore
+                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[no-any-return]
 
     if lxml is not None:
 
-        @property  # type: ignore
+        @property  # type: ignore[misc]
         @_handle_deserialize("lxml")
         def stdout_lxml(self) -> lxml.etree.Element:
             """XML from stdout using lxml.
@@ -643,7 +643,7 @@ class ExecResult:
             with self.stdout_lock:
                 return lxml.etree.fromstring(b"".join(self.stdout))
 
-    def __dir__(self) -> typing.List[str]:
+    def __dir__(self) -> list[str]:
         """Override dir for IDE and as source for getitem checks.
 
         :return: list with public attributes and methods

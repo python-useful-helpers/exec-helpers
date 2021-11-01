@@ -195,7 +195,7 @@ class _ChRootContext(typing.AsyncContextManager[None]):
 
 
 class ExecHelper(
-    typing.Callable[..., typing.Awaitable["ExecHelper"]],  # type: ignore
+    typing.Callable[..., typing.Awaitable["ExecHelper"]],  # type: ignore[misc]
     typing.AsyncContextManager["ExecHelper"],
     abc.ABC,
 ):
@@ -290,7 +290,8 @@ class ExecHelper(
         exc_tb: typing.Optional[types.TracebackType],
     ) -> None:
         """Async context manager."""
-        self.__alock.release()  # type: ignore
+        if self.__alock is not None:
+            self.__alock.release()
 
     def _mask_command(self, cmd: str, log_mask_re: LogMaskReT = None) -> str:
         """Log command with masking and return parsed cmd.

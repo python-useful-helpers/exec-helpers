@@ -198,7 +198,7 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     return code
 
 
-def exit_codes_to_enums(codes: typing.Optional[typing.Iterable[ExitCodeT]] = None) -> typing.Sequence[ExitCodeT]:
+def exit_codes_to_enums(codes: typing.Iterable[ExitCodeT] | None = None) -> typing.Sequence[ExitCodeT]:
     """Convert integer exit codes to enums.
 
     :param codes: exit codes to process

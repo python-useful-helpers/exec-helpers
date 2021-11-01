@@ -67,43 +67,43 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
 
     # pylint: disable=no-member
     @property
-    def interface(self) -> asyncio.subprocess.Process:  # type: ignore
+    def interface(self) -> asyncio.subprocess.Process:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: control interface
         :rtype: asyncio.subprocess.Process
         """
-        return super().interface  # type: ignore
+        return super().interface  # type: ignore[return-value]
 
     # pylint: enable=no-member
 
     @property
-    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore
+    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
         :rtype: typing.Optional[asyncio.StreamWriter]
         """
         warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
-        return super().stdin  # type: ignore
+        return super().stdin  # type: ignore[return-value]
 
     @property
-    def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
+    def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
         :rtype: typing.Optional[typing.AsyncIterable[bytes]]
         """
-        return super().stderr  # type: ignore
+        return super().stderr  # type: ignore[return-value]
 
     @property
-    def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore
+    def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
         :rtype: typing.Optional[typing.AsyncIterable[bytes]]
         """
-        return super().stdout  # type: ignore
+        return super().stdout  # type: ignore[return-value]
 
 
 class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[SubprocessExecuteAsyncResult]):
@@ -283,9 +283,9 @@ class Subprocess(api.ExecHelper):
         :rtype: Subprocess
         """
         # noinspection PyTypeChecker
-        return super().__enter__()  # type: ignore  # pylint: disable=no-member
+        return super().__enter__()  # type: ignore[no-any-return]  # pylint: disable=no-member
 
-    async def _exec_command(  # type: ignore
+    async def _exec_command(  # type: ignore[override]
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
@@ -352,7 +352,10 @@ class Subprocess(api.ExecHelper):
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_signal: typing.Optional[int] = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_signal is None:
-                raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
+                raise exceptions.ExecHelperNoKillError(
+                    result=result,
+                    timeout=timeout,  # type: ignore[arg-type]
+                ) from exc
             result.exit_code = exit_signal
         finally:
             stdout_task.cancel()
@@ -361,7 +364,7 @@ class Subprocess(api.ExecHelper):
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
     # noinspection PyMethodOverriding
     async def _execute_async(  # pylint: disable=arguments-differ
@@ -415,8 +418,8 @@ class Subprocess(api.ExecHelper):
 
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
-            env.update(env_patch)  # type: ignore
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
+            env.update(env_patch)  # type: ignore[arg-type]
 
         process: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(  # pylint: disable=no-member
             cmd=self._prepare_command(cmd=command, chroot_path=chroot_path),
@@ -431,11 +434,14 @@ class Subprocess(api.ExecHelper):
 
         if stdin is None:
             process_stdin: typing.Optional[asyncio.StreamWriter] = process.stdin
+        elif process.stdin is None:
+            self.logger.warning("STDIN PIPE is not opened by Subprocess")
+            process_stdin = process.stdin
         else:
             stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
             try:
-                process.stdin.write(stdin_str)  # type: ignore
-                await process.stdin.drain()  # type: ignore
+                process.stdin.write(stdin_str)
+                await process.stdin.drain()
             except OSError as exc:
                 if exc.errno == errno.EINVAL:
                     # bpo-19612, bpo-30418: On Windows, stdin.write() fails
@@ -449,7 +455,7 @@ class Subprocess(api.ExecHelper):
                     process.kill()
                     raise
             try:
-                process.stdin.close()  # type: ignore
+                process.stdin.close()
             except OSError as exc:
                 if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
                     pass  # PIPE already closed
@@ -508,8 +514,8 @@ class Subprocess(api.ExecHelper):
         """
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
-            env.update(env_patch)  # type: ignore
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
+            env.update(env_patch)  # type: ignore[arg-type]
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),

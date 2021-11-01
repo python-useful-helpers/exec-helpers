@@ -56,7 +56,7 @@ __all__ = (
     "ParallelCallExceptions",
 )
 
-__locals: typing.Dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
+__locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
 
 __lazy_load_modules: typing.Sequence[str] = (
     "async_api",
@@ -64,7 +64,7 @@ __lazy_load_modules: typing.Sequence[str] = (
     "exec_result",
 )
 
-__lazy_load_parent_modules: typing.Dict[str, str] = {
+__lazy_load_parent_modules: dict[str, str] = {
     "HostsSSHConfigs": "_ssh_helpers",
     "SSHConfig": "_ssh_helpers",
     "SSHClient": "ssh",
@@ -86,7 +86,7 @@ __lazy_load_parent_modules: typing.Dict[str, str] = {
     "ParallelCallExceptions": "exceptions",
 }
 
-_deprecated: typing.Dict[str, str] = {"ParallelCallExceptions": "ParallelCallExceptionsError"}
+_deprecated: dict[str, str] = {"ParallelCallExceptions": "ParallelCallExceptionsError"}
 
 
 def __getattr__(name: str) -> typing.Any:

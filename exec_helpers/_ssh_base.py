@@ -52,7 +52,7 @@ from ._ssh_helpers import SSHConfigsDictT
 if typing.TYPE_CHECKING:
     # Standard Library
     import socket
-    import types
+    from types import TracebackType
 
     # Package Implementation
     from exec_helpers.api import CalledProcessErrorSubClassT
@@ -68,20 +68,10 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
 KeepAlivePeriodT = typing.Union[int, bool]
 SupportPathT = typing.Union[str, pathlib.PurePath]
-_OptionalSSHAuthMapT = typing.Optional[typing.Union[typing.Dict[str, ssh_auth.SSHAuth], ssh_auth.SSHAuthMapping]]
-_OptionalSSHConfigArgT = typing.Union[
-    str,
-    paramiko.SSHConfig,
-    SSHConfigsDictT,
-    _ssh_helpers.HostsSSHConfigs,
-    None,
-]
-_SSHConnChainT = typing.List[typing.Tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]
-_OptSSHAuthT = typing.Optional[ssh_auth.SSHAuth]
 _RType = typing.TypeVar("_RType")
 
 
-class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
+class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore[name-defined,misc]
     """Advanced retry on exceptions.
 
     :param retry_on: Exceptions to retry on
@@ -92,8 +82,8 @@ class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore
 
     def __init__(
         self,
-        retry_on: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
-        reraise: typing.Union[typing.Type[BaseException], typing.Tuple[typing.Type[BaseException], ...]],
+        retry_on: type[BaseException] | tuple[type[BaseException], ...],
+        reraise: type[BaseException] | tuple[type[BaseException], ...],
     ) -> None:
         """Retry on exceptions, except several types."""
         super().__init__(lambda e: isinstance(e, retry_on) and not isinstance(e, reraise))
@@ -112,10 +102,10 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: control interface
         :rtype: paramiko.Channel
         """
-        return super().interface  # type: ignore
+        return super().interface  # type: ignore[no-any-return]
 
     @property
-    def stdin(self) -> paramiko.ChannelFile:  # type: ignore
+    def stdin(self) -> paramiko.ChannelFile:  # type: ignore[override,name-defined]  # paramiko bug: not in __all__
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
@@ -125,7 +115,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin
 
     @property
-    def stderr(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
+    def stderr(self) -> paramiko.ChannelFile | None:  # type: ignore[override,name-defined]
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -134,7 +124,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
-    def stdout(self) -> typing.Optional[paramiko.ChannelFile]:  # type: ignore
+    def stdout(self) -> paramiko.ChannelFile | None:  # type: ignore[override,name-defined]
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
@@ -164,7 +154,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         *,
         transport: paramiko.Transport,
         command: str,
-        stdin: typing.Optional[bytes] = None,
+        stdin: bytes | None = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         get_pty: bool = False,
@@ -218,9 +208,9 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         self.__timeout = timeout
         self.__sudo_mode = sudo_mode
         self.__auth = auth
-        self.__chan: typing.Optional[paramiko.Channel] = None
-        self.__stdout_f: typing.Optional[paramiko.channel.ChannelFile] = None
-        self.__stderr_f: typing.Optional[paramiko.channel.ChannelFile] = None
+        self.__chan: paramiko.Channel | None = None
+        self.__stdout_f: paramiko.channel.ChannelFile | None = None
+        self.__stderr_f: paramiko.channel.ChannelFile | None = None
 
     def __repr__(self) -> str:
         """Debug string.
@@ -311,7 +301,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         stdout: paramiko.channel.ChannelFile = self.__stdout_f.__enter__()
         if self.open_stderr:
             self.__stderr_f = chan.makefile_stderr("rb")
-            stderr: typing.Optional[paramiko.channel.ChannelFile] = self.__stderr_f.__enter__()
+            stderr: paramiko.channel.ChannelFile | None = self.__stderr_f.__enter__()
         else:
             stderr = None
         _stdin: paramiko.channel.ChannelFile
@@ -321,7 +311,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
                 if not stdout.channel.closed:
                     # noinspection PyTypeChecker
-                    self.__auth.enter_password(_stdin)  # type: ignore
+                    self.__auth.enter_password(_stdin)  # type: ignore[arg-type]
                     _stdin.flush()
             else:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
@@ -335,7 +325,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
                     self.logger.warning("STDIN Send failed: closed channel")
 
         if self.open_stdout:
-            res_stdout: typing.Optional[paramiko.channel.ChannelFile] = stdout
+            res_stdout: paramiko.channel.ChannelFile | None = stdout
         else:
             self.__stdout_f.__exit__(None, None, None)
             self.__stdout_f = None
@@ -352,9 +342,9 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         if self.__stdout_f is not None:
             self.__stdout_f.__exit__(exc_type, exc_val, exc_tb)
@@ -378,11 +368,11 @@ class _SudoContext(typing.ContextManager[None]):
 
     __slots__ = ("__ssh", "__sudo_status", "__enforce")
 
-    def __init__(self, ssh: SSHClientBase, enforce: typing.Optional[bool] = None) -> None:
+    def __init__(self, ssh: SSHClientBase, enforce: bool | None = None) -> None:
         """Context manager for call commands with sudo."""
         self.__ssh: SSHClientBase = ssh
         self.__sudo_status: bool = ssh.sudo_mode
-        self.__enforce: typing.Optional[bool] = enforce
+        self.__enforce: bool | None = enforce
 
     def __enter__(self) -> None:
         self.__sudo_status = self.__ssh.sudo_mode
@@ -391,9 +381,9 @@ class _SudoContext(typing.ContextManager[None]):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         self.__ssh.sudo_mode = self.__sudo_status
 
@@ -422,12 +412,12 @@ class _KeepAliveContext(typing.ContextManager[None]):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         # Exit before releasing!
-        self.__ssh.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+        self.__ssh.__exit__(exc_type, exc_val, exc_tb)
         self.__ssh.keepalive_period = self.__keepalive_period
 
 
@@ -504,15 +494,15 @@ class SSHClientBase(api.ExecHelper):
     def __init__(
         self,
         host: str,
-        port: typing.Optional[int] = None,
-        username: typing.Optional[str] = None,
-        password: typing.Optional[str] = None,
+        port: int | None = None,
+        username: str | None = None,
+        password: str | None = None,
         *,
-        auth: _OptSSHAuthT = None,
+        auth: ssh_auth.SSHAuth | None = None,
         verbose: bool = True,
-        ssh_config: _OptionalSSHConfigArgT = None,
-        ssh_auth_map: _OptionalSSHAuthMapT = None,
-        sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]] = None,
+        ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
+        ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
+        sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> None:
         """Main SSH Client helper."""
@@ -544,7 +534,7 @@ class SSHClientBase(api.ExecHelper):
         self.__sock = sock
 
         self.__ssh: paramiko.SSHClient
-        self.__sftp: typing.Optional[paramiko.SFTPClient] = None
+        self.__sftp: paramiko.SFTPClient | None = None
 
         # Rebuild SSHAuth object if required.
         # Priority: auth > credentials > auth mapping
@@ -575,7 +565,7 @@ class SSHClientBase(api.ExecHelper):
 
         # Build connection chain once and use it for connection later
         if sock is None:
-            self.__conn_chain: _SSHConnChainT = self.__build_connection_chain()
+            self.__conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = self.__build_connection_chain()
         else:
             self.__conn_chain = []
 
@@ -592,13 +582,13 @@ class SSHClientBase(api.ExecHelper):
             )
         )
 
-    def __build_connection_chain(self) -> _SSHConnChainT:
+    def __build_connection_chain(self) -> list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]:
         """Build ssh connection chain to reach destination host.
 
         :return: list of SSHConfig - SSHAuth pairs in order of connection
         :rtype: typing.List[typing.Tuple[SSHConfig, ssh_auth.SSHAuth]]
         """
-        conn_chain: _SSHConnChainT = []
+        conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = []
 
         config = self.ssh_config[self.hostname]
         default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
@@ -844,9 +834,9 @@ class SSHClientBase(api.ExecHelper):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager.
 
@@ -902,7 +892,7 @@ class SSHClientBase(api.ExecHelper):
             self.close()
             self.__connect()
 
-    def sudo(self, enforce: typing.Optional[bool] = None) -> _SudoContext:
+    def sudo(self, enforce: bool | None = None) -> _SudoContext:
         """Call contextmanager for sudo mode change.
 
         :param enforce: Enforce sudo enabled or disabled. By default: None
@@ -925,7 +915,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return _KeepAliveContext(ssh=self, enforce=int(enforce))
 
-    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None) -> str:
         """Prepare command: cower chroot and other cases.
 
         :param cmd: main command
@@ -935,10 +925,13 @@ class SSHClientBase(api.ExecHelper):
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
         quoted_command: str = shlex.quote(cmd)
-        if any((chroot_path, self._chroot_path)):
-            target_path: str = shlex.quote(chroot_path if chroot_path else self._chroot_path)  # type: ignore
-            return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
-        return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
+        if chroot_path is None and self._chroot_path is None:
+            return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
+        if chroot_path is not None:
+            target_path: str = shlex.quote(chroot_path)
+        else:
+            target_path = shlex.quote(self._chroot_path)  # type: ignore[arg-type]
+        return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
 
     # noinspection PyMethodOverriding
     def _execute_async(  # pylint: disable=arguments-differ
@@ -948,7 +941,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1005,10 +998,10 @@ class SSHClientBase(api.ExecHelper):
             # Open PTY
             chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
 
-        _stdin: paramiko.ChannelFile = chan.makefile("wb")  # type: ignore
-        stdout: paramiko.ChannelFile = chan.makefile("rb")  # type: ignore
+        _stdin: paramiko.ChannelFile = chan.makefile("wb")  # type: ignore[name-defined]
+        stdout: paramiko.ChannelFile = chan.makefile("rb")  # type: ignore[name-defined]
         if open_stderr:
-            stderr: typing.Optional[paramiko.ChannelFile] = chan.makefile_stderr("rb")  # type: ignore
+            stderr: paramiko.ChannelFile | None = chan.makefile_stderr("rb")  # type: ignore[name-defined]
         else:
             stderr = None
 
@@ -1048,7 +1041,7 @@ class SSHClientBase(api.ExecHelper):
             started=started,
         )
 
-    def _exec_command(  # type: ignore
+    def _exec_command(  # type: ignore[override]
         self,
         command: str,
         async_result: SshExecuteAsyncResult,
@@ -1133,7 +1126,7 @@ class SSHClientBase(api.ExecHelper):
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
     def open_execute_context(  # pylint: disable=arguments-differ
         self,
@@ -1142,7 +1135,7 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1203,7 +1196,7 @@ class SSHClientBase(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1278,7 +1271,7 @@ class SSHClientBase(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1514,7 +1507,7 @@ class SSHClientBase(api.ExecHelper):
 
     def _get_proxy_channel(
         self,
-        port: typing.Optional[int],
+        port: int | None,
         ssh_config: _ssh_helpers.SSHConfig,
     ) -> paramiko.Channel:
         """Get ssh proxy channel.
@@ -1542,14 +1535,14 @@ class SSHClientBase(api.ExecHelper):
     def proxy_to(
         self,
         host: str,
-        port: typing.Optional[int] = None,
-        username: typing.Optional[str] = None,
-        password: typing.Optional[str] = None,
+        port: int | None = None,
+        username: str | None = None,
+        password: str | None = None,
         *,
-        auth: _OptSSHAuthT = None,
+        auth: ssh_auth.SSHAuth | None = None,
         verbose: bool = True,
-        ssh_config: _OptionalSSHConfigArgT = None,
-        ssh_auth_map: _OptionalSSHAuthMapT = None,
+        ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
+        ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> SSHClientBase:
         """Start new SSH connection using current as proxy.
@@ -1594,7 +1587,7 @@ class SSHClientBase(api.ExecHelper):
         hostname = parsed_ssh_config[host].hostname
 
         sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
-        cls: typing.Type[SSHClientBase] = self.__class__
+        cls: type[SSHClientBase] = self.__class__
         return cls(
             host=host,
             port=port,
@@ -1613,8 +1606,8 @@ class SSHClientBase(api.ExecHelper):
         hostname: str,
         command: CommandT,
         *,
-        auth: _OptSSHAuthT = None,
-        port: typing.Optional[int] = None,
+        auth: ssh_auth.SSHAuth | None = None,
+        port: int | None = None,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
         stdin: OptionalStdinT = None,
@@ -1710,12 +1703,12 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
-        exception_class: typing.Type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
+        exception_class: type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
         **kwargs: typing.Any,
-    ) -> typing.Dict[typing.Tuple[str, int], exec_result.ExecResult]:
+    ) -> dict[tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
 
         :param remotes: Connections to execute on
@@ -1796,19 +1789,19 @@ class SSHClientBase(api.ExecHelper):
 
             wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=res, timeout=timeout)
             remote.logger.debug(wait_err_msg)
-            raise exceptions.ExecHelperTimeoutError(result=res, timeout=timeout)  # type: ignore
+            raise exceptions.ExecHelperTimeoutError(result=res, timeout=timeout)  # type: ignore[arg-type]
 
         prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
         cmd = _helpers.cmd_to_string(command)
 
-        results: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
-        errors: typing.Dict[typing.Tuple[str, int], exec_result.ExecResult] = {}
-        raised_exceptions: typing.Dict[typing.Tuple[str, int], Exception] = {}
-        not_done: typing.Set[concurrent.futures.Future[exec_result.ExecResult]]
+        results: dict[tuple[str, int], exec_result.ExecResult] = {}
+        errors: dict[tuple[str, int], exec_result.ExecResult] = {}
+        raised_exceptions: dict[tuple[str, int], Exception] = {}
+        not_done: set[concurrent.futures.Future[exec_result.ExecResult]]
 
         with concurrent.futures.ThreadPoolExecutor(thread_name_prefix="exec-helpers_ssh_multiple_poll_") as executor:
-            futures: typing.Dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]] = {
+            futures: dict[SSHClientBase, concurrent.futures.Future[exec_result.ExecResult]] = {
                 remote: executor.submit(get_result, remote) for remote in set(remotes)
             }  # Use distinct remotes
 
@@ -1861,7 +1854,7 @@ class SSHClientBase(api.ExecHelper):
         try:
             self._sftp.lstat(pathlib.PurePath(path).as_posix())
             return True
-        except IOError:
+        except OSError:
             return False
 
     def stat(self, path: SupportPathT) -> paramiko.sftp_attr.SFTPAttributes:
@@ -1874,7 +1867,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return self._sftp.stat(pathlib.PurePath(path).as_posix())  # pragma: no cover
 
-    def utime(self, path: SupportPathT, times: typing.Optional[typing.Tuple[int, int]] = None) -> None:
+    def utime(self, path: SupportPathT, times: tuple[int, int] | None = None) -> None:
         """Set atime, mtime.
 
         :param path: filesystem object path
@@ -1896,8 +1889,10 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISREG(attrs.st_mode)  # type: ignore  # in case of None we will handle except
-        except (TypeError, IOError):
+            if attrs.st_mode is None:
+                return False
+            return stat.S_ISREG(attrs.st_mode)
+        except (TypeError, OSError):
             return False
 
     def isdir(self, path: SupportPathT) -> bool:
@@ -1910,8 +1905,10 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISDIR(attrs.st_mode)  # type: ignore  # in case of None we will handle except
-        except (TypeError, IOError):
+            if attrs.st_mode is None:
+                return False
+            return stat.S_ISDIR(attrs.st_mode)
+        except (TypeError, OSError):
             return False
 
     def islink(self, path: SupportPathT) -> bool:
@@ -1924,8 +1921,10 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return stat.S_ISLNK(attrs.st_mode)  # type: ignore  # in case of None we will handle except
-        except (TypeError, IOError):
+            if attrs.st_mode is None:
+                return False
+            return stat.S_ISLNK(attrs.st_mode)
+        except (TypeError, OSError):
             return False
 
     def symlink(self, source: SupportPathT, dest: SupportPathT) -> None:

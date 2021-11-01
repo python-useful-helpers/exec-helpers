@@ -22,7 +22,6 @@ from __future__ import annotations
 import ast
 import os.path
 import sys
-import typing
 
 # External Dependencies
 import setuptools
@@ -42,21 +41,13 @@ with open("README.rst") as f:
 # noinspection PyUnresolvedReferences
 def get_simple_vars_from_src(
     src: str,
-) -> typing.Dict[str, typing.Union[str, bytes, int, float, complex, list, set, dict, tuple, None, bool, Ellipsis]]:
+) -> dict[str, str | bytes | int | float | complex | list | set | dict | tuple | None | bool | Ellipsis]:
     """Get simple (string/number/boolean and None) assigned values from source.
 
     :param src: Source code
     :type src: str
     :return: OrderedDict with keys, values = variable names, values
-    :rtype: typing.Dict[
-                str,
-                typing.Union[
-                    str, bytes,
-                    int, float, complex,
-                    list, set, dict, tuple,
-                    None, bool, Ellipsis
-                ]
-            ]
+    :rtype: dict[str, str | bytes | int | float | complex | list | set | dict | tuple | None | bool | Ellipsis]
 
     Limitations: Only defined from scratch variables.
     Not supported by design:
@@ -139,9 +130,7 @@ setuptools.setup(
     name="exec-helpers",
     author=VARIABLES["__author__"],
     author_email=VARIABLES["__author_email__"],
-    maintainer=", ".join(
-        "{name} <{email}>".format(name=name, email=email) for name, email in VARIABLES["__maintainers__"].items()
-    ),
+    maintainer=", ".join(f"{name} <{email}>" for name, email in VARIABLES["__maintainers__"].items()),
     url=VARIABLES["__url__"],
     license=VARIABLES["__license__"],
     description=VARIABLES["__description__"],

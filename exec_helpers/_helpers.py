@@ -9,7 +9,7 @@ import shlex
 import typing
 
 
-def string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
+def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
     """Get bytes string from string/bytes/bytearray union.
 
     :param src: source string or bytes-like object
@@ -36,7 +36,7 @@ def _mask_command(text: str, rules: str) -> str:
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """
-    masked: typing.List[str] = []
+    masked: list[str] = []
 
     # places to exclude
     prev = 0
@@ -51,7 +51,7 @@ def _mask_command(text: str, rules: str) -> str:
     return "".join(masked)
 
 
-def mask_command(text: str, *rules: typing.Optional[str]) -> str:
+def mask_command(text: str, *rules: str | None) -> str:
     """Apply all rules to command.
 
     :param text: source text
@@ -64,7 +64,7 @@ def mask_command(text: str, *rules: typing.Optional[str]) -> str:
     return functools.reduce(_mask_command, (rule for rule in rules if rule is not None), text)
 
 
-def cmd_to_string(command: typing.Union[str, typing.Iterable[str]]) -> str:
+def cmd_to_string(command: str | typing.Iterable[str]) -> str:
     """Convert command to string for usage with shell.
 
     :param command: original command.
@@ -77,7 +77,7 @@ def cmd_to_string(command: typing.Union[str, typing.Iterable[str]]) -> str:
     return " ".join(shlex.quote(elem) for elem in command)
 
 
-def chroot_command(command: str, chroot_path: typing.Optional[str] = None) -> str:
+def chroot_command(command: str, chroot_path: str | None = None) -> str:
     """Prepare command for chroot execution.
 
     :param command: original command.

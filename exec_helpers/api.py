@@ -41,7 +41,7 @@ from . import _helpers
 
 if typing.TYPE_CHECKING:
     # Standard Library
-    import types
+    from types import TracebackType
 
 __all__ = (
     "ExecHelper",
@@ -69,9 +69,9 @@ class ExecuteAsyncResult(typing.NamedTuple):
     """ExecuteAsyncResult."""
 
     interface: typing.Any
-    stdin: typing.Optional[typing.Any]
-    stderr: typing.Optional[typing.Any]
-    stdout: typing.Optional[typing.Any]
+    stdin: typing.Any | None
+    stderr: typing.Any | None
+    stdout: typing.Any | None
     started: datetime.datetime
 
 
@@ -90,7 +90,7 @@ class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
         self,
         *,
         command: str,
-        stdin: typing.Optional[bytes] = None,
+        stdin: bytes | None = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         logger: logging.Logger,
@@ -138,7 +138,7 @@ class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
         return self.__command
 
     @property
-    def stdin(self) -> typing.Optional[bytes]:
+    def stdin(self) -> bytes | None:
         """Pass STDIN text to the process (fully formatted).
 
         :return: pass STDIN text to the process
@@ -186,9 +186,9 @@ class _ChRootContext(typing.ContextManager[None]):
         :raises TypeError: incorrect type of path variable
         """
         self._conn: ExecHelper = conn
-        self._chroot_status: typing.Optional[str] = conn._chroot_path
+        self._chroot_status: str | None = conn._chroot_path
         if path is None or isinstance(path, str):
-            self._path: typing.Optional[str] = path
+            self._path: str | None = path
         elif isinstance(path, pathlib.Path):
             self._path = path.as_posix()  # get absolute path
         else:
@@ -201,16 +201,16 @@ class _ChRootContext(typing.ContextManager[None]):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         self._conn._chroot_path = self._chroot_status
-        self._conn.__exit__(exc_type=exc_type, exc_val=exc_val, exc_tb=exc_tb)  # type: ignore
+        self._conn.__exit__(exc_type, exc_val, exc_tb)
 
 
 class ExecHelper(
-    typing.Callable[..., exec_result.ExecResult],  # type: ignore
+    typing.Callable[..., exec_result.ExecResult],  # type: ignore[misc]
     typing.ContextManager["ExecHelper"],
     abc.ABC,
 ):
@@ -234,7 +234,7 @@ class ExecHelper(
         self.__lock = threading.RLock()
         self.__logger: logging.Logger = logger
         self.log_mask_re: LogMaskReT = log_mask_re
-        self.__chroot_path: typing.Optional[str] = None
+        self.__chroot_path: str | None = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -254,7 +254,7 @@ class ExecHelper(
         return self.__lock
 
     @property
-    def _chroot_path(self) -> typing.Optional[str]:
+    def _chroot_path(self) -> str | None:
         """Path for chroot if set.
 
         :rtype: typing.Optional[str]
@@ -312,9 +312,9 @@ class ExecHelper(
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Context manager usage."""
         self.lock.release()
@@ -335,7 +335,7 @@ class ExecHelper(
 
         return _helpers.mask_command(cmd.rstrip(), self.log_mask_re, log_mask_re)
 
-    def _prepare_command(self, cmd: str, chroot_path: typing.Optional[str] = None) -> str:
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None) -> str:
         """Prepare command: cower chroot and other cases.
 
         :param cmd: main command
@@ -354,7 +354,7 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         **kwargs: typing.Any,
     ) -> ExecuteAsyncResult:
         """Execute command in async mode and return remote interface with IO objects.
@@ -436,14 +436,14 @@ class ExecHelper(
     def _log_command_execute(
         self,
         command: str,
-        log_mask_re: typing.Union[str, None],
+        log_mask_re: str | None,
         log_level: int,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         **_: typing.Any,
     ) -> None:
         """Log command execution."""
         cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
-        target_path: typing.Optional[str] = chroot_path if chroot_path is not None else self._chroot_path
+        target_path: str | None = chroot_path if chroot_path is not None else self._chroot_path
         chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
 
         self.logger.log(level=log_level, msg=f"Executing command{chroot_info}:\n{cmd_for_log!r}\n")
@@ -456,7 +456,7 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         **kwargs: typing.Any,
     ) -> ExecuteContext:
         """Get execution context manager.
@@ -489,7 +489,7 @@ class ExecHelper(
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -569,7 +569,7 @@ class ExecHelper(
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -851,7 +851,7 @@ class ExecHelper(
         return result
 
     @staticmethod
-    def _string_bytes_bytearray_as_bytes(src: typing.Union[str, bytes, bytearray]) -> bytes:
+    def _string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
         """Get bytes string from string/bytes/bytearray union.
 
         :param src: source string or bytes-like object

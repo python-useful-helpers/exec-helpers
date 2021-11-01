@@ -43,7 +43,7 @@ from . import _subprocess_helpers
 
 if typing.TYPE_CHECKING:
     # Standard Library
-    import types
+    from types import TracebackType
 
     # Package Implementation
     from exec_helpers.api import CalledProcessErrorSubClassT
@@ -60,7 +60,6 @@ EnvT = typing.Optional[
     typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
 ]
 CwdT = typing.Optional[typing.Union[str, bytes, pathlib.Path]]
-_OptionalIOBytes = typing.Optional[typing.IO[bytes]]
 
 
 # noinspection PyTypeHints
@@ -76,10 +75,10 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: control interface
         :rtype: subprocess.Popen[bytes]
         """
-        return super().interface  # type: ignore
+        return super().interface  # type: ignore[no-any-return]
 
     @property
-    def stdin(self) -> _OptionalIOBytes:  # type: ignore
+    def stdin(self) -> typing.IO[bytes] | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
@@ -89,7 +88,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin
 
     @property
-    def stderr(self) -> _OptionalIOBytes:  # type: ignore
+    def stderr(self) -> typing.IO[bytes] | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -98,7 +97,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
-    def stdout(self) -> _OptionalIOBytes:  # type: ignore
+    def stdout(self) -> typing.IO[bytes] | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
@@ -116,7 +115,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
         self,
         *,
         command: str,
-        stdin: typing.Optional[bytes] = None,
+        stdin: bytes | None = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: CwdT = None,
@@ -153,7 +152,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
         )
         self.__cwd = cwd
         self.__env = env
-        self.__process: typing.Optional[subprocess.Popen[bytes]] = None
+        self.__process: subprocess.Popen[bytes] | None = None
 
     def __repr__(self) -> str:
         """Debug string.
@@ -235,9 +234,9 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         if self.__process is not None:
             self.__process.__exit__(exc_type, exc_val, exc_tb)
@@ -280,7 +279,7 @@ class Subprocess(api.ExecHelper):
         # noinspection PyTypeChecker
         return super().__enter__()
 
-    def _exec_command(  # type: ignore
+    def _exec_command(  # type: ignore[override]
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
@@ -356,9 +355,12 @@ class Subprocess(api.ExecHelper):
             except subprocess.TimeoutExpired as exc:
                 # kill -9 for all subprocesses
                 _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-                exit_signal: typing.Optional[int] = async_result.interface.poll()
+                exit_signal: int | None = async_result.interface.poll()
                 if exit_signal is None:
-                    raise exceptions.ExecHelperNoKillError(result=result, timeout=timeout) from exc  # type: ignore
+                    raise exceptions.ExecHelperNoKillError(
+                        result=result,
+                        timeout=timeout,  # type: ignore[arg-type]
+                    ) from exc
                 result.exit_code = exit_signal
             finally:
                 stdout_future.cancel()
@@ -374,7 +376,7 @@ class Subprocess(api.ExecHelper):
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
-        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore
+        raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
     # noinspection PyMethodOverriding
     def _execute_async(  # pylint: disable=arguments-differ
@@ -384,7 +386,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -433,8 +435,8 @@ class Subprocess(api.ExecHelper):
 
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
-            env.update(env_patch)  # type: ignore
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
+            env.update(env_patch)  # type: ignore[arg-type]
 
         process: subprocess.Popen[bytes] = subprocess.Popen(  # pylint: disable=consider-using-with
             args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
@@ -449,7 +451,7 @@ class Subprocess(api.ExecHelper):
         )
 
         if stdin is None:
-            process_stdin: _OptionalIOBytes = process.stdin
+            process_stdin: typing.IO[bytes] | None = process.stdin
         elif process.stdin is None:
             self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
             process_stdin = None
@@ -496,7 +498,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -528,8 +530,8 @@ class Subprocess(api.ExecHelper):
         """
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore
-            env.update(env_patch)  # type: ignore
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
+            env.update(env_patch)  # type: ignore[arg-type]
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
@@ -553,7 +555,7 @@ class Subprocess(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -628,7 +630,7 @@ class Subprocess(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
