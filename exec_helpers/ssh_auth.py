@@ -82,8 +82,14 @@ class SSHAuth:
 
         if keys is not None:
             for k in keys:
-                if k not in self.__keys and k != key:
-                    self.__keys.append(k)
+                if k is None:
+                    continue
+                if k not in self.__keys:
+                    if key is not None:
+                        if k != key:
+                            self.__keys.append(k)
+                    else:
+                        self.__keys.append(k)
 
         self.__keys.append(None)
 

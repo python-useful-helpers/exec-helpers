@@ -356,7 +356,7 @@ class Subprocess(api.ExecHelper):
                 # kill -9 for all subprocesses
                 _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
                 exit_signal: int | None = async_result.interface.poll()
-                if exit_signal is None:
+                if exit_signal is None:  # pylint: disable=consider-using-assignment-expr
                     raise exceptions.ExecHelperNoKillError(
                         result=result,
                         timeout=timeout,  # type: ignore[arg-type]
@@ -379,7 +379,7 @@ class Subprocess(api.ExecHelper):
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
     # noinspection PyMethodOverriding
-    def _execute_async(  # pylint: disable=arguments-differ
+    def _execute_async(
         self,
         command: str,
         *,
@@ -491,7 +491,7 @@ class Subprocess(api.ExecHelper):
             started=started,
         )
 
-    def open_execute_context(  # pylint: disable=arguments-differ
+    def open_execute_context(
         self,
         command: str,
         *,
@@ -543,7 +543,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    def execute(  # pylint: disable=arguments-differ
+    def execute(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -691,7 +691,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    def check_call(  # pylint: disable=arguments-differ
+    def check_call(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -778,7 +778,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    def check_stderr(  # pylint: disable=arguments-differ
+    def check_stderr(
         self,
         command: CommandT,
         verbose: bool = False,

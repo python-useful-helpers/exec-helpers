@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
     - id: check-yaml
     - id: end-of-file-fixer
@@ -8,7 +8,7 @@ repos:
     - id: mixed-line-ending
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.9.3
+    rev: 5.10.1
     hooks:
     - id: isort
       name: isort (python)
@@ -20,14 +20,14 @@ repos:
       types: [pyi]
 
   - repo: https://github.com/psf/black
-    rev: 21.10b0
+    rev: 22.3.0
     hooks:
     - id: black
       # It is recommended to specify the latest version of Python
       # supported by your project here, or alternatively use
       # pre-commit's default_language_version, see
       # https://pre-commit.com/#top_level-default_language_version
-      language_version: python3.7
+      language_version: python3.9
       always_run: true
 
   - repo: https://github.com/pre-commit/pygrep-hooks

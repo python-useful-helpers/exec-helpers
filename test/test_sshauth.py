@@ -50,8 +50,14 @@ def get_internal_keys(
         int_keys.append(key)
     if keys is not None:
         for k in keys:
-            if k not in int_keys and k != key:
-                int_keys.append(k)
+            if k is None:
+                continue
+            if k not in int_keys:
+                if key is not None:
+                    if k != key:
+                        int_keys.append(k)
+                else:
+                    int_keys.append(k)
 
     int_keys.append(None)
     return int_keys
@@ -116,7 +122,7 @@ def test_001_init_checks(run_parameters) -> None:
     _key = None if auth.public_key is None else f"<private for pub: {auth.public_key}>"
     _keys = []
     for k in int_keys:
-        if k == key:
+        if k is key or (k is not None and key is not None and k == key):
             continue
         _keys.append(f"<private for pub: {gen_public_key(k)}>" if k is not None else None)
 

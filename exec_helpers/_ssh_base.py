@@ -68,7 +68,7 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
 KeepAlivePeriodT = typing.Union[int, bool]
 SupportPathT = typing.Union[str, pathlib.PurePath]
-_RType = typing.TypeVar("_RType")
+_RT = typing.TypeVar("_RT")
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore[name-defined,misc]
@@ -653,12 +653,12 @@ class SSHClientBase(api.ExecHelper):
         """
         with self.lock:
             transport = self.__ssh.get_transport()
-            if transport is not None:
+            if transport is not None:  # pylint: disable=consider-using-assignment-expr
                 return transport
 
             self.reconnect()
             transport = self.__ssh.get_transport()
-            if transport is not None:
+            if transport is not None:  # pylint: disable=consider-using-assignment-expr
                 return transport
             raise ConnectionError("Can not get SSH transport (with reconnect)")
 
@@ -755,7 +755,7 @@ class SSHClientBase(api.ExecHelper):
 
             if config.proxyjump:
                 transport = last_ssh_client.get_transport()
-                if transport is None:
+                if transport is None:  # pylint: disable=consider-using-assignment-expr
                     raise ConnectionError("Can not get SSH transport")
                 sock = transport.open_channel(
                     kind="direct-tcpip",
@@ -934,7 +934,7 @@ class SSHClientBase(api.ExecHelper):
         return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
 
     # noinspection PyMethodOverriding
-    def _execute_async(  # pylint: disable=arguments-differ
+    def _execute_async(
         self,
         command: str,
         *,
@@ -1128,7 +1128,7 @@ class SSHClientBase(api.ExecHelper):
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
-    def open_execute_context(  # pylint: disable=arguments-differ
+    def open_execute_context(
         self,
         command: str,
         *,
@@ -1184,7 +1184,7 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def execute(  # pylint: disable=arguments-differ
+    def execute(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -1331,7 +1331,7 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def check_call(  # pylint: disable=arguments-differ
+    def check_call(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -1418,7 +1418,7 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def check_stderr(  # pylint: disable=arguments-differ
+    def check_stderr(
         self,
         command: CommandT,
         verbose: bool = False,

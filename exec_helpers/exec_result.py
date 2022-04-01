@@ -119,7 +119,7 @@ def _get_str_from_bin(src: bytearray) -> str:
     :return: decoded string
     :rtype: str
     """
-    return src.strip().decode(encoding="utf-8", errors="backslashreplace")
+    return src.rstrip().decode(encoding="utf-8", errors="backslashreplace")
 
 
 def _get_bytearray_from_array(src: typing.Iterable[bytes]) -> bytearray:
@@ -641,7 +641,7 @@ class ExecResult:
             .. note:: Can be insecure.
             """
             with self.stdout_lock:
-                return lxml.etree.fromstring(b"".join(self.stdout))
+                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec[blacklist]
 
     def __dir__(self) -> list[str]:
         """Override dir for IDE and as source for getitem checks.

@@ -232,7 +232,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
         exc_tb: typing.Optional[types.TracebackType],
     ) -> None:
         process = self.__process
-        if process is not None:
+        if process is not None:  # pylint: disable=consider-using-assignment-expr
             _subprocess_helpers.kill_proc_tree(process.pid)
             try:
                 process.kill()
@@ -351,7 +351,7 @@ class Subprocess(api.ExecHelper):
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_signal: typing.Optional[int] = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
-            if exit_signal is None:
+            if exit_signal is None:  # pylint: disable=consider-using-assignment-expr
                 raise exceptions.ExecHelperNoKillError(
                     result=result,
                     timeout=timeout,  # type: ignore[arg-type]
@@ -367,7 +367,7 @@ class Subprocess(api.ExecHelper):
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
 
     # noinspection PyMethodOverriding
-    async def _execute_async(  # pylint: disable=arguments-differ
+    async def _execute_async(
         self,
         command: str,
         *,
@@ -475,7 +475,7 @@ class Subprocess(api.ExecHelper):
             started=started,
         )
 
-    def open_execute_context(  # pylint: disable=arguments-differ
+    def open_execute_context(
         self,
         command: str,
         *,
@@ -527,7 +527,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    async def execute(  # pylint: disable=arguments-differ
+    async def execute(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -675,7 +675,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    async def check_call(  # pylint: disable=arguments-differ
+    async def check_call(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -762,7 +762,7 @@ class Subprocess(api.ExecHelper):
             **kwargs,
         )
 
-    async def check_stderr(  # pylint: disable=arguments-differ
+    async def check_stderr(
         self,
         command: CommandT,
         verbose: bool = False,
