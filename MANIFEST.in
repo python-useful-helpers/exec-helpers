@@ -1,4 +1,4 @@
-include *.rst LICENSE requirements.txt
+include *.rst LICENSE requirements.txt classifiers.txt
 global-include *.pyx *.pxd
 global-exclude *.c
 exclude Makefile
@@ -9,5 +9,5 @@ exclude .gitignore .dockerignore
 prune test
 prune .github
 prune .azure_pipelines
-prune docs
+prune doc
 exclude CODEOWNERS CODE_OF_CONDUCT.md _config.yml

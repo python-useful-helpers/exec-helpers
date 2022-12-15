@@ -8,6 +8,40 @@ requires = [
 ]
 build-backend="setuptools.build_meta"
 
+[project]
+name = "exec-helpers"
+description = "Execution helpers for simplified usage of subprocess and ssh."
+readme = "README.rst"
+urls={"Bug Tracker" = "https://github.com/python-useful-helpers/exec-helpers/issues", "Documentation" = "https://exec-helpers.readthedocs.io/" }
+requires-python = ">=3.7.0"
+keywords = ["subprocess", "ssh"]
+license = {text = "Apache License, Version 2.0"}
+authors=[{name="Alexey Stepanov", email="penguinolog@gmail.com"}]
+maintainers=[
+  {name="Alexey Stepanov", email="penguinolog@gmail.com"},
+  {name="Antonio Esposito", email="esposito.cloud@gmail.com"},
+  {name="Dennis Dmitriev", email="dis-xcom@gmail.com"}
+]
+dynamic = ["version", "classifiers", "dependencies"]
+
+[tool.setuptools]
+packages= ["exec_helpers"]
+package-data={"exec_helpers"=["py.typed"], "*"=["*.pyi"]}
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+classifiers = {file = ["classifiers.txt"]}
+
+[project.optional-dependencies]
+xml = ["defusedxml"]
+lxml = ["lxml>=4.6.2"]
+yaml = ["PyYAML>=3.12"]
+all_formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
+all-formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
+
+[tool.bdist_wheel]
+universal = false
+
 [tool.black]
 line-length = 120
 safe = true
@@ -107,3 +141,4 @@ exclude_lines = [
 pretty_print = true
 
 [tool.setuptools_scm]
+write_to="exec_helpers/_version.py"
