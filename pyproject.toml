@@ -25,6 +25,46 @@ import_heading_thirdparty = "External Dependencies"
 import_heading_firstparty = "Package Implementation"
 import_heading_localfolder = "Local Implementation"
 
+[tool.doc8]
+max-line-length = 150
+
+[tool.pydocstyle]
+ignore = [
+  "D401",
+  "D202",
+  "D203",
+  "D213"
+]
+# First line should be in imperative mood; try rephrasing
+# No blank lines allowed after function docstring
+# 1 blank line required before class docstring
+# Multi-line docstring summary should start at the second line
+match = "(?!_version|test_)*.py"
+
+[tool.mypy]
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+show_error_context = true
+show_column_numbers = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+  "psutil",
+  "defusedxml.*",
+  "lxml.*"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-vvv -s -p no:django -p no:ipdb"
+testpaths = ["test"]
+mock_use_standalone_module = false
+junit_family = "xunit2"
+
 [tool.coverage.run]
 omit = ["test/*"]
 branch = true

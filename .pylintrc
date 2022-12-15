@@ -29,10 +29,12 @@ limit-inference-results=100
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
 load-plugins=pylint.extensions.docstyle,
+             pylint.extensions.docparams,
              pylint.extensions.overlapping_exceptions,
              pylint.extensions.emptystring,
              pylint.extensions.comparetozero,
              pylint.extensions.check_elif,
+             pylint.extensions.for_any_all,
              pylint.extensions.code_style,
              pylint.extensions.redefined_variable_type,
              pylint.extensions.typing,
@@ -84,7 +86,6 @@ disable=locally-disabled,
         too-many-statements,
         too-many-instance-attributes,
         too-many-lines,
-        misplaced-comparison-constant,
         broad-except,
         logging-fstring-interpolation,
         logging-format-interpolation
@@ -297,13 +298,6 @@ max-line-length=120
 
 # Maximum number of lines in a module.
 max-module-lines=1000
-
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.

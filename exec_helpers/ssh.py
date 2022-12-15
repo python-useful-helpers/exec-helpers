@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 
@@ -39,7 +39,7 @@ class SSHClient(_ssh_base.SSHClientBase):
 
     __slots__ = ()
 
-    def __enter__(self) -> SSHClient:  # pylint: disable=useless-super-delegation
+    def __enter__(self) -> SSHClient:
         """Get context manager.
 
         :return: SSHClient instance with entered context
@@ -62,7 +62,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         """Run 'mkdir -p path' on remote.
 
         :param path: path to create
-        :type path: typing.Union[str, pathlib.PurePath]
+        :type path: str | pathlib.PurePath
         """
         if self.exists(path):
             return
@@ -73,7 +73,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         """Run 'rm -rf path' on remote.
 
         :param path: path to remove
-        :type path: typing.Union[str, pathlib.PurePath]
+        :type path: str | pathlib.PurePath
         """
         # noinspection PyTypeChecker
         self.execute(f"rm -rf {self._path_esc(pathlib.PurePath(path).as_posix())}")
@@ -82,9 +82,9 @@ class SSHClient(_ssh_base.SSHClientBase):
         """Upload file(s) from source to target using SFTP session.
 
         :param source: local path
-        :type source: typing.Union[str, pathlib.PurePath]
+        :type source: str | pathlib.PurePath
         :param target: remote path
-        :type target: typing.Union[str, pathlib.PurePath]
+        :type target: str | pathlib.PurePath
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
@@ -112,9 +112,9 @@ class SSHClient(_ssh_base.SSHClientBase):
         """Download file(s) to target from destination.
 
         :param destination: remote path
-        :type destination: typing.Union[str, pathlib.PurePath]
+        :type destination: str | pathlib.PurePath
         :param target: local path
-        :type target: typing.Union[str, pathlib.PurePath]
+        :type target: str | pathlib.PurePath
         :return: downloaded file present on local filesystem
         :rtype: bool
         """

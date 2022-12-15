@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -17,6 +17,8 @@
 .. versionadded:: 3.0.0
 """
 
+from __future__ import annotations
+
 # noinspection PyUnresolvedReferences
 __all__ = (
     # pylint: disable=undefined-all-variable
@@ -33,18 +35,22 @@ import importlib
 import typing
 import warnings
 
-__locals: typing.Dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
+if typing.TYPE_CHECKING:
+    # Standard Library
+    from collections.abc import Sequence
 
-__lazy_load_modules: typing.Sequence[str] = ()
+__locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
 
-__lazy_load_parent_modules: typing.Dict[str, str] = {
+__lazy_load_modules: Sequence[str] = ()
+
+__lazy_load_parent_modules: dict[str, str] = {
     "Subprocess": "subprocess",
     # API
     "ExecResult": "exec_result",
     "ExecHelper": "api",
 }
 
-_deprecated: typing.Dict[str, str] = {}
+_deprecated: dict[str, str] = {}
 
 
 def __getattr__(name: str) -> typing.Any:

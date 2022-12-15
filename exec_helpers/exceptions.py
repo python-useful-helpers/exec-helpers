@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -26,6 +26,10 @@ from exec_helpers import proc_enums
 from . import _log_templates
 
 if typing.TYPE_CHECKING:
+    # Standard Library
+    from collections.abc import Iterable
+    from collections.abc import Sequence
+
     # Package Implementation
     from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
     from exec_helpers.proc_enums import ExitCodeT
@@ -78,7 +82,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: exec_result.ExecResult
         :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+        :type timeout: int | float
         """
         super().__init__(message)
         self.result: exec_result.ExecResult = result
@@ -127,7 +131,7 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
         :param result: execution result
         :type result: exec_result.ExecResult
         :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+        :type timeout: int | float
         """
         message: str = (
             f"Wait for {result.cmd!r} during {timeout!s}s: "
@@ -159,7 +163,7 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
         :param result: execution result
         :type result: exec_result.ExecResult
         :param timeout: timeout for command
-        :type timeout: typing.Union[int, float]
+        :type timeout: int | float
         """
         message: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         super().__init__(message, result=result, timeout=timeout)
@@ -173,20 +177,20 @@ class CalledProcessError(ExecCalledProcessError):
     def __init__(
         self,
         result: exec_result.ExecResult,
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
     ) -> None:
         """Exception for error on process calls.
 
         :param result: execution result
         :type result: exec_result.ExecResult
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
 
         .. versionchanged:: 1.1.1 - provide full result
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
         self.result: exec_result.ExecResult = result
-        self.expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        self.expected: Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         message: str = (
             f"Command {result.cmd!r} returned exit code {result.exit_code} while expected {expected}\n"
             f"\tSTDOUT:\n"
@@ -238,7 +242,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         command: str,
         errors: dict[tuple[str, int], exec_result.ExecResult],
         results: dict[tuple[str, int], exec_result.ExecResult],
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         *,
         _message: str | None = None,
     ) -> None:
@@ -247,17 +251,17 @@ class ParallelCallProcessError(ExecCalledProcessError):
         :param command: command
         :type command: str
         :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type errors: dict[tuple[str, int], ExecResult]
         :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type results: dict[tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param _message: message override
-        :type _message: typing.Optional[str]
+        :type _message: str | None
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        prep_expected: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        prep_expected: Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         errors_str: str = "\n\t".join(f"{host}:{port} - {result.exit_code} " for (host, port), result in errors.items())
         message: str = _message or (
             f"Command {command!r} returned unexpected exit codes on several hosts\n"
@@ -269,7 +273,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
         self.cmd: str = command
         self.errors: dict[tuple[str, int], exec_result.ExecResult] = errors
         self.results: dict[tuple[str, int], exec_result.ExecResult] = results
-        self.expected: typing.Sequence[ExitCodeT] = prep_expected
+        self.expected: Sequence[ExitCodeT] = prep_expected
 
 
 class ParallelCallExceptionsError(ParallelCallProcessError):
@@ -283,7 +287,7 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         exceptions: dict[tuple[str, int], Exception],
         errors: dict[tuple[str, int], exec_result.ExecResult],
         results: dict[tuple[str, int], exec_result.ExecResult],
-        expected: typing.Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
+        expected: Iterable[ExitCodeT] = (proc_enums.EXPECTED,),
         *,
         _message: str | None = None,
     ) -> None:
@@ -292,15 +296,15 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         :param command: command
         :type command: str
         :param exceptions: Exceptions on connections
-        :type exceptions: typing.Dict[typing.Tuple[str, int], Exception]
+        :type exceptions: dict[tuple[str, int], Exception]
         :param errors: results with errors
-        :type errors: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type errors: dict[tuple[str, int], ExecResult]
         :param results: all results
-        :type results: typing.Dict[typing.Tuple[str, int], ExecResult]
+        :type results: dict[tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param _message: message override
-        :type _message: typing.Optional[str]
+        :type _message: str | None
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """

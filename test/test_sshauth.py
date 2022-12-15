@@ -110,7 +110,7 @@ def test_001_init_checks(run_parameters) -> None:
     assert auth.username == username
     with contextlib.closing(io.BytesIO()) as tgt:
         auth.enter_password(tgt)
-        assert tgt.getvalue() == f"{run_parameters.get('password', '')}\n".encode("utf-8")
+        assert tgt.getvalue() == f"{run_parameters.get('password', '')}\n".encode()
 
     key = int_keys[0]
 

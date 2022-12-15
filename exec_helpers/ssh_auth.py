@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 
@@ -29,6 +29,9 @@ import paramiko
 if typing.TYPE_CHECKING:
     # Standard Library
     import socket
+    from collections.abc import Collection
+    from collections.abc import Iterable
+    from collections.abc import Sequence
 
 __all__ = ("SSHAuth",)
 
@@ -45,8 +48,8 @@ class SSHAuth:
         username: str | None = None,
         password: str | None = None,
         key: paramiko.PKey | None = None,
-        keys: typing.Sequence[paramiko.PKey | None] | None = None,
-        key_filename: typing.Iterable[str] | str | None = None,
+        keys: Sequence[paramiko.PKey | None] | None = None,
+        key_filename: Iterable[str] | str | None = None,
         passphrase: str | None = None,
     ) -> None:
         """SSH credentials object.
@@ -56,17 +59,17 @@ class SSHAuth:
         Password and key is private, other data is read-only.
 
         :param username: remote username.
-        :type username: typing.Optional[str]
+        :type username: str | None
         :param password: remote password
-        :type password: typing.Optional[str]
+        :type password: str | None
         :param key: Main connection key
-        :type key: typing.Optional[paramiko.PKey]
+        :type key: paramiko.PKey | None
         :param keys: Alternate connection keys
-        :type keys: typing.Optional[typing.Sequence[typing.Union[paramiko.PKey, None]]]
+        :type keys: Sequence[tparamiko.PKey | None] | None
         :param key_filename: filename(s) for additional key files
-        :type key_filename: typing.Union[typing.Iterable[str], str, None]
+        :type key_filename: typing.Union[Iterable[str], str, None]
         :param passphrase: passphrase for keys. Need, if differs from password
-        :type passphrase: typing.Optional[str]
+        :type passphrase: str | None
 
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
@@ -96,7 +99,7 @@ class SSHAuth:
         self.__key_index: int = 0
 
         if key_filename is None:
-            self.__key_filename: typing.Collection[str] = ()
+            self.__key_filename: Collection[str] = ()
         elif isinstance(key_filename, str):
             self.__key_filename = (key_filename,)
         else:
@@ -119,7 +122,7 @@ class SSHAuth:
         :param key: SSH private key
         :type key: paramiko.PKey
         :return: public key text if applicable
-        :rtype: typing.Optional[str]
+        :rtype: str | None
         """
         if key is None:
             return None
@@ -135,7 +138,7 @@ class SSHAuth:
         return self.__get_public_key(self.__keys[self.__key_index])
 
     @property
-    def key_filename(self) -> typing.Collection[str]:
+    def key_filename(self) -> Collection[str]:
         """Key filename(s).
 
         :return: copy of used key filename (original should not be changed via mutability).
@@ -175,7 +178,7 @@ class SSHAuth:
         :param log: Log on generic connection failure
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
-        :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+        :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -339,7 +342,7 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         """Specific dictionary for  ssh hostname - auth mapping.
 
         :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
-        :type auth_dict: typing.Optional[typing.Union[typing.Dict[str, SSHAuth], SSHAuthMapping]]
+        :type auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None
         :param auth_mapping: SSHAuth setting via **kwargs
         :type auth_mapping: SSHAuth
         :raises TypeError: Incorrect type of auth dict or auth object
@@ -417,9 +420,9 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         :param host_names: alternate host names
         :type host_names: str
         :param default: credentials if hostname not found
-        :type default: typing.Optional[SSHAuth]
+        :type default: SSHAuth | None
         :return: guessed credentials
-        :rtype: typing.Optional[SSHAuth]
+        :rtype: SSHAuth | None
         :raises TypeError: Default SSH Auth object is not SSHAuth
 
         Method used in cases, when 1 host share 2 or more names in config.

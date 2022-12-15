@@ -8,6 +8,10 @@ import re
 import shlex
 import typing
 
+if typing.TYPE_CHECKING:
+    # Standard Library
+    from collections.abc import Iterable
+
 
 def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
     """Get bytes string from string/bytes/bytearray union.
@@ -64,11 +68,11 @@ def mask_command(text: str, *rules: str | None) -> str:
     return functools.reduce(_mask_command, (rule for rule in rules if rule is not None), text)
 
 
-def cmd_to_string(command: str | typing.Iterable[str]) -> str:
+def cmd_to_string(command: str | Iterable[str]) -> str:
     """Convert command to string for usage with shell.
 
     :param command: original command.
-    :type command: typing.Union[str, typing.Iterable[str]]
+    :type command: str | Iterable[str]
     :return: command as single string
     :rtype: str
     """
@@ -83,7 +87,7 @@ def chroot_command(command: str, chroot_path: str | None = None) -> str:
     :param command: original command.
     :type command: str
     :param chroot_path: chroot path
-    :type chroot_path: typing.Optional[str]
+    :type chroot_path: str | None
     :return: command to be executed with chroot rules if applicable
     :rtype: str
     """

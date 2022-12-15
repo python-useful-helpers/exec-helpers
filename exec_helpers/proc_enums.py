@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -25,6 +25,11 @@ from __future__ import annotations
 import enum
 import sys
 import typing
+
+if typing.TYPE_CHECKING:
+    # Standard Library
+    from collections.abc import Iterable
+    from collections.abc import Sequence
 
 __all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID", "ExitCodeT")
 
@@ -198,7 +203,7 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     return code
 
 
-def exit_codes_to_enums(codes: typing.Iterable[ExitCodeT] | None = None) -> typing.Sequence[ExitCodeT]:
+def exit_codes_to_enums(codes: Iterable[ExitCodeT] | None = None) -> Sequence[ExitCodeT]:
     """Convert integer exit codes to enums.
 
     :param codes: exit codes to process

@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -58,6 +58,9 @@ except ImportError:
 if typing.TYPE_CHECKING:
     # Standard Library
     import xml.etree.ElementTree  # nosec  # for typing only
+    from collections.abc import Callable
+    from collections.abc import Iterable
+    from collections.abc import Sequence
 
     # External Dependencies
     # noinspection PyPackageRequirements
@@ -66,25 +69,24 @@ if typing.TYPE_CHECKING:
     # Package Implementation
     from exec_helpers.proc_enums import ExitCodeT
 
+    _T = typing.TypeVar("_T")
+
 __all__ = ("ExecResult", "OptionalStdinT")
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 OptionalStdinT = typing.Union[bytes, str, bytearray, None]
-_OptBytesIterableT = typing.Optional[typing.Iterable[bytes]]
-_OptLoggerT = typing.Optional[logging.Logger]
-_T = typing.TypeVar("_T")
 
 
 def _handle_deserialize(
     fmt: str,
-) -> typing.Callable[[typing.Callable[[ExecResult], _T]], typing.Callable[[ExecResult], _T]]:
+) -> Callable[[Callable[[ExecResult], _T]], Callable[[ExecResult], _T]]:
     """Decorator fabric for decoder getters.
 
     :return: real decorator
     """
 
-    def decorator(method: typing.Callable[[ExecResult], _T]) -> typing.Callable[[ExecResult], _T]:
+    def decorator(method: Callable[[ExecResult], _T]) -> Callable[[ExecResult], _T]:
         """Decorator for decoder getter.
 
         :return: wrapped to try/except getter
@@ -122,11 +124,11 @@ def _get_str_from_bin(src: bytearray) -> str:
     return src.rstrip().decode(encoding="utf-8", errors="backslashreplace")
 
 
-def _get_bytearray_from_array(src: typing.Iterable[bytes]) -> bytearray:
+def _get_bytearray_from_array(src: Iterable[bytes]) -> bytearray:
     """Get bytearray from array of bytes blocks.
 
     :param src: source to process
-    :type src: typing.List[bytes]
+    :type src: list[bytes]
     :return: bytearray
     :rtype: bytearray
     """
@@ -138,23 +140,23 @@ class LinesAccessProxy:
 
     __slots__ = ("_data",)
 
-    def __init__(self, data: typing.Sequence[bytes]) -> None:
+    def __init__(self, data: Sequence[bytes]) -> None:
         """Lines access proxy.
 
         :param data: data to work with.
-        :type data: typing.Sequence[bytes]
+        :type data: Sequence[bytes]
         """
         self._data: tuple[bytes, ...] = tuple(data)
 
     # pylint: disable=undefined-variable
     def __getitem__(
         self,
-        item: int | slice | typing.Iterable[int | slice | ellipsis],  # noqa: F821
+        item: int | slice | Iterable[int | slice | ellipsis],  # noqa: F821
     ) -> str:
         """Access magic.
 
         :param item: index
-        :type item: typing.Union[int, slice, typing.Iterable[typing.Union[int, slice, ellipsis]]]
+        :type item: typing.Union[int, slice, Iterable[typing.Union[int, slice, ellipsis]]]
         :return: Joined selected lines
         :rtype: str
         :raises TypeError: Unexpected key
@@ -225,8 +227,8 @@ class ExecResult:
         self,
         cmd: str,
         stdin: OptionalStdinT = None,
-        stdout: _OptBytesIterableT = None,
-        stderr: _OptBytesIterableT = None,
+        stdout: Iterable[bytes] | None = None,
+        stderr: Iterable[bytes] | None = None,
         exit_code: ExitCodeT = proc_enums.INVALID,
         *,
         started: datetime.datetime | None = None,
@@ -238,13 +240,13 @@ class ExecResult:
         :param stdin: string STDIN
         :type stdin: typing.Union[bytes, str, bytearray, None]
         :param stdout: binary STDOUT
-        :type stdout: typing.Optional[typing.Iterable[bytes]]
+        :type stdout: Iterable[bytes] | None
         :param stderr: binary STDERR
-        :type stderr: typing.Optional[typing.Iterable[bytes]]
+        :type stderr: Iterable[bytes] | None
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
-        :type exit_code: typing.Union[int, proc_enums.ExitCodes]
+        :type exit_code: int | proc_enums.ExitCodes
         :param started: Timestamp of command start
-        :type started: typing.Optional[datetime.datetime]
+        :type started: datetime.datetime | None
         """
         self.__stdout_lock = threading.RLock()
         self.__stderr_lock = threading.RLock()
@@ -306,7 +308,7 @@ class ExecResult:
         """Timestamp.
 
         :return: exit code timestamp
-        :rtype: typing.Optional[datetime.datetime]
+        :rtype: datetime.datetime | None
         """
         return self.__timestamp
 
@@ -371,8 +373,8 @@ class ExecResult:
 
     @staticmethod
     def _poll_stream(
-        src: typing.Iterable[bytes],
-        log: _OptLoggerT = None,
+        src: Iterable[bytes],
+        log: logging.Logger | None = None,
         verbose: bool = False,
     ) -> list[bytes]:
         """Stream poll helper.
@@ -381,7 +383,7 @@ class ExecResult:
         :param log: logger instance, if line per line logging expected
         :param verbose: use INFO level for logging
         :return: read result as list of bytes strings
-        :rtype: typing.List[bytes]
+        :rtype: list[bytes]
         """
         dst: list[bytes] = []
         with contextlib.suppress(IOError):
@@ -396,16 +398,16 @@ class ExecResult:
 
     def read_stdout(
         self,
-        src: _OptBytesIterableT = None,
-        log: _OptLoggerT = None,
+        src: Iterable[bytes] | None = None,
+        log: logging.Logger | None = None,
         verbose: bool = False,
     ) -> None:
         """Read stdout file-like object to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.Iterable]
+        :type src: Iterable[bytes] | None
         :param log: logger
-        :type log: typing.Optional[logging.Logger]
+        :type log: logging.Logger | None
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received
@@ -423,16 +425,16 @@ class ExecResult:
 
     def read_stderr(
         self,
-        src: _OptBytesIterableT = None,
-        log: _OptLoggerT = None,
+        src: Iterable[bytes] | None = None,
+        log: logging.Logger | None = None,
         verbose: bool = False,
     ) -> None:
         """Read stderr file-like object to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.Iterable]
+        :type src: Iterable[bytes] | None
         :param log: logger
-        :type log: typing.Optional[logging.Logger]
+        :type log: logging.Logger | None
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received
@@ -547,7 +549,7 @@ class ExecResult:
         """Return(exit) code of command.
 
         :return: exit code
-        :rtype: typing.Union[int, proc_enums.ExitCodes]
+        :rtype: int | proc_enums.ExitCodes
         """
         return self.__exit_code
 
@@ -556,7 +558,7 @@ class ExecResult:
         """Return(exit) code of command.
 
         :param new_val: new exit code
-        :type new_val: typing.Union[int, proc_enums.ExitCodes]
+        :type new_val: int | proc_enums.ExitCodes
         :raises RuntimeError: Exit code is already received
         :raises TypeError: exit code is not int instance
 
@@ -576,12 +578,12 @@ class ExecResult:
         """Timestamp of command start.
 
         :return: timestamp from command start, if applicable
-        :rtype: typing.Optional[datetime.datetime]
+        :rtype: datetime.datetime | None
         .. versionadded:: 4.0.0
         """
         return self.__started
 
-    @property  # type: ignore[misc]
+    @property
     @_handle_deserialize("json")
     def stdout_json(
         self,
@@ -597,7 +599,7 @@ class ExecResult:
 
     if yaml is not None or ruamel_yaml is not None:
 
-        @property  # type: ignore[misc]
+        @property
         @_handle_deserialize("yaml")
         def stdout_yaml(self) -> typing.Any:
             """YAML from stdout.
@@ -615,7 +617,7 @@ class ExecResult:
 
     if defusedxml is not None:
         # noinspection PyUnresolvedReferences
-        @property  # type: ignore[misc]
+        @property
         @_handle_deserialize("xml")
         def stdout_xml(self) -> xml.etree.ElementTree.Element:
             """XML from stdout.
@@ -629,7 +631,7 @@ class ExecResult:
 
     if lxml is not None:
 
-        @property  # type: ignore[misc]
+        @property
         @_handle_deserialize("lxml")
         def stdout_lxml(self) -> lxml.etree.Element:
             """XML from stdout using lxml.
@@ -647,7 +649,7 @@ class ExecResult:
         """Override dir for IDE and as source for getitem checks.
 
         :return: list with public attributes and methods
-        :rtype: typing.List[str]
+        :rtype: list[str]
         """
         content = [
             "cmd",

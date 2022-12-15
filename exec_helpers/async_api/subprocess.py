@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -44,6 +44,7 @@ from .. import _subprocess_helpers
 if typing.TYPE_CHECKING:
     # Standard Library
     import types
+    from collections.abc import AsyncIterable
 
     # Package Implementation
     from exec_helpers.api import CalledProcessErrorSubClassT
@@ -65,7 +66,6 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
 
     __slots__ = ()
 
-    # pylint: disable=no-member
     @property
     def interface(self) -> asyncio.subprocess.Process:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
@@ -78,30 +78,30 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
     # pylint: enable=no-member
 
     @property
-    def stdin(self) -> typing.Optional[asyncio.StreamWriter]:  # type: ignore[override]
+    def stdin(self) -> asyncio.StreamWriter | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
-        :rtype: typing.Optional[asyncio.StreamWriter]
+        :rtype: asyncio.StreamWriter | None
         """
         warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
         return super().stdin  # type: ignore[return-value]
 
     @property
-    def stderr(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore[override]
+    def stderr(self) -> AsyncIterable[bytes] | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
-        :rtype: typing.Optional[typing.AsyncIterable[bytes]]
+        :rtype: AsyncIterable[bytes] | None
         """
         return super().stderr  # type: ignore[return-value]
 
     @property
-    def stdout(self) -> typing.Optional[typing.AsyncIterable[bytes]]:  # type: ignore[override]
+    def stdout(self) -> AsyncIterable[bytes] | None:  # type: ignore[override]
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
-        :rtype: typing.Optional[typing.AsyncIterable[bytes]]
+        :rtype: AsyncIterable[bytes] | None
         """
         return super().stdout  # type: ignore[return-value]
 
@@ -115,7 +115,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
         self,
         *,
         command: str,
-        stdin: typing.Optional[bytes] = None,
+        stdin: bytes | None = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
         cwd: CwdT = None,
@@ -134,9 +134,9 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param logger: instance logger
         :type logger: logging.Logger
         :param kwargs: additional parameters for call.
@@ -152,7 +152,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
         )
         self.__cwd = cwd
         self.__env = env
-        self.__process: typing.Optional[asyncio.subprocess.Process] = None  # pylint: disable=no-member
+        self.__process: asyncio.subprocess.Process | None = None
 
     def __repr__(self) -> str:
         """Debug string.
@@ -227,9 +227,9 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
 
     async def __aexit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[types.TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
     ) -> None:
         process = self.__process
         if process is not None:  # pylint: disable=consider-using-assignment-expr
@@ -246,7 +246,7 @@ class Subprocess(api.ExecHelper):
 
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
-    :type log_mask_re: typing.Optional[str]
+    :type log_mask_re: str | None
     :param logger: logger instance to use
     :type logger: logging.Logger
 
@@ -305,14 +305,14 @@ class Subprocess(api.ExecHelper):
         :param async_result: execute_async result
         :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param log_stdout: log STDOUT during read
         :type log_stdout: bool
         :param log_stderr: log STDERR during read
@@ -350,7 +350,7 @@ class Subprocess(api.ExecHelper):
         except asyncio.TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
-            exit_signal: typing.Optional[int] = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
+            exit_signal: int | None = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
             if exit_signal is None:  # pylint: disable=consider-using-assignment-expr
                 raise exceptions.ExecHelperNoKillError(
                     result=result,
@@ -374,7 +374,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -391,13 +391,13 @@ class Subprocess(api.ExecHelper):
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -405,9 +405,9 @@ class Subprocess(api.ExecHelper):
                     'SubprocessExecuteAsyncResult',
                     [
                         ('interface', asyncio.subprocess.Process),
-                        ('stdin', typing.Optional[asyncio.StreamWriter]),
-                        ('stderr', typing.Optional[asyncio.StreamReader]),
-                        ('stdout', typing.Optional[asyncio.StreamReader]),
+                        ('stdin', asyncio.StreamWriter | None),
+                        ('stderr', asyncio.StreamReader | None),
+                        ('stdout', asyncio.StreamReader | None),
                         ("started", datetime.datetime),
                     ]
                 )
@@ -421,7 +421,7 @@ class Subprocess(api.ExecHelper):
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
             env.update(env_patch)  # type: ignore[arg-type]
 
-        process: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(  # pylint: disable=no-member
+        process: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(
             cmd=self._prepare_command(cmd=command, chroot_path=chroot_path),
             stdout=asyncio.subprocess.PIPE if open_stdout else asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE if open_stderr else asyncio.subprocess.DEVNULL,
@@ -433,7 +433,7 @@ class Subprocess(api.ExecHelper):
         )
 
         if stdin is None:
-            process_stdin: typing.Optional[asyncio.StreamWriter] = process.stdin
+            process_stdin: asyncio.StreamWriter | None = process.stdin
         elif process.stdin is None:
             self.logger.warning("STDIN PIPE is not opened by Subprocess")
             process_stdin = process.stdin
@@ -482,7 +482,7 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -491,21 +491,21 @@ class Subprocess(api.ExecHelper):
         """Get execution context manager.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execute context
@@ -539,7 +539,7 @@ class Subprocess(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -548,16 +548,16 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -567,13 +567,13 @@ class Subprocess(api.ExecHelper):
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -614,7 +614,7 @@ class Subprocess(api.ExecHelper):
         log_stdout: bool = True,
         open_stderr: bool = True,
         log_stderr: bool = True,
-        chroot_path: typing.Optional[str] = None,
+        chroot_path: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -623,16 +623,16 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -642,13 +642,13 @@ class Subprocess(api.ExecHelper):
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -699,22 +699,22 @@ class Subprocess(api.ExecHelper):
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -724,13 +724,13 @@ class Subprocess(api.ExecHelper):
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -786,22 +786,22 @@ class Subprocess(api.ExecHelper):
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -811,13 +811,13 @@ class Subprocess(api.ExecHelper):
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+        :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
-        :type env: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: typing.Optional[typing.Mapping[typing.Union[str, bytes], typing.Union[str, bytes]]]
+        :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result

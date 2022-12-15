@@ -61,7 +61,7 @@ command = "ls ~\nline 2\nline 3\nline с кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 stdout_src = (b" \n", b"2\n", b"3\n", b" \n")
 stderr_src = (b" \n", b"0\n", b"1\n", b" \n")
-encoded_cmd = base64.b64encode(f"{command}\n".encode("utf-8")).decode("utf-8")
+encoded_cmd = base64.b64encode(f"{command}\n".encode()).decode("utf-8")
 
 print_stdin = 'read line; echo "$line"'
 default_timeout = 60 * 60  # 1 hour

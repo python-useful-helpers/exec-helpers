@@ -45,7 +45,7 @@ class FakeStream:
 
     def __iter__(self):
         if len(self.__src) == 0:
-            raise IOError()
+            raise OSError()
         for _ in range(len(self.__src)):
             yield self.__src.pop(0)
 

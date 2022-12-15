@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -24,12 +24,13 @@ import contextlib
 import logging
 import typing
 
+if typing.TYPE_CHECKING:
+    from collections.abc import AsyncIterable
+
 # Package Implementation
-from exec_helpers import exec_result
+from exec_helpers import exec_result  # pylint: disable=wrong-import-position
 
 __all__ = ("ExecResult",)
-
-_StreamT = typing.AsyncIterable[bytes]
 
 
 class ExecResult(exec_result.ExecResult):
@@ -39,10 +40,10 @@ class ExecResult(exec_result.ExecResult):
 
     @staticmethod
     async def _poll_stream(  # type: ignore[override]  # pylint: disable=invalid-overridden-method
-        src: _StreamT,
-        log: typing.Optional[logging.Logger] = None,
+        src: AsyncIterable[bytes],
+        log: logging.Logger | None = None,
         verbose: bool = False,
-    ) -> typing.List[bytes]:
+    ) -> list[bytes]:
         """Stream poll helper.
 
         :param src: source to read from
@@ -50,7 +51,7 @@ class ExecResult(exec_result.ExecResult):
         :param verbose: use INFO level for logging
         :return: read result as list of bytes strings
         """
-        dst: typing.List[bytes] = []
+        dst: list[bytes] = []
         with contextlib.suppress(IOError):
             async for line in src:
                 dst.append(line)
@@ -63,16 +64,16 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stdout(  # type: ignore[override]  # pylint: disable=invalid-overridden-method
         self,
-        src: typing.Optional[_StreamT] = None,
-        log: typing.Optional[logging.Logger] = None,
+        src: AsyncIterable[bytes] | None = None,
+        log: logging.Logger | None = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stdout transport to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.AsyncIterable[bytes]]
+        :type src: AsyncIterable[bytes] | None
         :param log: logger
-        :type log: typing.Optional[logging.Logger]
+        :type log: logging.Logger | None
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received
@@ -90,16 +91,16 @@ class ExecResult(exec_result.ExecResult):
 
     async def read_stderr(  # type: ignore[override]  # pylint: disable=invalid-overridden-method
         self,
-        src: typing.Optional[_StreamT] = None,
-        log: typing.Optional[logging.Logger] = None,
+        src: AsyncIterable[bytes] | None = None,
+        log: logging.Logger | None = None,
         verbose: bool = False,
     ) -> None:
         """Read asyncio stderr transport to stdout.
 
         :param src: source
-        :type src: typing.Optional[typing.AsyncIterable[bytes]]
+        :type src: AsyncIterable[bytes] | None
         :param log: logger
-        :type log: typing.Optional[logging.Logger]
+        :type log: logging.Logger | None
         :param verbose: use log.info instead of log.debug
         :type verbose: bool
         :raises RuntimeError: Exit code is already received

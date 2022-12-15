@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -41,6 +41,7 @@ from . import _helpers
 
 if typing.TYPE_CHECKING:
     # Standard Library
+    from collections.abc import Sequence
     from types import TracebackType
 
 __all__ = (
@@ -142,7 +143,7 @@ class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
         """Pass STDIN text to the process (fully formatted).
 
         :return: pass STDIN text to the process
-        :rtype: typing.Optional[str]
+        :rtype: str | None
         """
         return self.__stdin
 
@@ -172,7 +173,7 @@ class _ChRootContext(typing.ContextManager[None]):
     :param conn: connection instance
     :type conn: ExecHelper
     :param path: chroot path or None for no chroot
-    :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+    :type path: str | pathlib.Path | None
     :raises TypeError: incorrect type of path variable
 
     .. versionadded:: 4.1.0
@@ -220,7 +221,7 @@ class ExecHelper(
     :type logger: logging.Logger
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
-    :type log_mask_re: typing.Optional[str]
+    :type log_mask_re: str | None
 
     .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
     .. versionchanged:: 1.3.5 make API public to use as interface
@@ -257,7 +258,7 @@ class ExecHelper(
     def _chroot_path(self) -> str | None:
         """Path for chroot if set.
 
-        :rtype: typing.Optional[str]
+        :rtype: str | None
         .. versionadded:: 4.1.0
         """
         return self.__chroot_path
@@ -267,7 +268,7 @@ class ExecHelper(
         """Path for chroot if set.
 
         :param new_state: new path
-        :type new_state: typing.Optional[str]
+        :type new_state: str | None
         :raises TypeError: Not supported path information
         .. versionadded:: 4.1.0
         """
@@ -290,7 +291,7 @@ class ExecHelper(
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: typing.Optional[typing.Union[str, pathlib.Path]]
+        :type path: str | pathlib.Path | None
         :return: context manager with selected chroot state inside
         :rtype: typing.ContextManager
 
@@ -326,7 +327,7 @@ class ExecHelper(
         :type cmd: str
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :return: masked command
         :rtype: str
 
@@ -341,12 +342,13 @@ class ExecHelper(
         :param cmd: main command
         :type cmd: str
         :param chroot_path: path to make chroot for execution
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :return: final command, includes chroot, if required
         :rtype: str
         """
         return _helpers.chroot_command(cmd, chroot_path=chroot_path if chroot_path else self._chroot_path)
 
+    @abc.abstractmethod
     def _execute_async(
         self,
         command: str,
@@ -362,13 +364,13 @@ class ExecHelper(
         :param command: Command for execution
         :type command: str
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
@@ -411,14 +413,14 @@ class ExecHelper(
         :param async_result: execute_async result
         :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param log_stdout: log STDOUT during read
         :type log_stdout: bool
         :param log_stderr: log STDERR during read
@@ -462,15 +464,15 @@ class ExecHelper(
         """Get execution context manager.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param open_stderr: open STDERR stream for read
         :type open_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
 
@@ -495,16 +497,16 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -514,7 +516,7 @@ class ExecHelper(
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -575,16 +577,16 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -594,7 +596,7 @@ class ExecHelper(
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param chroot_path: chroot path override
-        :type chroot_path: typing.Optional[str]
+        :type chroot_path: str | None
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -642,18 +644,18 @@ class ExecHelper(
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -663,7 +665,7 @@ class ExecHelper(
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -675,7 +677,7 @@ class ExecHelper(
         .. versionchanged:: 3.2.0 Exception class can be substituted
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
-        expected_codes: typing.Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
+        expected_codes: Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         result: exec_result.ExecResult = self.execute(
             command,
             verbose=verbose,
@@ -710,16 +712,16 @@ class ExecHelper(
         :param result: execution result for validation
         :type result: exec_result.ExecResult
         :param error_info: optional additional error information
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param raise_on_err: raise `exception_class` in case of error
         :type raise_on_err: bool
         :param expected_codes: iterable expected exit codes
-        :type expected_codes: typing.Iterable[ExitCodeT]
+        :type expected_codes: Iterable[int | ExitCodes]
         :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
-        :type exception_class: CalledProcessErrorSubClassT
+        :type exception_class: type[exceptions.CalledProcessError]
         :return: execution result
         :rtype: exec_result.ExecResult
-        :raises CalledProcessErrorSubClassT: stderr presents and raise_on_err enabled
+        :raises exceptions.CalledProcessError: stderr presents and raise_on_err enabled
         """
         append: str = error_info + "\n" if error_info else ""
         if result.exit_code not in expected_codes:
@@ -757,18 +759,18 @@ class ExecHelper(
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
-        :type timeout: typing.Union[int, float, None]
+        :type timeout: int | float | None
         :param error_info: Text for error details, if fail happens
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: bool
         :param expected: expected return codes (0 by default)
-        :type expected: typing.Iterable[typing.Union[int, proc_enums.ExitCodes]]
+        :type expected: Iterable[int | proc_enums.ExitCodes]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: typing.Optional[str]
+        :type log_mask_re: str | None
         :param stdin: pass STDIN text to the process
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: bool
         :param log_stdout: log STDOUT during read
@@ -778,7 +780,7 @@ class ExecHelper(
         :param log_stderr: log STDERR during read
         :type log_stderr: bool
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
-        :type exception_class: typing.Type[exceptions.CalledProcessError]
+        :type exception_class: type[exceptions.CalledProcessError]
         :param kwargs: additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result
@@ -828,16 +830,16 @@ class ExecHelper(
         :param result: execution result for validation
         :type result: exec_result.ExecResult
         :param error_info: optional additional error information
-        :type error_info: typing.Optional[str]
+        :type error_info: str | None
         :param raise_on_err: raise `exception_class` in case of error
         :type raise_on_err: bool
         :param expected: iterable expected exit codes
-        :type expected: typing.Iterable[ExitCodeT]
+        :type expected: Iterable[int | ExitCodes]
         :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
-        :type exception_class: CalledProcessErrorSubClassT
+        :type exception_class: type[exceptions.CalledProcessError]
         :return: execution result
         :rtype: exec_result.ExecResult
-        :raises CalledProcessErrorSubClassT: stderr presents and raise_on_err enabled
+        :raises exceptions.CalledProcessError: stderr presents and raise_on_err enabled
         """
         append: str = error_info + "\n" if error_info else ""
         if result.stderr:
