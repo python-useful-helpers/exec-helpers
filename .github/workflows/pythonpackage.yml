@@ -97,7 +97,7 @@ jobs:
           pip install --upgrade -r pytest_requirements.txt
       - name: Build package and install develop
         run: |
-          python setup.py develop -v clean
+          pip install -e .
       - name: Test with pytest
         run: |
           py.test --cov-report= --cov=exec_helpers test

@@ -25,7 +25,7 @@ maintainers=[
 dynamic = ["version", "classifiers", "dependencies"]
 
 [tool.setuptools]
-packages= ["exec_helpers"]
+packages= ["exec_helpers", "exec_helpers.async_api"]
 package-data={"exec_helpers"=["py.typed"], "*"=["*.pyi"]}
 
 [tool.setuptools.dynamic]
