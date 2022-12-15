@@ -15,15 +15,15 @@ API: ExecResult
         :param cmd: command
         :type cmd: ``str``
         :param stdin: STDIN
-        :type stdin: ``Union[bytes, str, bytearray, None]``
+        :type stdin: ``bytes | str | bytearray | None``
         :param stdout: binary STDOUT
-        :type stdout: ``Optional[Iterable[bytes]]``
+        :type stdout: ``Iterable[bytes] | None``
         :param stderr: binary STDERR
-        :type stderr: ``Optional[Iterable[bytes]]``
+        :type stderr: ``Iterable[bytes] | None``
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
-        :type exit_code: Union[int, ExitCodes]
+        :type exit_code: int | ExitCodes
         :param started: Timestamp of command start
-        :type started: ``Optional[datetime.datetime]``
+        :type started: ``datetime.datetime | None``
 
     .. py:attribute:: stdout_lock
 
@@ -41,7 +41,7 @@ API: ExecResult
 
     .. py:attribute:: timestamp
 
-        ``Optional(datetime.datetime)``
+        ``datetime.datetime | None``
         Timestamp
 
     .. py:method:: set_timestamp()
@@ -59,17 +59,17 @@ API: ExecResult
 
     .. py:attribute:: stdin
 
-        ``Optional[str]``
+        ``str | None``
         Stdin input as string.
 
     .. py:attribute:: stdout
 
-        ``Tuple[bytes, ...]``
+        ``tuple[bytes, ...]``
         Stdout output as list of binaries.
 
     .. py:attribute:: stderr
 
-        ``Tuple[bytes, ...]``
+        ``tuple[bytes, ...]``
         Stderr output as list of binaries.
 
     .. py:attribute:: stdout_bin
@@ -124,7 +124,7 @@ API: ExecResult
 
         Return(exit) code of command.
 
-        :rtype: Union[int, ExitCodes]
+        :rtype: int | ExitCodes
 
     .. py:attribute:: started
 
@@ -171,9 +171,9 @@ API: ExecResult
         Read stdout file-like object to stdout.
 
         :param src: source
-        :type src: ``Optional[Iterable]``
+        :type src: ``Iterable[bytes] | None``
         :param log: logger
-        :type log: ``Optional[logging.Logger]``
+        :type log: ``logging.Logger | None``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
 
@@ -184,9 +184,9 @@ API: ExecResult
         Read stderr file-like object to stderr.
 
         :param src: source
-        :type src: ``Optional[Iterable]``
+        :type src: ``Iterable[bytes] | None``
         :param log: logger
-        :type log: ``Optional[logging.Logger]``
+        :type log: ``logging.Logger | None``
         :param verbose: use log.info instead of log.debug
         :type verbose: ``bool``
 
@@ -209,7 +209,7 @@ API: ExecResult
         Access magic.
 
         :param item: index
-        :type item: ``Union[int, slice, Iterable[Union[int, slice, ellipsis]]]``
+        :type item: ``int | slice | Iterable[int | slice | ellipsis]``
         :return: Joined selected lines
         :rtype: ``str``
         :raises TypeError: Unexpected key

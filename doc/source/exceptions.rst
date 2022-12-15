@@ -26,7 +26,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     .. py:attribute:: timeout
 
-        ``Union[int, float]``
+        ``int | float``
 
     .. py:attribute:: result
 
@@ -58,7 +58,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param timeout: timeout for command
-        :type timeout: ``Union[int, float]``
+        :type timeout: ``int | float``
 
 
 .. py:exception:: ExecHelperTimeoutError(ExecHelperTimeoutProcessError)
@@ -75,7 +75,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param timeout: timeout for command
-        :type timeout: ``Union[int, float]``
+        :type timeout: ``int | float``
 
 
 .. py:exception:: CalledProcessError(ExecCalledProcessError)
@@ -89,7 +89,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param result: execution result
         :type result: ExecResult
         :param expected: expected return codes
-        :type expected: Iterable[Union[int, ExitCodes]]
+        :type expected: Iterable[int | ExitCodes]
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
 
@@ -108,13 +108,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
         return code
 
-        :rtype: Union[int, ExitCodes]
+        :rtype: int | ExitCodes
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: List[Union[int, ExitCodes]]
+        :rtype: list[int | ExitCodes]
 
     .. py:attribute:: stdout
 
@@ -135,11 +135,11 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param command: command
         :type command: ``str``
         :param errors: results with errors
-        :type errors: Dict[Tuple[str, int], ExecResult]
+        :type errors: dict[tuple[str, int], ExecResult]
         :param results: all results
-        :type results: Dict[Tuple[str, int], ExecResult]
+        :type results: dict[tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: Iterable[Union[int, ExitCodes]]
+        :type expected: Iterable[int | ExitCodes]
 
         .. versionchanged:: 1.0 - fixed inheritance
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
@@ -153,19 +153,19 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
         results with errors
 
-        :rtype: Dict[Tuple[str, int], ExecResult]
+        :rtype: dict[tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
         all results
 
-        :rtype: Dict[Tuple[str, int], ExecResult]
+        :rtype: dict[tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: List[Union[int, ExitCodes]]
+        :rtype: list[int | ExitCodes]
 
 .. py:exception:: ParallelCallExceptionsError(ParallelCallProcessError)
 
@@ -176,13 +176,13 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         :param command: command
         :type command: ``str``
         :param exceptions: Exception on connections
-        :type exceptions: ``Dict[Tuple[str, int], Exception]``
+        :type exceptions: ``dict[tuple[str, int], Exception]``
         :param errors: results with errors
-        :type errors: Dict[Tuple[str, int], ExecResult]
+        :type errors: dict[tuple[str, int], ExecResult]
         :param results: all results
-        :type results: Dict[Tuple[str, int], ExecResult]
+        :type results: dict[tuple[str, int], ExecResult]
         :param expected: expected return codes
-        :type expected: Iterable[Union[int, ExitCodes]]
+        :type expected: Iterable[int | ExitCodes]
 
         .. versionchanged:: 1.0 - fixed inheritance
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
@@ -194,23 +194,23 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
 
     .. py:attribute:: exceptions
 
-        ``Dict[Tuple[str, int], Exception]``
+        ``dict[tuple[str, int], Exception]``
         Exception on connections
 
     .. py:attribute:: errors
 
         results with errors
 
-        :rtype: Dict[Tuple[str, int], ExecResult]
+        :rtype: dict[tuple[str, int], ExecResult]
 
     .. py:attribute:: results
 
         all results
 
-        :rtype: Dict[Tuple[str, int], ExecResult]
+        :rtype: dict[tuple[str, int], ExecResult]
 
     .. py:attribute:: expected
 
         expected return codes
 
-        :rtype: List[Union[int, ExitCodes]]
+        :rtype: list[int | ExitCodes]

@@ -13,7 +13,7 @@ API: Subprocess
         ExecHelper global API.
 
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: Optional[str]
+        :type log_mask_re: str | None
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
@@ -23,7 +23,7 @@ API: Subprocess
 
     .. py:attribute:: log_mask_re
 
-        ``Optional[str]``
+        ``str | None``
 
         regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
 
@@ -48,7 +48,7 @@ API: Subprocess
         Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
-        :type path: Optional[Union[str, pathlib.Path]]
+        :type path: str | pathlib.Path | None
         :return: context manager with selected chroot state inside
         :rtype: ContextManager
 
@@ -60,16 +60,16 @@ API: Subprocess
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``Union[str, Iterable[str]]``
+        :type command: ``str | Iterable[str]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``Union[int, float, None]``
+        :type timeout: ``int | float | None``
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``Optional[str]``
+        :type log_mask_re: ``str | None``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``Union[bytes, str, bytearray, None]``
+        :type stdin: ``bytes | str | bytearray | None``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param log_stdout: log STDOUT during read
@@ -79,11 +79,11 @@ API: Subprocess
         :param log_stderr: log STDERR during read
         :type log_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``Optional[Union[str, bytes, pathlib.Path]]``
+        :type cwd: ``str | bytes | pathlib.Path | None``
         :param env: Defines the environment variables for the new process.
-        :type env: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env: ``Mapping[str | bytes, str | bytes] | None``
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env_patch: ``Mapping[str | bytes, str | bytes] | None``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -98,16 +98,16 @@ API: Subprocess
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``Union[str, Iterable[str]]``
+        :type command: ``str | Iterable[str]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``Union[int, float, None]``
+        :type timeout: ``int | float | None``
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``Optional[str]``
+        :type log_mask_re: ``str | None``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``Union[bytes, str, bytearray, None]``
+        :type stdin: ``bytes | str | bytearray | None``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param log_stdout: log STDOUT during read
@@ -117,11 +117,11 @@ API: Subprocess
         :param log_stderr: log STDERR during read
         :type log_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``Optional[Union[str, bytes, pathlib.Path]]``
+        :type cwd: ``str | bytes | pathlib.Path | None``
         :param env: Defines the environment variables for the new process.
-        :type env: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env: ``Mapping[str | bytes, str | bytes] | None``
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env_patch: ``Mapping[str | bytes, str | bytes] | None``
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
@@ -133,22 +133,22 @@ API: Subprocess
         Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: ``Union[str, Iterable[str]]``
+        :type command: ``str | Iterable[str]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``Union[int, float, None]``
+        :type timeout: ``int | float | None``
         :param error_info: Text for error details, if fail happens
-        :type error_info: ``Optional[str]``
+        :type error_info: ``str | None``
         :param expected: expected return codes (0 by default)
-        :type expected: Iterable[Union[int, ExitCodes]]
+        :type expected: Iterable[int | ExitCodes]
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``Optional[str]``
+        :type log_mask_re: ``str | None``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``Union[bytes, str, bytearray, None]``
+        :type stdin: ``bytes | str | bytearray | None``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param log_stdout: log STDOUT during read
@@ -158,11 +158,11 @@ API: Subprocess
         :param log_stderr: log STDERR during read
         :type log_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``Optional[Union[str, bytes, pathlib.Path]]``
+        :type cwd: ``str | bytes | pathlib.Path | None``
         :param env: Defines the environment variables for the new process.
-        :type env: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env: ``Mapping[str | bytes, str | bytes] | None``
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env_patch: ``Mapping[str | bytes, str | bytes] | None``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: Type[CalledProcessError]
         :rtype: ExecResult
@@ -179,22 +179,22 @@ API: Subprocess
         Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: ``Union[str, Iterable[str]]``
+        :type command: ``str | Iterable[str]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
-        :type timeout: ``Union[int, float, None]``
+        :type timeout: ``int | float | None``
         :param error_info: Text for error details, if fail happens
-        :type error_info: ``Optional[str]``
+        :type error_info: ``str | None``
         :param raise_on_err: Raise exception on unexpected return code
         :type raise_on_err: ``bool``
         :param expected: expected return codes (0 by default)
-        :type expected: Iterable[Union[int, ExitCodes]]
+        :type expected: Iterable[int | ExitCodes]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: ``Optional[str]``
+        :type log_mask_re: ``str | None``
         :param stdin: pass STDIN text to the process
-        :type stdin: ``Union[bytes, str, bytearray, None]``
+        :type stdin: ``bytes | str | bytearray | None``
         :param open_stdout: open STDOUT stream for read
         :type open_stdout: ``bool``
         :param log_stdout: log STDOUT during read
@@ -204,11 +204,11 @@ API: Subprocess
         :param log_stderr: log STDERR during read
         :type log_stderr: ``bool``
         :param cwd: Sets the current directory before the child is executed.
-        :type cwd: ``Optional[Union[str, bytes, pathlib.Path]]``
+        :type cwd: ``str | bytes | pathlib.Path | None``
         :param env: Defines the environment variables for the new process.
-        :type env: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env: ``Mapping[str | bytes, str | bytes] | None``
         :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: ``Optional[Mapping[Union[str, bytes], Union[str, bytes]]]``
+        :type env_patch: ``Mapping[str | bytes, str | bytes] | None``
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: Type[CalledProcessError]
         :rtype: ExecResult
@@ -231,15 +231,15 @@ API: Subprocess
 
     .. py:attribute:: stdin
 
-        ``Optional[IO[bytes]]``
+        ``IO[bytes] | None``
 
     .. py:attribute:: stderr
 
-        ``Optional[IO[bytes]]``
+        ``IO[bytes] | None``
 
     .. py:attribute:: stdout
 
-        ``Optional[IO[bytes]]``
+        ``IO[bytes] | None``
 
     .. py:attribute:: started
 
