@@ -206,7 +206,7 @@ class ExecHelper(
     :type logger: logging.Logger
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
-    :type log_mask_re: str | None
+    :type log_mask_re: str | re.Pattern[str] | None
     """
 
     __slots__ = ("__alock", "__logger", "log_mask_re", "__chroot_path")
@@ -301,7 +301,7 @@ class ExecHelper(
         :type cmd: str
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :return: masked command
         :rtype: str
 
@@ -386,7 +386,7 @@ class ExecHelper(
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param log_stdout: log STDOUT during read
@@ -404,7 +404,7 @@ class ExecHelper(
     def _log_command_execute(
         self,
         command: str,
-        log_mask_re: str | None,
+        log_mask_re: LogMaskReT,
         log_level: int,
         chroot_path: str | None = None,
         **_: typing.Any,
@@ -469,7 +469,7 @@ class ExecHelper(
         :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -547,7 +547,7 @@ class ExecHelper(
         :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -616,7 +616,7 @@ class ExecHelper(
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -729,7 +729,7 @@ class ExecHelper(
         :type expected: Iterable[int | proc_enums.ExitCodes]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read

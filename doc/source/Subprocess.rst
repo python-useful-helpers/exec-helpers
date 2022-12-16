@@ -13,7 +13,7 @@ API: Subprocess
         ExecHelper global API.
 
         :param log_mask_re: regex lookup rule to mask command for logger. all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.

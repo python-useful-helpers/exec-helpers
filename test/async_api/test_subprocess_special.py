@@ -21,7 +21,6 @@ import typing
 from unittest import mock
 
 # External Dependencies
-import asynctest
 import pytest
 
 # Package Implementation
@@ -248,11 +247,9 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         **kwargs,
     ):
         """Parametrized code."""
-        proc = asynctest.CoroutineMock()
+        proc = mock.AsyncMock()
 
-        run_shell = asynctest.CoroutineMock(
-            asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc
-        )
+        run_shell = mock.AsyncMock(asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc)
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 
@@ -264,15 +261,15 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         proc.configure_mock(stderr=None)
 
         if command_parameters.stdin is not None:
-            stdin_mock = asynctest.CoroutineMock()
+            stdin_mock = mock.AsyncMock()
 
             stdin_mock.attach_mock(mock.Mock("write", side_effect=mock_parameters.write), "write")
-            stdin_mock.attach_mock(asynctest.CoroutineMock("drain"), "drain")
+            stdin_mock.attach_mock(mock.AsyncMock("drain"), "drain")
             stdin_mock.attach_mock(mock.Mock(side_effect=mock_parameters.stdin_close), "close")
 
             proc.attach_mock(stdin_mock, "stdin")
 
-        proc.attach_mock(asynctest.CoroutineMock(side_effect=mock_parameters.ec), "wait")
+        proc.attach_mock(mock.AsyncMock(side_effect=mock_parameters.ec), "wait")
         proc.configure_mock(returncode=(0,))
 
         monkeypatch.setattr(asyncio, "create_subprocess_shell", run_shell)

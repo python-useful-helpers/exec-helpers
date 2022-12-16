@@ -21,7 +21,6 @@ import typing
 from unittest import mock
 
 # External Dependencies
-import asynctest
 import pytest
 
 # Package Implementation
@@ -148,7 +147,7 @@ def exec_result(run_parameters):
 
 @pytest.fixture
 def execute(monkeypatch, exec_result):
-    subprocess_execute = asynctest.CoroutineMock(
+    subprocess_execute = mock.AsyncMock(
         exec_helpers.async_api.subprocess.Subprocess.execute, name="execute", return_value=exec_result
     )
     monkeypatch.setattr(exec_helpers.async_api.subprocess.Subprocess, "execute", subprocess_execute)
@@ -167,11 +166,9 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         **kwargs,
     ):
         """Parametrized code."""
-        proc = asynctest.CoroutineMock()
+        proc = mock.AsyncMock()
 
-        run_shell = asynctest.CoroutineMock(
-            asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc
-        )
+        run_shell = mock.AsyncMock(asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc)
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 
@@ -184,11 +181,11 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         else:
             proc.attach_mock(FakeFileStream(*stderr), "stderr")
         if stdin is not None:
-            stdin_mock = asynctest.CoroutineMock()
-            stdin_mock.attach_mock(asynctest.CoroutineMock("drain"), "drain")
+            stdin_mock = mock.AsyncMock()
+            stdin_mock.attach_mock(mock.AsyncMock("drain"), "drain")
             proc.attach_mock(stdin_mock, "stdin")
 
-        proc.attach_mock(asynctest.CoroutineMock(return_value=int(ec)), "wait")
+        proc.attach_mock(mock.AsyncMock(return_value=int(ec)), "wait")
         proc.configure_mock(returncode=int(ec))
 
         monkeypatch.setattr(asyncio, "create_subprocess_shell", run_shell)
@@ -203,7 +200,7 @@ def logger(mocker):
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 8), reason="Python 3.8 is not supported now by asynctest")
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="Python 3.8 is first with async mock")
 async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
     """Test low level API."""
     runner = exec_helpers.async_api.Subprocess()
@@ -270,8 +267,8 @@ async def test_002_execute(create_subprocess_shell, logger, exec_result, run_par
 
 async def test_003_context_manager(monkeypatch, create_subprocess_shell, logger, exec_result, run_parameters) -> None:
     """Test context manager for threads synchronization."""
-    lock = asynctest.CoroutineMock()
-    lock.attach_mock(asynctest.CoroutineMock("acquire"), "acquire")
+    lock = mock.AsyncMock()
+    lock.attach_mock(mock.AsyncMock("acquire"), "acquire")
     lock.attach_mock(mock.Mock("release"), "release")
     lock_cls = mock.Mock(asyncio.Lock, name="lock", return_value=lock)
     monkeypatch.setattr(asyncio, "Lock", lock_cls)

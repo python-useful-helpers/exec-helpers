@@ -30,13 +30,13 @@ def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
     raise TypeError(f"{src!r} has unexpected type: not conform to Union[str, bytes, bytearray]")  # pragma: no cover
 
 
-def _mask_command(text: str, rules: str) -> str:
+def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
     """Mask part of text using rules.
 
     :param text: source text
     :type text: str
     :param rules: regex rules to mask.
-    :type rules: str
+    :type rules: str | re.Pattern
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """
@@ -55,13 +55,13 @@ def _mask_command(text: str, rules: str) -> str:
     return "".join(masked)
 
 
-def mask_command(text: str, *rules: str | None) -> str:
+def mask_command(text: str, *rules: str | re.Pattern[str] | None) -> str:
     """Apply all rules to command.
 
     :param text: source text
     :type text: str
     :param rules: regex rules to mask.
-    :type rules: str | None
+    :type rules: str | re.Pattern[str] | None
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """

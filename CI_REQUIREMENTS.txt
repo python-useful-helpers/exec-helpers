@@ -4,3 +4,4 @@ PyYAML>=3.12
 ruamel.yaml
 defusedxml  # PSF
 logwrap>=7.0.0  # Apache 2
+setuptools_scm

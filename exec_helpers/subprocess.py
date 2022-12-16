@@ -250,7 +250,7 @@ class Subprocess(api.ExecHelper):
 
     :param log_mask_re: regex lookup rule to mask command for logger.
                         all MATCHED groups will be replaced by '<*masked*>'
-    :type log_mask_re: str | None
+    :type log_mask_re: str | re.Pattern[str] | None
 
     .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
     .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
@@ -304,7 +304,7 @@ class Subprocess(api.ExecHelper):
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param log_stdout: log STDOUT during read
@@ -571,7 +571,7 @@ class Subprocess(api.ExecHelper):
         :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -646,7 +646,7 @@ class Subprocess(api.ExecHelper):
         :type timeout: int | float | None
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -728,7 +728,7 @@ class Subprocess(api.ExecHelper):
         :type raise_on_err: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
@@ -815,7 +815,7 @@ class Subprocess(api.ExecHelper):
         :type expected: Iterable[int | proc_enums.ExitCodes]
         :param log_mask_re: regex lookup rule to mask command for logger.
                             all MATCHED groups will be replaced by '<*masked*>'
-        :type log_mask_re: str | None
+        :type log_mask_re: str | re.Pattern[str] | None
         :param stdin: pass STDIN text to the process
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: open STDOUT stream for read
