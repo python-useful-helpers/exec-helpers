@@ -9,5 +9,6 @@ exclude .gitignore .dockerignore
 prune test
 prune .github
 prune .azure_pipelines
+prune .tox
 prune doc
 exclude CODEOWNERS CODE_OF_CONDUCT.md _config.yml

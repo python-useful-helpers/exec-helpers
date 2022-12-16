@@ -3,7 +3,6 @@
 # PEP 508 specifications for PEP 518.
 requires = [
   "setuptools>=45",  # PSF/ZPL
-  "wheel",
   "setuptools_scm[toml]>=6.2",
 ]
 build-backend="setuptools.build_meta"
@@ -24,9 +23,21 @@ maintainers=[
 ]
 dynamic = ["version", "classifiers", "dependencies"]
 
-[tool.setuptools]
-packages= ["exec_helpers", "exec_helpers.async_api"]
-package-data={"exec_helpers"=["py.typed"], "*"=["*.pyi"]}
+[tool.setuptools.package-data]
+exec_helpers=[
+  "py.typed",
+  "*.pyi",
+  "*/*.pyi"
+]
+
+[tool.setuptools.packages.find]
+exclude = [
+  "doc",
+  "test",
+  ".*"
+]
+include = ["exec_helpers"]
+namespaces = false
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
@@ -39,8 +50,8 @@ yaml = ["PyYAML>=3.12"]
 all_formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
 all-formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
 
-[tool.bdist_wheel]
-universal = false
+[tool.distutils.bdist_wheel]
+universal = 0
 
 [tool.black]
 line-length = 120
