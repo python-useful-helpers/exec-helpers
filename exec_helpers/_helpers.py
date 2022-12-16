@@ -61,7 +61,7 @@ def mask_command(text: str, *rules: str | None) -> str:
     :param text: source text
     :type text: str
     :param rules: regex rules to mask.
-    :type rules: typing.Optional[str]
+    :type rules: str | None
     :return: source with all MATCHED groups replaced by '<*masked*>'
     :rtype: str
     """

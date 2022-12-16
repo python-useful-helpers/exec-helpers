@@ -65,9 +65,9 @@ class SSHAuth:
         :param key: Main connection key
         :type key: paramiko.PKey | None
         :param keys: Alternate connection keys
-        :type keys: Sequence[tparamiko.PKey | None] | None
+        :type keys: Sequence[paramiko.PKey | None] | None
         :param key_filename: filename(s) for additional key files
-        :type key_filename: typing.Union[Iterable[str], str, None]
+        :type key_filename: Iterable[str] | str | None
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: str | None
 

@@ -34,7 +34,7 @@ def _parse_ssh_config_file(file_path: pathlib.Path) -> paramiko.SSHConfig | None
     :param file_path: file path for parsing
     :type file_path: pathlib.Path
     :return: SSH config if file found and parsed else None
-    :rtype: typing.Optional[paramiko.SSHConfig]
+    :rtype: paramiko.SSHConfig | None
     """
     if not file_path.exists():
         return None

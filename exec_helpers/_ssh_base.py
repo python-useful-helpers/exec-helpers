@@ -448,7 +448,7 @@ class SSHClientBase(api.ExecHelper):
     :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
     :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
     :param sock: socket for connection. Useful for ssh proxies support
-    :type sock: typing.Optional[typing.Union[paramiko.ProxyCommand, paramiko.Channel, socket.socket]]
+    :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
     :param keepalive: keepalive period
     :type keepalive: int | bool
 

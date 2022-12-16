@@ -378,9 +378,9 @@ class ExecHelper(
                     'ExecuteAsyncResult',
                     [
                         ('interface', typing.Any),
-                        ('stdin', typing.Optional[typing.Any]),
-                        ('stderr', typing.Optional[typing.Any]),
-                        ('stdout', typing.Optional[typing.Any]),
+                        ('stdin', typing.Any | None),
+                        ('stderr', typing.Any | None),
+                        ('stdout', typing.Any | None),
                         ("started", datetime.datetime),
                     ]
                 )
@@ -640,7 +640,7 @@ class ExecHelper(
         """Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -755,7 +755,7 @@ class ExecHelper(
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: typing.Union[str, typing.Iterable[str]]
+        :type command: str | Iterable[str]
         :param verbose: Produce log.info records for command call and output
         :type verbose: bool
         :param timeout: Timeout for command execution.

@@ -156,7 +156,7 @@ class LinesAccessProxy:
         """Access magic.
 
         :param item: index
-        :type item: typing.Union[int, slice, Iterable[typing.Union[int, slice, ellipsis]]]
+        :type item: int | slice | Iterable[int | slice | ellipsis]
         :return: Joined selected lines
         :rtype: str
         :raises TypeError: Unexpected key
@@ -238,7 +238,7 @@ class ExecResult:
         :param cmd: command
         :type cmd: str
         :param stdin: string STDIN
-        :type stdin: typing.Union[bytes, str, bytearray, None]
+        :type stdin: bytes | str | bytearray | None
         :param stdout: binary STDOUT
         :type stdout: Iterable[bytes] | None
         :param stderr: binary STDERR
@@ -327,7 +327,7 @@ class ExecResult:
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
         :param data: source to process
-        :type data: typing.Tuple[bytes, ...]
+        :type data: tuple[bytes, ...]
         :return: brief from source
         :rtype: str
         """
@@ -349,7 +349,7 @@ class ExecResult:
         """Stdin input as string.
 
         :return: STDIN content if applicable.
-        :rtype: typing.Optional[str]
+        :rtype: str | None
         """
         return self.__stdin
 
@@ -358,7 +358,7 @@ class ExecResult:
         """Stdout output as list of binaries.
 
         :return: STDOUT as tuple of binary strings
-        :rtype: typing.Tuple[bytes, ...]
+        :rtype: tuple[bytes, ...]
         """
         return self._stdout
 
@@ -367,7 +367,7 @@ class ExecResult:
         """Stderr output as list of binaries.
 
         :return: STDERR as tuple of binary strings
-        :rtype: typing.Tuple[bytes, ...]
+        :rtype: tuple[bytes, ...]
         """
         return self._stderr
 
