@@ -84,7 +84,11 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: STDIN interface
         :rtype: typing.IO[bytes] | None
         """
-        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
+        warnings.warn(
+            "stdin access deprecated: FIFO is often closed on execution and direct access is not expected.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return super().stdin
 
     @property
@@ -270,15 +274,6 @@ class Subprocess(api.ExecHelper):
             log_mask_re=log_mask_re,
         )
 
-    def __enter__(self) -> Subprocess:
-        """Get context manager.
-
-        :return: exec helper instance with entered context manager
-        :rtype: Subprocess
-        """
-        # noinspection PyTypeChecker
-        return super().__enter__()
-
     def _exec_command(  # type: ignore[override]
         self,
         command: str,
@@ -430,7 +425,7 @@ class Subprocess(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
-        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning, stacklevel=2)
         started = datetime.datetime.utcnow()
 
         if env_patch is not None:

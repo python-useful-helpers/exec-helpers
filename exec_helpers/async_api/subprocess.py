@@ -84,7 +84,11 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
         :return: STDIN interface
         :rtype: asyncio.StreamWriter | None
         """
-        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
+        warnings.warn(
+            "stdin access deprecated: FIFO is often closed on execution and direct access is not expected.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return super().stdin  # type: ignore[return-value]
 
     @property
@@ -267,24 +271,6 @@ class Subprocess(api.ExecHelper):
         """Subprocess helper with timeouts and lock-free FIFO."""
         super().__init__(logger=logger, log_mask_re=log_mask_re)
 
-    async def __aenter__(self) -> Subprocess:
-        """Async context manager.
-
-        :return: exec helper instance with async entered context manager
-        :rtype: Subprocess
-        """
-        # noinspection PyTypeChecker
-        return await super().__aenter__()
-
-    def __enter__(self) -> Subprocess:  # pylint: disable=useless-super-delegation
-        """Get context manager.
-
-        :return: exec helper instance with entered context manager
-        :rtype: Subprocess
-        """
-        # noinspection PyTypeChecker
-        return super().__enter__()  # type: ignore[no-any-return]  # pylint: disable=no-member
-
     async def _exec_command(  # type: ignore[override]
         self,
         command: str,
@@ -413,7 +399,7 @@ class Subprocess(api.ExecHelper):
                 )
         :raises OSError: impossible to process STDIN
         """
-        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning, stacklevel=2)
         started = datetime.datetime.utcnow()
 
         if env_patch is not None:

@@ -39,14 +39,6 @@ class SSHClient(_ssh_base.SSHClientBase):
 
     __slots__ = ()
 
-    def __enter__(self) -> SSHClient:
-        """Get context manager.
-
-        :return: SSHClient instance with entered context
-        :rtype: SSHClient
-        """
-        return super().__enter__()
-
     @staticmethod
     def _path_esc(path: str) -> str:
         """Escape space character in the path.

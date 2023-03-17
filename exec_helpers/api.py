@@ -44,6 +44,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
     from types import TracebackType
 
+    # External Dependencies
+    from typing_extensions import Self
+
 __all__ = (
     "ExecHelper",
     "ExecuteAsyncResult",
@@ -300,7 +303,7 @@ class ExecHelper(
         """
         return _ChRootContext(conn=self, path=path)
 
-    def __enter__(self) -> ExecHelper:
+    def __enter__(self) -> Self:
         """Get context manager.
 
         :return: exec helper instance with entered context manager

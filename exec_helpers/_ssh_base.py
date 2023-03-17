@@ -56,6 +56,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
     from types import TracebackType
 
+    # External Dependencies
+    from typing_extensions import Self
+
     # Package Implementation
     from exec_helpers.api import CalledProcessErrorSubClassT
     from exec_helpers.api import CommandT
@@ -73,7 +76,7 @@ SupportPathT = typing.Union[str, pathlib.PurePath]
 _RT = typing.TypeVar("_RT")
 
 
-class RetryOnExceptions(tenacity.retry_if_exception):  # type: ignore[name-defined,misc]
+class RetryOnExceptions(tenacity.retry_if_exception):
     """Advanced retry on exceptions.
 
     :param retry_on: Exceptions to retry on
@@ -113,7 +116,11 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         :return: STDIN interface
         :rtype: paramiko.ChannelFile
         """
-        warnings.warn("stdin access deprecated: FIFO is often closed on execution and direct access is not expected.")
+        warnings.warn(
+            "stdin access deprecated: FIFO is often closed on execution and direct access is not expected.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return super().stdin
 
     @property
@@ -320,7 +327,6 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
 
             if self.stdin is not None:
                 if not _stdin.channel.closed:
-
                     _stdin.write(self.stdin)
                     _stdin.flush()
                 else:
@@ -823,15 +829,6 @@ class SSHClientBase(api.ExecHelper):
             self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
-    def __enter__(self) -> SSHClientBase:
-        """Get context manager.
-
-        :return: exec helper instance with entered context manager
-        :rtype: SSHClientBase
-        """
-        # noinspection PyTypeChecker
-        return super().__enter__()
-
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
@@ -989,7 +986,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
         .. versionchanged:: 4.1.0 support chroot
         """
-        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning)
+        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning, stacklevel=2)
         chan: paramiko.Channel = self._ssh_transport.open_session()
         if timeout is not None:
             chan.settimeout(timeout)
@@ -1544,7 +1541,7 @@ class SSHClientBase(api.ExecHelper):
         ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
         ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
         keepalive: KeepAlivePeriodT = 1,
-    ) -> SSHClientBase:
+    ) -> Self:
         """Start new SSH connection using current as proxy.
 
         :param host: remote hostname
@@ -1585,7 +1582,7 @@ class SSHClientBase(api.ExecHelper):
         hostname = parsed_ssh_config[host].hostname
 
         sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
-        cls: type[SSHClientBase] = self.__class__
+        cls: type[Self] = self.__class__
         return cls(
             host=host,
             port=port,
@@ -1663,7 +1660,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
         .. versionchanged:: 7.0.0 target_port argument removed
         """
-        conn: SSHClientBase
+        conn: Self
         if auth is None:
             auth = self.auth
 

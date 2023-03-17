@@ -49,6 +49,9 @@ if typing.TYPE_CHECKING:
     import types
     from collections.abc import Sequence
 
+    # External Dependencies
+    from typing_extensions import Self
+
     # Package Implementation
     from exec_helpers.proc_enums import ExitCodeT
 
@@ -273,7 +276,7 @@ class ExecHelper(
         """
         return _ChRootContext(conn=self, path=path)
 
-    async def __aenter__(self) -> ExecHelper:
+    async def __aenter__(self) -> Self:
         """Async context manager.
 
         :return: exec helper instance with async entered context manager
