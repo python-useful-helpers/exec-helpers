@@ -34,7 +34,7 @@ pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
 # All test coroutines will be treated as marked.
 # pytestmark = pytest.mark.asyncio
 
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command = "ls ~\nline 2\nline 3\nline c кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 
 print_stdin = 'read line; echo "$line"'
@@ -62,50 +62,68 @@ class FakeFileStream:
 
 
 async def read_stream(stream: FakeFileStream):
-    res = []
-    async for line in stream:
-        res.append(line)
+    res = [line async for line in stream]
     return tuple(res)
 
 
 configs = {
-    "positive_simple": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=None, open_stdout=True, open_stderr=True
-    ),
-    "with_stderr": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(b" \n", b"0\n", b"1\n", b" \n"),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "negative": dict(
-        ec=1,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(b" \n", b"0\n", b"1\n", b" \n"),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "with_stdin_str": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin="stdin", open_stdout=True, open_stderr=True
-    ),
-    "with_stdin_bytes": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=b"stdin", open_stdout=True, open_stderr=True
-    ),
-    "with_stdin_bytearray": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(),
-        stdin=bytearray(b"stdin"),
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "no_stderr": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=None, open_stdout=True, open_stderr=False
-    ),
-    "no_stdout": dict(ec=0, stdout=(), stderr=(), stdin=None, open_stdout=False, open_stderr=False),
+    "positive_simple": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stderr": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "negative": {
+        "ec": 1,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_str": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": "stdin",
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_bytes": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": b"stdin",
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_bytearray": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": bytearray(b"stdin"),
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "no_stderr": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": False,
+    },
+    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
 }
 
 
@@ -139,8 +157,8 @@ def exec_result(run_parameters):
     return exec_helpers.ExecResult(
         cmd=command,
         stdin=run_parameters["stdin"],
-        stdout=tuple([line for line in run_parameters["stdout"]]) if run_parameters["stdout"] else None,
-        stderr=tuple([line for line in run_parameters["stderr"]]) if run_parameters["stderr"] else None,
+        stdout=tuple(run_parameters["stdout"]) if run_parameters["stdout"] else None,
+        stderr=tuple(run_parameters["stderr"]) if run_parameters["stderr"] else None,
         exit_code=run_parameters["ec"],
     )
 

@@ -48,6 +48,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 6.0.0 private_keys is deprecated
         .. versionchanged:: 7.0.0 private_keys is removed
         .. versionchanged:: 7.0.0 keepalive_mode is removed
+        .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
 
     .. py:attribute:: log_mask_re
 
@@ -91,10 +92,15 @@ API: SSHClient and SSHAuth.
         ``bool``
         Use sudo for all calls, except wrapped in connection.sudo context manager.
 
+    .. py:attribute:: keepalive_mode
+
+        ``bool``
+        If `False` - close connection on exit from context manager.
+
     .. py:attribute:: keepalive_period
 
         ``int | bool``
-        Keepalive period for connection object. If `0` - close connection on exit from context manager.
+        Keepalive period for connection object.
 
     .. py:method:: close()
 

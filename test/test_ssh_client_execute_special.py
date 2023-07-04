@@ -53,7 +53,7 @@ class FakeFileStream:
 
 
 def read_stream(stream: FakeFileStream) -> typing.Tuple[bytes, ...]:
-    return tuple([line for line in stream])
+    return tuple(stream)
 
 
 host = "127.0.0.1"
@@ -62,7 +62,7 @@ port = 22
 username = "user"
 password = "pass"
 
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command = "ls ~\nline 2\nline 3\nline c кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 stdout_src = (b" \n", b"2\n", b"3\n", b" \n")
 stderr_src = (b" \n", b"0\n", b"1\n", b" \n")
@@ -85,7 +85,7 @@ def chan_makefile():
                 self.stdin = mock.Mock()
                 self.stdin.channel = self.channel
                 return self.stdin
-            elif "rb" == flags:
+            if flags == "rb":
                 self.stdout = FakeFileStream(*stdout_src)
                 self.stdout.channel = self.channel
                 return self.stdout
@@ -193,7 +193,7 @@ def test_006_execute_together_exceptions(ssh, ssh2, mocker) -> None:
     with pytest.raises(exec_helpers.ParallelCallExceptionsError) as e:
         ssh.execute_together(remotes=remotes, command=command)
     exc: exec_helpers.ParallelCallExceptionsError = e.value
-    assert list(sorted(exc.exceptions)) == [(host, port), (host2, port)]
+    assert sorted(exc.exceptions) == [(host, port), (host2, port)]
     for exception in exc.exceptions.values():
         assert isinstance(exception, RuntimeError)
 

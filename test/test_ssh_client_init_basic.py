@@ -26,9 +26,7 @@ import exec_helpers
 
 
 def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
-    keys = []
-    for _ in range(amount):
-        keys.append(paramiko.RSAKey.generate(1024))
+    keys = [paramiko.RSAKey.generate(1024) for _ in range(amount)]
     return keys
 
 
@@ -55,19 +53,20 @@ host = "127.0.0.1"
 
 
 configs = {
-    "host_only": dict(host=host),
-    "alternate_port": dict(host=host, port=2222),
-    "username": dict(host=host, username="user"),
-    "username_password": dict(host=host, username="user", password="password"),
-    "auth": dict(
-        host=host, auth=exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop())
-    ),
-    "auth_break": dict(
-        host=host,
-        username="Invalid",
-        password="Invalid",
-        auth=exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
-    ),
+    "host_only": {"host": host},
+    "alternate_port": {"host": host, "port": 2222},
+    "username": {"host": host, "username": "user"},
+    "username_password": {"host": host, "username": "user", "password": "password"},
+    "auth": {
+        "host": host,
+        "auth": exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
+    },
+    "auth_break": {
+        "host": host,
+        "username": "Invalid",
+        "password": "Invalid",
+        "auth": exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
+    },
 }
 
 

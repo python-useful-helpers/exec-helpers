@@ -25,9 +25,7 @@ import exec_helpers
 
 
 def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
-    keys = []
-    for _ in range(amount):
-        keys.append(paramiko.RSAKey.generate(1024))
+    keys = [paramiko.RSAKey.generate(1024) for _ in range(amount)]
     return keys
 
 
@@ -78,7 +76,14 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
 
     pkey = private_keys[0]
 
-    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=())
+    kwargs_no_key = {
+        "hostname": host,
+        "pkey": None,
+        "port": port,
+        "username": username,
+        "password": None,
+        "key_filename": (),
+    }
     kwargs_full = {key: kwargs_no_key[key] for key in kwargs_no_key}
     kwargs_full["pkey"] = pkey
 
@@ -113,7 +118,14 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
-    kwargs_no_key = dict(hostname=host, pkey=None, port=port, username=username, password=None, key_filename=())
+    kwargs_no_key = {
+        "hostname": host,
+        "pkey": None,
+        "port": port,
+        "username": username,
+        "password": None,
+        "key_filename": (),
+    }
     kwargs_key_0 = {key: kwargs_no_key[key] for key in kwargs_no_key}
     kwargs_key_0["pkey"] = private_keys[0]
     kwargs_key_1 = {key: kwargs_no_key[key] for key in kwargs_no_key}
@@ -344,7 +356,7 @@ def test_013_no_sftp(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, get_
 
     with pytest.raises(paramiko.SSHException):
         # noinspection PyStatementEffect
-        ssh._sftp  # pylint: disable=pointless-statement
+        ssh._sftp  # pylint: disable=pointless-statement  # noqa: B018
 
     log.assert_has_calls(
         (
@@ -371,7 +383,7 @@ def test_014_sftp_repair(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, 
 
     with pytest.raises(paramiko.SSHException):
         # noinspection PyStatementEffect
-        ssh._sftp  # pylint: disable=pointless-statement
+        ssh._sftp  # pylint: disable=pointless-statement  # noqa: B018
 
     log.assert_has_calls(
         (

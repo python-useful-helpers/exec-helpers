@@ -31,7 +31,7 @@ pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
 # All test coroutines will be treated as marked.
 # pytestmark = pytest.mark.asyncio
 
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command = "ls ~\nline 2\nline 3\nline c кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 
 print_stdin = 'read line; echo "$line"'
@@ -54,10 +54,11 @@ class FakeFileStream:
             val = self.__src.pop(0)
             if isinstance(val, bytes):
                 return val
-            elif isinstance(val, BaseException):
+
+            if isinstance(val, BaseException):
                 raise val
-            else:
-                raise TypeError(val)
+
+            raise TypeError(val)
         raise StopAsyncIteration()
 
     def fileno(self):
@@ -65,9 +66,7 @@ class FakeFileStream:
 
 
 async def read_stream(stream: FakeFileStream):
-    res = []
-    async for line in stream:
-        res.append(line)
+    res = [line async for line in stream]
     return tuple(res)
 
 
@@ -100,87 +99,89 @@ class MockParameters(typing.NamedTuple):
 
 
 configs = {
-    "positive_simple": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(),
-        mock_parameters=MockParameters(),
-    ),
-    "positive_verbose": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(verbose=True),
-        mock_parameters=MockParameters(),
-    ),
-    "positive_iterable": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(command=("echo", "hello world")),
-        mock_parameters=MockParameters(),
-        masked_cmd="echo 'hello world'",
-    ),
-    "no_stdout": dict(command_parameters=CommandParameters(), mock_parameters=MockParameters()),
-    "IOError_on_stdout_read": dict(
-        stdout=(b" \n", b"2\n", IOError()), command_parameters=CommandParameters(), mock_parameters=MockParameters()
-    ),
-    "TimeoutError": dict(
-        stdout=(),
-        command_parameters=CommandParameters(),
-        mock_parameters=MockParameters(
+    "positive_simple": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(),
+        "mock_parameters": MockParameters(),
+    },
+    "positive_verbose": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(verbose=True),
+        "mock_parameters": MockParameters(),
+    },
+    "positive_iterable": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(command=("echo", "hello world")),
+        "mock_parameters": MockParameters(),
+        "masked_cmd": "echo 'hello world'",
+    },
+    "no_stdout": {"command_parameters": CommandParameters(), "mock_parameters": MockParameters()},
+    "IOError_on_stdout_read": {
+        "stdout": (b" \n", b"2\n", OSError()),
+        "command_parameters": CommandParameters(),
+        "mock_parameters": MockParameters(),
+    },
+    "TimeoutError": {
+        "stdout": (),
+        "command_parameters": CommandParameters(),
+        "mock_parameters": MockParameters(
             ec=(asyncio.TimeoutError(), -9),
         ),
-        expect_exc=exec_helpers.ExecHelperTimeoutError,
-    ),
-    "TimeoutError_no_kill": dict(
-        stdout=(),
-        command_parameters=CommandParameters(),
-        mock_parameters=MockParameters(
+        "expect_exc": exec_helpers.ExecHelperTimeoutError,
+    },
+    "TimeoutError_no_kill": {
+        "stdout": (),
+        "command_parameters": CommandParameters(),
+        "mock_parameters": MockParameters(
             ec=(asyncio.TimeoutError(), None),
         ),
-        expect_exc=exec_helpers.ExecHelperNoKillError,
-    ),
-    "stdin_closed_PIPE_windows": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(stdin="Warning"),
-        mock_parameters=MockParameters(write=einval_exc),
-    ),
-    "stdin_broken_PIPE": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(stdin="Warning"),
-        mock_parameters=MockParameters(write=epipe_exc),
-    ),
-    "stdin_closed_PIPE": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(stdin="Warning"),
-        mock_parameters=MockParameters(write=eshutdown_exc),
-    ),
-    "stdin_error": dict(
-        mock_parameters=MockParameters(ec=(0xDEADBEEF,), write=OSError()),
-        stdout=(),
-        command_parameters=CommandParameters(stdin="Warning"),
-        expect_exc=OSError,
-    ),
-    "stdin_close_closed": dict(
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        command_parameters=CommandParameters(stdin="Stdin"),
-        mock_parameters=MockParameters(stdin_close=eshutdown_exc),
-    ),
-    "stdin_close_fail": dict(
-        stdout=(),
-        command_parameters=CommandParameters(stdin="Failed"),
-        mock_parameters=MockParameters(ec=(0xDEADBEEF,), stdin_close=OSError()),
-        expect_exc=OSError,
-    ),
-    "mask_global": dict(
-        command_parameters=CommandParameters(command="USE='secret=secret_pass' do task"),
-        mock_parameters=MockParameters(),
-        init_log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
-        masked_cmd="USE='secret=<*masked*>' do task",
-    ),
-    "mask_local": dict(
-        command_parameters=CommandParameters(
+        "expect_exc": exec_helpers.ExecHelperNoKillError,
+    },
+    "stdin_closed_PIPE_windows": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(stdin="Warning"),
+        "mock_parameters": MockParameters(write=einval_exc),
+    },
+    "stdin_broken_PIPE": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(stdin="Warning"),
+        "mock_parameters": MockParameters(write=epipe_exc),
+    },
+    "stdin_closed_PIPE": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(stdin="Warning"),
+        "mock_parameters": MockParameters(write=eshutdown_exc),
+    },
+    "stdin_error": {
+        "mock_parameters": MockParameters(ec=(0xDEADBEEF,), write=OSError()),
+        "stdout": (),
+        "command_parameters": CommandParameters(stdin="Warning"),
+        "expect_exc": OSError,
+    },
+    "stdin_close_closed": {
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "command_parameters": CommandParameters(stdin="Stdin"),
+        "mock_parameters": MockParameters(stdin_close=eshutdown_exc),
+    },
+    "stdin_close_fail": {
+        "stdout": (),
+        "command_parameters": CommandParameters(stdin="Failed"),
+        "mock_parameters": MockParameters(ec=(0xDEADBEEF,), stdin_close=OSError()),
+        "expect_exc": OSError,
+    },
+    "mask_global": {
+        "command_parameters": CommandParameters(command="USE='secret=secret_pass' do task"),
+        "mock_parameters": MockParameters(),
+        "init_log_mask_re": r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
+        "masked_cmd": "USE='secret=<*masked*>' do task",
+    },
+    "mask_local": {
+        "command_parameters": CommandParameters(
             command="USE='secret=secret_pass' do task", log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
         ),
-        mock_parameters=MockParameters(),
-        masked_cmd="USE='secret=<*masked*>' do task",
-    ),
+        "mock_parameters": MockParameters(),
+        "masked_cmd": "USE='secret=<*masked*>' do task",
+    },
 }
 
 

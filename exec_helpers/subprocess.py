@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -69,7 +69,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
-    def interface(self) -> subprocess.Popen[bytes]:  # noqa: E1136
+    def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
         :return: control interface

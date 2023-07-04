@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -17,6 +17,16 @@
 .. versionadded:: 3.0.0
 """
 
+from __future__ import annotations
+
+# Standard Library
+import typing
+
+# Local Implementation
+from .api import ExecHelper
+from .exec_result import ExecResult
+from .subprocess import Subprocess  # nosec  # Expected
+
 # noinspection PyUnresolvedReferences
 __all__ = (
     # pylint: disable=undefined-all-variable
@@ -28,15 +38,7 @@ __all__ = (
     "Subprocess",
 )
 
-# Standard Library
-import typing
-
-# Local Implementation
-from .api import ExecHelper
-from .exec_result import ExecResult
-from .subprocess import Subprocess  # nosec  # Expected
-
-_deprecated: typing.Dict[str, str] = ...
+_deprecated: dict[str, str] = ...
 
 def __getattr__(name: str) -> typing.Any:
     """Get attributes lazy.

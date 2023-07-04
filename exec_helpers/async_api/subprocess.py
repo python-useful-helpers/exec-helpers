@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -21,6 +21,7 @@ from __future__ import annotations
 
 # Standard Library
 import asyncio
+import contextlib
 import copy
 import datetime
 import errno
@@ -238,10 +239,8 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[S
         process = self.__process
         if process is not None:  # pylint: disable=consider-using-assignment-expr
             _subprocess_helpers.kill_proc_tree(process.pid)
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 process.kill()
-            except ProcessLookupError:
-                pass  # process already closed
             self.__process = None
 
 

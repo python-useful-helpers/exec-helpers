@@ -50,7 +50,7 @@ class FakeFileStream:
 
 
 def read_stream(stream: FakeFileStream) -> typing.Tuple[bytes, ...]:
-    return tuple([line for line in stream])
+    return tuple(stream)
 
 
 host = "127.0.0.1"
@@ -59,7 +59,7 @@ port = 22
 username = "user"
 password = "pass"
 
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command = "ls ~\nline 2\nline 3\nline c кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 
 print_stdin = 'read line; echo "$line"'
@@ -67,63 +67,83 @@ default_timeout = 60 * 60  # 1 hour
 
 
 configs = {
-    "positive_simple": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=None, open_stdout=True, open_stderr=True
-    ),
-    "with_pty": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-        get_pty=True,
-    ),
-    "with_pty_nonstandard": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-        get_pty=True,
-        width=120,
-        height=100,
-    ),
-    "with_stderr": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(b" \n", b"0\n", b"1\n", b" \n"),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "negative": dict(
-        ec=1,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(b" \n", b"0\n", b"1\n", b" \n"),
-        stdin=None,
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "with_stdin_str": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin="stdin", open_stdout=True, open_stderr=True
-    ),
-    "with_stdin_bytes": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=b"stdin", open_stdout=True, open_stderr=True
-    ),
-    "with_stdin_bytearray": dict(
-        ec=0,
-        stdout=(b" \n", b"2\n", b"3\n", b" \n"),
-        stderr=(),
-        stdin=bytearray(b"stdin"),
-        open_stdout=True,
-        open_stderr=True,
-    ),
-    "no_stderr": dict(
-        ec=0, stdout=(b" \n", b"2\n", b"3\n", b" \n"), stderr=(), stdin=None, open_stdout=True, open_stderr=False
-    ),
-    "no_stdout": dict(ec=0, stdout=(), stderr=(), stdin=None, open_stdout=False, open_stderr=False),
+    "positive_simple": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_pty": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+        "get_pty": True,
+    },
+    "with_pty_nonstandard": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+        "get_pty": True,
+        "width": 120,
+        "height": 100,
+    },
+    "with_stderr": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "negative": {
+        "ec": 1,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_str": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": "stdin",
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_bytes": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": b"stdin",
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "with_stdin_bytearray": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": bytearray(b"stdin"),
+        "open_stdout": True,
+        "open_stderr": True,
+    },
+    "no_stderr": {
+        "ec": 0,
+        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": True,
+        "open_stderr": False,
+    },
+    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
 }
 
 
@@ -163,11 +183,11 @@ def chan_makefile(run_parameters):
             self.channel = None
 
         def __call__(self, flags: str):
-            if "wb" == flags:
+            if flags == "wb":
                 self.stdin = mock.Mock()
                 self.stdin.channel = self.channel
                 return self.stdin
-            elif "rb" == flags:
+            if flags == "rb":
                 self.stdout = FakeFileStream(*run_parameters["stdout"])
                 return self.stdout
             raise ValueError(f"Unexpected flags: {flags!r}")
@@ -211,8 +231,8 @@ def exec_result(run_parameters):
     return exec_helpers.ExecResult(
         cmd=command,
         stdin=run_parameters["stdin"],
-        stdout=tuple([line for line in run_parameters["stdout"]]) if run_parameters["stdout"] else None,
-        stderr=tuple([line for line in run_parameters["stderr"]]) if run_parameters["stderr"] else None,
+        stdout=tuple(run_parameters["stdout"]) if run_parameters["stdout"] else None,
+        stderr=tuple(run_parameters["stderr"]) if run_parameters["stderr"] else None,
         exit_code=run_parameters["ec"],
     )
 
@@ -447,10 +467,9 @@ def test_008_check_stderr_no_raise(ssh, exec_result, mocker) -> None:
 
 
 def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_parameters):
-
     remotes = [ssh, ssh2]
 
-    if 0 == run_parameters["ec"]:
+    if run_parameters["ec"] == 0:
         results = exec_helpers.SSHClient.execute_together(
             remotes=remotes,
             command=command,

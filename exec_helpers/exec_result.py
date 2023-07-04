@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -207,7 +207,7 @@ class LinesAccessProxy:
 class ExecResult:
     """Execution result."""
 
-    __slots__ = [
+    __slots__ = (
         "__cmd",
         "__stdin",
         "_stdout",
@@ -221,7 +221,7 @@ class ExecResult:
         "__stdout_lock",
         "__stderr_lock",
         "__started",
-    ]
+    )
 
     def __init__(
         self,

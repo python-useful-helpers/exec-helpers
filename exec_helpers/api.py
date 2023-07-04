@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -231,7 +231,13 @@ class ExecHelper(
     .. versionchanged:: 4.1.0 support chroot
     """
 
-    __slots__ = ("__lock", "__logger", "log_mask_re", "__chroot_path")
+    __slots__ = (
+        "__lock",
+        "__logger",
+        "log_mask_re",
+        "__chroot_path",
+        "__context_count",
+    )
 
     def __init__(self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger) -> None:
         """Global ExecHelper API."""
@@ -239,6 +245,7 @@ class ExecHelper(
         self.__logger: logging.Logger = logger
         self.log_mask_re: LogMaskReT = log_mask_re
         self.__chroot_path: str | None = None
+        self.__context_count = 0
 
     @property
     def logger(self) -> logging.Logger:
@@ -303,6 +310,11 @@ class ExecHelper(
         """
         return _ChRootContext(conn=self, path=path)
 
+    @property
+    def _context_count(self) -> int:
+        """Instance context enter count."""
+        return self.__context_count
+
     def __enter__(self) -> Self:
         """Get context manager.
 
@@ -312,6 +324,7 @@ class ExecHelper(
         .. versionchanged:: 1.1.0 lock on enter
         """
         self.lock.acquire()
+        self.__context_count += 1
         return self
 
     def __exit__(
@@ -321,6 +334,7 @@ class ExecHelper(
         exc_tb: TracebackType | None,
     ) -> None:
         """Context manager usage."""
+        self.__context_count -= 1
         self.lock.release()
 
     def _mask_command(self, cmd: str, log_mask_re: LogMaskReT = None) -> str:

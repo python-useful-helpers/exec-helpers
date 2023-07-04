@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 
@@ -205,7 +205,7 @@ class SSHAuth:
                     self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
-            except paramiko.PasswordRequiredException:
+            except paramiko.PasswordRequiredException:  # noqa: PERF203
                 if self.__password is None:
                     LOGGER.exception("No password has been set!")
                     raise

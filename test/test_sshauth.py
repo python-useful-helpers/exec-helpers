@@ -68,14 +68,17 @@ password = "pass"
 
 
 configs = {
-    "username_only": dict(username=username),
-    "username_password": dict(username=username, password=password),
-    "username_key": dict(username=username, key=gen_private_keys(1).pop()),
-    "username_password_key": dict(username=username, password=password, key=gen_private_keys(1).pop()),
-    "username_password_keys": dict(username=username, password=password, keys=gen_private_keys(2)),
-    "username_password_key_keys": dict(
-        username=username, password=password, key=gen_private_keys(1).pop(), keys=gen_private_keys(2)
-    ),
+    "username_only": {"username": username},
+    "username_password": {"username": username, "password": password},
+    "username_key": {"username": username, "key": gen_private_keys(1).pop()},
+    "username_password_key": {"username": username, "password": password, "key": gen_private_keys(1).pop()},
+    "username_password_keys": {"username": username, "password": password, "keys": gen_private_keys(2)},
+    "username_password_key_keys": {
+        "username": username,
+        "password": password,
+        "key": gen_private_keys(1).pop(),
+        "keys": gen_private_keys(2),
+    },
 }
 
 

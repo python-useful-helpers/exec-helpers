@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Copyright 2016 Mirantis, Inc.
 
@@ -186,8 +186,8 @@ class ExitCodes(enum.IntEnum):
 
 
 ExitCodeT = typing.Union[int, ExitCodes]
-EXPECTED: ExitCodeT = 0 if "win32" == sys.platform else ExitCodes.EX_OK
-INVALID: ExitCodeT = 0xDEADBEEF if "win32" == sys.platform else ExitCodes.EX_INVALID
+EXPECTED: ExitCodeT = 0 if sys.platform == "win32" else ExitCodes.EX_OK
+INVALID: ExitCodeT = 0xDEADBEEF if sys.platform == "win32" else ExitCodes.EX_INVALID
 
 
 def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
@@ -196,7 +196,7 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     :param code: code to convert from
     :return: enum code if suitable else original code
     """
-    if "win32" == sys.platform:
+    if sys.platform == "win32":
         return int(code)
     if isinstance(code, int) and code in ExitCodes.__members__.values():
         return ExitCodes(code)

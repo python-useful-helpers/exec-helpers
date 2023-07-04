@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
 # exec-helpers documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 30 13:40:52 2016.
 #
@@ -61,8 +58,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "Exec-helpers"
-copyright = "2018, Alexey Stepanov"
-author = "Alexey Stepanov"
+copyright = "2018-2023, Aleksei Stepanov"  # noqa: A001
+author = "Aleksei Stepanov"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

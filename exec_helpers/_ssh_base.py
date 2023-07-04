@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Copyright 2013 - 2016 Mirantis, Inc.
 
@@ -405,17 +405,20 @@ class _KeepAliveContext(typing.ContextManager[None]):
     :type enforce: int
     """
 
-    __slots__ = ("__ssh", "__keepalive_period", "__enforce")
+    __slots__ = ("__ssh", "__keepalive_mode", "__keepalive_period", "__enforce")
 
     def __init__(self, ssh: SSHClientBase, enforce: int) -> None:
         """Context manager for keepalive management."""
         self.__ssh: SSHClientBase = ssh
+        self.__keepalive_mode: bool = ssh.keepalive_mode
         self.__keepalive_period: int = ssh.keepalive_period
         self.__enforce: int = enforce
 
     def __enter__(self) -> None:
         self.__ssh.__enter__()
+        self.__keepalive_mode = self.__ssh.keepalive_mode
         self.__keepalive_period = self.__ssh.keepalive_period
+        self.__ssh.keepalive_mode = bool(self.__enforce)
         self.__ssh.keepalive_period = self.__enforce
 
     def __exit__(
@@ -426,6 +429,7 @@ class _KeepAliveContext(typing.ContextManager[None]):
     ) -> None:
         # Exit before releasing!
         self.__ssh.__exit__(exc_type, exc_val, exc_tb)
+        self.__ssh.keepalive_mode = self.__keepalive_mode
         self.__ssh.keepalive_period = self.__keepalive_period
 
 
@@ -473,6 +477,7 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 6.0.0 private_keys is deprecated
     .. versionchanged:: 7.0.0 private_keys is removed
     .. versionchanged:: 7.0.0 keepalive_mode is removed
+    .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
     """
 
     __slots__ = (
@@ -482,6 +487,7 @@ class SSHClientBase(api.ExecHelper):
         "__ssh",
         "__sftp",
         "__sudo_mode",
+        "__keepalive_mode",
         "__keepalive_period",
         "__verbose",
         "__ssh_config",
@@ -536,6 +542,7 @@ class SSHClientBase(api.ExecHelper):
 
         self.__sudo_mode = False
         self.__keepalive_period: int = int(keepalive)
+        self.__keepalive_mode = False
         self.__verbose: bool = verbose
         self.__sock = sock
 
@@ -841,7 +848,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 1.1.0 release lock on exit
         .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
         """
-        if not self.__keepalive_period:
+        if self._context_count == 1 and not self.__keepalive_mode:
             self.close()
         super().__exit__(exc_type, exc_val, exc_tb)
 
@@ -882,6 +889,33 @@ class SSHClientBase(api.ExecHelper):
         self.__keepalive_period = int(period)
         transport: paramiko.Transport = self._ssh_transport
         transport.set_keepalive(int(period))
+
+    @property
+    def keepalive_mode(self) -> bool:
+        """Keepalive mode.
+
+        :rtype: bool
+        Do not close connection on __exit__ if set.
+        """
+        return self.__keepalive_mode
+
+    @keepalive_mode.setter
+    def keepalive_mode(self, mode: bool) -> None:
+        """Keepalive mode.
+
+        :param mode: new mode
+        :type mode: bool
+        Do not close connection on __exit__ if set.
+        """
+        self.__keepalive_mode = mode
+
+    @keepalive_mode.deleter
+    def keepalive_mode(self) -> None:
+        """Keepalive mode.
+
+        Do not close connection on __exit__ if set.
+        """
+        self.keepalive_mode = False
 
     def reconnect(self) -> None:
         """Reconnect SSH session."""
@@ -1811,7 +1845,7 @@ class SSHClientBase(api.ExecHelper):
                 results[(remote.hostname, remote.port)] = result
                 if result.exit_code not in prep_expected:
                     errors[(remote.hostname, remote.port)] = result
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 raised_exceptions[(remote.hostname, remote.port)] = e
 
         if raised_exceptions:  # always raise

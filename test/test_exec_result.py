@@ -165,7 +165,7 @@ class TestExecResult(unittest.TestCase):
         result = exec_helpers.ExecResult(cmd=cmd)
         with self.assertRaises(exec_helpers.ExecHelperError):
             # noinspection PyStatementEffect
-            result.stdout_json  # pylint: disable=pointless-statement
+            result.stdout_json  # pylint: disable=pointless-statement  # noqa: B018
         logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
 
     def test_not_equal(self):
@@ -281,9 +281,9 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stdout_lines[0, ..., 2], "line0\n...\nline2")
         self.assertEqual(result.stdout_lines[:1, ..., 2], "line0\n...\nline2")
         with self.assertRaises(TypeError):
-            _ = result.stdout_lines["aaa"]  # noqa
+            _ = result.stdout_lines["aaa"]
         with self.assertRaises(TypeError):
-            _ = result.stdout_lines[1, "aaa"]  # noqa
+            _ = result.stdout_lines[1, "aaa"]
 
     @unittest.skipIf(defusedxml is None, "defusedxml is not installed")
     def test_stdout_xml(self):

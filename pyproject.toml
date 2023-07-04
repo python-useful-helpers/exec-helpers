@@ -2,26 +2,31 @@
 # Minimum requirements for the build system to execute.
 # PEP 508 specifications for PEP 518.
 requires = [
-  "setuptools>=45",  # PSF/ZPL
-  "setuptools_scm[toml]>=6.2",
+    "setuptools >= 61.0.0",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
 ]
 build-backend="setuptools.build_meta"
 
 [project]
 name = "exec-helpers"
 description = "Execution helpers for simplified usage of subprocess and ssh."
-readme = "README.rst"
-urls={"Bug Tracker" = "https://github.com/python-useful-helpers/exec-helpers/issues", "Documentation" = "https://exec-helpers.readthedocs.io/" }
 requires-python = ">=3.7.0"
 keywords = ["subprocess", "ssh"]
-license = {text = "Apache License, Version 2.0"}
+license={text="Apache-2.0"}  # Use SPDX classifier
+readme = {file = "README.rst", content-type = "text/x-rst"}
 authors=[{name="Alexey Stepanov", email="penguinolog@gmail.com"}]
 maintainers=[
-  {name="Alexey Stepanov", email="penguinolog@gmail.com"},
+  {name="Aleksei Stepanov", email="penguinolog@gmail.com"},
   {name="Antonio Esposito", email="esposito.cloud@gmail.com"},
-  {name="Dennis Dmitriev", email="dis-xcom@gmail.com"}
+  {name="Dennis Dmitriev", email="dis-xcom@gmail.com"},
 ]
 dynamic = ["version", "classifiers", "dependencies"]
+
+[project.urls]
+"Documentation" = "https://exec-helpers.readthedocs.io/"
+"Repository" = "https://github.com/python-useful-helpers/exec-helpers"
+"Bug Tracker" = "https://github.com/python-useful-helpers/exec-helpers/issues"
 
 [tool.setuptools.package-data]
 exec_helpers=[
@@ -30,10 +35,16 @@ exec_helpers=[
   "*/*.pyi"
 ]
 
+[tool.setuptools]
+zip-safe = false
+
 [tool.setuptools.packages.find]
 exclude = [
   "doc",
+  "docs",
+  "examples",
   "test",
+  "bin",
   ".*"
 ]
 include = ["exec_helpers"]
@@ -52,6 +63,9 @@ all-formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
 
 [tool.distutils.bdist_wheel]
 universal = 0
+
+[tool.setuptools_scm]
+write_to = "exec_helpers/_version.py"
 
 [tool.black]
 line-length = 120
@@ -151,5 +165,33 @@ exclude_lines = [
 [tool.coverage.json]
 pretty_print = true
 
-[tool.setuptools_scm]
-write_to = "exec_helpers/_version.py"
+[tool.ruff]
+line-length = 120
+show-source = true
+target-version = "py38"
+
+extend-select = [
+  "W",  # also pycodestyle warnings
+  "A001",  # Variable is shadowing a python builtin
+  "B", "T10", "EXE",  # flake8-bugbear, flake8-debugger, flake8-executable
+  "ISC001", "ISC003",  # flake8-implicit-str-concat
+  "RET", "SIM", "C4",  # flake8-return, flake8-simplify, flake8-comprehensions
+  "ICN", "PGH",  # flake8-import-conventions, pygrep-hooks
+  "Q002", "Q003",  # Double quote docstring as PEP8, Change outer quotes to avoid escaping inner quotes
+  "FLY",  # Flynt
+  "TRY", "UP", "I", "PL", "PERF", "RUF",  # tryceratops, pyupgrade, isort, pylint, Ruff-specific
+]
+extend-ignore = [
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # refactor rules (too many statements/arguments/branches)
+  "PLW2901",  # `Outer variable overwritten by inner target
+  "RET504",  # Unnecessary variable assignment before return statement
+  "SIM108",  # Use ternary operator,
+  "TRY002", "TRY003", "TRY300", "TRY301", "TRY400",  # do not raise `Exception`, long messages prepare outside, ...
+]
+
+[tool.ruff.isort]
+force-single-line = true
+known-third-party = []
+
+[tool.ruff.pydocstyle]
+convention = "pep257"

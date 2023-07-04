@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2021 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -39,9 +39,9 @@ from .ssh import SSHClient
 from .ssh_auth import SSHAuth
 from .subprocess import Subprocess  # nosec  # Expected
 
-try:
+try:  # noqa: SIM105
     # Local Implementation
-    from ._version import version as __version__
+    from ._version import version as __version__  # noqa: F401
 except ImportError:
     pass
 

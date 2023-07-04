@@ -28,8 +28,8 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=pylint.extensions.docstyle,
-             pylint.extensions.docparams,
+load-plugins=pylint.extensions.docparams,
+             pylint.extensions.docstyle,
              pylint.extensions.overlapping_exceptions,
              pylint.extensions.emptystring,
              pylint.extensions.comparetozero,
@@ -39,6 +39,7 @@ load-plugins=pylint.extensions.docstyle,
              pylint.extensions.redefined_variable_type,
              pylint.extensions.typing,
              pylint.extensions.empty_comment
+             # perflint
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -88,7 +89,8 @@ disable=locally-disabled,
         too-many-lines,
         broad-except,
         logging-fstring-interpolation,
-        logging-format-interpolation
+        logging-format-interpolation,
+        invalid-name
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

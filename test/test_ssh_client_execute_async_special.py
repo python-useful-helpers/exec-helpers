@@ -47,7 +47,7 @@ class FakeFileStream:
 
 
 def read_stream(stream: FakeFileStream) -> typing.Tuple[bytes, ...]:
-    return tuple([line for line in stream])
+    return tuple(stream)
 
 
 host = "127.0.0.1"
@@ -55,7 +55,7 @@ port = 22
 username = "user"
 password = "pass"
 
-command = "ls ~\nline 2\nline 3\nline с кирилицей"
+command = "ls ~\nline 2\nline 3\nline c кирилицей"
 cmd_execute = f"{command}\n"
 quoted_command = shlex.quote(command)
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
@@ -79,7 +79,7 @@ def chan_makefile():
                 self.stdin = mock.Mock()
                 self.stdin.channel = self.channel
                 return self.stdin
-            elif "rb" == flags:
+            if flags == "rb":
                 self.stdout = FakeFileStream(*stdout_src)
                 self.stdout.channel = self.channel
                 return self.stdout
@@ -169,6 +169,7 @@ def test_005_execute_async_sudo_password(ssh, ssh_transport_channel):
 
 
 def test_006_keepalive(ssh, paramiko_ssh_client):
+    ssh.keepalive_mode = True
     with ssh:
         pass  # NOSONAR
 
@@ -185,10 +186,10 @@ def test_007_no_keepalive(ssh, paramiko_ssh_client):
 
 
 def test_008_keepalive_enforced(ssh, paramiko_ssh_client):
-    ssh.keepalive_period = False
+    ssh.keepalive_mode = False
 
     with ssh.keepalive():
-        assert ssh.keepalive_period == 1
+        assert ssh.keepalive_mode == 1
 
     paramiko_ssh_client().close.assert_not_called()
 

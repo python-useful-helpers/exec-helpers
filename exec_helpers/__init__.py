@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -21,9 +21,9 @@ import importlib
 import typing
 import warnings
 
-try:
+try:  # noqa: SIM105
     # Local Implementation
-    from ._version import version as __version__
+    from ._version import version as __version__  # noqa: F401
 except ImportError:
     pass
 
@@ -100,7 +100,11 @@ def __getattr__(name: str) -> typing.Any:
     :raises AttributeError: attribute is not defined for lazy load
     """
     if name in _deprecated:
-        warnings.warn(f"{name} is deprecated in favor of {_deprecated[name]}", DeprecationWarning)
+        warnings.warn(
+            f"{name} is deprecated in favor of {_deprecated[name]}",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     if name in __lazy_load_modules:
         mod = importlib.import_module(f"{__package__}.{name}")
         __locals[name] = mod
@@ -113,10 +117,10 @@ def __getattr__(name: str) -> typing.Any:
     raise AttributeError(f"{name} not found in {__package__}")
 
 
-__author__ = "Alexey Stepanov"
+__author__ = "Aleksei Stepanov"
 __author_email__ = "penguinolog@gmail.com"
 __maintainers__ = {
-    "Alexey Stepanov": "penguinolog@gmail.com",
+    "Aleksei Stepanov": "penguinolog@gmail.com",
     "Antonio Esposito": "esposito.cloud@gmail.com",
     "Dennis Dmitriev": "dis-xcom@gmail.com",
 }

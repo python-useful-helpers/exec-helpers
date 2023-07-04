@@ -1,4 +1,4 @@
-#    Copyright 2018 - 2022 Alexey Stepanov aka penguinolog.
+#    Copyright 2018 - 2023 Aleksei Stepanov aka penguinolog.
 
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     # Package Implementation
-    from exec_helpers import exec_result  # noqa: F401  # pylint: disable=cyclic-import
+    from exec_helpers import exec_result  # pylint: disable=cyclic-import
     from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = (
@@ -323,10 +323,10 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         self.exceptions: dict[tuple[str, int], Exception] = exceptions
 
 
-ParallelCallExceptions = ParallelCallExceptionsError  # noqa: N818
+ParallelCallExceptions = ParallelCallExceptionsError
 
 
-class StopExecution(Exception):  # noqa: N818
+class StopExecution(Exception):
     """Stop execution without waiting for exit code."""
 
     def __init__(
@@ -367,7 +367,7 @@ class StopExecution(Exception):  # noqa: N818
         return self.__result
 
 
-class StopExecutionGraceful(StopExecution):  # noqa: N818
+class StopExecutionGraceful(StopExecution):
     """Stop execution without raising exception."""
 
     def __init__(

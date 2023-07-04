@@ -1,40 +1,45 @@
 name: Python package
 
-on: [push]
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+  pull_request: {}
 
 jobs:
   PEP8:
+    name: Check with Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade -r flake8_requirements.txt
-      - name: Lint with flake8
+          pip install --upgrade ruff
+      - name: Lint with ruff
         run: |
-          flake8 exec_helpers
+          ruff . --format github
 
   PyLint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.7'
+          python-version: '3.8'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade -r CI_REQUIREMENTS.txt
-          pip install --upgrade "pylint >= 2.6.0"
-      - name: Generate version file
+          pip install --upgrade "pylint >= 2.6.0" perflint
+      - name: Install develop
         run: |
-          python setup.py --version clean
+          pip install -e .
       - name: Lint with PyLint
         run: |
           pylint exec_helpers
@@ -42,9 +47,9 @@ jobs:
   MyPy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -52,9 +57,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade -r CI_REQUIREMENTS.txt
           pip install --upgrade -r mypy_requirements.txt
-      - name: Generate version file
+      - name: Install develop
         run: |
-          python setup.py --version clean
+          pip install -e .
       - name: Lint with MyPy
         run: |
           mypy --strict --install-types --non-interactive exec_helpers
@@ -62,9 +67,9 @@ jobs:
   Black:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -74,20 +79,40 @@ jobs:
       - name: Check code style with black
         run: |
           black --check exec_helpers
+  Metadata:
+    name: Validate metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade twine build
+      - name: Build package
+        run: |
+          python -m build -s
+      - name: Validate metadata
+        run: |
+          twine check dist/*
 
   Test:
-    needs: [PEP8, PyLint, MyPy, Black]
+    needs: [PEP8, PyLint, MyPy, Black, Metadata]  # isort is broken
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 6
       matrix:
-        os: ["ubuntu-latest", "windows-latest"]
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
+    name: "Script based python ${{ matrix.python-version }} on ${{ matrix.os }}"
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -95,23 +120,43 @@ jobs:
           python -m pip install --upgrade pip wheel
           pip install --upgrade -r CI_REQUIREMENTS.txt
           pip install --upgrade -r pytest_requirements.txt
-      - name: Build package and install develop
+      - name: Install develop
         run: |
           pip install -e .
       - name: Test with pytest
         run: |
           py.test --cov-report= --cov=exec_helpers test
           coverage report -m
+          coverage xml
 #          coverage report -m --fail-under 85
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: run-${{ matrix.python-version }}-${{ matrix.os }}
+          parallel: true
+          file: coverage.xml
 
-  Deploy:
-    needs: [Test]
+  UploadCoverage:
+    name: Upload coverage to Coveralls
+    needs: [ Test ]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+
+  Build:
+    needs: [ Test ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # need for setuptools_scm
       - name: Set up Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -121,9 +166,25 @@ jobs:
       - name: Build package
         run: |
           python -m build
-      - name: Deploy
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          twine upload --skip-existing dist/*
+      - uses: actions/upload-artifact@v3
+        with:
+          path: dist/*
+
+  Deploy:
+      needs: [Build]
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      runs-on: ubuntu-latest
+      environment:
+        name: pypi
+        url: https://pypi.org/p/exec-helpers
+      permissions:
+        id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+      steps:
+        - uses: actions/download-artifact@v3
+          with:
+            # unpacks default artifact into dist/
+            # if `name: artifact` is omitted, the action will create extra parent dir
+            name: artifact
+            path: dist
+        - name: Publish package distributions to PyPI
+          uses: pypa/gh-action-pypi-publish@release/v1
