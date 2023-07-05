@@ -40,14 +40,12 @@ zip-safe = false
 
 [tool.setuptools.packages.find]
 exclude = [
-  "doc",
-  "docs",
+  "doc*",
   "examples",
-  "test",
+  "test*",
   "bin",
   ".*"
 ]
-include = ["exec_helpers"]
 namespaces = false
 
 [tool.setuptools.dynamic]
