@@ -294,9 +294,7 @@ async def test_special_cases(create_subprocess_shell, exec_result, logger, run_p
 
         command_for_log = run_parameters.get("masked_cmd", command)
         command_log = f"Executing command:\n{command_for_log.rstrip()!r}\n"
-        result_log = "Command {command!r} exit code: {result.exit_code!s}".format(
-            command=command_for_log.rstrip(), result=res
-        )
+        result_log = f"Command {command_for_log.rstrip()!r} exit code: {res.exit_code!s}"
 
         assert logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
         assert logger.mock_calls[-1] == mock.call.log(level=level, msg=result_log)
