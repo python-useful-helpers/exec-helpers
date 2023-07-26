@@ -1,0 +1,16 @@
+[tool.ruff]
+# Extend the `pyproject.toml` file in the parent directory.
+extend = "../pyproject.toml"
+
+extend-ignore = [
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # refactor rules (too many statements/arguments/branches)
+  "PLW2901",  # `Outer variable overwritten by inner target
+  "RET504",  # Unnecessary variable assignment before return statement
+  "SIM108",  # Use ternary operator,
+  "TRY002", "TRY003", "TRY300", "TRY301", "TRY400",  # do not raise `Exception`, long messages prepare outside, ...
+  "PTH118", "PTH119",  # `os.path.join()`, `os.path.basename()` should be replaced
+  "S",
+]
+
+[tool.ruff.isort]
+known-first-party = ["exec_helpers"]
