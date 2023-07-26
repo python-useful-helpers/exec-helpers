@@ -14,8 +14,10 @@
 
 """Shared pytest logic."""
 
+from __future__ import annotations
+
 # Standard Library
-from unittest import mock
+from unittest import mock  # noqa: TCH003
 
 # External Dependencies
 import pytest

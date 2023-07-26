@@ -22,7 +22,6 @@ from __future__ import annotations
 
 # Standard Library
 import abc
-import datetime
 import logging
 import pathlib
 import threading
@@ -41,6 +40,7 @@ from . import _helpers
 
 if typing.TYPE_CHECKING:
     # Standard Library
+    import datetime
     from collections.abc import Sequence
     from types import TracebackType
 

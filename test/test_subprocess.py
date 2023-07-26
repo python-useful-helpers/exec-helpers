@@ -12,11 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 # Standard Library
 import logging
 import random
 import subprocess
-import typing
 from unittest import mock
 
 # External Dependencies
@@ -170,9 +171,9 @@ def popen(mocker, run_parameters):
     mocker.patch("psutil.Process")
 
     def create_mock(
-        ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
-        stdout: typing.Optional[typing.Tuple] = None,
-        stderr: typing.Optional[typing.Tuple] = None,
+        ec: exec_helpers.ExitCodes | int = exec_helpers.ExitCodes.EX_OK,
+        stdout: tuple | None = None,
+        stderr: tuple | None = None,
         **kwargs,
     ):
         """Parametrized code."""

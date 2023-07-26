@@ -39,7 +39,6 @@ from exec_helpers.api import ExpectedExitCodesT
 from exec_helpers.api import LogMaskReT
 from exec_helpers.api import OptionalStdinT
 from exec_helpers.api import OptionalTimeoutT
-from exec_helpers.async_api import exec_result
 
 # Local Implementation
 from .. import _helpers
@@ -53,6 +52,7 @@ if typing.TYPE_CHECKING:
     from typing_extensions import Self
 
     # Package Implementation
+    from exec_helpers.async_api import exec_result
     from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = (

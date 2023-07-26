@@ -80,11 +80,12 @@ class SSHClient(_ssh_base.SSHClientBase):
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
+        source_orig = pathlib.Path(source).expanduser()
         if self.isdir(target):
-            target = posixpath.join(target, os.path.basename(source))
+            target = posixpath.join(target, source_orig.name)
 
         tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
-        src = pathlib.Path(source).expanduser().resolve()
+        src = source_orig.resolve()
         if not src.is_dir():
             self._sftp.put(src.as_posix(), tgt.as_posix(), confirm=True)
             return
@@ -113,13 +114,13 @@ class SSHClient(_ssh_base.SSHClientBase):
         self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")
 
         tgt = pathlib.Path(target).expanduser().resolve()
-        dst = pathlib.PurePath(destination).as_posix()
+        dst = pathlib.PurePath(destination)
         if tgt.is_dir():
-            tgt = tgt.joinpath(os.path.basename(dst))
+            tgt = tgt.joinpath(dst.name)
 
         if not self.isdir(destination):
             if self.exists(destination):
-                self._sftp.get(dst, tgt.as_posix())
+                self._sftp.get(dst.as_posix(), tgt.as_posix())
             else:
                 self.logger.debug(f"Can't download {destination} because it does not exist")
         else:

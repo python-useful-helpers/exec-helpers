@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 # Standard Library
 import errno
 import logging
@@ -81,19 +83,19 @@ class CommandParameters(typing.NamedTuple):
     def as_dict(self):
         return self._asdict()
 
-    command: typing.Union[str, typing.Iterable[str]] = command
-    stdin: typing.Optional[str] = None
-    verbose: typing.Optional[bool] = None
-    log_mask_re: typing.Optional[str] = None
+    command: str | typing.Iterable[str] = command
+    stdin: str | None = None
+    verbose: bool | None = None
+    log_mask_re: str | None = None
 
 
 class MockParameters(typing.NamedTuple):
     """Mock configuration parameters."""
 
-    write: typing.Optional[Exception] = None
-    stdin_close: typing.Optional[Exception] = None
-    ec: typing.Sequence[typing.Union[int, Exception]] = (0,)
-    poll: typing.Sequence[typing.Union[int, None]] = (0,)
+    write: Exception | None = None
+    stdin_close: Exception | None = None
+    ec: typing.Sequence[int | Exception] = (0,)
+    poll: typing.Sequence[int | None] = (0,)
 
 
 configs = {
@@ -238,7 +240,7 @@ def create_subprocess_shell(mocker, run_parameters):
     mocker.patch("psutil.Process")
     mocker.patch("psutil.wait_procs", return_value=([], []))
 
-    def create_mock(stdout: typing.Optional[typing.Tuple] = None, **kwargs):
+    def create_mock(stdout: tuple | None = None, **kwargs):
         """Parametrized code."""
         proc = mock.Mock()
 

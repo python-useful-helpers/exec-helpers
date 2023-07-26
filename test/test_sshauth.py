@@ -14,6 +14,8 @@
 
 # pylint: disable=no-self-use
 
+from __future__ import annotations
+
 # Standard Library
 import contextlib
 import copy
@@ -28,12 +30,12 @@ import pytest
 import exec_helpers
 
 
-def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
+def gen_private_keys(amount: int = 1) -> list[paramiko.RSAKey]:
     """Generate VALID private keys for usage in tests."""
     return [paramiko.RSAKey.generate(1024) for _ in range(amount)]
 
 
-def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
+def gen_public_key(private_key: paramiko.RSAKey | None = None) -> str:
     """Generate or extract VALID public key from private key."""
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
@@ -41,8 +43,8 @@ def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
 
 
 def get_internal_keys(
-    key: typing.Optional[paramiko.RSAKey] = None,
-    keys: typing.Optional[typing.Iterable[paramiko.RSAKey]] = None,
+    key: paramiko.RSAKey | None = None,
+    keys: typing.Iterable[paramiko.RSAKey] | None = None,
     **kwargs,
 ):
     int_keys = []

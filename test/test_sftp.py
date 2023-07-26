@@ -16,6 +16,8 @@
 
 # pylint: disable=no-self-use
 
+from __future__ import annotations
+
 # Standard Library
 import os
 import posixpath

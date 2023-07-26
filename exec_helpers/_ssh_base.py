@@ -47,7 +47,6 @@ from exec_helpers import ssh_auth
 from . import _helpers
 from . import _log_templates
 from . import _ssh_helpers
-from ._ssh_helpers import SSHConfigsDictT
 
 if typing.TYPE_CHECKING:
     # Standard Library
@@ -68,6 +67,9 @@ if typing.TYPE_CHECKING:
     from exec_helpers.api import OptionalStdinT
     from exec_helpers.api import OptionalTimeoutT
     from exec_helpers.proc_enums import ExitCodeT
+
+    # Local Implementation
+    from ._ssh_helpers import SSHConfigsDictT
 
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
@@ -1860,7 +1862,7 @@ class SSHClientBase(api.ExecHelper):
             raise exception_class(cmd, errors, results, expected=prep_expected)
         return results
 
-    def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
+    def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:  # noqa: A003
         """Open file on remote using SFTP session.
 
         :param path: filesystem object path

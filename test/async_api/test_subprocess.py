@@ -12,12 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 # Standard Library
 import asyncio
 import logging
 import random
 import sys
-import typing
 from unittest import mock
 
 # External Dependencies
@@ -177,10 +178,10 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
     mocker.patch("psutil.Process")
 
     def create_mock(
-        ec: typing.Union[exec_helpers.ExitCodes, int] = exec_helpers.ExitCodes.EX_OK,
-        stdout: typing.Optional[typing.Tuple] = None,
-        stderr: typing.Optional[typing.Tuple] = None,
-        stdin: typing.Optional[typing.Union[str, bytes, bytearray]] = None,
+        ec: exec_helpers.ExitCodes | int = exec_helpers.ExitCodes.EX_OK,
+        stdout: tuple | None = None,
+        stderr: tuple | None = None,
+        stdin: str | bytes | bytearray | None = None,
         **kwargs,
     ):
         """Parametrized code."""

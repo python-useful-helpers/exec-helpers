@@ -12,10 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Execution helpers for simplified usage of subprocess and ssh."""
-
-from __future__ import annotations
-
 # Standard Library
 import typing
 
@@ -75,12 +71,7 @@ __all__ = (
 
 _deprecated: dict[str, str] = ...
 
-def __getattr__(name: str) -> typing.Any:
-    """Get attributes lazy.
-
-    :return: attribute by name
-    :raises AttributeError: attribute is not defined for lazy load
-    """
+def __getattr__(name: str) -> typing.Any: ...
 
 __author__: str = ...
 __author_email__: str = ...

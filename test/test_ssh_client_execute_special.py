@@ -12,12 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 # Standard Library
 import base64
 import datetime
 import logging
 import threading
-import typing
 from unittest import mock
 
 # External Dependencies
@@ -52,7 +53,7 @@ class FakeFileStream:
         self.closed = True
 
 
-def read_stream(stream: FakeFileStream) -> typing.Tuple[bytes, ...]:
+def read_stream(stream: FakeFileStream) -> tuple[bytes, ...]:
     return tuple(stream)
 
 

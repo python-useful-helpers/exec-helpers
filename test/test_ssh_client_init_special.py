@@ -12,8 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 # Standard Library
-import typing
 from unittest import mock
 
 # External Dependencies
@@ -24,12 +25,12 @@ import pytest
 import exec_helpers
 
 
-def gen_private_keys(amount: int = 1) -> typing.List[paramiko.RSAKey]:
+def gen_private_keys(amount: int = 1) -> list[paramiko.RSAKey]:
     keys = [paramiko.RSAKey.generate(1024) for _ in range(amount)]
     return keys
 
 
-def gen_public_key(private_key: typing.Optional[paramiko.RSAKey] = None) -> str:
+def gen_public_key(private_key: paramiko.RSAKey | None = None) -> str:
     if private_key is None:
         private_key = paramiko.RSAKey.generate(1024)
     return f"{private_key.get_name()} {private_key.get_base64()}"

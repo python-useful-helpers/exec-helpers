@@ -170,14 +170,20 @@ target-version = "py38"
 
 extend-select = [
   "W",  # also pycodestyle warnings
-  "A001",  # Variable is shadowing a python builtin
+  "PYI",  # flake8-pyi
+  "ASYNC",  # flake8-async
+  "FA",  # from __future__ import annotations
+  "SLOT",  # flake8-slots
+  "TCH",  # flake8-type-checking
+  "PTH",
+  "A",  # flake8-builtins
   "B", "T10", "EXE",  # flake8-bugbear, flake8-debugger, flake8-executable
-  "ISC001", "ISC003",  # flake8-implicit-str-concat
+  "ISC",  # flake8-implicit-str-concat
   "RET", "SIM", "C4",  # flake8-return, flake8-simplify, flake8-comprehensions
   "ICN", "PGH",  # flake8-import-conventions, pygrep-hooks
   "Q002", "Q003",  # Double quote docstring as PEP8, Change outer quotes to avoid escaping inner quotes
   "FLY",  # Flynt
-  "TRY", "UP", "I", "PL", "PERF", "RUF",  # tryceratops, pyupgrade, isort, pylint, Ruff-specific
+  "TRY", "UP", "I", "PL", "PERF", "RUF",  # tryceratops, pyupgrade, isort, pylint + perflint, Ruff-specific
 ]
 extend-ignore = [
   "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # refactor rules (too many statements/arguments/branches)
@@ -185,6 +191,7 @@ extend-ignore = [
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
   "TRY002", "TRY003", "TRY300", "TRY301", "TRY400",  # do not raise `Exception`, long messages prepare outside, ...
+  "PTH118", "PTH119",  # `os.path.join()`, `os.path.basename()` should be replaced
 ]
 
 [tool.ruff.isort]

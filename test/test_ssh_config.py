@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Standard Library
 import io
 import sys
