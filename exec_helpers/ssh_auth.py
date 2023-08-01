@@ -205,7 +205,7 @@ class SSHAuth:
                     self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
                 return
-            except paramiko.PasswordRequiredException:  # noqa: PERF203
+            except paramiko.PasswordRequiredException:
                 if self.__password is None:
                     LOGGER.exception("No password has been set!")
                     raise

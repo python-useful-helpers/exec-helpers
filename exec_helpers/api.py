@@ -32,7 +32,7 @@ from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
-from exec_helpers.exec_result import OptionalStdinT
+from exec_helpers.exec_result import OptionalStdinT  # noqa: TCH001
 from exec_helpers.proc_enums import ExitCodeT
 
 # Local Implementation
