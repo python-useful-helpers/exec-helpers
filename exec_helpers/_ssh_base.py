@@ -1884,9 +1884,10 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             self._sftp.lstat(pathlib.PurePath(path).as_posix())
-            return True
         except OSError:
             return False
+        else:
+            return True
 
     def stat(self, path: SupportPathT) -> paramiko.sftp_attr.SFTPAttributes:
         """Get stat info for path with following symlinks.

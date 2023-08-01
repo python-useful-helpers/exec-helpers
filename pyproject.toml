@@ -190,7 +190,7 @@ extend-ignore = [
   "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # refactor rules (too many statements/arguments/branches)
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
-  "TRY002", "TRY003", "TRY300", "TRY301", "TRY400",  # do not raise `Exception`, long messages prepare outside, ...
+  "TRY003",  # long messages prepare outside, ...
   "PTH118", "PTH119",  # `os.path.join()`, `os.path.basename()` should be replaced
 ]
 

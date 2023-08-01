@@ -43,9 +43,10 @@ def _parse_ssh_config_file(file_path: pathlib.Path) -> paramiko.SSHConfig | None
         config = paramiko.SSHConfig()
         with file_path.open() as f_obj:
             config.parse(f_obj)
-        return config
     except Exception:
-        return None
+        config = None
+
+    return config
 
 
 class SSHConfig:

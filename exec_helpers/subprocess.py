@@ -346,7 +346,6 @@ class Subprocess(api.ExecHelper):
                 # Minimal timeout to complete polling
                 concurrent.futures.wait([stdout_future, stderr_future], timeout=0.1)
                 result.exit_code = exit_code
-                return result
             except subprocess.TimeoutExpired as exc:
                 # kill -9 for all subprocesses
                 _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
@@ -357,6 +356,8 @@ class Subprocess(api.ExecHelper):
                         timeout=timeout,  # type: ignore[arg-type]
                     ) from exc
                 result.exit_code = exit_signal
+            else:
+                return result
             finally:
                 stdout_future.cancel()
                 stderr_future.cancel()

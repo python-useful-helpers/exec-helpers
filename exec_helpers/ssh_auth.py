@@ -204,7 +204,6 @@ class SSHAuth:
                 if index != self.__key_index:
                     self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
-                return
             except paramiko.PasswordRequiredException:
                 if self.__password is None:
                     LOGGER.exception("No password has been set!")
@@ -213,6 +212,8 @@ class SSHAuth:
                 raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
                 continue
+            else:
+                return
         msg: str = "Connection using stored authentication info failed!"
         if log:
             LOGGER.exception(msg)

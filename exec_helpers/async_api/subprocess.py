@@ -331,7 +331,6 @@ class Subprocess(api.ExecHelper):
             # Wait real timeout here
             exit_code: int = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)
             result.exit_code = exit_code
-            return result
         except asyncio.TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
@@ -342,6 +341,8 @@ class Subprocess(api.ExecHelper):
                     timeout=timeout,  # type: ignore[arg-type]
                 ) from exc
             result.exit_code = exit_signal
+        else:
+            return result
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
