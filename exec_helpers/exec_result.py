@@ -775,11 +775,11 @@ class ExecResult:
             or issubclass(self.__class__, other.__class__)
             or issubclass(other.__class__, self.__class__)
         ) and (
-            self.cmd == other.cmd
-            and self.stdin == other.stdin
-            and self.stdout == other.stdout
-            and self.stderr == other.stderr
-            and self.exit_code == other.exit_code
+            self.cmd == other.cmd  # type: ignore[attr-defined]
+            and self.stdin == other.stdin  # type: ignore[attr-defined]
+            and self.stdout == other.stdout  # type: ignore[attr-defined]
+            and self.stderr == other.stderr  # type: ignore[attr-defined]
+            and self.exit_code == other.exit_code  # type: ignore[attr-defined]
         )
 
     def __ne__(self, other: object) -> bool:
