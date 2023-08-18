@@ -762,7 +762,7 @@ class ExecResult:
             f"{started}{spent})"
         )
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Comparison.
 
         :param other: other ExecResult instance.
@@ -782,7 +782,7 @@ class ExecResult:
             and self.exit_code == other.exit_code
         )
 
-    def __ne__(self, other: typing.Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         """Comparison.
 
         :param other: other ExecResult instance.

@@ -75,7 +75,6 @@ __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
 KeepAlivePeriodT = typing.Union[int, bool]
 SupportPathT = typing.Union[str, pathlib.PurePath]
-_RT = typing.TypeVar("_RT")
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):

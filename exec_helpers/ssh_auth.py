@@ -236,7 +236,7 @@ class SSHAuth:
             )
         )
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Comparison helper.
 
         :param other: other SSHAuth instance
@@ -246,7 +246,7 @@ class SSHAuth:
         """
         return hash(self) == hash(other)
 
-    def __ne__(self, other: typing.Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         """Comparison helper.
 
         :param other: other SSHAuth instance

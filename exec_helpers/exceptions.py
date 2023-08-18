@@ -73,7 +73,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         message: str,
         *,
         result: exec_result.ExecResult,
-        timeout: int | float,
+        timeout: float,
     ) -> None:
         """Exception for error on process calls.
 
@@ -124,7 +124,7 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
     def __init__(
         self,
         result: exec_result.ExecResult,
-        timeout: int | float,
+        timeout: float,
     ) -> None:
         """Exception for error on process calls.
 
@@ -156,7 +156,7 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
     def __init__(
         self,
         result: exec_result.ExecResult,
-        timeout: int | float,
+        timeout: float,
     ) -> None:
         """Exception for error on process calls.
 

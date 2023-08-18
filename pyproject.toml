@@ -191,7 +191,6 @@ extend-ignore = [
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
   "TRY003",  # long messages prepare outside, ...
-  "PTH118", "PTH119",  # `os.path.join()`, `os.path.basename()` should be replaced
 ]
 
 [tool.ruff.isort]
