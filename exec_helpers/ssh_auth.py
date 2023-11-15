@@ -163,6 +163,7 @@ class SSHAuth:
         log: bool = True,
         *,
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
+        allow_ssh_agent: bool = True,
     ) -> None:
         """Connect SSH client object using credentials.
 
@@ -176,6 +177,8 @@ class SSHAuth:
         :type log: bool
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
+        :param allow_ssh_agent: use SSH Agent if available
+        :type allow_ssh_agent: bool
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
         """
@@ -196,6 +199,7 @@ class SSHAuth:
                     username=self.username,
                     password=self.__password,
                     key_filename=self.__key_filename,  # type: ignore[arg-type]  # types verified by not signature
+                    allow_agent=allow_ssh_agent,
                     **kwargs,
                 )
                 if index != self.__key_index:

@@ -56,13 +56,21 @@ configs = {
     "username_password": {"host": host, "username": "user", "password": "password"},
     "auth": {
         "host": host,
-        "auth": exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
+        "auth": exec_helpers.SSHAuth(
+            username="user",
+            password="password",
+            key=gen_private_keys(1).pop(),
+        ),
     },
     "auth_break": {
         "host": host,
         "username": "Invalid",
         "password": "Invalid",
-        "auth": exec_helpers.SSHAuth(username="user", password="password", key=gen_private_keys(1).pop()),
+        "auth": exec_helpers.SSHAuth(
+            username="user",
+            password="password",
+            key=gen_private_keys(1).pop(),
+        ),
     },
 }
 
@@ -90,7 +98,12 @@ def run_parameters(request):
     return configs[request.param]
 
 
-def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_auth_logger):
+def test_init_base(
+    paramiko_ssh_client,
+    auto_add_policy,
+    run_parameters,
+    ssh_auth_logger,
+):
     """Parametrized validation of SSH client initialization."""
     # Helper code
     _ssh = mock.call
@@ -117,6 +130,7 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
                 port=port,
                 username=username,
                 key_filename=(),
+                allow_agent=True,
             ),
             _ssh.get_transport(),
             _ssh.get_transport().set_keepalive(1),

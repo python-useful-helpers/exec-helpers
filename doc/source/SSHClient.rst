@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1, allow_ssh_agent=True)
 
         :param host: remote hostname
         :type host: ``str``
@@ -32,6 +32,8 @@ API: SSHClient and SSHAuth.
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
         :param keepalive: keepalive period
         :type keepalive: int | bool
+        :param allow_ssh_agent: use SSH Agent if available
+        :type allow_ssh_agent: bool
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -49,6 +51,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 7.0.0 private_keys is removed
         .. versionchanged:: 7.0.0 keepalive_mode is removed
         .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
+        .. versionchanged:: 8.0.0 expose SSH Agent usage override
 
     .. py:attribute:: log_mask_re
 
@@ -101,6 +104,11 @@ API: SSHClient and SSHAuth.
 
         ``int | bool``
         Keepalive period for connection object.
+
+    .. py:attribute:: use_ssh_agent
+
+        ``bool``
+        Use SSH Agent if available.
 
     .. py:method:: close()
 

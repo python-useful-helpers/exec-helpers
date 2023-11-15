@@ -454,6 +454,8 @@ class SSHClientBase(api.ExecHelper):
     :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
     :param keepalive: keepalive period
     :type keepalive: int | bool
+    :param allow_ssh_agent: use SSH Agent if available
+    :type allow_ssh_agent: bool
 
     .. note:: auth has priority over username/password/private_keys
     .. note::
@@ -471,6 +473,7 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 7.0.0 private_keys is removed
     .. versionchanged:: 7.0.0 keepalive_mode is removed
     .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
+    .. versionchanged:: 8.0.0 expose SSH Agent usage override
     """
 
     __slots__ = (
@@ -486,6 +489,7 @@ class SSHClientBase(api.ExecHelper):
         "__ssh_config",
         "__sock",
         "__conn_chain",
+        "__allow_agent",
     )
 
     def __hash__(self) -> int:
@@ -509,8 +513,19 @@ class SSHClientBase(api.ExecHelper):
         ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         keepalive: KeepAlivePeriodT = 1,
+        allow_ssh_agent: bool = True,
     ) -> None:
         """Main SSH Client helper."""
+        self.__sudo_mode = False
+        self.__keepalive_period: int = int(keepalive)
+        self.__keepalive_mode = False
+        self.__verbose: bool = verbose
+        self.__sock = sock
+
+        self.__ssh: paramiko.SSHClient
+        self.__sftp: paramiko.SFTPClient | None = None
+        self.__allow_agent = allow_ssh_agent
+
         # Init ssh config. It's main source for connection parameters
         if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
             self.__ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
@@ -533,35 +548,25 @@ class SSHClientBase(api.ExecHelper):
         if self.hostname not in self.__auth_mapping and host in self.__auth_mapping:
             self.__auth_mapping[self.hostname] = self.__auth_mapping[host]
 
-        self.__sudo_mode = False
-        self.__keepalive_period: int = int(keepalive)
-        self.__keepalive_mode = False
-        self.__verbose: bool = verbose
-        self.__sock = sock
-
-        self.__ssh: paramiko.SSHClient
-        self.__sftp: paramiko.SFTPClient | None = None
-
         # Rebuild SSHAuth object if required.
         # Priority: auth > credentials > auth mapping
-        if auth is not None:
-            self.__auth_mapping[self.hostname] = real_auth = copy.copy(auth)
-        elif self.hostname not in self.__auth_mapping or any((username, password)):
-            self.__auth_mapping[self.hostname] = real_auth = ssh_auth.SSHAuth(
-                username=username if username is not None else config.user,
-                password=password,
-                key_filename=config.identityfile,
-            )
-        else:
-            real_auth = self.__auth_mapping[self.hostname]
+        real_auth = self.__handle_explicit_auth(
+            username=username,
+            config_username=config.user,
+            password=password,
+            auth=auth,
+            key_filename=config.identityfile,
+        )
 
         # Init super with host and real port and username
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
         log_username: str = real_auth.username if real_auth.username is not None else getpass.getuser()
 
         super().__init__(
-            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}").getChild(
-                f"({log_username}@{host}:{self.port})"
+            logger=logging.getLogger(
+                f"{mod_name}.{self.__class__.__name__}",
+            ).getChild(
+                f"({log_username}@{host}:{self.port})",
             )
         )
 
@@ -576,6 +581,26 @@ class SSHClientBase(api.ExecHelper):
             self.__conn_chain = []
 
         self.__connect()
+
+    def __handle_explicit_auth(
+        self,
+        *,
+        username: str | None,
+        config_username: str | None,
+        password: str | None,
+        auth: ssh_auth.SSHAuth | None,
+        key_filename: Iterable[str] | None,
+    ) -> ssh_auth.SSHAuth:
+        if auth is not None:
+            self.__auth_mapping[self.hostname] = auth
+        elif self.hostname not in self.__auth_mapping or any((username, password)):
+            self.__auth_mapping[self.hostname] = ssh_auth.SSHAuth(
+                username=username if username is not None else config_username,
+                password=password,
+                key_filename=key_filename,
+            )
+
+        return self.__auth_mapping[self.hostname]
 
     def __rebuild_ssh_config(self) -> None:
         """Rebuild main ssh config from available information."""
@@ -598,7 +623,11 @@ class SSHClientBase(api.ExecHelper):
 
         config = self.ssh_config[self.hostname]
         default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
-        auth = self.__auth_mapping.get_with_alt_hostname(config.hostname, self.hostname, default=default_auth)
+        auth = self.__auth_mapping.get_with_alt_hostname(
+            config.hostname,
+            self.hostname,
+            default=default_auth,
+        )
         conn_chain.append((config, auth))
 
         while config.proxyjump is not None:
@@ -620,6 +649,15 @@ class SSHClientBase(api.ExecHelper):
         :rtype: ssh_auth.SSHAuth
         """
         return self.__auth_mapping[self.hostname]
+
+    @property
+    def allow_ssh_agent(self) -> bool:
+        """Use SSH Agent if available.
+
+        :return: SSH Agent usage allowed
+        :rtype: bool
+        """
+        return self.__allow_agent
 
     @property
     def hostname(self) -> str:
@@ -714,8 +752,6 @@ class SSHClientBase(api.ExecHelper):
         """Main method for connection open."""
         with self.lock:
             if self.__sock is not None:
-                sock = self.__sock
-
                 self.__ssh = paramiko.SSHClient()
                 self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.auth.connect(
@@ -723,7 +759,8 @@ class SSHClientBase(api.ExecHelper):
                     hostname=self.hostname,
                     port=self.port,
                     log=self.__verbose,
-                    sock=sock,
+                    sock=self.__sock,
+                    allow_ssh_agent=self.allow_ssh_agent,
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -745,15 +782,14 @@ class SSHClientBase(api.ExecHelper):
         last_ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         config, auth = self.__conn_chain[0]
-        if config.proxycommand:
-            auth.connect(
-                last_ssh_client,
-                hostname=config.hostname,
-                port=config.port or 22,
-                sock=paramiko.ProxyCommand(config.proxycommand),
-            )
-        else:
-            auth.connect(last_ssh_client, hostname=config.hostname, port=config.port or 22)
+
+        auth.connect(
+            last_ssh_client,
+            hostname=config.hostname,
+            port=config.port or 22,
+            sock=paramiko.ProxyCommand(config.proxycommand) if config.proxycommand else None,
+            allow_ssh_agent=self.allow_ssh_agent,
+        )
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
@@ -768,7 +804,13 @@ class SSHClientBase(api.ExecHelper):
                     dest_addr=(config.hostname, config.port or 22),
                     src_addr=(config.proxyjump, 0),
                 )
-                auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
+                auth.connect(
+                    ssh,
+                    hostname=config.hostname,
+                    port=config.port or 22,
+                    sock=sock,
+                    allow_ssh_agent=self.allow_ssh_agent,
+                )
                 last_ssh_client = ssh
                 continue
 
@@ -1421,33 +1463,6 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def _get_proxy_channel(
-        self,
-        port: int | None,
-        ssh_config: _ssh_helpers.SSHConfig,
-    ) -> paramiko.Channel:
-        """Get ssh proxy channel.
-
-        :param port: target port
-        :type port: int | None
-        :param ssh_config: pre-parsed ssh config
-        :type ssh_config: SSHConfig
-        :return: ssh channel for usage as socket for new connection over it
-        :rtype: paramiko.Channel
-
-        .. versionadded:: 6.0.0
-        """
-        if port is not None:
-            dest_port: int = port
-        else:
-            dest_port = ssh_config.port if ssh_config.port is not None else 22
-
-        return self._ssh_transport.open_channel(
-            kind="direct-tcpip",
-            dest_addr=(ssh_config.hostname, dest_port),
-            src_addr=(self.hostname, 0),
-        )
-
     def proxy_to(
         self,
         host: str,
@@ -1498,13 +1513,25 @@ class SSHClientBase(api.ExecHelper):
         else:
             parsed_ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
-        hostname = parsed_ssh_config[host].hostname
+        host_config = parsed_ssh_config[host]
 
-        sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
+        if port is not None:
+            dest_port: int = port
+        elif host_config.port is not None:
+            dest_port = host_config.port
+        else:
+            dest_port = 22
+
+        sock: paramiko.Channel = self._ssh_transport.open_channel(
+            kind="direct-tcpip",
+            dest_addr=(host_config.hostname, dest_port),
+            src_addr=(self.hostname, 0),
+        )
+
         cls: type[Self] = self.__class__
         return cls(
             host=host,
-            port=port,
+            port=dest_port,
             username=username,
             password=password,
             auth=auth,
