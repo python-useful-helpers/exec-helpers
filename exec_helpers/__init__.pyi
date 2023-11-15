@@ -24,7 +24,6 @@ from .exceptions import ExecCalledProcessError
 from .exceptions import ExecHelperError
 from .exceptions import ExecHelperNoKillError
 from .exceptions import ExecHelperTimeoutError
-from .exceptions import ParallelCallExceptions
 from .exceptions import ParallelCallExceptionsError
 from .exceptions import ParallelCallProcessError
 from .exec_result import ExecResult
@@ -62,8 +61,6 @@ __all__ = (
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
-    # deprecated
-    "ParallelCallExceptions",
 )
 
 _deprecated: dict[str, str] = ...

@@ -53,8 +53,6 @@ __all__ = (
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
-    # deprecated
-    "ParallelCallExceptions",
 )
 
 __locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
@@ -84,10 +82,9 @@ __lazy_load_parent_modules: dict[str, str] = {
     "ParallelCallProcessError": "exceptions",
     "ExecHelperNoKillError": "exceptions",
     "ExecHelperTimeoutError": "exceptions",
-    "ParallelCallExceptions": "exceptions",
 }
 
-_deprecated: dict[str, str] = {"ParallelCallExceptions": "ParallelCallExceptionsError"}
+_deprecated: dict[str, str] = {}
 
 
 def __getattr__(name: str) -> typing.Any:

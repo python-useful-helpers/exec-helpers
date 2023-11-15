@@ -318,9 +318,6 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         self.exceptions: dict[tuple[str, int], Exception] = exceptions
 
 
-ParallelCallExceptions = ParallelCallExceptionsError
-
-
 class StopExecution(Exception):
     """Stop execution without waiting for exit code."""
 
