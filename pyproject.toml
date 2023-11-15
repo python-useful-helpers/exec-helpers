@@ -11,7 +11,7 @@ build-backend="setuptools.build_meta"
 [project]
 name = "exec-helpers"
 description = "Execution helpers for simplified usage of subprocess and ssh."
-requires-python = ">=3.7.0"
+requires-python = ">=3.8.0"
 keywords = ["subprocess", "ssh"]
 license={text="Apache-2.0"}  # Use SPDX classifier
 readme = {file = "README.rst", content-type = "text/x-rst"}
@@ -68,7 +68,7 @@ write_to = "exec_helpers/_version.py"
 [tool.black]
 line-length = 120
 safe = true
-target-version = ["py37", "py38"]
+target-version = ["py38"]
 
 [tool.isort]
 line_length = 120
@@ -169,10 +169,12 @@ show-source = true
 target-version = "py38"
 
 extend-select = [
+  "E",
   "W",  # also pycodestyle warnings
   "PYI",  # flake8-pyi
   "ASYNC",  # flake8-async
   "FA",  # from __future__ import annotations
+  "DTZ",  # flake8-datetimez
   "SLOT",  # flake8-slots
   "TCH",  # flake8-type-checking
   "PTH",  # flake8-use-pathlib
@@ -184,10 +186,14 @@ extend-select = [
   "ICN", "PGH",  # flake8-import-conventions, pygrep-hooks
   "Q",  # quotes
   "FLY",  # Flynt
+  "FURB",  # Refurb
   "TRY", "UP", "I", "PL", "PERF", "RUF",  # tryceratops, pyupgrade, isort, pylint + perflint, Ruff-specific
 ]
 extend-ignore = [
-  "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # refactor rules (too many statements/arguments/branches)
+  # refactor rules (too many statements/arguments/branches)
+  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",
+  "PLR6301",  # "maybe staticmethod"
+  "PLW3201",  # Bad or misspelled dunder method name `__pretty_repr__`
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
   "TRY003",  # long messages prepare outside, ...

@@ -29,7 +29,6 @@ import shlex
 import stat
 import time
 import typing
-import warnings
 
 # External Dependencies
 import paramiko
@@ -111,20 +110,6 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
-    def stdin(self) -> paramiko.ChannelFile:  # type: ignore[name-defined]  # paramiko bug: not in __all__
-        """Override original NamedTuple with proper typing.
-
-        :return: STDIN interface
-        :rtype: paramiko.ChannelFile
-        """
-        warnings.warn(
-            "stdin access deprecated: FIFO is often closed on execution and direct access is not expected.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return super().stdin
-
-    @property
     def stderr(self) -> paramiko.ChannelFile | None:  # type: ignore[name-defined]
         """Override original NamedTuple with proper typing.
 
@@ -153,7 +138,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         "__height",
         "__timeout",
         "__sudo_mode",
-        "__auth",
+        "__auth_strategy",
         "__chan",
         "__stdout_f",
         "__stderr_f",
@@ -172,7 +157,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         height: int = 24,
         timeout: OptionalTimeoutT = None,
         sudo_mode: bool = False,
-        auth: ssh_auth.SSHAuth,
+        auth_strategy: ssh_auth.AuthStrategy,
         logger: logging.Logger,
         **kwargs: typing.Any,
     ) -> None:
@@ -198,6 +183,8 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         :type timeout: int | float | None
         :param sudo_mode: use sudo for command execution
         :type sudo_mode: bool
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: ssh_auth.AuthStrategy
         :param logger: instance logger
         :type logger: logging.Logger
         :param kwargs: additional parameters for call.
@@ -217,7 +204,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         self.__height = height
         self.__timeout = timeout
         self.__sudo_mode = sudo_mode
-        self.__auth = auth
+        self.__auth_strategy = auth_strategy
         self.__chan: paramiko.Channel | None = None
         self.__stdout_f: paramiko.channel.ChannelFile | None = None
         self.__stderr_f: paramiko.channel.ChannelFile | None = None
@@ -239,7 +226,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
             f"height={self.__height!r}, "
             f"timeout={self.__timeout!r}, "
             f"sudo_mode={self.__sudo_mode!r}, "
-            f"auth={self.__auth!r}, "
+            f"auth_strategy={self.__auth_strategy!r}, "
             f"transport={self.__transport!r}, "
             f"logger={self.logger!r}) "
             f"at {id(self)}>"
@@ -316,12 +303,12 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
             stderr = None
         _stdin: paramiko.channel.ChannelFile
         with chan.makefile("wb") as _stdin:
-            started = datetime.datetime.utcnow()
+            started = datetime.datetime.now(tz=datetime.timezone.utc)
             if self.__sudo_mode:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
                 if not stdout.channel.closed:
                     # noinspection PyTypeChecker
-                    self.__auth.enter_password(_stdin)  # type: ignore[arg-type]
+                    self.__auth_strategy.enter_password(_stdin)  # type: ignore[arg-type]
                     _stdin.flush()
             else:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
@@ -343,7 +330,6 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
         # noinspection PyArgumentList
         return SshExecuteAsyncResult(
             interface=chan,
-            stdin=_stdin,
             stderr=stderr,
             stdout=res_stdout,
             started=started,
@@ -447,6 +433,8 @@ class SSHClientBase(api.ExecHelper):
     :type password: str | None
     :param auth: credentials for connection
     :type auth: ssh_auth.SSHAuth | None
+    :param auth_strategy: credentials manager for connection
+    :type auth_strategy: ssh_auth.AuthStrategy | None
     :param verbose: show additional error/warning messages
     :type verbose: bool
     :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
@@ -457,16 +445,21 @@ class SSHClientBase(api.ExecHelper):
         | HostsSSHConfigs
         | None
     :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-    :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
+    :type ssh_auth_map:
+        dict[str, ssh_auth.AuthStrategy]
+        | dict[str, ssh_auth.SSHAuth]
+        | ssh_auth.SSHAuthStrategyMapping
+        | ssh_auth.SSHAuthMapping
+        | None
     :param sock: socket for connection. Useful for ssh proxies support
     :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
     :param keepalive: keepalive period
     :type keepalive: int | bool
 
-    .. note:: auth has priority over username/password/private_keys
+    .. note:: auth_strategy has priority over auth/username/password/private_keys
     .. note::
 
-        for proxy connection auth information is collected from SSHConfig
+        for proxy connection auth_strategy information is collected from SSHConfig
         if ssh_auth_map record is not available
 
     .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
@@ -479,6 +472,9 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 7.0.0 private_keys is removed
     .. versionchanged:: 7.0.0 keepalive_mode is removed
     .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
+    .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for auth
+    .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
+    .. versionchanged:: 8.0.0 `auth` property was deleted as not used and not generated anymore.
     """
 
     __slots__ = (
@@ -502,7 +498,7 @@ class SSHClientBase(api.ExecHelper):
         :return: hash describing current connection
         :rtype: int
         """
-        return hash((self.__class__, self.hostname, self.port, self.auth))
+        return hash((self.__class__, self.hostname, self.port, self.auth_strategy))
 
     def __init__(
         self,
@@ -512,13 +508,29 @@ class SSHClientBase(api.ExecHelper):
         password: str | None = None,
         *,
         auth: ssh_auth.SSHAuth | None = None,
+        auth_strategy: ssh_auth.AuthStrategy | None = None,
         verbose: bool = True,
         ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
-        ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
+        ssh_auth_map: (
+            dict[str, ssh_auth.AuthStrategy]
+            | dict[str, ssh_auth.SSHAuth]
+            | ssh_auth.SSHAuthStrategyMapping
+            | ssh_auth.SSHAuthMapping
+            | None
+        ) = None,
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> None:
         """Main SSH Client helper."""
+        self.__sudo_mode = False
+        self.__keepalive_period: int = int(keepalive)
+        self.__keepalive_mode = False
+        self.__verbose: bool = verbose
+        self.__sock = sock
+
+        self.__ssh: paramiko.SSHClient
+        self.__sftp: paramiko.SFTPClient | None = None
+
         # Init ssh config. It's main source for connection parameters
         if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
             self.__ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
@@ -535,88 +547,146 @@ class SSHClientBase(api.ExecHelper):
         else:
             self.__port = config.port if config.port is not None else 22
 
-        # Store initial auth mapping
-        self.__auth_mapping = ssh_auth.SSHAuthMapping(ssh_auth_map)
+        # Store initial auth_strategy mapping
+        self.__auth_mapping = ssh_auth.SSHAuthStrategyMapping()
+        self.__fill_auth_mapping(ssh_auth_map)
+
         # We are already resolved hostname
         if self.hostname not in self.__auth_mapping and host in self.__auth_mapping:
             self.__auth_mapping[self.hostname] = self.__auth_mapping[host]
 
-        self.__sudo_mode = False
-        self.__keepalive_period: int = int(keepalive)
-        self.__keepalive_mode = False
-        self.__verbose: bool = verbose
-        self.__sock = sock
-
-        self.__ssh: paramiko.SSHClient
-        self.__sftp: paramiko.SFTPClient | None = None
-
         # Rebuild SSHAuth object if required.
-        # Priority: auth > credentials > auth mapping
-        if auth is not None:
-            self.__auth_mapping[self.hostname] = real_auth = copy.copy(auth)
-        elif self.hostname not in self.__auth_mapping or any((username, password)):
-            self.__auth_mapping[self.hostname] = real_auth = ssh_auth.SSHAuth(
-                username=username if username is not None else config.user,
-                password=password,
-                key_filename=config.identityfile,
-            )
-        else:
-            real_auth = self.__auth_mapping[self.hostname]
+        # Priority: auth_strategy > auth_strategy > credentials > auth_strategy mapping
+        real_auth = self.__handle_explicit_auth(
+            username=username,
+            config_username=config.user,
+            password=password,
+            auth=auth,
+            auth_strategy=auth_strategy,
+            key_filename=config.identityfile,
+        )
 
         # Init super with host and real port and username
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
-        log_username: str = real_auth.username if real_auth.username is not None else getpass.getuser()
+        log_username: str = getattr(real_auth, "username", None) or getpass.getuser()
 
         super().__init__(
-            logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}").getChild(
-                f"({log_username}@{host}:{self.port})"
+            logger=logging.getLogger(
+                f"{mod_name}.{self.__class__.__name__}",
+            ).getChild(
+                f"({log_username}@{host}:{self.port})",
             )
         )
 
         # Update config for target host: merge with data from credentials and parameters.
         # SSHConfig is the single source for hostname/port/... during low level connection construction.
-        self.__rebuild_ssh_config()
+        self.__ssh_config[self.hostname] = self.__ssh_config[self.hostname].overridden_by(
+            _ssh_helpers.SSHConfig(
+                hostname=self.hostname,
+                port=self.port,
+                user=self.auth_strategy.username or None,
+            )
+        )
 
         # Build connection chain once and use it for connection later
         if sock is None:
-            self.__conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = self.__build_connection_chain()
+            self.__conn_chain: list[
+                tuple[_ssh_helpers.SSHConfig, ssh_auth.AuthStrategy]
+            ] = self.__build_connection_chain()
         else:
             self.__conn_chain = []
 
         self.__connect()
 
-    def __rebuild_ssh_config(self) -> None:
-        """Rebuild main ssh config from available information."""
-        self.__ssh_config[self.hostname] = self.__ssh_config[self.hostname].overridden_by(
-            _ssh_helpers.SSHConfig(
-                hostname=self.hostname,
-                port=self.port,
-                user=self.auth.username,
-                identityfile=self.auth.key_filename,
-            )
-        )
+    def __fill_auth_mapping(
+        self,
+        ssh_auth_map: (
+            dict[str, ssh_auth.AuthStrategy]
+            | dict[str, ssh_auth.SSHAuth]
+            | ssh_auth.SSHAuthStrategyMapping
+            | ssh_auth.SSHAuthMapping
+            | None
+        ) = None,
+    ) -> None:
+        if isinstance(ssh_auth_map, ssh_auth.SSHAuthStrategyMapping):
+            self.__auth_mapping.update(ssh_auth_map)
+        elif isinstance(ssh_auth_map, ssh_auth.SSHAuthMapping):
+            self.__auth_mapping.update(ssh_auth_map.get_auth_strategy_mapping())
+        elif ssh_auth_map is not None:
+            auth_data: paramiko.AuthStrategy | ssh_auth.AuthStrategy | ssh_auth.SSHAuth  # type: ignore[name-defined]
+            for hostname, auth_data in ssh_auth_map.items():
+                if isinstance(auth_data, ssh_auth.AuthStrategy):
+                    self.__auth_mapping[hostname] = auth_data
+                elif isinstance(auth_data, paramiko.AuthStrategy):  # type: ignore[attr-defined]
+                    self.__auth_mapping[hostname] = ssh_auth.AuthStrategy(sources=auth_data.get_sources())
+                elif isinstance(auth_data, ssh_auth.SSHAuth):
+                    self.__auth_mapping[hostname] = auth_data.auth_strategy
+                else:
+                    raise TypeError(auth_data)
 
-    def __build_connection_chain(self) -> list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]:
+    def __handle_explicit_auth(
+        self,
+        *,
+        username: str | None,
+        config_username: str | None,
+        password: str | None,
+        auth: ssh_auth.SSHAuth | None,
+        auth_strategy: ssh_auth.AuthStrategy | None,
+        key_filename: Iterable[str] | None,
+    ) -> ssh_auth.AuthStrategy:
+        if auth_strategy is not None:
+            if isinstance(auth_strategy, ssh_auth.AuthStrategy):
+                self.__auth_mapping[self.hostname] = auth_strategy
+                return auth_strategy
+            self.__auth_mapping[self.hostname] = ssh_auth.AuthStrategy(sources=auth_strategy.get_sources())
+        elif auth is not None:
+            self.__auth_mapping[self.hostname] = auth.auth_strategy
+        elif self.hostname not in self.__auth_mapping or any((username, password)):
+            if username is not None:
+                use_username = username
+            elif config_username is not None:
+                use_username = config_username
+            else:
+                use_username = ""
+            self.__auth_mapping[self.hostname] = ssh_auth.AuthStrategy(
+                username=use_username,
+                password=password,
+                key_filename=key_filename,
+            )
+
+        return self.__auth_mapping[self.hostname]
+
+    def __build_connection_chain(self) -> list[tuple[_ssh_helpers.SSHConfig, ssh_auth.AuthStrategy]]:
         """Build ssh connection chain to reach destination host.
 
         :return: list of SSHConfig - SSHAuth pairs in order of connection
         :rtype: list[tuple[SSHConfig, ssh_auth.SSHAuth]]
         """
-        conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = []
+        conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.AuthStrategy]] = []
 
         config = self.ssh_config[self.hostname]
-        default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
-        auth = self.__auth_mapping.get_with_alt_hostname(config.hostname, self.hostname, default=default_auth)
+        default_auth = ssh_auth.AuthStrategy(
+            username=config.user if config.user is not None else "",
+            key_filename=config.identityfile,
+        )
+        auth = self.__auth_mapping.get_with_alt_hostname(
+            config.hostname,
+            self.hostname,
+            default=default_auth,
+        )
         conn_chain.append((config, auth))
 
         while config.proxyjump is not None:
             config = self.ssh_config[config.proxyjump]
-            default_auth = ssh_auth.SSHAuth(username=config.user, key_filename=config.identityfile)
+            default_auth = ssh_auth.AuthStrategy(
+                username=config.user if config.user is not None else "",
+                key_filename=config.identityfile,
+            )
             conn_chain.append((config, self.__auth_mapping.get(config.hostname, default_auth)))
         return conn_chain[::-1]
 
     @property
-    def auth(self) -> ssh_auth.SSHAuth:
+    def auth_strategy(self) -> ssh_auth.AuthStrategy:
         """Internal authorisation object.
 
         Attention: this public property is mainly for inheritance,
@@ -625,7 +695,9 @@ class SSHClientBase(api.ExecHelper):
         Change is completely disallowed.
 
         :return: SSH authorisation object for current connection.
-        :rtype: ssh_auth.SSHAuth
+        :rtype: ssh_auth.AuthStrategy
+
+        .. versionadded:: 8.0.0
         """
         return self.__auth_mapping[self.hostname]
 
@@ -691,7 +763,9 @@ class SSHClientBase(api.ExecHelper):
         :return: brief connection information for debug purposes
         :rtype: str
         """
-        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth={self.auth!r})"
+        return (
+            f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth_strategy={self.auth_strategy!r})"
+        )
 
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes.
@@ -699,7 +773,9 @@ class SSHClientBase(api.ExecHelper):
         :return: short string with connection information
         :rtype: str
         """
-        return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) for user {self.auth.username}"
+        return (
+            f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) for user {self.auth_strategy.username}"
+        )
 
     @property
     def _ssh(self) -> paramiko.SSHClient:
@@ -722,16 +798,13 @@ class SSHClientBase(api.ExecHelper):
         """Main method for connection open."""
         with self.lock:
             if self.__sock is not None:
-                sock = self.__sock
-
                 self.__ssh = paramiko.SSHClient()
                 self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                self.auth.connect(
-                    client=self.__ssh,
+                self.__ssh.connect(
                     hostname=self.hostname,
                     port=self.port,
-                    log=self.__verbose,
-                    sock=sock,
+                    sock=self.__sock,  # type: ignore[arg-type]  # outdated stubs
+                    auth_strategy=self.__auth_mapping[self.hostname],
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -754,14 +827,18 @@ class SSHClientBase(api.ExecHelper):
 
         config, auth = self.__conn_chain[0]
         if config.proxycommand:
-            auth.connect(
-                last_ssh_client,
+            last_ssh_client.connect(
                 hostname=config.hostname,
                 port=config.port or 22,
-                sock=paramiko.ProxyCommand(config.proxycommand),
+                sock=paramiko.ProxyCommand(config.proxycommand),  # type: ignore[arg-type]  # outdated stubs
+                auth_strategy=auth,
             )
         else:
-            auth.connect(last_ssh_client, hostname=config.hostname, port=config.port or 22)
+            last_ssh_client.connect(
+                hostname=config.hostname,
+                port=config.port or 22,
+                auth_strategy=auth,
+            )
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
@@ -776,7 +853,12 @@ class SSHClientBase(api.ExecHelper):
                     dest_addr=(config.hostname, config.port or 22),
                     src_addr=(config.proxyjump, 0),
                 )
-                auth.connect(ssh, hostname=config.hostname, port=config.port or 22, sock=sock)
+                ssh.connect(
+                    hostname=config.hostname,
+                    port=config.port or 22,
+                    sock=sock,
+                    auth_strategy=auth,
+                )
                 last_ssh_client = ssh
                 continue
 
@@ -868,7 +950,7 @@ class SSHClientBase(api.ExecHelper):
         :param mode: sudo status: enabled | disabled
         :type mode: bool
         """
-        self.__sudo_mode = bool(mode)
+        self.__sudo_mode = mode
 
     @property
     def keepalive_period(self) -> int:
@@ -957,121 +1039,13 @@ class SSHClientBase(api.ExecHelper):
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
         quoted_command: str = shlex.quote(cmd)
-        if chroot_path is None and self._chroot_path is None:
+        if chroot_path is self._chroot_path is None:
             return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
         if chroot_path is not None:
             target_path: str = shlex.quote(chroot_path)
         else:
             target_path = shlex.quote(self._chroot_path)  # type: ignore[arg-type]
         return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
-
-    # noinspection PyMethodOverriding
-    def _execute_async(
-        self,
-        command: str,
-        *,
-        stdin: OptionalStdinT = None,
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        chroot_path: str | None = None,
-        get_pty: bool = False,
-        width: int = 80,
-        height: int = 24,
-        timeout: OptionalTimeoutT = None,
-        **kwargs: typing.Any,
-    ) -> SshExecuteAsyncResult:
-        """Execute command in async mode and return channel with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param chroot_path: chroot path override
-        :type chroot_path: str | None
-        :param get_pty: Get PTY for connection
-        :type get_pty: bool
-        :param width: PTY width
-        :type width: int
-        :param height: PTY height
-        :type height: int
-        :param timeout: timeout before stop execution with TimeoutError (will be set on channel)
-        :type timeout: int | float | None
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
-        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.NamedTuple(
-                    'SshExecuteAsyncResult',
-                    [
-                        ('interface', paramiko.Channel),
-                        ('stdin', paramiko.ChannelFile),
-                        ('stderr', paramiko.ChannelFile | None),
-                        ('stdout', paramiko.ChannelFile | None),
-                        ("started", datetime.datetime),
-                    ]
-                )
-
-        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
-        .. versionchanged:: 1.2.0 stdin data
-        .. versionchanged:: 1.2.0 get_pty moved to `**kwargs`
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
-        .. versionchanged:: 4.1.0 support chroot
-        """
-        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning, stacklevel=2)
-        chan: paramiko.Channel = self._ssh_transport.open_session()
-        if timeout is not None:
-            chan.settimeout(timeout)
-
-        if get_pty:
-            # Open PTY
-            chan.get_pty(term="vt100", width=width, height=height, width_pixels=0, height_pixels=0)
-
-        _stdin: paramiko.ChannelFile = chan.makefile("wb")  # type: ignore[name-defined]
-        stdout: paramiko.ChannelFile = chan.makefile("rb")  # type: ignore[name-defined]
-        if open_stderr:
-            stderr: paramiko.ChannelFile | None = chan.makefile_stderr("rb")  # type: ignore[name-defined]
-        else:
-            stderr = None
-
-        cmd = f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n"
-
-        started = datetime.datetime.utcnow()
-        if self.sudo_mode:
-            chan.exec_command(cmd)  # nosec  # Sanitize on caller side
-            if not stdout.channel.closed:
-                # noinspection PyTypeChecker
-                self.auth.enter_password(_stdin)
-                _stdin.flush()
-        else:
-            chan.exec_command(cmd)  # nosec  # Sanitize on caller side
-
-        if stdin is not None:
-            if not _stdin.channel.closed:
-                stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
-
-                _stdin.write(stdin_str)
-                _stdin.flush()
-            else:
-                self.logger.warning("STDIN Send failed: closed channel")
-
-        if open_stdout:
-            res_stdout = stdout
-        else:
-            stdout.close()
-            res_stdout = None
-
-        # noinspection PyArgumentList
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=_stdin,
-            stderr=stderr,
-            stdout=res_stdout,
-            started=started,
-        )
 
     def _exec_command(  # type: ignore[override]
         self,
@@ -1211,7 +1185,7 @@ class SSHClientBase(api.ExecHelper):
             height=height,
             timeout=timeout,
             sudo_mode=self.sudo_mode,
-            auth=self.auth,
+            auth_strategy=self.auth_strategy,
             logger=self.logger,
             **kwargs,
         )
@@ -1537,33 +1511,6 @@ class SSHClientBase(api.ExecHelper):
             **kwargs,
         )
 
-    def _get_proxy_channel(
-        self,
-        port: int | None,
-        ssh_config: _ssh_helpers.SSHConfig,
-    ) -> paramiko.Channel:
-        """Get ssh proxy channel.
-
-        :param port: target port
-        :type port: int | None
-        :param ssh_config: pre-parsed ssh config
-        :type ssh_config: SSHConfig
-        :return: ssh channel for usage as socket for new connection over it
-        :rtype: paramiko.Channel
-
-        .. versionadded:: 6.0.0
-        """
-        if port is not None:
-            dest_port: int = port
-        else:
-            dest_port = ssh_config.port if ssh_config.port is not None else 22
-
-        return self._ssh_transport.open_channel(
-            kind="direct-tcpip",
-            dest_addr=(ssh_config.hostname, dest_port),
-            src_addr=(self.hostname, 0),
-        )
-
     def proxy_to(
         self,
         host: str,
@@ -1572,9 +1519,16 @@ class SSHClientBase(api.ExecHelper):
         password: str | None = None,
         *,
         auth: ssh_auth.SSHAuth | None = None,
+        auth_strategy: ssh_auth.AuthStrategy | None = None,
         verbose: bool = True,
         ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
-        ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
+        ssh_auth_map: (
+            dict[str, ssh_auth.AuthStrategy]
+            | dict[str, ssh_auth.SSHAuth]
+            | ssh_auth.SSHAuthStrategyMapping
+            | ssh_auth.SSHAuthMapping
+            | None
+        ) = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> Self:
         """Start new SSH connection using current as proxy.
@@ -1589,6 +1543,8 @@ class SSHClientBase(api.ExecHelper):
         :type password: str | None
         :param auth: credentials for connection
         :type auth: ssh_auth.SSHAuth | None
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: ssh_auth.AuthStrategy | None
         :param verbose: show additional error/warning messages
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
@@ -1599,33 +1555,53 @@ class SSHClientBase(api.ExecHelper):
             | HostsSSHConfigs,
             | None
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
+        :type ssh_auth_map:
+            dict[str, ssh_auth.AuthStrategy]
+            | dict[str, ssh_auth.SSHAuth]
+            | ssh_auth.SSHAuthStrategyMapping
+            | ssh_auth.SSHAuthMapping
+            | None
         :param keepalive: keepalive period
         :type keepalive: int | bool
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
-        .. note:: auth has priority over username/password
+        .. note:: auth_strategy has priority over username/password
 
         .. versionadded:: 6.0.0
+        .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for auth
+        .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
         """
         if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
             parsed_ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
         else:
             parsed_ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
-        hostname = parsed_ssh_config[host].hostname
+        host_config = parsed_ssh_config[host]
 
-        sock: paramiko.Channel = self._get_proxy_channel(port=port, ssh_config=parsed_ssh_config[hostname])
+        if port is not None:
+            dest_port: int = port
+        elif host_config.port is not None:
+            dest_port = host_config.port
+        else:
+            dest_port = 22
+
+        sock: paramiko.Channel = self._ssh_transport.open_channel(
+            kind="direct-tcpip",
+            dest_addr=(host_config.hostname, dest_port),
+            src_addr=(self.hostname, 0),
+        )
+
         cls: type[Self] = self.__class__
         return cls(
             host=host,
-            port=port,
+            port=dest_port,
             username=username,
             password=password,
             auth=auth,
+            auth_strategy=auth_strategy,
             verbose=verbose,
-            ssh_config=ssh_config,
+            ssh_config=parsed_ssh_config,
             sock=sock,
             ssh_auth_map=ssh_auth_map if ssh_auth_map is not None else self.__auth_mapping,
             keepalive=int(keepalive),
@@ -1637,6 +1613,7 @@ class SSHClientBase(api.ExecHelper):
         command: CommandT,
         *,
         auth: ssh_auth.SSHAuth | None = None,
+        auth_strategy: ssh_auth.AuthStrategy | None = None,
         port: int | None = None,
         verbose: bool = False,
         timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
@@ -1658,6 +1635,8 @@ class SSHClientBase(api.ExecHelper):
         :type command: str | Iterable[str]
         :param auth: credentials for target machine
         :type auth: ssh_auth.SSHAuth | None
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: ssh_auth.AuthStrategy | None
         :param port: target port
         :type port: int | None
         :param verbose: Produce log.info records for command call and output
@@ -1694,20 +1673,21 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
         .. versionchanged:: 7.0.0 target_port argument removed
+        .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for auth
+        .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
         """
         conn: Self
-        if auth is None:
-            auth = self.auth
 
         with self.proxy_to(
             host=hostname,
             port=port,
             auth=auth,
+            auth_strategy=auth_strategy,
             verbose=verbose,
             ssh_config=self.ssh_config,
             keepalive=False,
         ) as conn:
-            return conn(
+            return conn.execute(
                 command,
                 timeout=timeout,
                 stdin=stdin,

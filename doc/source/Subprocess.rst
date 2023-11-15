@@ -229,10 +229,6 @@ API: Subprocess
 
         ``subprocess.Popen[bytes]``
 
-    .. py:attribute:: stdin
-
-        ``IO[bytes] | None``
-
     .. py:attribute:: stderr
 
         ``IO[bytes] | None``

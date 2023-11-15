@@ -110,14 +110,28 @@ class TestExecResult(unittest.TestCase):
             result["stdout_json"]  # pylint: disable=pointless-statement
         logger.assert_has_calls((mock.call.exception(f"{cmd} stdout is not valid json:\n{result.stdout_str!r}\n"),))
 
-        self.assertEqual(hash(result), hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)))
+        self.assertEqual(
+            hash(result),
+            hash((exec_helpers.ExecResult, cmd, None, (), (), proc_enums.INVALID)),
+        )
 
     def test_setters(self):
         """Test setters: unlocked and final."""
         result = exec_helpers.ExecResult(cmd=cmd)
         self.assertEqual(result.exit_code, exec_helpers.ExitCodes.EX_INVALID)
 
-        tst_stdout = [b"Test\n", b"long\n", b"stdout\n", b"data\n", b" \n", b"5\n", b"6\n", b"7\n", b"8\n", b"end!\n"]
+        tst_stdout = [
+            b"Test\n",
+            b"long\n",
+            b"stdout\n",
+            b"data\n",
+            b" \n",
+            b"5\n",
+            b"6\n",
+            b"7\n",
+            b"8\n",
+            b"end!\n",
+        ]
 
         tst_stderr = [b"test\n"] * 10
 
@@ -230,7 +244,7 @@ class TestExecResult(unittest.TestCase):
 
     def test_started(self):
         """Test timestamp."""
-        started = datetime.datetime.utcnow()
+        started = datetime.datetime.now(tz=datetime.timezone.utc)
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
         spent = (result.timestamp - started).seconds
         self.assertIs(result.started, started)
@@ -292,7 +306,10 @@ class TestExecResult(unittest.TestCase):
         """Test xml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
         expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
-        self.assertEqual(xml.etree.ElementTree.tostring(expect), xml.etree.ElementTree.tostring(result.stdout_xml))
+        self.assertEqual(
+            xml.etree.ElementTree.tostring(expect),
+            xml.etree.ElementTree.tostring(result.stdout_xml),
+        )
 
     @unittest.skipIf(lxml is None, "no lxml installed")
     def test_stdout_lxml(self):
@@ -333,7 +350,10 @@ class TestExecResultRuamelYaml(unittest.TestCase):
     """Ruamel.yaml specific check."""
 
     def setUp(self) -> None:
-        self._orig_yaml, exec_helpers.exec_result.yaml = exec_helpers.exec_result.yaml, None
+        self._orig_yaml, exec_helpers.exec_result.yaml = (
+            exec_helpers.exec_result.yaml,
+            None,
+        )
 
     def tearDown(self) -> None:
         exec_helpers.exec_result.yaml = self._orig_yaml

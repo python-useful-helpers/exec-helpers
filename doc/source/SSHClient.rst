@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, auth_strategy=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1)
 
         :param host: remote hostname
         :type host: ``str``
@@ -22,21 +22,23 @@ API: SSHClient and SSHAuth.
         :type password: ``str | None``
         :param auth: credentials for connection
         :type auth: SSHAuth | None
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: AuthStrategy | None
         :param verbose: show additional error/warning messages
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
         :type ssh_config: str | paramiko.SSHConfig | dict[str, dict[str, str | int | bool | list[str]]] | HostsSSHConfigs | None
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
+        :type ssh_auth_map: dict[str, AuthStrategy] | dict[str, SSHAuth] | SSHAuthStrategyMapping | SSHAuthMapping | None
         :param sock: socket for connection. Useful for ssh proxies support
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
         :param keepalive: keepalive period
         :type keepalive: int | bool
 
-        .. note:: auth has priority over username/password/private_keys
+        .. note:: auth_strategy has priority over auth/username/password/private_keys
         .. note::
 
-            for proxy connection auth information is collected from SSHConfig
+            for proxy connection auth_strategy information is collected from SSHConfig
             if ssh_auth_map record is not available
 
         .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
@@ -49,6 +51,9 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 7.0.0 private_keys is removed
         .. versionchanged:: 7.0.0 keepalive_mode is removed
         .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
+        .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for authentication
+        .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
+        .. versionchanged:: 8.0.0 `auth` property was deleted as not used and not generated anymore.
 
     .. py:attribute:: log_mask_re
 
@@ -66,11 +71,13 @@ API: SSHClient and SSHAuth.
         ``logging.Logger``
         Internal logger.
 
-    .. py:attribute:: auth
+    .. py:attribute:: auth_strategy
 
         Internal authorisation object
 
-        :rtype: SSHAuth
+        .. versionadded:: 8.0.0
+
+        :rtype: AuthStrategy
 
     .. py:attribute:: hostname
 
@@ -309,7 +316,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 1.2.0 default timeout 1 hour
         .. versionchanged:: 3.2.0 Exception class can be substituted
 
-    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=1)
+    .. py:method:: proxy_to(host, port=None, username=None, password=None, *, auth=None, auth_strategy=None, verbose=True, ssh_config=None, ssh_auth_map=None, keepalive=1)
 
         Start new SSH connection using current as proxy.
 
@@ -322,23 +329,27 @@ API: SSHClient and SSHAuth.
         :param password: remote password
         :type password: ``str | None``
         :param auth: credentials for connection
-        :type auth: ssh_auth.SSHAuth | None
+        :type auth: SSHAuth | None
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: AuthStrategy | None
         :param verbose: show additional error/warning messages
         :type verbose: ``bool``
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
         :type ssh_config: str | paramiko.SSHConfig | dict[str, dict[str, str | int | bool | list[str]]] | HostsSSHConfigs | None
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
-        :type ssh_auth_map: dict[str, SSHAuth] | SSHAuthMapping | None
+        :type ssh_auth_map: dict[str, AuthStrategy] | dict[str, SSHAuth] | SSHAuthStrategyMapping | SSHAuthMapping | None
         :param keepalive: keepalive period
         :type keepalive: ``int | bool``
         :return: new ssh client instance using current as a proxy
         :rtype: SSHClientBase
 
-        .. note:: auth has priority over username/password
+        .. note:: auth_strategy has priority over username/password
 
         .. versionadded:: 6.0.0
+        .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for authentication
+        .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
 
-    .. py:method:: execute_through_host(hostname, command, *, auth=None, port=22, verbose=False, timeout=1*60*60, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
+    .. py:method:: execute_through_host(hostname, command, *, auth=None, auth_strategy=None, port=22, verbose=False, timeout=1*60*60, stdin=None, open_stdout=True, log_stdout = True, open_stderr=True, log_stderr = True, log_mask_re="", get_pty=False, width=80, height=24, **kwargs)
 
         Execute command on remote host through currently connected host.
 
@@ -348,6 +359,8 @@ API: SSHClient and SSHAuth.
         :type command: ``str | Iterable[str]``
         :param auth: credentials for target machine
         :type auth: SSHAuth | None
+        :param auth_strategy: credentials manager for connection
+        :type auth_strategy: AuthStrategy | None
         :param port: target port
         :type port: ``int``
         :param verbose: Produce log.info records for command call and output
@@ -381,6 +394,8 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
         .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
         .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
+        .. versionchanged:: 8.0.0 ssh auth_strategy object is deprecated. Paramiko AuthStrategy logic is used for authentication
+        .. versionchanged:: 8.0.0 SSHAuthMapping is deprecated. SSHAuthStrategyMapping should be used instead.
 
     .. py:classmethod:: execute_together(remotes, command, timeout=1*60*60, expected=(0,), raise_on_err=True, *, stdin=None, open_stdout=True, open_stderr=True, log_mask_re="", exception_class=ParallelCallProcessError, **kwargs)
 
@@ -533,6 +548,50 @@ API: SSHClient and SSHAuth.
         :rtype: ``bool``
 
 
+.. py:class:: AuthStrategy(paramiko.AuthStrategy)
+
+    Paramiko authorisation strategy with static credentials.
+
+    .. py:method:: __init__(ssh_config=None, *, username="", password=None, keys=(), key_filename=None, passphrase=None, sources=())
+
+        :param ssh_config: ssh config object (source for data). Required only by base class.
+        :type ssh_config: paramiko.SSHConfig | None
+        :param username: auth username. Used for paramiko.Password auth.
+        :type username: str
+        :param password: auth password. Used for paramiko.Password auth generation.
+        :type password: str | None
+        :param keys: ssh keys. Used for paramiko.InMemoryPrivateKey generation.
+        :type keys: Sequence[paramiko.PKey | None]
+        :param key_filename: key filename(s) for paramiko.OnDiskPrivateKey generation
+        :type key_filename: Iterable[str] | str | None
+        :param passphrase: passphrase for on-disk private keys decoding. Parameter `password` will be used as fallback
+        :type passphrase: str | None
+        :param sources: ready to use AuthSource objects
+        :type sources: Iterable[paramiko.AuthSource]
+
+    .. py:attribute:: username
+
+        Username for auth.
+
+        .. note:: first available in auth sources username will be used
+
+    .. py:method:: enter_password(tgt)
+
+        Enter password to STDIN.
+
+        .. note:: required for 'sudo' call
+        .. warning:: only password provided explicit in constructor will be used.
+
+        :param tgt: Target
+        :type tgt: typing.BinaryIO
+
+    .. py:method:: get_sources()
+
+        Auth sources getter.
+
+        .. note:: We can not use `Iterator` since we are support re-connect
+
+
 .. py:class:: SSHAuth()
 
     SSH credentials object.
@@ -540,6 +599,9 @@ API: SSHClient and SSHAuth.
     Used to authorize SSHClient.
     Single SSHAuth object is associated with single host:port.
     Password and key is private, other data is read-only.
+
+    .. deprecated:: 8.0.0
+       not used internally
 
     .. py:method:: __init__(username=None, password=None, key=None, keys=None, )
 
@@ -558,15 +620,17 @@ API: SSHClient and SSHAuth.
 
         .. versionchanged:: 1.0.0
             added: key_filename, passphrase arguments
+        .. deprecated:: 8.0.0
+           not used internally
+
+    .. py:attribute:: auth_strategy
+
+        AuthStrategy
+        Auth strategy for real usage.
 
     .. py:attribute:: username
 
         ``str | None``
-
-    .. py:attribute:: public_key
-
-        ``str | None``
-        public key for stored private key if presents else None
 
     .. py:attribute:: key_filename
 
@@ -579,7 +643,7 @@ API: SSHClient and SSHAuth.
 
         Enter password to STDIN.
 
-        Note: required for 'sudo' call
+        Note:: required for 'sudo' call
 
         :param tgt: Target
         :type tgt: file
@@ -602,21 +666,61 @@ API: SSHClient and SSHAuth.
         :raises AuthenticationException: Authentication failed.
 
 
-.. py:class::SSHAuthMapping(dict[str, SSHAuth])
+.. py:class::SSHAuthStrategyMapping(dict[str, AuthStrategy])
 
-    Specific dictionary for  ssh hostname - auth mapping.
+    Specific dictionary for ssh hostname - auth_strategy mapping.
 
     keys are always string and saved/collected lowercase.
 
     .. py:method:: __init__(auth_dict=None, **auth_mapping)
 
-        Specific dictionary for  ssh hostname - auth mapping.
+        Specific dictionary for  ssh hostname - auth_strategy mapping.
 
-        :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
+        :param auth_dict: original hostname - source ssh auth_strategy mapping (dictionary of SSHAuthStrategyMapping)
+        :type auth_dict: dict[str, AuthStrategy] | SSHAuthStrategyMapping | None
+        :param auth_mapping: AuthStrategy setting via **kwargs
+        :type auth_mapping: AuthStrategy
+        :raises TypeError: Incorrect type of auth_strategy dict or auth_strategy object
+
+    .. py:method:: get_with_alt_hostname(hostname, *host_names, default=None)
+
+        Try to guess hostname with credentials.
+
+        :param hostname: expected target hostname
+        :type hostname: str
+        :param host_names: alternate host names
+        :type host_names: str
+        :param default: credentials if hostname not found
+        :type default: AuthStrategy | None
+        :return: guessed credentials
+        :rtype: AuthStrategy | None
+        :raises TypeError: Default Auth Strategy object is not AuthStrategy
+
+        Method used in cases, when 1 host share 2 or more names in config.
+
+
+.. py:class::SSHAuthMapping(dict[str, SSHAuth])
+
+    Specific dictionary for  ssh hostname - auth_strategy mapping.
+
+    keys are always string and saved/collected lowercase.
+
+    .. deprecated:: 8.0.0
+       not used internally
+
+    .. py:method:: __init__(auth_dict=None, **auth_mapping)
+
+        Specific dictionary for  ssh hostname - auth_strategy mapping.
+
+        :param auth_dict: original hostname - source ssh auth_strategy mapping (dictionary of SSHAuthMapping)
         :type auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None
         :param auth_mapping: SSHAuth setting via **kwargs
         :type auth_mapping: SSHAuth
         :raises TypeError: Incorrect type of auth dict or auth object
+
+    .. py:method:: get_auth_strategy_mapping
+
+        Get SSHAuthStrategyMapping.
 
     .. py:method:: get_with_alt_hostname(hostname, *host_names, default=None)
 
@@ -642,10 +746,6 @@ API: SSHClient and SSHAuth.
     .. py:attribute:: interface
 
         ``paramiko.Channel``
-
-    .. py:attribute:: stdin
-
-        ``paramiko.ChannelFile``
 
     .. py:attribute:: stderr
 

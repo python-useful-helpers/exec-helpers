@@ -320,7 +320,7 @@ class ExecResult:
         .. versionadded:: 4.0.0
         """
         if self.timestamp is None:
-            self.__timestamp = datetime.datetime.utcnow()
+            self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @classmethod
     def _get_brief(cls, data: tuple[bytes, ...]) -> str:
@@ -571,7 +571,7 @@ class ExecResult:
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()
+                self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @property
     def started(self) -> datetime.datetime | None:

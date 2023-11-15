@@ -26,7 +26,7 @@ PACKAGE_NAME = "exec_helpers"
 setuptools.setup(
     name=PACKAGE_NAME.replace("_", "-"),
     url="https://github.com/python-useful-helpers/exec-helpers",
-    python_requires=">=3.7.0",
+    python_requires=">=3.8.0",
     # While setuptools cannot deal with pre-installed incompatible versions,
     # setting a lower bound is not harmful - it makes error messages cleaner. DO
     # NOT set an upper bound on setuptools, as that will lead to uninstallable

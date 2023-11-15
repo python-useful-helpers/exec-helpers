@@ -26,12 +26,12 @@ from .exceptions import ExecCalledProcessError
 from .exceptions import ExecHelperError
 from .exceptions import ExecHelperNoKillError
 from .exceptions import ExecHelperTimeoutError
-from .exceptions import ParallelCallExceptions
 from .exceptions import ParallelCallExceptionsError
 from .exceptions import ParallelCallProcessError
 from .exec_result import ExecResult
 from .proc_enums import ExitCodes
 from .ssh import SSHClient
+from .ssh_auth import AuthStrategy
 from .ssh_auth import SSHAuth
 from .subprocess import Subprocess  # nosec  # Expected
 
@@ -55,6 +55,7 @@ __all__ = (
     "Subprocess",
     "SSHClient",
     "SSHAuth",
+    "AuthStrategy",
     "SSHConfig",
     "HostsSSHConfigs",
     # Exceptions
@@ -65,8 +66,6 @@ __all__ = (
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
-    # deprecated
-    "ParallelCallExceptions",
 )
 
 _deprecated: dict[str, str] = ...

@@ -22,26 +22,154 @@ from __future__ import annotations
 import copy
 import logging
 import typing
+import warnings
 
 # External Dependencies
 import paramiko
 
 if typing.TYPE_CHECKING:
     # Standard Library
+    import pathlib
     import socket
     from collections.abc import Collection
     from collections.abc import Iterable
     from collections.abc import Sequence
 
-__all__ = ("SSHAuth",)
+__all__ = ("SSHAuth", "AuthStrategy")
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _try_to_get_pkey(path: str | pathlib.Path, passphrases: Collection[str | None]) -> paramiko.PKey:
+    for idx, passwd in enumerate(passphrases):
+        try:
+            return paramiko.PKey.from_path(path, passwd)  # type: ignore[no-any-return,attr-defined]
+        except paramiko.PasswordRequiredException:  # noqa: PERF203
+            if idx + 1 < len(passphrases):
+                continue
+            raise
+    raise RuntimeError("No key created and all exception silenced.")
+
+
+class AuthStrategy(paramiko.AuthStrategy):  # type: ignore[name-defined,misc]  # stubs is outdated
+    """Paramiko authorisation strategy with static credentials."""
+
+    __slots__ = ("__sources", "__password")
+
+    def __init__(
+        self,
+        ssh_config: paramiko.SSHConfig | None = None,
+        *,
+        username: str = "",
+        password: str | None = None,
+        keys: Sequence[paramiko.PKey | None] = (),
+        key_filename: Iterable[str] | str | None = None,
+        passphrase: str | None = None,
+        sources: Iterable[paramiko.AuthSource] = (),  # type: ignore[name-defined]
+    ):
+        """SSH AuthStrategy for paramiko.
+
+        :param ssh_config: ssh config object (source for data). Required only by base class.
+        :type ssh_config: paramiko.SSHConfig | None
+        :param username: auth username. Used for paramiko.Password auth.
+        :type username: str
+        :param password: auth password. Used for paramiko.Password auth generation.
+        :type password: str | None
+        :param keys: ssh keys. Used for paramiko.InMemoryPrivateKey generation.
+        :type keys: Sequence[paramiko.PKey | None]
+        :param key_filename: key filename(s) for paramiko.OnDiskPrivateKey generation
+        :type key_filename: Iterable[str] | str | None
+        :param passphrase: passphrase for on-disk private keys decoding. Parameter `password` will be used as fallback
+        :type passphrase: str | None
+        :param sources: ready to use AuthSource objects
+        :type sources: Iterable[paramiko.AuthSource]
+        """
+        super().__init__(ssh_config if ssh_config is not None else paramiko.SSHConfig())
+        self.__password = f"{password if password is not None else ''}\n".encode()
+
+        sources_prep: list[paramiko.AuthSource] = []  # type: ignore[name-defined]
+
+        sources_prep.extend(sources)
+
+        if password:
+            sources_prep.append(
+                paramiko.Password(  # type: ignore[attr-defined]
+                    username,
+                    password_getter=lambda: password,
+                )
+            )
+
+        sources_prep.extend(
+            paramiko.InMemoryPrivateKey(  # type: ignore[attr-defined]
+                username,
+                pkey,
+            )
+            for pkey in keys
+            if pkey is not None
+        )
+
+        if key_filename:
+            if isinstance(key_filename, str):
+                sources_prep.append(
+                    paramiko.OnDiskPrivateKey(  # type: ignore[attr-defined]
+                        username,
+                        source="python-config",
+                        path=key_filename,
+                        pkey=_try_to_get_pkey(key_filename, passphrases={passphrase, password, None}),
+                    )
+                )
+            else:
+                sources_prep.extend(
+                    paramiko.OnDiskPrivateKey(  # type: ignore[attr-defined]
+                        username,
+                        source="python-config",
+                        path=pth,
+                        pkey=_try_to_get_pkey(pth, passphrases={passphrase, password, None}),
+                    )
+                    for pth in key_filename
+                )
+
+        self.__sources = tuple(sources_prep)
+
+    @property
+    def username(self) -> str:
+        """Username for auth.
+
+        .. note:: first available in auth sources username will be used
+        """
+        return next((auth.username for auth in self.__sources if auth.username), "")
+
+    def enter_password(self, tgt: typing.BinaryIO) -> None:
+        """Enter password to STDIN.
+
+        .. note:: required for 'sudo' call
+        .. warning:: only password provided explicit in constructor will be used.
+
+        :param tgt: Target
+        :type tgt: typing.BinaryIO
+        """
+        # noinspection PyTypeChecker
+        tgt.write(self.__password)
+
+    def get_sources(self) -> Collection[paramiko.AuthSource]:  # type: ignore[name-defined]
+        """Auth sources getter.
+
+        .. note:: We can not use `Iterator` since we are support re-connect
+        """
+        return self.__sources
+
+    def __repr__(self) -> str:
+        return (
+            f"<{self.__class__.__name__} "
+            f"for username={self.username!r} "
+            f"and sources {[src.__class__.__name__ for src in self.__sources]}>"
+        )
 
 
 class SSHAuth:
     """SSH Authorization object."""
 
-    __slots__ = ("__username", "__password", "__key_index", "__keys", "__key_filename", "__passphrase")
+    __slots__ = ("__username", "__password", "__keys", "__key_filename", "__passphrase")
 
     def __init__(
         self,
@@ -71,9 +199,16 @@ class SSHAuth:
         :param passphrase: passphrase for keys. Need, if differs from password
         :type passphrase: str | None
 
-        .. versionchanged:: 1.0.0
-            added: key_filename, passphrase arguments
+        .. versionchanged:: 1.0.0 added: key_filename, passphrase arguments
+        .. deprecated:: 8.0.0
+           not used internally
+
         """
+        warnings.warn(
+            "SSHAuth is deprecated. Please use `AuthStrategy` instead for authentication purposes.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.__username: str | None = username
         self.__password: str | None = password
 
@@ -96,8 +231,6 @@ class SSHAuth:
 
         self.__keys.append(None)
 
-        self.__key_index: int = 0
-
         if key_filename is None:
             self.__key_filename: Collection[str] = ()
         elif isinstance(key_filename, str):
@@ -115,6 +248,18 @@ class SSHAuth:
         """
         return self.__username
 
+    @property
+    def auth_strategy(self) -> AuthStrategy:
+        """Auth strategy for real usage."""
+        return AuthStrategy(
+            ssh_config=paramiko.SSHConfig(),
+            username=self.__username if self.__username is not None else "",
+            password=self.__password,
+            keys=self.__keys,
+            key_filename=self.__key_filename,
+            passphrase=self.__passphrase,
+        )
+
     @staticmethod
     def __get_public_key(key: paramiko.PKey | None) -> str | None:
         """Internal method for get public key from private.
@@ -127,15 +272,6 @@ class SSHAuth:
         if key is None:
             return None
         return f"{key.get_name()} {key.get_base64()}"
-
-    @property
-    def public_key(self) -> str | None:
-        """Public key for stored private key if presents else None.
-
-        :return: public key for current private key
-        :rtype: str
-        """
-        return self.__get_public_key(self.__keys[self.__key_index])
 
     @property
     def key_filename(self) -> Collection[str]:
@@ -181,43 +317,26 @@ class SSHAuth:
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
+
+        .. deprecated:: 8.0.0
         """
-        kwargs: dict[str, typing.Any] = {}
-
-        if self.__passphrase is not None:
-            kwargs["passphrase"] = self.__passphrase
-        if sock is not None:
-            kwargs["sock"] = sock
-
-        for index, key in sorted(enumerate(self.__keys), key=lambda i_k: i_k[0] != self.__key_index):
-            kwargs["pkey"] = key
-            try:
-                # noinspection PyTypeChecker
-                client.connect(
-                    hostname=hostname,
-                    port=port,
-                    username=self.username,
-                    password=self.__password,
-                    key_filename=self.__key_filename,  # type: ignore[arg-type]  # types verified by not signature
-                    **kwargs,
-                )
-                if index != self.__key_index:
-                    self.__key_index = index
-                    LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
-            except paramiko.PasswordRequiredException:
-                if self.__password is None:
-                    LOGGER.exception("No password has been set!")
-                    raise
-                LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
+        try:
+            # noinspection PyTypeChecker
+            client.connect(
+                hostname=hostname,
+                port=port,
+                sock=sock,  # type: ignore[arg-type]  # outdated stubs
+                auth_strategy=self.auth_strategy,
+            )
+        except paramiko.BadHostKeyException as exc:
+            LOGGER.exception(f"Connection impossible: {exc}")  # noqa: TRY401
+            raise
+        except paramiko.PasswordRequiredException:
+            if self.__password is None:
+                LOGGER.exception("No password has been set!")
                 raise
-            except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
-                continue
-            else:
-                return
-        msg: str = "Connection using stored authentication info failed!"
-        if log:
-            LOGGER.exception(msg)
-        raise paramiko.AuthenticationException(msg)
+            LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
+            raise
 
     def __hash__(self) -> int:
         """Hash for usage as dict keys and comparison.
@@ -268,7 +387,6 @@ class SSHAuth:
         return self.__class__(
             username=self.username,
             password=self.__password,
-            key=self.__keys[self.__key_index],
             keys=copy.deepcopy(self.__keys),
             key_filename=copy.deepcopy(self.key_filename),
             passphrase=self.__passphrase,
@@ -284,7 +402,6 @@ class SSHAuth:
         return self.__class__(
             username=self.username,
             password=self.__password,
-            key=self.__keys[self.__key_index],
             keys=self.__keys,
             key_filename=self.key_filename,
             passphrase=self.__passphrase,
@@ -296,22 +413,15 @@ class SSHAuth:
         :return: partial instance fields in human-friendly format
         :rtype: str
         """
-        if self.__keys[self.__key_index] is None:
-            _key: str | None = None
-        else:
-            _key = f"<private for pub: {self.public_key}>"
-        _keys: list[str | None] = []
-        for idx, k in enumerate(self.__keys):
-            if idx == self.__key_index:
-                continue
-            # noinspection PyTypeChecker
-            _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
+        _keys: list[str | None] = [
+            f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None
+            for idx, k in enumerate(self.__keys)
+        ]
 
         return (
             f"{self.__class__.__name__}("
             f"username={self.username!r}, "
             f"password=<*masked*>, "
-            f"key={_key}, "
             f"keys={_keys}, "
             f"key_filename={self.key_filename!r}, "
             f"passphrase=<*masked*>,"
@@ -327,8 +437,130 @@ class SSHAuth:
         return f"{self.__class__.__name__} for {self.username}"
 
 
+class SSHAuthStrategyMapping(typing.Dict[str, AuthStrategy]):
+    """Specific dictionary for ssh hostname - auth_strategy mapping.
+
+    keys are always string and saved/collected lowercase.
+    """
+
+    __slots__ = ()
+
+    def __init__(
+        self,
+        auth_dict: dict[str, AuthStrategy] | SSHAuthStrategyMapping | None = None,
+        **auth_mapping: AuthStrategy,
+    ) -> None:
+        """Specific dictionary for ssh hostname - auth_strategy mapping.
+
+        :param auth_dict: original hostname - source ssh auth_strategy mapping (dictionary of SSHAuthStrategyMapping)
+        :type auth_dict: dict[str, paramiko.AuthStrategy] | SSHAuthStrategyMapping | None
+        :param auth_mapping: AuthStrategy setting via **kwargs
+        :type auth_mapping: paramiko.AuthStrategy
+        :raises TypeError: Incorrect type of auth_strategy dict or auth_strategy object
+        """
+        super().__init__()
+        if auth_dict is not None:
+            if isinstance(auth_dict, (dict, SSHAuthStrategyMapping)):
+                for hostname in auth_dict:
+                    self[hostname] = auth_dict[hostname]
+            else:  # pragma: no cover
+                raise TypeError(f"Incorrect type of auth_strategy dict! (got: {auth_dict!r})")
+
+        for hostname, auth in auth_mapping.items():
+            if isinstance(auth, AuthStrategy):
+                self[hostname] = auth
+            else:  # pragma: no cover
+                raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
+
+    def __setitem__(self, hostname: str, auth_strategy: AuthStrategy) -> None:
+        """Dict-like access.
+
+        :param hostname: key - hostname
+        :type hostname: str
+        :param auth_strategy: value - AuthStrategy object
+        :type auth_strategy: AuthStrategy
+        :raises TypeError: key is not string or value is not SSHAuth.
+        """
+        if not isinstance(hostname, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
+        if not isinstance(auth_strategy, AuthStrategy):  # pragma: no cover
+            raise TypeError(f"Value {auth_strategy!r} is not AuthStrategy object!")
+        super().__setitem__(hostname.lower(), auth_strategy)
+
+    def __getitem__(self, hostname: str) -> AuthStrategy:
+        """Dict-like access.
+
+        :param hostname: key - hostname
+        :type hostname: str
+        :return: associated SSHAuth object
+        :rtype: AuthStrategy
+        :raises TypeError: key is not string.
+        """
+        if not isinstance(hostname, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
+        return super().__getitem__(hostname.lower())
+
+    @typing.overload
+    def get_with_alt_hostname(
+        self,
+        hostname: str,
+        *host_names: str,
+        default: AuthStrategy,
+    ) -> AuthStrategy:
+        """Try to guess hostname with credentials."""
+
+    @typing.overload
+    def get_with_alt_hostname(
+        self,
+        hostname: str,
+        *host_names: str,
+        default: None = None,
+    ) -> AuthStrategy | None:
+        """Try to guess hostname with credentials."""
+
+    def get_with_alt_hostname(
+        self,
+        hostname: str,
+        *host_names: str,
+        default: AuthStrategy | None = None,
+    ) -> AuthStrategy | None:
+        """Try to guess hostname with credentials.
+
+        :param hostname: expected target hostname
+        :type hostname: str
+        :param host_names: alternate host names
+        :type host_names: str
+        :param default: credentials if hostname not found
+        :type default: AuthStrategy | None
+        :return: guessed credentials
+        :rtype: AuthStrategy | None
+        :raises TypeError: Default AuthStrategy object is not AuthStrategy
+
+        Method used in cases, when 1 host share 2 or more names in config.
+        """
+        if default is not None and not isinstance(default, AuthStrategy):  # pragma: no cover
+            raise TypeError(f"Default AuthStrategy object is not paramiko.AuthStrategy!. (got {default!r})")
+        if hostname in self:
+            return self[hostname]
+        for host in host_names:
+            if host in self:
+                return self[host]
+        return default
+
+    def __delitem__(self, hostname: str) -> None:
+        """Dict-like access.
+
+        :param hostname: key - hostname
+        :type hostname: str
+        :raises TypeError: key is not string.
+        """
+        if not isinstance(hostname, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
+        super().__delitem__(hostname.lower())
+
+
 class SSHAuthMapping(typing.Dict[str, SSHAuth]):
-    """Specific dictionary for  ssh hostname - auth mapping.
+    """Specific dictionary for ssh hostname - auth_strategy mapping.
 
     keys are always string and saved/collected lowercase.
     """
@@ -340,13 +572,16 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None = None,
         **auth_mapping: SSHAuth,
     ) -> None:
-        """Specific dictionary for  ssh hostname - auth mapping.
+        """Specific dictionary for ssh hostname - auth_strategy mapping.
 
-        :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
+        :param auth_dict: original hostname - source ssh auth_strategy mapping (dictionary of SSHAuthMapping)
         :type auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None
         :param auth_mapping: SSHAuth setting via **kwargs
         :type auth_mapping: SSHAuth
-        :raises TypeError: Incorrect type of auth dict or auth object
+        :raises TypeError: Incorrect type of auth_strategy dict or auth_strategy object
+
+        .. deprecated:: 8.0.0
+           not used internally
         """
         super().__init__()
         if auth_dict is not None:
@@ -354,13 +589,17 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
                 for hostname in auth_dict:
                     self[hostname] = auth_dict[hostname]
             else:  # pragma: no cover
-                raise TypeError(f"Incorrect type of auth dict! (got: {auth_dict!r})")
+                raise TypeError(f"Incorrect type of auth_strategy dict! (got: {auth_dict!r})")
 
         for hostname, auth in auth_mapping.items():
             if isinstance(auth, SSHAuth):
                 self[hostname] = auth
             else:  # pragma: no cover
                 raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
+
+    def get_auth_strategy_mapping(self) -> SSHAuthStrategyMapping:
+        """Get SSHAuthStrategyMapping."""
+        return SSHAuthStrategyMapping({hostname: auth.auth_strategy for hostname, auth in self.items()})
 
     def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
         """Dict-like access.

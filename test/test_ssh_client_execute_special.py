@@ -113,20 +113,44 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile):
 
 
 @pytest.fixture
-def ssh(paramiko_ssh_client, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger):
-    return exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
+def ssh(
+    paramiko_ssh_client,
+    ssh_transport_channel,
+    auto_add_policy,
+    ssh_auth_logger,
+    get_logger,
+):
+    return exec_helpers.SSHClient(
+        host=host,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
+    )
 
 
 @pytest.fixture
-def ssh2(paramiko_ssh_client, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger):
+def ssh2(
+    paramiko_ssh_client,
+    ssh_transport_channel,
+    auto_add_policy,
+    ssh_auth_logger,
+    get_logger,
+):
     return exec_helpers.SSHClient(
-        host=host2, port=port, auth=exec_helpers.SSHAuth(username=username, password=password)
+        host=host2,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
     )
 
 
 @pytest.fixture
 def exec_result():
-    return exec_helpers.ExecResult(cmd=command, stdin=None, stdout=stdout_src, stderr=stderr_src, exit_code=0)
+    return exec_helpers.ExecResult(
+        cmd=command,
+        stdin=None,
+        stdout=stdout_src,
+        stderr=stderr_src,
+        exit_code=0,
+    )
 
 
 def test_001_mask_command(ssh, get_logger) -> None:
@@ -230,12 +254,19 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
         return SshExecuteAsyncResult(
-            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
+            interface=chan,
+            stdin=mock.Mock,
+            stdout=stdout_part,
+            stderr=stderr_part,
+            started=datetime.datetime.now(tz=datetime.timezone.utc),
         )
 
     execute_async = mocker.patch(
         "exec_helpers.ssh.SSHClient._execute_async",
-        side_effect=[get_patched_execute_async_retval(), get_patched_execute_async_retval()],
+        side_effect=[
+            get_patched_execute_async_retval(),
+            get_patched_execute_async_retval(),
+        ],
     )
 
     remotes = [ssh, ssh2]

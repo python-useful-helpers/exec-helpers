@@ -45,6 +45,7 @@ __all__ = (
     "Subprocess",
     "SSHClient",
     "SSHAuth",
+    "AuthStrategy",
     "SSHConfig",
     "HostsSSHConfigs",
     # Exceptions
@@ -56,8 +57,6 @@ __all__ = (
     "ParallelCallProcessError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
-    # deprecated
-    "ParallelCallExceptions",
 )
 
 __locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading
@@ -73,6 +72,7 @@ __lazy_load_parent_modules: dict[str, str] = {
     "SSHConfig": "_ssh_helpers",
     "SSHClient": "ssh",
     "SSHAuth": "ssh_auth",
+    "AuthStrategy": "ssh_auth",
     "Subprocess": "subprocess",
     # API
     "ExitCodes": "proc_enums",
@@ -87,10 +87,9 @@ __lazy_load_parent_modules: dict[str, str] = {
     "ParallelCallProcessError": "exceptions",
     "ExecHelperNoKillError": "exceptions",
     "ExecHelperTimeoutError": "exceptions",
-    "ParallelCallExceptions": "exceptions",
 }
 
-_deprecated: dict[str, str] = {"ParallelCallExceptions": "ParallelCallExceptionsError"}
+_deprecated: dict[str, str] = {}
 
 
 def __getattr__(name: str) -> typing.Any:

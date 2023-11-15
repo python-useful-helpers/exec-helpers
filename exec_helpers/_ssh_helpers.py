@@ -472,9 +472,7 @@ def parse_ssh_config(
     if isinstance(ssh_config, str):
         ssh_config_path = pathlib.Path(ssh_config).expanduser()
         if ssh_config_path.exists():
-            real_config = paramiko.SSHConfig()
-            with ssh_config_path.open("tr", encoding="utf-8") as f_config:
-                real_config.parse(f_config)
+            real_config = paramiko.SSHConfig.from_path(ssh_config_path.as_posix())
             return _parse_paramiko_ssh_config(real_config, host)
 
     system_ssh_config: paramiko.config.SSHConfig | None = _parse_ssh_config_file(SSH_CONFIG_FILE_SYSTEM)

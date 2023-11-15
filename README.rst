@@ -100,27 +100,25 @@ Basic initialization of `SSHClient` can be done without construction of specific
 If ssh agent is running - keys will be collected by paramiko automatically,
 but if keys are in specific location  - it should be loaded manually and provided as iterable object of `paramiko.PKey`.
 
-For advanced cases or re-use of credentials, `SSHAuth` object should be used.
-It can be collected from connection object via property `auth`.
+For advanced cases or re-use of credentials, `AuthStrategy` object should be used.
+It can be collected from connection object via property `auth_strategy`.
 
 Creation from scratch:
 
 .. code-block:: python
 
-    auth = exec_helpers.SSHAuth(
+    auth_strategy = exec_helpers.AuthStrategy(
         username='username',  # str | None
         password='password',  # str | None
-        key=None,  # type: paramiko.PKey | None
-        keys=None,  # type: Iterable[paramiko.PKey] | None
-        key_filename=None,  # type: List[str] | None
+        keys=(),  # type: Iterable[paramiko.PKey] | None
+        key_filename=None,  # type: str | Iterable[str] | None
         passphrase=None,  # str | None
+        sources=(),  # type: Iterable[paramiko.AuthSource]
     )
 
-Key is a main connection key (always tried first) and keys are alternate keys.
+Keys are iterate in order of definition..
 Key filename is a filename or list of filenames with keys, which should be loaded.
 Passphrase is an alternate password for keys, if it differs from main password.
-If main key now correct for username - alternate keys tried, if correct key found - it became main.
-If no working key - password is used and None is set as main key.
 
 Context manager is available, connection is closed and lock is released on exit from context.
 
@@ -309,7 +307,7 @@ For execute through SSH host can be used `execute_through_host` method:
         hostname,  # type: str
         command,  # type: str | Iterable[str]
         # Keyword only:
-        auth=None,  # type: SSHAuth | None
+        auth_strategy=None,  # type: AuthStrategy | None
         port=22,  # type: int
         timeout=1 * 60 * 60,  # type: type: int | float | None
         verbose=False,  # type: bool
@@ -324,7 +322,7 @@ For execute through SSH host can be used `execute_through_host` method:
         height=24  # type: int
     )
 
-Where hostname is a target hostname, auth is an alternate credentials for target host.
+Where hostname is a target hostname, auth_strategy is an alternate credentials for target host.
 
 SSH client implements fast sudo support via context manager:
 

@@ -323,7 +323,7 @@ class ExecHelper(
         :return: final command, includes chroot, if required
         :rtype: str
         """
-        return _helpers.chroot_command(cmd, chroot_path=chroot_path if chroot_path else self._chroot_path)
+        return _helpers.chroot_command(cmd, chroot_path=chroot_path or self._chroot_path)
 
     @abc.abstractmethod
     async def _execute_async(

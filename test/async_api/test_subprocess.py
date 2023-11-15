@@ -124,7 +124,14 @@ configs = {
         "open_stdout": True,
         "open_stderr": False,
     },
-    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
+    "no_stdout": {
+        "ec": 0,
+        "stdout": (),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": False,
+        "open_stderr": False,
+    },
 }
 
 
@@ -167,7 +174,9 @@ def exec_result(run_parameters):
 @pytest.fixture
 def execute(monkeypatch, exec_result):
     subprocess_execute = mock.AsyncMock(
-        exec_helpers.async_api.subprocess.Subprocess.execute, name="execute", return_value=exec_result
+        exec_helpers.async_api.subprocess.Subprocess.execute,
+        name="execute",
+        return_value=exec_result,
     )
     monkeypatch.setattr(exec_helpers.async_api.subprocess.Subprocess, "execute", subprocess_execute)
     return subprocess_execute
@@ -187,7 +196,11 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         """Parametrized code."""
         proc = mock.AsyncMock()
 
-        run_shell = mock.AsyncMock(asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc)
+        run_shell = mock.AsyncMock(
+            asyncio.create_subprocess_shell,
+            name="create_subprocess_shell",
+            return_value=proc,
+        )
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 
@@ -253,8 +266,6 @@ async def test_001_execute_async(create_subprocess_shell, logger, run_parameters
         stdin = run_parameters["stdin"].encode(encoding="utf-8")
     else:
         stdin = bytes(run_parameters["stdin"])
-    if stdin:
-        assert res.stdin is None
 
     create_subprocess_shell.assert_awaited_once_with(
         cmd=command,
@@ -340,7 +351,14 @@ async def test_005_check_call_no_raise(execute, exec_result, logger) -> None:
 async def test_006_check_call_expect(execute, exec_result, logger) -> None:
     """Test exit code validator with custom return codes."""
     runner = exec_helpers.async_api.Subprocess()
-    assert await runner.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
+    assert (
+        await runner.check_call(
+            command,
+            stdin=exec_result.stdin,
+            expected=[exec_result.exit_code],
+        )
+        == exec_result
+    )
 
 
 async def test_007_check_stderr(execute, exec_result, logger) -> None:
@@ -348,11 +366,20 @@ async def test_007_check_stderr(execute, exec_result, logger) -> None:
     runner = exec_helpers.async_api.Subprocess()
     if not exec_result.stderr:
         assert (
-            await runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
+            await runner.check_stderr(
+                command,
+                stdin=exec_result.stdin,
+                expected=[exec_result.exit_code],
+            )
+            == exec_result
         )
     else:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
-            await runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code])
+            await runner.check_stderr(
+                command,
+                stdin=exec_result.stdin,
+                expected=[exec_result.exit_code],
+            )
 
         exc: exec_helpers.CalledProcessError = e.value
         assert exc.result == exec_result
@@ -373,7 +400,10 @@ async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
     runner = exec_helpers.async_api.Subprocess()
     assert (
         await runner.check_stderr(
-            command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False
+            command,
+            stdin=exec_result.stdin,
+            expected=[exec_result.exit_code],
+            raise_on_err=False,
         )
         == exec_result
     )
