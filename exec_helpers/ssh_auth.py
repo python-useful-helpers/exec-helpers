@@ -18,16 +18,13 @@
 
 from __future__ import annotations
 
-# Standard Library
 import copy
 import logging
 import typing
 
-# External Dependencies
 import paramiko
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     import socket
     from collections.abc import Collection
     from collections.abc import Iterable

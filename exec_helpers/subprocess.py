@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-# Standard Library
 import concurrent.futures
 import copy
 import datetime
@@ -30,22 +29,18 @@ import subprocess  # nosec  # Expected usage
 import typing
 import warnings
 
-# Package Implementation
 from exec_helpers import api
 from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 
-# Local Implementation
 from . import _log_templates
 from . import _subprocess_helpers
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from types import TracebackType
 
-    # Package Implementation
     from exec_helpers.api import CalledProcessErrorSubClassT
     from exec_helpers.api import CommandT
     from exec_helpers.api import ErrorInfoT
@@ -185,7 +180,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
 
         Command is executed only in context manager to be sure, that everything will be cleaned up properly.
         """
-        started = datetime.datetime.utcnow()
+        started = datetime.datetime.now(tz=datetime.timezone.utc)
 
         self.__process = subprocess.Popen(
             args=self.command,
@@ -373,119 +368,6 @@ class Subprocess(api.ExecHelper):
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
         self.logger.debug(wait_err_msg)
         raise exceptions.ExecHelperTimeoutError(result=result, timeout=timeout)  # type: ignore[arg-type]
-
-    # noinspection PyMethodOverriding
-    def _execute_async(
-        self,
-        command: str,
-        *,
-        stdin: OptionalStdinT = None,
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        chroot_path: str | None = None,
-        cwd: CwdT = None,
-        env: EnvT = None,
-        env_patch: EnvT = None,
-        **kwargs: typing.Any,
-    ) -> SubprocessExecuteAsyncResult:
-        """Execute command in async mode and return Popen with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: str | bytes | bytearray | None
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param chroot_path: chroot path override
-        :type chroot_path: str | None
-        :param cwd: Sets the current directory before the child is executed.
-        :type cwd: str | bytes | pathlib.Path | None
-        :param env: Defines the environment variables for the new process.
-        :type env: Mapping[str | bytes, str | bytes] | None
-        :param env_patch: Defines the environment variables to ADD for the new process.
-        :type env_patch: Mapping[str | bytes, str | bytes] | None
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
-        :return: Tuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.NamedTuple(
-                    'SubprocessExecuteAsyncResult',
-                    [
-                        ('interface', subprocess.Popen[bytes]),
-                        ('stdin', typing.IO[bytes] | None),
-                        ('stderr', typing.IO[bytes] | None),
-                        ('stdout', typing.IO[bytes] | None),
-                        ("started", datetime.datetime),
-                    ]
-                )
-        :raises OSError: impossible to process STDIN
-
-        .. versionadded:: 1.2.0
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 3.2.0 Expose cwd and env as optional keyword-only arguments
-        .. versionchanged:: 4.1.0 support chroot
-        """
-        warnings.warn("_execute_async is deprecated and will be removed soon", DeprecationWarning, stacklevel=2)
-        started = datetime.datetime.utcnow()
-
-        if env_patch is not None:
-            # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
-            env.update(env_patch)  # type: ignore[arg-type]
-
-        process: subprocess.Popen[bytes] = subprocess.Popen(  # pylint: disable=consider-using-with
-            args=[self._prepare_command(cmd=command, chroot_path=chroot_path)],
-            stdout=subprocess.PIPE if open_stdout else subprocess.DEVNULL,
-            stderr=subprocess.PIPE if open_stderr else subprocess.DEVNULL,
-            stdin=subprocess.PIPE,
-            shell=True,
-            cwd=cwd,
-            env=env,
-            universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw,
-        )
-
-        if stdin is None:
-            process_stdin: typing.IO[bytes] | None = process.stdin
-        elif process.stdin is None:
-            self.logger.warning("STDIN pipe is not set, but STDIN data is available to send.")
-            process_stdin = None
-        else:
-            stdin_str: bytes = self._string_bytes_bytearray_as_bytes(stdin)
-            try:
-                process.stdin.write(stdin_str)
-            except OSError as exc:
-                if exc.errno == errno.EINVAL:
-                    # bpo-19612, bpo-30418: On Windows, stdin.write() fails
-                    # with EINVAL if the child process exited or if the child
-                    # process is still running but closed the pipe.
-                    self.logger.warning("STDIN Send failed: closed PIPE")
-                elif exc.errno in (errno.EPIPE, errno.ESHUTDOWN):
-                    self.logger.warning("STDIN Send failed: broken PIPE")
-                else:
-                    _subprocess_helpers.kill_proc_tree(process.pid)
-                    process.kill()
-                    raise
-            try:
-                process.stdin.close()
-            except OSError as exc:
-                if exc.errno in (errno.EINVAL, errno.EPIPE, errno.ESHUTDOWN):
-                    pass  # PIPE already closed
-                else:
-                    process.kill()
-                    raise
-
-            process_stdin = None
-
-        # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(
-            interface=process,
-            stdin=process_stdin,
-            stderr=process.stderr,
-            stdout=process.stdout,
-            started=started,
-        )
 
     def open_execute_context(
         self,

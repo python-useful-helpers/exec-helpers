@@ -16,17 +16,14 @@
 
 from __future__ import annotations
 
-# Standard Library
 import contextlib
 import copy
 import io
 import typing
 
-# External Dependencies
 import paramiko
 import pytest
 
-# Package Implementation
 import exec_helpers
 
 
@@ -73,8 +70,16 @@ configs = {
     "username_only": {"username": username},
     "username_password": {"username": username, "password": password},
     "username_key": {"username": username, "key": gen_private_keys(1).pop()},
-    "username_password_key": {"username": username, "password": password, "key": gen_private_keys(1).pop()},
-    "username_password_keys": {"username": username, "password": password, "keys": gen_private_keys(2)},
+    "username_password_key": {
+        "username": username,
+        "password": password,
+        "key": gen_private_keys(1).pop(),
+    },
+    "username_password_keys": {
+        "username": username,
+        "password": password,
+        "keys": gen_private_keys(2),
+    },
     "username_password_key_keys": {
         "username": username,
         "password": password,

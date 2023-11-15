@@ -5,17 +5,20 @@ import io
 import sys
 from unittest import mock
 
-# External Dependencies
 import paramiko
 import pytest
 
-# Package Implementation
 from exec_helpers import _ssh_helpers as ssh_helpers
 
 HOST = "127.128.0.1"
 PORT = 22
 USER = "user"
-IDENTIFY_FILES = ["/tmp/ssh/id_dsa", "/tmp/ssh/id_rsa", "/tmp/ssh/id_ecdsa", "/tmp/ssh/id_ed25519"]
+IDENTIFY_FILES = [
+    "/tmp/ssh/id_dsa",
+    "/tmp/ssh/id_rsa",
+    "/tmp/ssh/id_ecdsa",
+    "/tmp/ssh/id_ed25519",
+]
 PROXY_JUMP_1 = "127.127.0.1"
 PROXY_JUMP_2 = "127.0.0.1"
 
@@ -214,7 +217,11 @@ def test_negative(no_system_ssh_config, no_user_ssh_config):
         ssh_helpers.SSHConfig(HOST, port=65536)
 
     with pytest.raises(ValueError):
-        ssh_helpers.SSHConfig(HOST, proxycommand=f"ssh -q -A {PROXY_JUMP_1} nc {HOST} {PORT}", proxyjump=PROXY_JUMP_1)
+        ssh_helpers.SSHConfig(
+            HOST,
+            proxycommand=f"ssh -q -A {PROXY_JUMP_1} nc {HOST} {PORT}",
+            proxyjump=PROXY_JUMP_1,
+        )
 
 
 def test_negative_read(system_ssh_config, no_user_ssh_config):

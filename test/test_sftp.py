@@ -18,17 +18,14 @@
 
 from __future__ import annotations
 
-# Standard Library
 import os
 import posixpath
 import stat
 import unittest
 from unittest import mock
 
-# External Dependencies
 import paramiko
 
-# Package Implementation
 import exec_helpers
 
 host = "127.0.0.1"
@@ -57,7 +54,9 @@ class TestSftp(unittest.TestCase):
 
             # noinspection PyTypeChecker
             ssh = exec_helpers.SSHClient(
-                host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password)
+                host=host,
+                port=port,
+                auth=exec_helpers.SSHAuth(username=username, password=password),
             )
             return ssh, _sftp
 
@@ -205,7 +204,9 @@ class TestSftp(unittest.TestCase):
 
         # noinspection PyTypeChecker
         ssh = exec_helpers.SSHClient(
-            host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password)
+            host=host,
+            port=port,
+            auth=exec_helpers.SSHAuth(username=username, password=password),
         )
 
         # Path not exists
@@ -230,7 +231,9 @@ class TestSftp(unittest.TestCase):
 
         # noinspection PyTypeChecker
         ssh = exec_helpers.SSHClient(
-            host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password)
+            host=host,
+            port=port,
+            auth=exec_helpers.SSHAuth(username=username, password=password),
         )
 
         # Path not exists

@@ -14,21 +14,15 @@
 
 from __future__ import annotations
 
-# Standard Library
 import asyncio
 import logging
 import random
-import sys
 from unittest import mock
 
-# External Dependencies
 import pytest
 
-# Package Implementation
 import exec_helpers
-from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
-from exec_helpers.async_api.subprocess import SubprocessExecuteAsyncResult
 
 pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
 
@@ -124,7 +118,14 @@ configs = {
         "open_stdout": True,
         "open_stderr": False,
     },
-    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
+    "no_stdout": {
+        "ec": 0,
+        "stdout": (),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": False,
+        "open_stderr": False,
+    },
 }
 
 
@@ -167,7 +168,9 @@ def exec_result(run_parameters):
 @pytest.fixture
 def execute(monkeypatch, exec_result):
     subprocess_execute = mock.AsyncMock(
-        exec_helpers.async_api.subprocess.Subprocess.execute, name="execute", return_value=exec_result
+        exec_helpers.async_api.subprocess.Subprocess.execute,
+        name="execute",
+        return_value=exec_result,
     )
     monkeypatch.setattr(exec_helpers.async_api.subprocess.Subprocess, "execute", subprocess_execute)
     return subprocess_execute
@@ -187,7 +190,11 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         """Parametrized code."""
         proc = mock.AsyncMock()
 
-        run_shell = mock.AsyncMock(asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc)
+        run_shell = mock.AsyncMock(
+            asyncio.create_subprocess_shell,
+            name="create_subprocess_shell",
+            return_value=proc,
+        )
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 
@@ -217,59 +224,6 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
 def logger(mocker):
     """Simple mock of logger instance."""
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
-
-
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="Python 3.8 is first with async mock")
-async def test_001_execute_async(create_subprocess_shell, logger, run_parameters) -> None:
-    """Test low level API."""
-    runner = exec_helpers.async_api.Subprocess()
-    res = await runner._execute_async(
-        command,
-        stdin=run_parameters["stdin"],
-        open_stdout=run_parameters["open_stdout"],
-        open_stderr=run_parameters["open_stderr"],
-    )
-    assert isinstance(res, SubprocessExecuteAsyncResult)
-    assert await res.interface.wait() == run_parameters["ec"]
-    assert res.interface.returncode == run_parameters["ec"]
-
-    stdout = run_parameters["stdout"]
-    stderr = run_parameters["stderr"]
-
-    if stdout is not None:
-        assert await read_stream(res.stdout) == stdout
-    else:
-        assert res.stdout is stdout
-    if stderr is not None:
-        assert await read_stream(res.stderr) == stderr
-    else:
-        assert res.stderr is stderr
-
-    if run_parameters["stdin"] is None:
-        stdin = None
-    elif isinstance(run_parameters["stdin"], bytes):
-        stdin = run_parameters["stdin"]
-    elif isinstance(run_parameters["stdin"], str):
-        stdin = run_parameters["stdin"].encode(encoding="utf-8")
-    else:
-        stdin = bytes(run_parameters["stdin"])
-    if stdin:
-        assert res.stdin is None
-
-    create_subprocess_shell.assert_awaited_once_with(
-        cmd=command,
-        stdout=asyncio.subprocess.PIPE if run_parameters["open_stdout"] else asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.PIPE if run_parameters["open_stderr"] else asyncio.subprocess.DEVNULL,
-        stdin=asyncio.subprocess.PIPE,
-        cwd=run_parameters.get("cwd", None),
-        env=run_parameters.get("env", None),
-        universal_newlines=False,
-        **_subprocess_helpers.subprocess_kw,
-    )
-
-    if stdin is not None:
-        res.interface.stdin.write.assert_called_once_with(stdin)
-        res.interface.stdin.drain.assert_awaited_once()
 
 
 async def test_002_execute(create_subprocess_shell, logger, exec_result, run_parameters) -> None:
@@ -373,7 +327,10 @@ async def test_008_check_stderr_no_raise(execute, exec_result, logger) -> None:
     runner = exec_helpers.async_api.Subprocess()
     assert (
         await runner.check_stderr(
-            command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False
+            command,
+            stdin=exec_result.stdin,
+            expected=[exec_result.exit_code],
+            raise_on_err=False,
         )
         == exec_result
     )

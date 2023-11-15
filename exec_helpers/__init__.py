@@ -16,19 +16,16 @@
 
 from __future__ import annotations
 
-# Standard Library
 import importlib
 import typing
 import warnings
 
 try:  # noqa: SIM105
-    # Local Implementation
     from ._version import version as __version__  # noqa: F401
 except ImportError:
     pass
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Sequence
 
 # noinspection PyUnresolvedReferences

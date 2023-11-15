@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-# Standard Library
 import functools
 import re
 import shlex
 import typing
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Iterable
 
 
@@ -47,8 +45,7 @@ def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
     for match in re.finditer(rules, text):
         for idx, _ in enumerate(match.groups(), start=1):
             start, end = match.span(idx)
-            masked.append(text[prev:start])
-            masked.append("<*masked*>")
+            masked.extend((text[prev:start], "<*masked*>"))
             prev = end
     masked.append(text[prev:])
 
@@ -78,7 +75,7 @@ def cmd_to_string(command: str | Iterable[str]) -> str:
     """
     if isinstance(command, str):
         return command
-    return " ".join(shlex.quote(elem) for elem in command)
+    return shlex.join(command)
 
 
 def chroot_command(command: str, chroot_path: str | None = None) -> str:

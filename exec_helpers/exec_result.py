@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-# Standard Library
 import contextlib
 import datetime
 import functools
@@ -27,46 +26,38 @@ import logging
 import threading
 import typing
 
-# Package Implementation
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
 try:
     # noinspection PyPackageRequirements
-    # External Dependencies
     import yaml
 except ImportError:
     yaml = None  # type: ignore[assignment]
 try:
-    # External Dependencies
     from ruamel import yaml as ruamel_yaml
 except ImportError:
     ruamel_yaml = None  # type: ignore[assignment]
 try:
-    # External Dependencies
     # noinspection PyPackageRequirements
     import defusedxml.ElementTree
 except ImportError:
     defusedxml = None  # pylint: disable=invalid-name
 try:
-    # External Dependencies
     # noinspection PyPackageRequirements
     import lxml.etree  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     import xml.etree.ElementTree  # nosec  # for typing only
     from collections.abc import Callable
     from collections.abc import Iterable
     from collections.abc import Sequence
 
-    # External Dependencies
     # noinspection PyPackageRequirements
     import logwrap
 
-    # Package Implementation
     from exec_helpers.proc_enums import ExitCodeT
 
     _T = typing.TypeVar("_T")
@@ -320,7 +311,7 @@ class ExecResult:
         .. versionadded:: 4.0.0
         """
         if self.timestamp is None:
-            self.__timestamp = datetime.datetime.utcnow()
+            self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @classmethod
     def _get_brief(cls, data: tuple[bytes, ...]) -> str:
@@ -571,7 +562,7 @@ class ExecResult:
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.utcnow()
+                self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @property
     def started(self) -> datetime.datetime | None:

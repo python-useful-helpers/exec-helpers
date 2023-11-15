@@ -16,21 +16,16 @@
 
 from __future__ import annotations
 
-# Standard Library
 import typing
 
-# Package Implementation
 from exec_helpers import proc_enums
 
-# Local Implementation
 from . import _log_templates
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Iterable
     from collections.abc import Sequence
 
-    # Package Implementation
     from exec_helpers import exec_result  # pylint: disable=cyclic-import
     from exec_helpers.proc_enums import ExitCodeT
 
@@ -309,7 +304,7 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
         """
         exceptions_str: str = "\n\t".join(
-            f"{host}:{port} - {str(exc) if str(exc) else repr(exc)}" for (host, port), exc in exceptions.items()
+            f"{host}:{port} - {str(exc) or repr(exc)}" for (host, port), exc in exceptions.items()
         )
         message: str = _message or f"Command {command!r} during execution raised exceptions: \n\t{exceptions_str}"
         super().__init__(

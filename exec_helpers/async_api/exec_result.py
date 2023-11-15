@@ -19,7 +19,6 @@
 
 from __future__ import annotations
 
-# Standard Library
 import contextlib
 import logging
 import typing
@@ -27,7 +26,6 @@ import typing
 if typing.TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
-# Package Implementation
 from exec_helpers import exec_result  # pylint: disable=wrong-import-position
 
 __all__ = ("ExecResult",)

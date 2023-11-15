@@ -20,14 +20,12 @@
 
 from __future__ import annotations
 
-# Standard Library
 import abc
 import logging
 import pathlib
 import threading
 import typing
 
-# Package Implementation
 from exec_helpers import constants
 from exec_helpers import exceptions
 from exec_helpers import exec_result
@@ -35,16 +33,13 @@ from exec_helpers import proc_enums
 from exec_helpers.exec_result import OptionalStdinT
 from exec_helpers.proc_enums import ExitCodeT
 
-# Local Implementation
 from . import _helpers
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     import datetime
     from collections.abc import Sequence
     from types import TracebackType
 
-    # External Dependencies
     from typing_extensions import Self
 
 __all__ = (
@@ -363,51 +358,7 @@ class ExecHelper(
         :return: final command, includes chroot, if required
         :rtype: str
         """
-        return _helpers.chroot_command(cmd, chroot_path=chroot_path if chroot_path else self._chroot_path)
-
-    @abc.abstractmethod
-    def _execute_async(
-        self,
-        command: str,
-        *,
-        stdin: OptionalStdinT = None,
-        open_stdout: bool = True,
-        open_stderr: bool = True,
-        chroot_path: str | None = None,
-        **kwargs: typing.Any,
-    ) -> ExecuteAsyncResult:
-        """Execute command in async mode and return remote interface with IO objects.
-
-        :param command: Command for execution
-        :type command: str
-        :param stdin: pass STDIN text to the process
-        :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
-        :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
-        :type open_stderr: bool
-        :param chroot_path: chroot path override
-        :type chroot_path: str | None
-        :param kwargs: additional parameters for call.
-        :type kwargs: typing.Any
-        :return: NamedTuple with control interface and file-like objects for STDIN/STDERR/STDOUT
-        :rtype: typing.NamedTuple(
-                    'ExecuteAsyncResult',
-                    [
-                        ('interface', typing.Any),
-                        ('stdin', typing.Any | None),
-                        ('stderr', typing.Any | None),
-                        ('stdout', typing.Any | None),
-                        ("started", datetime.datetime),
-                    ]
-                )
-
-        .. versionchanged:: 1.2.0 open_stdout and open_stderr flags
-        .. versionchanged:: 1.2.0 stdin data
-        .. versionchanged:: 2.1.0 Use typed NamedTuple as result
-        .. versionchanged:: 4.1.0 support chroot
-        .. versionchanged:: 6.0.0 command start log moved to execute, verbose and log_mask_re removed as unused
-        """
+        return _helpers.chroot_command(cmd, chroot_path=chroot_path or self._chroot_path)
 
     @abc.abstractmethod
     def _exec_command(

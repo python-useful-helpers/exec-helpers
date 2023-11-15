@@ -21,13 +21,11 @@ Linux signals, Linux & bash return codes.
 
 from __future__ import annotations
 
-# Standard Library
 import enum
 import sys
 import typing
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Iterable
     from collections.abc import Sequence
 

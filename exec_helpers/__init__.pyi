@@ -12,10 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# Standard Library
 import typing
 
-# Local Implementation
 from . import async_api
 from ._helpers import mask_command
 from ._ssh_helpers import HostsSSHConfigs
@@ -36,7 +34,6 @@ from .ssh_auth import SSHAuth
 from .subprocess import Subprocess  # nosec  # Expected
 
 try:  # noqa: SIM105
-    # Local Implementation
     from ._version import version as __version__  # noqa: F401
 except ImportError:
     pass

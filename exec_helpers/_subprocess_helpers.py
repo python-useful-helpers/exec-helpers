@@ -16,12 +16,10 @@
 
 from __future__ import annotations
 
-# Standard Library
 import contextlib
 import platform
 import typing
 
-# External Dependencies
 import psutil
 
 __all__ = ("kill_proc_tree", "subprocess_kw")

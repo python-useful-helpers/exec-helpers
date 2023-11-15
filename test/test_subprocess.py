@@ -14,20 +14,14 @@
 
 from __future__ import annotations
 
-# Standard Library
 import logging
 import random
-import subprocess
 from unittest import mock
 
-# External Dependencies
 import pytest
 
-# Package Implementation
 import exec_helpers
-from exec_helpers import _subprocess_helpers
 from exec_helpers import proc_enums
-from exec_helpers.subprocess import SubprocessExecuteAsyncResult
 
 pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
 
@@ -121,7 +115,14 @@ configs = {
         "open_stdout": True,
         "open_stderr": False,
     },
-    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
+    "no_stdout": {
+        "ec": 0,
+        "stdout": (),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": False,
+        "open_stderr": False,
+    },
 }
 
 
@@ -163,7 +164,11 @@ def exec_result(run_parameters):
 
 @pytest.fixture
 def execute(mocker, exec_result):
-    return mocker.patch("exec_helpers.subprocess.Subprocess.execute", name="execute", return_value=exec_result)
+    return mocker.patch(
+        "exec_helpers.subprocess.Subprocess.execute",
+        name="execute",
+        return_value=exec_result,
+    )
 
 
 @pytest.fixture
@@ -196,59 +201,6 @@ def popen(mocker, run_parameters):
         return run_shell
 
     return create_mock(**run_parameters)
-
-
-def test_001_execute_async(popen, subprocess_logger, run_parameters) -> None:
-    """Test low level API."""
-    runner = exec_helpers.Subprocess()
-    res = runner._execute_async(
-        command,
-        stdin=run_parameters["stdin"],
-        open_stdout=run_parameters["open_stdout"],
-        open_stderr=run_parameters["open_stderr"],
-    )
-    assert isinstance(res, SubprocessExecuteAsyncResult)
-    assert res.interface.wait() == run_parameters["ec"]
-    assert res.interface.returncode == run_parameters["ec"]
-
-    stdout = run_parameters["stdout"]
-    stderr = run_parameters["stderr"]
-
-    if stdout is not None:
-        assert read_stream(res.stdout) == stdout
-    else:
-        assert res.stdout is stdout
-    if stderr is not None:
-        assert read_stream(res.stderr) == stderr
-    else:
-        assert res.stderr is stderr
-
-    if run_parameters["stdin"] is None:
-        stdin = None
-    elif isinstance(run_parameters["stdin"], bytes):
-        stdin = run_parameters["stdin"]
-    elif isinstance(run_parameters["stdin"], str):
-        stdin = run_parameters["stdin"].encode(encoding="utf-8")
-    else:
-        stdin = bytes(run_parameters["stdin"])
-    if stdin:
-        assert res.stdin is None
-
-    popen.assert_called_once_with(
-        args=[command],
-        stdout=subprocess.PIPE if run_parameters["open_stdout"] else subprocess.DEVNULL,
-        stderr=subprocess.PIPE if run_parameters["open_stderr"] else subprocess.DEVNULL,
-        stdin=subprocess.PIPE,
-        shell=True,
-        cwd=run_parameters.get("cwd", None),
-        env=run_parameters.get("env", None),
-        universal_newlines=False,
-        **_subprocess_helpers.subprocess_kw,
-    )
-
-    if stdin is not None:
-        res.interface.stdin.write.assert_called_once_with(stdin)
-        res.interface.stdin.close.assert_called_once()
 
 
 def test_002_execute(popen, subprocess_logger, exec_result, run_parameters) -> None:
@@ -347,7 +299,12 @@ def test_008_check_stderr_no_raise(execute, exec_result, subprocess_logger) -> N
     """Test STDERR content validator in permissive mode."""
     runner = exec_helpers.Subprocess()
     assert (
-        runner.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
+        runner.check_stderr(
+            command,
+            stdin=exec_result.stdin,
+            expected=[exec_result.exit_code],
+            raise_on_err=False,
+        )
         == exec_result
     )
 

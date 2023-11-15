@@ -2,19 +2,15 @@
 
 from __future__ import annotations
 
-# Standard Library
 import functools
 import pathlib
 import typing
 
-# External Dependencies
 import paramiko
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Collection
 
-    # External Dependencies
     # noinspection PyPackageRequirements
     import logwrap
 

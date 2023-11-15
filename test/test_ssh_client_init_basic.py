@@ -14,14 +14,11 @@
 
 from __future__ import annotations
 
-# Standard Library
 from unittest import mock
 
-# External Dependencies
 import paramiko
 import pytest
 
-# Package Implementation
 import exec_helpers
 
 
@@ -75,7 +72,14 @@ def pytest_generate_tests(metafunc):
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
-            ["host_only", "alternate_port", "username", "username_password", "auth", "auth_break"],
+            [
+                "host_only",
+                "alternate_port",
+                "username",
+                "username_password",
+                "auth",
+                "auth_break",
+            ],
             indirect=True,
         )
 
@@ -106,7 +110,14 @@ def test_init_base(paramiko_ssh_client, auto_add_policy, run_parameters, ssh_aut
     if auth is None:
         expected_calls = [
             _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-            _ssh.connect(hostname=host, password=password, pkey=None, port=port, username=username, key_filename=()),
+            _ssh.connect(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                key_filename=(),
+            ),
             _ssh.get_transport(),
             _ssh.get_transport().set_keepalive(1),
         ]

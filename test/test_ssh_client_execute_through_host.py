@@ -14,15 +14,12 @@
 
 from __future__ import annotations
 
-# Standard Library
 import base64
 from unittest import mock
 
-# External Dependencies
 import paramiko
 import pytest
 
-# Package Implementation
 import exec_helpers
 
 pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
@@ -125,13 +122,24 @@ def ssh_transport_channel(chan_makefile, ssh_transport):
 
 @pytest.fixture
 def ssh(
-    paramiko_ssh_client, ssh_intermediate_channel, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger
+    paramiko_ssh_client,
+    ssh_intermediate_channel,
+    ssh_transport_channel,
+    auto_add_policy,
+    ssh_auth_logger,
+    get_logger,
 ):
-    return exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
+    return exec_helpers.SSHClient(
+        host=host,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
+    )
 
 
 def test_01_execute_through_host_no_creds(
-    ssh: exec_helpers.SSHClient, paramiko_ssh_client: mock.MagicMock, ssh_intermediate_channel: mock.MagicMock
+    ssh: exec_helpers.SSHClient,
+    paramiko_ssh_client: mock.MagicMock,
+    ssh_intermediate_channel: mock.MagicMock,
 ) -> None:
     target = "127.0.0.2"
     ssh.execute_through_host(target, command)
@@ -141,7 +149,14 @@ def test_01_execute_through_host_no_creds(
     ]
     connect.assert_has_calls(
         [
-            mock.call(hostname=host, password=password, pkey=None, port=port, username=username, key_filename=()),
+            mock.call(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                key_filename=(),
+            ),
             mock.call(
                 hostname=target,
                 port=port,
@@ -156,19 +171,32 @@ def test_01_execute_through_host_no_creds(
 
 
 def test_02_execute_through_host_with_creds(
-    ssh: exec_helpers.SSHClient, paramiko_ssh_client: mock.MagicMock, ssh_intermediate_channel: mock.MagicMock
+    ssh: exec_helpers.SSHClient,
+    paramiko_ssh_client: mock.MagicMock,
+    ssh_intermediate_channel: mock.MagicMock,
 ) -> None:
     target = "127.0.0.2"
     username_2 = "user2"
     password_2 = "pass2"
-    ssh.execute_through_host(target, command, auth=exec_helpers.SSHAuth(username=username_2, password=password_2))
+    ssh.execute_through_host(
+        target,
+        command,
+        auth=exec_helpers.SSHAuth(username=username_2, password=password_2),
+    )
     connect: mock.MagicMock = paramiko_ssh_client().connect
     assert ssh_intermediate_channel.mock_calls == [
         mock.call(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
     ]
     connect.assert_has_calls(
         [
-            mock.call(hostname=host, password=password, pkey=None, port=port, username=username, key_filename=()),
+            mock.call(
+                hostname=host,
+                password=password,
+                pkey=None,
+                port=port,
+                username=username,
+                key_filename=(),
+            ),
             mock.call(
                 hostname=target,
                 port=port,

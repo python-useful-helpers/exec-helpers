@@ -14,15 +14,12 @@
 
 from __future__ import annotations
 
-# Standard Library
 import datetime
 import logging
 from unittest import mock
 
-# External Dependencies
 import pytest
 
-# Package Implementation
 import exec_helpers
 from exec_helpers import proc_enums
 from exec_helpers._ssh_base import SshExecuteAsyncResult
@@ -144,7 +141,14 @@ configs = {
         "open_stdout": True,
         "open_stderr": False,
     },
-    "no_stdout": {"ec": 0, "stdout": (), "stderr": (), "stdin": None, "open_stdout": False, "open_stderr": False},
+    "no_stdout": {
+        "ec": 0,
+        "stdout": (),
+        "stderr": (),
+        "stdin": None,
+        "open_stdout": False,
+        "open_stderr": False,
+    },
 }
 
 
@@ -201,7 +205,10 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
     chan = mock.Mock(makefile=chan_makefile, closed=False)
     chan_makefile.channel = chan
     if run_parameters["open_stderr"]:
-        chan.attach_mock(mock.Mock(return_value=FakeFileStream(*run_parameters["stderr"])), "makefile_stderr")
+        chan.attach_mock(
+            mock.Mock(return_value=FakeFileStream(*run_parameters["stderr"])),
+            "makefile_stderr",
+        )
     chan.configure_mock(exit_status=run_parameters["ec"])
     chan.attach_mock(mock.Mock(return_value=run_parameters["ec"]), "recv_exit_status")
     chan.status_event.attach_mock(mock.Mock(return_value=True), "is_set")
@@ -216,14 +223,32 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
 
 
 @pytest.fixture
-def ssh(paramiko_ssh_client, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger):
-    return exec_helpers.SSHClient(host=host, port=port, auth=exec_helpers.SSHAuth(username=username, password=password))
+def ssh(
+    paramiko_ssh_client,
+    ssh_transport_channel,
+    auto_add_policy,
+    ssh_auth_logger,
+    get_logger,
+):
+    return exec_helpers.SSHClient(
+        host=host,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
+    )
 
 
 @pytest.fixture
-def ssh2(paramiko_ssh_client, ssh_transport_channel, auto_add_policy, ssh_auth_logger, get_logger):
+def ssh2(
+    paramiko_ssh_client,
+    ssh_transport_channel,
+    auto_add_policy,
+    ssh_auth_logger,
+    get_logger,
+):
     return exec_helpers.SSHClient(
-        host=host2, port=port, auth=exec_helpers.SSHAuth(username=username, password=password)
+        host=host2,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
     )
 
 
@@ -255,7 +280,11 @@ def execute_async(mocker, run_parameters):
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
         return SshExecuteAsyncResult(
-            interface=chan, stdin=mock.Mock, stdout=stdout_part, stderr=stderr_part, started=datetime.datetime.utcnow()
+            interface=chan,
+            stdin=mock.Mock,
+            stdout=stdout_part,
+            stderr=stderr_part,
+            started=datetime.datetime.now(tz=datetime.timezone.utc),
         )
 
     return mocker.patch(
@@ -270,75 +299,6 @@ def execute_async(mocker, run_parameters):
 @pytest.fixture
 def execute(mocker, exec_result):
     return mocker.patch("exec_helpers.ssh.SSHClient.execute", name="execute", return_value=exec_result)
-
-
-def test_001_execute_async(ssh, paramiko_ssh_client, ssh_transport_channel, chan_makefile, run_parameters):
-    open_stdout = run_parameters["open_stdout"]
-    open_stderr = run_parameters["open_stderr"]
-    get_pty = run_parameters.get("get_pty", False)
-
-    kwargs = {}
-    if "get_pty" in run_parameters:
-        kwargs["get_pty"] = get_pty
-    if "width" in run_parameters:
-        kwargs["width"] = run_parameters["width"]
-    if "height" in run_parameters:
-        kwargs["height"] = run_parameters["height"]
-
-    res = ssh._execute_async(
-        command, stdin=run_parameters["stdin"], open_stdout=open_stdout, open_stderr=open_stderr, **kwargs
-    )
-    assert isinstance(res, SshExecuteAsyncResult)
-    assert res.interface is ssh_transport_channel
-    assert res.stdin is chan_makefile.stdin
-    if open_stdout:
-        assert res.stdout is chan_makefile.stdout
-    else:
-        assert res.stdout is None
-
-    transport_calls = []
-    if get_pty:
-        transport_calls.append(
-            mock.call.get_pty(
-                term="vt100",
-                width=run_parameters.get("width", 80),
-                height=run_parameters.get("height", 24),
-                width_pixels=0,
-                height_pixels=0,
-            )
-        )
-    if open_stderr:
-        transport_calls.append(mock.call.makefile_stderr("rb"))
-    transport_calls.append(mock.call.exec_command(f"{command}\n"))
-
-    ssh_transport_channel.assert_has_calls(transport_calls)
-
-    stdout = run_parameters["stdout"]
-    stderr = run_parameters["stderr"]
-
-    if open_stdout:
-        assert read_stream(res.stdout) == stdout
-    else:
-        assert res.stdout is None
-    if open_stderr:
-        assert read_stream(res.stderr) == stderr
-    else:
-        assert res.stderr is None
-
-    if run_parameters["stdin"] is None:
-        stdin = None
-    elif isinstance(run_parameters["stdin"], bytes):
-        stdin = run_parameters["stdin"].decode("utf-8")
-    elif isinstance(run_parameters["stdin"], str):
-        stdin = run_parameters["stdin"]
-    else:
-        stdin = bytes(run_parameters["stdin"]).decode("utf-8")
-
-    assert res.stdin.channel == res.interface
-
-    if stdin:
-        res.stdin.write.assert_called_with(stdin.encode("utf-8"))
-        res.stdin.flush.assert_called_once()
 
 
 def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters, get_logger) -> None:
@@ -462,7 +422,12 @@ def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
 def test_008_check_stderr_no_raise(ssh, exec_result, mocker) -> None:
     mocker.patch("exec_helpers.ssh.SSHClient.check_call", return_value=exec_result)
     assert (
-        ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code], raise_on_err=False)
+        ssh.check_stderr(
+            command,
+            stdin=exec_result.stdin,
+            expected=[exec_result.exit_code],
+            raise_on_err=False,
+        )
         == exec_result
     )
 

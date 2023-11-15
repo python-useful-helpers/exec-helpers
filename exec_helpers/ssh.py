@@ -18,17 +18,14 @@
 
 from __future__ import annotations
 
-# Standard Library
 import os
 import pathlib
 import posixpath
 import typing
 
-# Local Implementation
 from . import _ssh_base
 
 if typing.TYPE_CHECKING:
-    # Local Implementation
     from ._ssh_base import SupportPathT
 
 __all__ = ("SSHClient",)

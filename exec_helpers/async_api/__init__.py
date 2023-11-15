@@ -30,13 +30,11 @@ __all__ = (
     "Subprocess",
 )
 
-# Standard Library
 import importlib
 import typing
 import warnings
 
 if typing.TYPE_CHECKING:
-    # Standard Library
     from collections.abc import Sequence
 
 __locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading

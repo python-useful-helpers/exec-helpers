@@ -14,14 +14,11 @@
 
 from __future__ import annotations
 
-# Standard Library
 from unittest import mock
 
-# External Dependencies
 import paramiko
 import pytest
 
-# Package Implementation
 import exec_helpers
 
 
@@ -104,7 +101,13 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     # Helper code
     _ssh = mock.call
 
-    connect = mock.Mock(side_effect=[paramiko.AuthenticationException, paramiko.AuthenticationException, mock.Mock()])
+    connect = mock.Mock(
+        side_effect=[
+            paramiko.AuthenticationException,
+            paramiko.AuthenticationException,
+            mock.Mock(),
+        ]
+    )
     _ssh_inst = mock.Mock()
     _ssh_inst.attach_mock(connect, "connect")
     paramiko_ssh_client.return_value = _ssh_inst
@@ -173,7 +176,8 @@ def test_004_unexpected_password_required(paramiko_ssh_client, auto_add_policy, 
     # Test
     with pytest.raises(paramiko.PasswordRequiredException):
         exec_helpers.SSHClient(
-            host=host, auth=exec_helpers.SSHAuth(username=username, password=password, keys=private_keys)
+            host=host,
+            auth=exec_helpers.SSHAuth(username=username, password=password, keys=private_keys),
         )
     ssh_auth_logger.assert_has_calls(
         (mock.call.critical("Unexpected PasswordRequiredException, when password is set!"),)
@@ -219,7 +223,8 @@ def test_007_auth_impossible_key_keys(paramiko_ssh_client, auto_add_policy, ssh_
     # Test
     with pytest.raises(paramiko.AuthenticationException):
         exec_helpers.SSHClient(
-            host=host, auth=exec_helpers.SSHAuth(key=gen_private_keys(1).pop(), keys=gen_private_keys(2))
+            host=host,
+            auth=exec_helpers.SSHAuth(key=gen_private_keys(1).pop(), keys=gen_private_keys(2)),
         )
     ssh_auth_logger.assert_has_calls((mock.call.exception("Connection using stored authentication info failed!"),))
 
@@ -234,7 +239,11 @@ def test_008_auth_impossible_key_no_verbose(paramiko_ssh_client, auto_add_policy
 
     # Test
     with pytest.raises(paramiko.AuthenticationException):
-        exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(key=gen_private_keys(1).pop()), verbose=False)
+        exec_helpers.SSHClient(
+            host=host,
+            auth=exec_helpers.SSHAuth(key=gen_private_keys(1).pop()),
+            verbose=False,
+        )
     ssh_auth_logger.assert_not_called()
 
 
@@ -248,7 +257,10 @@ def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_log
     key = gen_private_keys(1).pop()
 
     # Test
-    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, password=password, key=key))
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(username=username, password=password, key=key),
+    )
 
     ssh_auth_logger.assert_has_calls(
         (mock.call.debug(f"Main key has been updated, public key is: \n{ssh.auth.public_key}"),)
@@ -313,7 +325,10 @@ def test_011_clear_failed(paramiko_ssh_client, auto_add_policy, ssh_auth_logger,
 
     ssh.close()
     log.assert_has_calls(
-        (mock.call.exception("Could not close ssh connection"), mock.call.exception("Could not close sftp connection"))
+        (
+            mock.call.exception("Could not close ssh connection"),
+            mock.call.exception("Could not close sftp connection"),
+        )
     )
 
 
@@ -333,7 +348,14 @@ def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
         _ssh.close(),
         _ssh,
         _ssh.set_missing_host_key_policy("AutoAddPolicy"),
-        _ssh.connect(hostname="127.0.0.1", password=None, pkey=None, port=22, username=None, key_filename=()),
+        _ssh.connect(
+            hostname="127.0.0.1",
+            password=None,
+            pkey=None,
+            port=22,
+            username=None,
+            key_filename=(),
+        ),
         _ssh.get_transport(),
         _ssh.get_transport().set_keepalive(1),
     ]

@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-# Standard Library
 import asyncio
 import errno
 import logging
@@ -22,10 +21,8 @@ import random
 import typing
 from unittest import mock
 
-# External Dependencies
 import pytest
 
-# Package Implementation
 import exec_helpers
 
 pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
@@ -117,7 +114,10 @@ configs = {
         "mock_parameters": MockParameters(),
         "masked_cmd": "echo 'hello world'",
     },
-    "no_stdout": {"command_parameters": CommandParameters(), "mock_parameters": MockParameters()},
+    "no_stdout": {
+        "command_parameters": CommandParameters(),
+        "mock_parameters": MockParameters(),
+    },
     "IOError_on_stdout_read": {
         "stdout": (b" \n", b"2\n", OSError()),
         "command_parameters": CommandParameters(),
@@ -179,7 +179,8 @@ configs = {
     },
     "mask_local": {
         "command_parameters": CommandParameters(
-            command="USE='secret=secret_pass' do task", log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)"
+            command="USE='secret=secret_pass' do task",
+            log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
         ),
         "mock_parameters": MockParameters(),
         "masked_cmd": "USE='secret=<*masked*>' do task",
@@ -227,7 +228,7 @@ def exec_result(run_parameters):
     if stdout is None:
         stdout_res = None
     else:
-        stdout_res = tuple([elem for elem in run_parameters["stdout"] if isinstance(elem, bytes)])
+        stdout_res = tuple(elem for elem in run_parameters["stdout"] if isinstance(elem, bytes))
 
     return exec_helpers.ExecResult(
         cmd=run_parameters.get("masked_cmd", command),
@@ -252,7 +253,11 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
         """Parametrized code."""
         proc = mock.AsyncMock()
 
-        run_shell = mock.AsyncMock(asyncio.create_subprocess_shell, name="create_subprocess_shell", return_value=proc)
+        run_shell = mock.AsyncMock(
+            asyncio.create_subprocess_shell,
+            name="create_subprocess_shell",
+            return_value=proc,
+        )
 
         proc.configure_mock(pid=random.randint(1025, 65536))
 
