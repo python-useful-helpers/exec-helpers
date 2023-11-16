@@ -52,6 +52,7 @@ except ImportError:
 if typing.TYPE_CHECKING:
     import xml.etree.ElementTree  # nosec  # for typing only
     from collections.abc import Callable
+    from collections.abc import Collection
     from collections.abc import Iterable
     from collections.abc import Sequence
 
@@ -563,6 +564,65 @@ class ExecResult:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
                 self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+
+    @property
+    def ok(self) -> bool:
+        """Exit code is EX_OK.
+
+        :return: Exit code is EX_OK
+        :rtype: bool
+        """
+        return self.exit_code == 0  # pylint: disable=use-implicit-booleaness-not-comparison-to-zero
+
+    def check_exit_code(
+        self,
+        expected_codes: Iterable[ExitCodeT] = (0,),
+        raise_on_err: bool = True,
+        *,
+        error_info: str | None = None,
+        exception_class: type[exceptions.CalledProcessError] = exceptions.CalledProcessError,
+        logger: logging.Logger = LOGGER,
+    ) -> None:
+        """Check exit code and log/raise for unexpected code.
+
+        :param error_info: optional additional error information
+        :type error_info: str | None
+        :param raise_on_err: raise `exception_class` in case of error
+        :type raise_on_err: bool
+        :param expected_codes: iterable expected exit codes
+        :type expected_codes: Iterable[int | ExitCodes]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: type[exceptions.CalledProcessError]
+        :param logger: logger instance for error log
+        :type logger: logging.Logger
+        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+        """
+        append: str = error_info + "\n" if error_info else ""
+        expected = tuple(frozenset(expected_codes))
+        if self.exit_code not in expected:
+            message = f"{append}Command {self.cmd!r} returned exit code {self.exit_code!s} while expected {expected!s}"
+            logger.error(msg=message)
+            if raise_on_err:
+                self.raise_for_status(expected_codes=expected, exception_class=exception_class)
+
+    def raise_for_status(
+        self,
+        expected_codes: Collection[ExitCodeT] = (0,),
+        *,
+        exception_class: type[exceptions.CalledProcessError] = exceptions.CalledProcessError,
+    ) -> None:
+        """Requests-like exit code checker.
+
+        :param expected_codes: iterable expected exit codes
+        :type expected_codes: Iterable[int | ExitCodes]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: type[exceptions.CalledProcessError]
+        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+        """
+        if self.exit_code in expected_codes:
+            return
+
+        raise exception_class(self, expected_codes)
 
     @property
     def started(self) -> datetime.datetime | None:

@@ -527,7 +527,7 @@ class ExecHelper(
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    def __call__(  # pylint: disable=arguments-differ
+    def __call__(
         self,
         command: CommandT,
         verbose: bool = False,
@@ -658,48 +658,13 @@ class ExecHelper(
             log_stderr=log_stderr,
             **kwargs,
         )
-        return self._handle_exit_code(
-            result=result,
+        result.check_exit_code(
+            expected_codes,
+            raise_on_err,
             error_info=error_info,
-            expected_codes=expected_codes,
-            raise_on_err=raise_on_err,
             exception_class=exception_class,
+            logger=self.logger,
         )
-
-    def _handle_exit_code(
-        self,
-        *,
-        result: exec_result.ExecResult,
-        error_info: ErrorInfoT,
-        expected_codes: ExpectedExitCodesT,
-        raise_on_err: bool,
-        exception_class: CalledProcessErrorSubClassT,
-    ) -> exec_result.ExecResult:
-        """Internal check_call logic (synchronous).
-
-        :param result: execution result for validation
-        :type result: exec_result.ExecResult
-        :param error_info: optional additional error information
-        :type error_info: str | None
-        :param raise_on_err: raise `exception_class` in case of error
-        :type raise_on_err: bool
-        :param expected_codes: iterable expected exit codes
-        :type expected_codes: Iterable[int | ExitCodes]
-        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
-        :type exception_class: type[exceptions.CalledProcessError]
-        :return: execution result
-        :rtype: exec_result.ExecResult
-        :raises exceptions.CalledProcessError: stderr presents and raise_on_err enabled
-        """
-        append: str = error_info + "\n" if error_info else ""
-        if result.exit_code not in expected_codes:
-            message = (
-                f"{append}Command {result.cmd!r} returned exit code {result.exit_code!s} "
-                f"while expected {expected_codes!s}"
-            )
-            self.logger.error(msg=message)
-            if raise_on_err:
-                raise exception_class(result=result, expected=expected_codes)
         return result
 
     def check_stderr(

@@ -31,8 +31,6 @@ limit-inference-results=100
 load-plugins=pylint.extensions.docparams,
              pylint.extensions.docstyle,
              pylint.extensions.overlapping_exceptions,
-             pylint.extensions.emptystring,
-             pylint.extensions.comparetozero,
              pylint.extensions.check_elif,
              pylint.extensions.for_any_all,
              pylint.extensions.code_style,
@@ -90,6 +88,8 @@ disable=locally-disabled,
         broad-except,
         logging-fstring-interpolation,
         logging-format-interpolation,
+        consider-alternative-union-syntax,
+        deprecated-typing-alias,
         invalid-name
 
 # Enable the message, report, category or checker with the given id(s). You can

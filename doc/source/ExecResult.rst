@@ -126,6 +126,38 @@ API: ExecResult
 
         :rtype: int | ExitCodes
 
+    .. py:attribute:: ok
+
+        ``bool``
+
+        Exit code is EX_OK
+
+    .. py:method:: check_exit_code(expected_codes=(0,), raise_on_err=True, error_info=None, exception_class=CalledProcessError, logger=LOGGER)
+
+        Check exit code and log/raise for unexpected code.
+
+        :param error_info: optional additional error information
+        :type error_info: str | None
+        :param raise_on_err: raise `exception_class` in case of error
+        :type raise_on_err: bool
+        :param expected_codes: iterable expected exit codes
+        :type expected_codes: Iterable[int | ExitCodes]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: type[exceptions.CalledProcessError]
+        :param logger: logger instance for error log
+        :type logger: logging.Logger
+        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+
+    .. py:method:: raise_for_status(expected_codes=(0,), exception_class=CalledProcessError)
+
+        Requests-like exit code checker.
+
+        :param expected_codes: iterable expected exit codes
+        :type expected_codes: Iterable[int | ExitCodes]
+        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :type exception_class: type[exceptions.CalledProcessError]
+        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+
     .. py:attribute:: started
 
         ``datetime.datetime``
