@@ -38,7 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade -r CI_REQUIREMENTS.txt
-          pip install --upgrade "pylint >= 3.0.0" perflint
+          pip install --upgrade "pylint >= 3.0.0"
       - name: Install develop
         run: |
           pip install -e .
