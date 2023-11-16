@@ -33,12 +33,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade -r CI_REQUIREMENTS.txt
-          pip install --upgrade "pylint >= 2.6.0" perflint
+          pip install --upgrade "pylint >= 3.0.0" perflint
       - name: Install develop
         run: |
           pip install -e .
