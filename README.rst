@@ -110,7 +110,7 @@ Creation from scratch:
         password='password',  # str | None
         key=None,  # type: paramiko.PKey | None
         keys=None,  # type: Iterable[paramiko.PKey] | None
-        key_filename=None,  # type: List[str] | None
+        key_filename=None,  # type: list[str] | None
         passphrase=None,  # str | None
     )
 
@@ -240,9 +240,10 @@ Execution result object has a set of useful properties:
 
 * `cmd` - Command
 * `exit_code` - Command return code. If possible to decode using enumerators for Linux -> it used.
+* `ok` -> `bool`. Command return code is 0 (EX_OK).
 * `stdin` -> `str`. Text representation of stdin.
-* `stdout` -> `Tuple[bytes]`. Raw stdout output.
-* `stderr` -> `Tuple[bytes]`. Raw stderr output.
+* `stdout` -> `tuple[bytes]`. Raw stdout output.
+* `stderr` -> `tuple[bytes]`. Raw stderr output.
 * `stdout_bin` -> `bytearray`. Binary stdout output.
 * `stderr_bin` -> `bytearray`. Binary stderr output.
 * `stdout_str` -> `str`. Text representation of output.
@@ -273,7 +274,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
 
 .. code-block:: python
 
-    results: Dict[Tuple[str, int], ExecResult] = SSHClient.execute_together(
+    results: dict[tuple[str, int], ExecResult] = SSHClient.execute_together(
         remotes,  # type: Iterable[SSHClient]
         command,  # type: str | Iterable[str]
         timeout=1 * 60 * 60,  # type: type: int | float | None
@@ -286,7 +287,7 @@ Possible to call commands in parallel on multiple hosts if it's not produce huge
         log_mask_re=None,  # str | None
         exception_class=ParallelCallProcessError  # type[ParallelCallProcessError]
     )
-    results  # type: dict[Tuple[str, int], exec_result.ExecResult]
+    results  # type: dict[tuple[str, int], exec_result.ExecResult]
 
 Results is a dict with keys = (hostname, port) and and results in values.
 By default execute_together raises exception if unexpected return code on any remote.
