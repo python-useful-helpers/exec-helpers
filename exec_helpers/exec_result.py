@@ -582,6 +582,7 @@ class ExecResult:
         error_info: str | None = None,
         exception_class: type[exceptions.CalledProcessError] = exceptions.CalledProcessError,
         logger: logging.Logger = LOGGER,
+        verbose: bool = False,
     ) -> None:
         """Check exit code and log/raise for unexpected code.
 
@@ -595,12 +596,18 @@ class ExecResult:
         :type exception_class: type[exceptions.CalledProcessError]
         :param logger: logger instance for error log
         :type logger: logging.Logger
+        :param verbose: produce verbose log in case of failure
+        :type verbose: bool
         :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
         """
         append: str = error_info + "\n" if error_info else ""
         expected = tuple(frozenset(expected_codes))
         if self.exit_code not in expected:
             message = f"{append}Command {self.cmd!r} returned exit code {self.exit_code!s} while expected {expected!s}"
+            if verbose:
+                message += f"\nSTDOUT:\n{self.stdout_str}\n\nSTDERR:\n{self.stderr_str}"
+            else:
+                message += f"\nBrief STDOUT:\n{self.stdout_brief}\n\nBrief STDERR:\n{self.stderr_brief}"
             logger.error(msg=message)
             if raise_on_err:
                 self.raise_for_status(expected_codes=expected, exception_class=exception_class)

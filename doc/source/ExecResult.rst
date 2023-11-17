@@ -132,7 +132,7 @@ API: ExecResult
 
         Exit code is EX_OK
 
-    .. py:method:: check_exit_code(expected_codes=(0,), raise_on_err=True, error_info=None, exception_class=CalledProcessError, logger=LOGGER)
+    .. py:method:: check_exit_code(expected_codes=(0,), raise_on_err=True, error_info=None, exception_class=CalledProcessError, logger=LOGGER, verbose=False)
 
         Check exit code and log/raise for unexpected code.
 
@@ -146,6 +146,8 @@ API: ExecResult
         :type exception_class: type[exceptions.CalledProcessError]
         :param logger: logger instance for error log
         :type logger: logging.Logger
+        :param verbose: produce verbose log in case of failure
+        :type verbose: bool
         :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
 
     .. py:method:: raise_for_status(expected_codes=(0,), exception_class=CalledProcessError)
