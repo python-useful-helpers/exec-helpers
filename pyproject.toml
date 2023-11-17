@@ -200,3 +200,65 @@ known-third-party = ["logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml",
 
 [tool.ruff.pydocstyle]
 convention = "pep257"
+
+[tool.refurb]
+python_version = "3.8"
+enable_all = true
+ignore = ["FURB120"]
+
+[tool.pylint]
+extension-pkg-whitelist = ["lxml.etree"]
+ignore = ["CVS", "_version.py"]
+jobs = 0
+py-version = "3.8"
+
+load-plugins = [
+  "pylint.extensions.docparams",
+  "pylint.extensions.docstyle",
+  "pylint.extensions.overlapping_exceptions",
+  "pylint.extensions.check_elif",
+  "pylint.extensions.for_any_all",
+  "pylint.extensions.code_style",
+  "pylint.extensions.redefined_variable_type",
+  "pylint.extensions.typing",
+  "pylint.extensions.empty_comment",
+  "pylint.extensions.dunder",
+]
+
+enable = "all"
+disable = [
+  "locally-disabled",
+  "file-ignored",
+  "suppressed-message",
+  "similarities",
+  "too-many-ancestors",
+  "too-few-public-methods",
+  "too-many-public-methods",
+  "too-many-return-statements",
+  "too-many-branches",
+  "too-many-arguments",
+  "too-many-locals",
+  "too-many-statements",
+  "too-many-instance-attributes",
+  "too-many-lines",
+  "broad-except",
+  "logging-fstring-interpolation",
+  "logging-format-interpolation",
+  "consider-alternative-union-syntax",
+  "deprecated-typing-alias",
+  "invalid-name"
+]
+max-line-length = 120
+reports = false
+
+[tool.pylint.dunder]
+good-dunder-names = ["__pretty_repr__", "__pretty_str__"]
+
+[tool.pylint.parameter_documentation]
+accept-no-param-doc = true
+accept-no-raise-doc = false
+accept-no-return-doc = false
+accept-no-yields-doc = false
+
+# Possible choices: ['sphinx', 'epytext', 'google', 'numpy', 'default']
+default-docstring-type = "default"

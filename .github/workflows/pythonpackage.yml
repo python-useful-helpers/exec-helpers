@@ -82,8 +82,23 @@ jobs:
         run: |
           black --check exec_helpers
 
+  Refurb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade refurb
+      - name: Lint with refurb
+        run: |
+          refurb exec_helpers
   Test:
-    needs: [PEP8, PyLint, MyPy, Black]  # isort is broken
+    needs: [PEP8, PyLint, MyPy, Black, Refurb]  # isort is broken
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 6

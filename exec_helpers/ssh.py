@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-import posixpath
 import typing
 
 from . import _ssh_base
@@ -78,10 +77,11 @@ class SSHClient(_ssh_base.SSHClientBase):
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
         source_orig = pathlib.Path(source).expanduser()
-        if self.isdir(target):
-            target = posixpath.join(target, source_orig.name)
-
         tgt = pathlib.PurePath(target)  # Remote -> No FS access, system agnostic
+
+        if self.isdir(target):
+            tgt = tgt.joinpath(source_orig.name)
+
         src = source_orig.resolve()
         if not src.is_dir():
             self._sftp.put(src.as_posix(), tgt.as_posix(), confirm=True)
