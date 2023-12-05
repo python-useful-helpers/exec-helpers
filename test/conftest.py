@@ -38,9 +38,9 @@ def paramiko_ssh_client(mocker, no_real_ssh_config) -> mock.MagicMock:
 
 
 @pytest.fixture
-def auto_add_policy(mocker) -> mock.MagicMock:
-    """Minimal paramiko.AutoAddPolicy mock."""
-    return mocker.patch("paramiko.AutoAddPolicy", return_value="AutoAddPolicy")
+def paramiko_keys_policy(mocker) -> mock.MagicMock:
+    """Minimal paramiko.WarningPolicy mock."""
+    return mocker.patch("paramiko.WarningPolicy", return_value="WarningPolicy")
 
 
 @pytest.fixture

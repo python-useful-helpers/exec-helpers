@@ -1,4 +1,14 @@
 flake8
+flake8-async
+flake8-datetimez
+flake8-type-checking
+flake8-builtins
 flake8-bugbear
+flake8-debugger
+flake8-executable
+flake8-implicit-str-concat
+flake8-simplify
+flake8-comprehensions
+flake8-import-conventions
 pep8-naming
 flake8-docstrings

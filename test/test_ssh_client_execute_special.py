@@ -96,7 +96,10 @@ def chan_makefile():
 def ssh_transport_channel(paramiko_ssh_client, chan_makefile):
     chan = mock.Mock(makefile=chan_makefile, closed=False)
     chan_makefile.channel = chan
-    chan.attach_mock(mock.Mock(return_value=FakeFileStream(*stderr_src)), "makefile_stderr")
+    chan.attach_mock(
+        mock.Mock(return_value=FakeFileStream(*stderr_src)),
+        "makefile_stderr",
+    )
     chan.configure_mock(exit_status=0)
     chan.status_event.attach_mock(mock.Mock(return_value=True), "is_set")
     open_session = mock.Mock(return_value=chan)
@@ -113,7 +116,7 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile):
 def ssh(
     paramiko_ssh_client,
     ssh_transport_channel,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -128,7 +131,7 @@ def ssh(
 def ssh2(
     paramiko_ssh_client,
     ssh_transport_channel,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -141,7 +144,13 @@ def ssh2(
 
 @pytest.fixture
 def exec_result():
-    return exec_helpers.ExecResult(cmd=command, stdin=None, stdout=stdout_src, stderr=stderr_src, exit_code=0)
+    return exec_helpers.ExecResult(
+        cmd=command,
+        stdin=None,
+        stdout=stdout_src,
+        stderr=stderr_src,
+        exit_code=0,
+    )
 
 
 def test_001_mask_command(ssh, get_logger) -> None:

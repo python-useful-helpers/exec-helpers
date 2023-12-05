@@ -226,7 +226,7 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
 def ssh(
     paramiko_ssh_client,
     ssh_transport_channel,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -241,7 +241,7 @@ def ssh(
 def ssh2(
     paramiko_ssh_client,
     ssh_transport_channel,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -298,10 +298,20 @@ def execute_async(mocker, run_parameters):
 
 @pytest.fixture
 def execute(mocker, exec_result):
-    return mocker.patch("exec_helpers.ssh.SSHClient.execute", name="execute", return_value=exec_result)
+    return mocker.patch(
+        "exec_helpers.ssh.SSHClient.execute",
+        name="execute",
+        return_value=exec_result,
+    )
 
 
-def test_002_execute(ssh, ssh_transport_channel, exec_result, run_parameters, get_logger) -> None:
+def test_002_execute(
+    ssh,
+    ssh_transport_channel,
+    exec_result,
+    run_parameters,
+    get_logger,
+) -> None:
     kwargs = {}
     if "get_pty" in run_parameters:
         kwargs["get_pty"] = run_parameters["get_pty"]
@@ -401,10 +411,21 @@ def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
     log = ssh_logger.getChild(f"{host}:{port}")
 
     if not exec_result.stderr:
-        assert ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
+        assert (
+            ssh.check_stderr(
+                command,
+                stdin=exec_result.stdin,
+                expected=[exec_result.exit_code],
+            )
+            == exec_result
+        )
     else:
         with pytest.raises(exec_helpers.CalledProcessError) as e:
-            ssh.check_stderr(command, stdin=exec_result.stdin, expected=[exec_result.exit_code])
+            ssh.check_stderr(
+                command,
+                stdin=exec_result.stdin,
+                expected=[exec_result.exit_code],
+            )
         exc: exec_helpers.CalledProcessError = e.value
         assert exc.result == exec_result
         assert exc.cmd == exec_result.cmd
@@ -473,7 +494,13 @@ def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_paramet
         assert exc.results == {(host, port): exec_result, (host2, port): exec_result}
 
 
-def test_010_execute_together_expected(ssh, ssh2, execute_async, exec_result, run_parameters):
+def test_010_execute_together_expected(
+    ssh,
+    ssh2,
+    execute_async,
+    exec_result,
+    run_parameters,
+):
     remotes = [ssh, ssh2]
 
     results = exec_helpers.SSHClient.execute_together(

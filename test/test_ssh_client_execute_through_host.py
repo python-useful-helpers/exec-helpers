@@ -110,7 +110,10 @@ def ssh_transport(mocker):
 def ssh_transport_channel(chan_makefile, ssh_transport):
     chan = mock.MagicMock(makefile=chan_makefile, closed=False)
     chan_makefile.channel = chan
-    chan.attach_mock(mock.MagicMock(return_value=FakeFileStream(*stderr_src)), "makefile_stderr")
+    chan.attach_mock(
+        mock.MagicMock(return_value=FakeFileStream(*stderr_src)),
+        "makefile_stderr",
+    )
 
     chan.configure_mock(exit_status=0)
 
@@ -125,7 +128,7 @@ def ssh(
     paramiko_ssh_client,
     ssh_intermediate_channel,
     ssh_transport_channel,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -216,7 +219,13 @@ def test_03_execute_get_pty(ssh, mocker) -> None:
     ssh.execute_through_host(target, command, get_pty=True)
     final_client = conn()
     session = final_client.get_transport().open_session()
-    session.get_pty.assert_called_with(term="vt100", width=80, height=24, width_pixels=0, height_pixels=0)
+    session.get_pty.assert_called_with(
+        term="vt100",
+        width=80,
+        height=24,
+        width_pixels=0,
+        height_pixels=0,
+    )
 
 
 def test_04_execute_use_stdin(ssh, mocker, chan_makefile) -> None:

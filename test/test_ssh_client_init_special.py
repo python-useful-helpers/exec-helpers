@@ -52,7 +52,7 @@ username = "user"
 password = "pass"
 
 
-def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Reject key and allow to connect without key."""
     # Helper code
     _ssh = mock.call
@@ -71,7 +71,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     )
 
     paramiko_ssh_client.assert_called_once()
-    auto_add_policy.assert_called_once()
+    paramiko_keys_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
@@ -90,7 +90,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     kwargs_full["pkey"] = pkey
 
     expected_calls = [
-        _ssh.set_missing_host_key_policy("AutoAddPolicy"),
+        _ssh.set_missing_host_key_policy("WarningPolicy"),
         _ssh.connect(**kwargs_full),
         _ssh.connect(**kwargs_no_key),
         _ssh.get_transport(),
@@ -100,7 +100,7 @@ def test_001_require_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     assert expected_calls == paramiko_ssh_client().mock_calls
 
 
-def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Reject 1 key and use next one."""
     # Helper code
     _ssh = mock.call
@@ -125,7 +125,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     )
 
     paramiko_ssh_client.assert_called_once()
-    auto_add_policy.assert_called_once()
+    paramiko_keys_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
@@ -144,7 +144,7 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     kwargs_key_1["pkey"] = private_keys[1]
 
     expected_calls = [
-        _ssh.set_missing_host_key_policy("AutoAddPolicy"),
+        _ssh.set_missing_host_key_policy("WarningPolicy"),
         _ssh.connect(**kwargs_key_0),
         _ssh.connect(**kwargs_key_1),
         _ssh.connect(**kwargs_no_key),
@@ -155,7 +155,11 @@ def test_002_use_next_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger)
     assert expected_calls == paramiko_ssh_client().mock_calls
 
 
-def test_003_password_required(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_003_password_required(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+):
     """No password provided."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.PasswordRequiredException)
@@ -176,7 +180,7 @@ def test_003_password_required(paramiko_ssh_client, auto_add_policy, ssh_auth_lo
 
 def test_004_unexpected_password_required(
     paramiko_ssh_client,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Password available, but requested anyway."""
@@ -205,7 +209,7 @@ def test_004_unexpected_password_required(
 
 def test_005_auth_impossible_password(
     paramiko_ssh_client,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject password."""
@@ -221,7 +225,11 @@ def test_005_auth_impossible_password(
     ssh_auth_logger.assert_has_calls((mock.call.exception("Connection using stored authentication info failed!"),))
 
 
-def test_006_auth_impossible_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_006_auth_impossible_key(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+):
     """Reject key."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
@@ -238,7 +246,11 @@ def test_006_auth_impossible_key(paramiko_ssh_client, auto_add_policy, ssh_auth_
     ssh_auth_logger.assert_has_calls((mock.call.exception("Connection using stored authentication info failed!"),))
 
 
-def test_007_auth_impossible_key_keys(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_007_auth_impossible_key_keys(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+):
     """Reject key."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
@@ -258,7 +270,11 @@ def test_007_auth_impossible_key_keys(paramiko_ssh_client, auto_add_policy, ssh_
     ssh_auth_logger.assert_has_calls((mock.call.exception("Connection using stored authentication info failed!"),))
 
 
-def test_008_auth_impossible_key_no_verbose(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_008_auth_impossible_key_no_verbose(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+):
     """Reject auth without log."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
@@ -276,7 +292,11 @@ def test_008_auth_impossible_key_no_verbose(paramiko_ssh_client, auto_add_policy
     ssh_auth_logger.assert_not_called()
 
 
-def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_009_auth_pass_no_key(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+):
     """Reject key and use password."""
     # Helper code
     connect = mock.Mock(side_effect=[paramiko.AuthenticationException, mock.Mock()])
@@ -298,12 +318,12 @@ def test_009_auth_pass_no_key(paramiko_ssh_client, auto_add_policy, ssh_auth_log
     assert ssh.auth.public_key is None
 
 
-def test_010_context(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_010_context(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Context manager."""
     # Test
     with exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth()) as ssh:
         paramiko_ssh_client.assert_called_once()
-        auto_add_policy.assert_called_once()
+        paramiko_keys_policy.assert_called_once()
 
         ssh_auth_logger.assert_not_called()
 
@@ -320,7 +340,7 @@ def test_010_context(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
 
 def test_011_clear_failed(
     paramiko_ssh_client,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -346,7 +366,7 @@ def test_011_clear_failed(
     ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth())
 
     paramiko_ssh_client.assert_called_once()
-    auto_add_policy.assert_called_once()
+    paramiko_keys_policy.assert_called_once()
 
     ssh_logger.assert_not_called()
     ssh_auth_logger.assert_not_called()
@@ -372,13 +392,13 @@ def test_011_clear_failed(
     )
 
 
-def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
+def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Re-connect."""
     # Test
     ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth())
 
     paramiko_ssh_client.reset_mock()
-    auto_add_policy.reset_mock()
+    paramiko_keys_policy.reset_mock()
 
     ssh.reconnect()
 
@@ -387,7 +407,7 @@ def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     expected_calls = [
         _ssh.close(),
         _ssh,
-        _ssh.set_missing_host_key_policy("AutoAddPolicy"),
+        _ssh.set_missing_host_key_policy("WarningPolicy"),
         _ssh.connect(
             hostname="127.0.0.1",
             password=None,
@@ -404,7 +424,12 @@ def test_012_re_connect(paramiko_ssh_client, auto_add_policy, ssh_auth_logger):
     assert paramiko_ssh_client.mock_calls == expected_calls
 
 
-def test_013_no_sftp(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, get_logger):
+def test_013_no_sftp(
+    paramiko_ssh_client,
+    paramiko_keys_policy,
+    ssh_auth_logger,
+    get_logger,
+):
     """No sftp available."""
     # Helper code
     open_sftp = mock.Mock(side_effect=paramiko.SSHException)
@@ -435,7 +460,7 @@ def test_013_no_sftp(paramiko_ssh_client, auto_add_policy, ssh_auth_logger, get_
 
 def test_014_sftp_repair(
     paramiko_ssh_client,
-    auto_add_policy,
+    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):

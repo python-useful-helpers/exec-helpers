@@ -186,9 +186,8 @@ extend-select = [
 ]
 extend-ignore = [
   # refactor rules (too many statements/arguments/branches)
-  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",
+  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "PLR2004",
   "PLR6301",  # "maybe staticmethod"
-  "PLW3201",  # Bad or misspelled dunder method name `__pretty_repr__`
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
   "TRY003",  # long messages prepare outside, ...
@@ -197,6 +196,9 @@ extend-ignore = [
 [tool.ruff.isort]
 force-single-line = true
 known-third-party = ["logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil"]
+
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = ["__pretty_repr__", "__pretty_str__", "__rich_repr__"]
 
 [tool.ruff.pydocstyle]
 convention = "pep257"

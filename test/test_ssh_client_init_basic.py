@@ -100,7 +100,7 @@ def run_parameters(request):
 
 def test_init_base(
     paramiko_ssh_client,
-    auto_add_policy,
+    paramiko_keys_policy,
     run_parameters,
     ssh_auth_logger,
 ):
@@ -118,11 +118,11 @@ def test_init_base(
     ssh = exec_helpers.SSHClient(**run_parameters)
 
     paramiko_ssh_client.assert_called_once()
-    auto_add_policy.assert_called_once()
+    paramiko_keys_policy.assert_called_once()
 
     if auth is None:
         expected_calls = [
-            _ssh.set_missing_host_key_policy("AutoAddPolicy"),
+            _ssh.set_missing_host_key_policy("WarningPolicy"),
             _ssh.connect(
                 hostname=host,
                 password=password,

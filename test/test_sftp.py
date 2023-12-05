@@ -35,7 +35,7 @@ password = "pass"
 
 
 @mock.patch("logging.getLogger", autospec=True)
-@mock.patch("paramiko.AutoAddPolicy", autospec=True, return_value="AutoAddPolicy")
+@mock.patch("paramiko.WarningPolicy", autospec=True, return_value="WarningPolicy")
 @mock.patch("paramiko.SSHClient", autospec=True)
 class TestSftp(unittest.TestCase):
     @staticmethod
@@ -46,9 +46,10 @@ class TestSftp(unittest.TestCase):
         open_sftp = mock.Mock(parent=_ssh, return_value=_sftp)
         _ssh.attach_mock(open_sftp, "open_sftp")
 
-        with mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True) as conf_sys, mock.patch(
-            "exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True
-        ) as conf_user:
+        with mock.patch(
+            "exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM",
+            autospec=True,
+        ) as conf_sys, mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True) as conf_user:
             conf_sys.exists.return_value = False
             conf_user.exists.return_value = False
 
@@ -258,7 +259,16 @@ class TestSftp(unittest.TestCase):
     @mock.patch("os.path.exists", autospec=True)
     @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
-    def test_download(self, isdir, remote_isdir, exists, remote_exists, client, policy, _logger):
+    def test_download(
+        self,
+        isdir,
+        remote_isdir,
+        exists,
+        remote_exists,
+        client,
+        policy,
+        _logger,
+    ):
         ssh, _sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True
         exists.side_effect = [True, False, False]
@@ -274,7 +284,12 @@ class TestSftp(unittest.TestCase):
         exists.assert_called_once_with(posixpath.join(target, os.path.basename(dst)))
         remote_isdir.assert_called_once_with(dst)
         remote_exists.assert_called_once_with(dst)
-        _sftp.assert_has_calls((mock.call.get(dst, posixpath.join(target, os.path.basename(dst))),))
+        _sftp.assert_has_calls(
+            mock.call.get(
+                dst,
+                posixpath.join(target, os.path.basename(dst)),
+            )
+        )
 
         # Negative scenarios
         # noinspection PyTypeChecker
@@ -327,6 +342,9 @@ class TestSftp(unittest.TestCase):
         _sftp.assert_has_calls(
             (
                 mock.call.unlink(expected_file),
-                mock.call.put(os.path.normpath(os.path.join(source, filename)), expected_file),
+                mock.call.put(
+                    os.path.normpath(os.path.join(source, filename)),
+                    expected_file,
+                ),
             )
         )

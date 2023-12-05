@@ -222,13 +222,13 @@ class SSHConfig:
         """
         return cls(
             hostname=ssh_config["hostname"],  # type: ignore[arg-type]
-            port=ssh_config.get("port", None),  # type: ignore[arg-type]
-            user=ssh_config.get("user", None),  # type: ignore[arg-type]
-            identityfile=ssh_config.get("identityfile", None),  # type: ignore[arg-type]
-            proxycommand=ssh_config.get("proxycommand", None),  # type: ignore[arg-type]
-            proxyjump=ssh_config.get("proxyjump", None),  # type: ignore[arg-type]
-            controlpath=ssh_config.get("controlpath", None),  # type: ignore[arg-type]
-            controlmaster=ssh_config.get("controlmaster", None),  # type: ignore[arg-type]
+            port=ssh_config.get("port"),  # type: ignore[arg-type]
+            user=ssh_config.get("user"),  # type: ignore[arg-type]
+            identityfile=ssh_config.get("identityfile"),  # type: ignore[arg-type]
+            proxycommand=ssh_config.get("proxycommand"),  # type: ignore[arg-type]
+            proxyjump=ssh_config.get("proxyjump"),  # type: ignore[arg-type]
+            controlpath=ssh_config.get("controlpath"),  # type: ignore[arg-type]
+            controlmaster=ssh_config.get("controlmaster"),  # type: ignore[arg-type]
         )
 
     @property
