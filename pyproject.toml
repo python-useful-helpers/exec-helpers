@@ -163,6 +163,7 @@ line-length = 120
 show-source = true
 target-version = "py38"
 
+[tool.ruff.lint]
 extend-select = [
   "E",
   "W",  # also pycodestyle warnings
