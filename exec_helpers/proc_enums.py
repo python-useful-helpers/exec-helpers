@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Sequence
 
-__all__ = ("SigNum", "ExitCodes", "exit_code_to_enum", "exit_codes_to_enums", "EXPECTED", "INVALID", "ExitCodeT")
+__all__ = ("EXPECTED", "INVALID", "ExitCodeT", "ExitCodes", "SigNum", "exit_code_to_enum", "exit_codes_to_enums")
 
 
 @enum.unique

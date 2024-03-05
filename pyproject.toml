@@ -67,7 +67,6 @@ write_to = "exec_helpers/_version.py"
 
 [tool.black]
 line-length = 120
-safe = true
 target-version = ["py38"]
 
 [tool.isort]
@@ -160,7 +159,7 @@ pretty_print = true
 
 [tool.ruff]
 line-length = 120
-show-source = true
+output-format = "full"
 target-version = "py38"
 
 [tool.ruff.lint]
@@ -194,14 +193,14 @@ extend-ignore = [
   "TRY003",  # long messages prepare outside, ...
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 force-single-line = true
 known-third-party = ["logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil"]
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = ["__pretty_repr__", "__pretty_str__", "__rich_repr__"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
 [tool.refurb]
@@ -247,8 +246,6 @@ disable = [
   "broad-except",
   "logging-fstring-interpolation",
   "logging-format-interpolation",
-  "consider-alternative-union-syntax",
-  "deprecated-typing-alias",
   "invalid-name"
 ]
 max-line-length = 120

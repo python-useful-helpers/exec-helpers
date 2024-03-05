@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# pylint: disable=missing-module-docstring
+
 import typing
 
 from .api import ExecHelper
@@ -20,15 +22,11 @@ from .subprocess import Subprocess  # nosec  # Expected
 
 # noinspection PyUnresolvedReferences
 __all__ = (
-    # pylint: disable=undefined-all-variable
-    # lazy load
-    # API
     "ExecHelper",
     "ExecResult",
-    # Expensive
     "Subprocess",
 )
 
 _deprecated: dict[str, str] = ...
 
-def __getattr__(name: str) -> typing.Any: ...
+def __getattr__(name: str) -> typing.Any: ...  # pylint: disable=unused-argument

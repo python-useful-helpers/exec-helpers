@@ -30,13 +30,13 @@ if typing.TYPE_CHECKING:
     from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = (
+    "CalledProcessError",
+    "ExecCalledProcessError",
     "ExecHelperError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
-    "ExecCalledProcessError",
-    "CalledProcessError",
-    "ParallelCallProcessError",
     "ParallelCallExceptionsError",
+    "ParallelCallProcessError",
 )
 
 
@@ -167,7 +167,7 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
 class CalledProcessError(ExecCalledProcessError):
     """Exception for error on process calls."""
 
-    __slots__ = ("result", "expected")
+    __slots__ = ("expected", "result")
 
     def __init__(
         self,
@@ -230,7 +230,7 @@ class CalledProcessError(ExecCalledProcessError):
 class ParallelCallProcessError(ExecCalledProcessError):
     """Exception during parallel execution."""
 
-    __slots__ = ("cmd", "errors", "results", "expected")
+    __slots__ = ("cmd", "errors", "expected", "results")
 
     def __init__(
         self,

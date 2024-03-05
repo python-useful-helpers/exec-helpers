@@ -139,16 +139,16 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     """SSH Execute context."""
 
     __slots__ = (
-        "__transport",
-        "__get_pty",
-        "__width",
-        "__height",
-        "__timeout",
-        "__sudo_mode",
         "__auth",
         "__chan",
-        "__stdout_f",
+        "__get_pty",
+        "__height",
         "__stderr_f",
+        "__stdout_f",
+        "__sudo_mode",
+        "__timeout",
+        "__transport",
+        "__width",
     )
 
     def __init__(
@@ -367,7 +367,7 @@ class _SudoContext(typing.ContextManager[None]):
     :type enforce: bool | None
     """
 
-    __slots__ = ("__ssh", "__sudo_status", "__enforce")
+    __slots__ = ("__enforce", "__ssh", "__sudo_status")
 
     def __init__(self, ssh: SSHClientBase, enforce: bool | None = None) -> None:
         """Context manager for call commands with sudo."""
@@ -398,7 +398,7 @@ class _KeepAliveContext(typing.ContextManager[None]):
     :type enforce: int
     """
 
-    __slots__ = ("__ssh", "__keepalive_mode", "__keepalive_period", "__enforce")
+    __slots__ = ("__enforce", "__keepalive_mode", "__keepalive_period", "__ssh")
 
     def __init__(self, ssh: SSHClientBase, enforce: int) -> None:
         """Context manager for keepalive management."""
@@ -477,19 +477,19 @@ class SSHClientBase(api.ExecHelper):
     """
 
     __slots__ = (
-        "__hostname",
-        "__port",
+        "__allow_agent",
         "__auth_mapping",
-        "__ssh",
-        "__sftp",
-        "__sudo_mode",
+        "__conn_chain",
+        "__hostname",
         "__keepalive_mode",
         "__keepalive_period",
-        "__verbose",
-        "__ssh_config",
+        "__port",
+        "__sftp",
         "__sock",
-        "__conn_chain",
-        "__allow_agent",
+        "__ssh",
+        "__ssh_config",
+        "__sudo_mode",
+        "__verbose",
     )
 
     def __hash__(self) -> int:
@@ -509,7 +509,7 @@ class SSHClientBase(api.ExecHelper):
         *,
         auth: ssh_auth.SSHAuth | None = None,
         verbose: bool = True,
-        ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
+        ssh_config: str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None = None,
         ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         keepalive: KeepAlivePeriodT = 1,
@@ -1472,7 +1472,7 @@ class SSHClientBase(api.ExecHelper):
         *,
         auth: ssh_auth.SSHAuth | None = None,
         verbose: bool = True,
-        ssh_config: (str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None) = None,
+        ssh_config: str | paramiko.SSHConfig | SSHConfigsDictT | _ssh_helpers.HostsSSHConfigs | None = None,
         ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None = None,
         keepalive: KeepAlivePeriodT = 1,
     ) -> Self:
@@ -1772,7 +1772,7 @@ class SSHClientBase(api.ExecHelper):
             raise exception_class(cmd, errors, results, expected=prep_expected)
         return results
 
-    def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:  # noqa: A003
+    def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
         """Open file on remote using SFTP session.
 
         :param path: filesystem object path

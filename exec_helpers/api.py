@@ -43,16 +43,16 @@ if typing.TYPE_CHECKING:
     from typing_extensions import Self
 
 __all__ = (
+    "CalledProcessErrorSubClassT",
+    "ChRootPathSetT",
+    "CommandT",
+    "ErrorInfoT",
     "ExecHelper",
     "ExecuteAsyncResult",
-    "CalledProcessErrorSubClassT",
+    "ExpectedExitCodesT",
+    "LogMaskReT",
     "OptionalStdinT",
     "OptionalTimeoutT",
-    "CommandT",
-    "LogMaskReT",
-    "ErrorInfoT",
-    "ChRootPathSetT",
-    "ExpectedExitCodesT",
 )
 
 CommandT = typing.Union[str, typing.Iterable[str]]
@@ -79,10 +79,10 @@ class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
 
     __slots__ = (
         "__command",
-        "__stdin",
-        "__open_stdout",
-        "__open_stderr",
         "__logger",
+        "__open_stderr",
+        "__open_stdout",
+        "__stdin",
     )
 
     def __init__(
@@ -177,7 +177,7 @@ class _ChRootContext(typing.ContextManager[None]):
     .. versionadded:: 4.1.0
     """
 
-    __slots__ = ("_conn", "_chroot_status", "_path")
+    __slots__ = ("_chroot_status", "_conn", "_path")
 
     def __init__(self, conn: ExecHelper, path: ChRootPathSetT = None) -> None:
         """Context manager for call commands with sudo.
@@ -227,11 +227,11 @@ class ExecHelper(
     """
 
     __slots__ = (
+        "__chroot_path",
+        "__context_count",
         "__lock",
         "__logger",
         "log_mask_re",
-        "__chroot_path",
-        "__context_count",
     )
 
     def __init__(self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger) -> None:

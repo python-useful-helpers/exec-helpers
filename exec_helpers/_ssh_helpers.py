@@ -49,14 +49,14 @@ class SSHConfig:
     """Parsed SSH Config for creation connection."""
 
     __slots__ = (
+        "__controlmaster",
+        "__controlpath",
         "__hostname",
-        "__user",
-        "__port",
         "__identityfile",
+        "__port",
         "__proxycommand",
         "__proxyjump",
-        "__controlpath",
-        "__controlmaster",
+        "__user",
     )
 
     def __init__(

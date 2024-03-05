@@ -49,7 +49,7 @@ if typing.TYPE_CHECKING:
     from exec_helpers.api import OptionalStdinT
     from exec_helpers.api import OptionalTimeoutT
 
-__all__ = ("Subprocess", "SubprocessExecuteAsyncResult", "EnvT", "CwdT")
+__all__ = ("CwdT", "EnvT", "Subprocess", "SubprocessExecuteAsyncResult")
 
 EnvT = typing.Optional[
     typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]

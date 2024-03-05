@@ -28,31 +28,28 @@ except ImportError:
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+
 # noinspection PyUnresolvedReferences
 __all__ = (
     # pylint: disable=undefined-all-variable
-    # lazy load
-    # API
-    "async_api",
-    "ExitCodes",
-    "ExecResult",
-    "ExecHelper",
-    "mask_command",
-    # Expensive
-    "Subprocess",
-    "SSHClient",
-    "SSHAuth",
-    "SSHConfig",
-    "HostsSSHConfigs",
-    # Exceptions
-    "exceptions",
-    "ExecHelperError",
-    "ExecCalledProcessError",
     "CalledProcessError",
-    "ParallelCallExceptionsError",
-    "ParallelCallProcessError",
+    "ExecCalledProcessError",
+    "ExecHelper",
+    "ExecHelperError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
+    "ExecResult",
+    "ExitCodes",
+    "HostsSSHConfigs",
+    "ParallelCallExceptionsError",
+    "ParallelCallProcessError",
+    "SSHAuth",
+    "SSHClient",
+    "SSHConfig",
+    "Subprocess",
+    "async_api",
+    "exceptions",
+    "mask_command",
 )
 
 __locals: dict[str, typing.Any] = locals()  # use mutable access for pure lazy loading

@@ -201,18 +201,18 @@ class ExecResult:
 
     __slots__ = (
         "__cmd",
-        "__stdin",
-        "_stdout",
-        "_stderr",
         "__exit_code",
-        "__timestamp",
-        "_stdout_str",
-        "_stderr_str",
-        "_stdout_brief",
-        "_stderr_brief",
-        "__stdout_lock",
-        "__stderr_lock",
         "__started",
+        "__stderr_lock",
+        "__stdin",
+        "__stdout_lock",
+        "__timestamp",
+        "_stderr",
+        "_stderr_brief",
+        "_stderr_str",
+        "_stdout",
+        "_stdout_brief",
+        "_stdout_str",
     )
 
     def __init__(
@@ -263,7 +263,7 @@ class ExecResult:
 
         self.__exit_code: ExitCodeT = proc_enums.INVALID
         self.__timestamp: datetime.datetime | None = None
-        self.exit_code = exit_code
+        self.exit_code = exit_code  # noqa: PLE0237
 
         self.__started: datetime.datetime | None = started
 

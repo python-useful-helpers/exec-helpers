@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 class SSHAuth:
     """SSH Authorization object."""
 
-    __slots__ = ("__username", "__password", "__key_index", "__keys", "__key_filename", "__passphrase")
+    __slots__ = ("__key_filename", "__key_index", "__keys", "__passphrase", "__password", "__username")
 
     def __init__(
         self,

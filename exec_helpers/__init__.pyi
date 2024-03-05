@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# pylint: disable=missing-module-docstring
+
 import typing
 
 from . import async_api
@@ -39,33 +41,28 @@ except ImportError:
 
 # noinspection PyUnresolvedReferences
 __all__ = (
-    # pylint: disable=undefined-all-variable
-    # lazy load
-    # API
-    "async_api",
-    "ExitCodes",
-    "ExecResult",
-    "ExecHelper",
-    "mask_command",
-    # Expensive
-    "Subprocess",
-    "SSHClient",
-    "SSHAuth",
-    "SSHConfig",
-    "HostsSSHConfigs",
-    # Exceptions
-    "ExecHelperError",
-    "ExecCalledProcessError",
     "CalledProcessError",
-    "ParallelCallExceptionsError",
-    "ParallelCallProcessError",
+    "ExecCalledProcessError",
+    "ExecHelper",
+    "ExecHelperError",
     "ExecHelperNoKillError",
     "ExecHelperTimeoutError",
+    "ExecResult",
+    "ExitCodes",
+    "HostsSSHConfigs",
+    "ParallelCallExceptionsError",
+    "ParallelCallProcessError",
+    "SSHAuth",
+    "SSHClient",
+    "SSHConfig",
+    "Subprocess",
+    "async_api",
+    "mask_command",
 )
 
 _deprecated: dict[str, str] = ...
 
-def __getattr__(name: str) -> typing.Any: ...
+def __getattr__(name: str) -> typing.Any: ...  # pylint: disable=unused-argument
 
 __author__: str = ...
 __author_email__: str = ...

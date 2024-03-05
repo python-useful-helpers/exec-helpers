@@ -50,15 +50,15 @@ if typing.TYPE_CHECKING:
     from exec_helpers.proc_enums import ExitCodeT
 
 __all__ = (
-    "ExecHelper",
     "CalledProcessErrorSubClassT",
+    "ChRootPathSetT",
+    "CommandT",
+    "ErrorInfoT",
+    "ExecHelper",
+    "ExpectedExitCodesT",
+    "LogMaskReT",
     "OptionalStdinT",
     "OptionalTimeoutT",
-    "CommandT",
-    "LogMaskReT",
-    "ErrorInfoT",
-    "ChRootPathSetT",
-    "ExpectedExitCodesT",
 )
 
 
@@ -67,10 +67,10 @@ class ExecuteContext(typing.AsyncContextManager[api.ExecuteAsyncResult], abc.ABC
 
     __slots__ = (
         "__command",
-        "__stdin",
-        "__open_stdout",
-        "__open_stderr",
         "__logger",
+        "__open_stderr",
+        "__open_stdout",
+        "__stdin",
     )
 
     def __init__(
@@ -206,7 +206,7 @@ class ExecHelper(
     :type log_mask_re: str | re.Pattern[str] | None
     """
 
-    __slots__ = ("__alock", "__logger", "log_mask_re", "__chroot_path")
+    __slots__ = ("__alock", "__chroot_path", "__logger", "log_mask_re")
 
     def __init__(self, log_mask_re: LogMaskReT = None, *, logger: logging.Logger) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
