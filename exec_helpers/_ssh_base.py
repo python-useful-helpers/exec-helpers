@@ -103,7 +103,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
-    def stdin(self) -> paramiko.ChannelFile:  # type: ignore[name-defined]  # paramiko bug: not in __all__
+    def stdin(self) -> paramiko.ChannelFile:
         """Override original NamedTuple with proper typing.
 
         :return: STDIN interface
@@ -114,10 +114,10 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
             DeprecationWarning,
             stacklevel=2,
         )
-        return super().stdin
+        return super().stdin  # type: ignore[return-value]
 
     @property
-    def stderr(self) -> paramiko.ChannelFile | None:  # type: ignore[name-defined]
+    def stderr(self) -> paramiko.ChannelFile | None:
         """Override original NamedTuple with proper typing.
 
         :return: STDERR interface
@@ -126,7 +126,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
-    def stdout(self) -> paramiko.ChannelFile | None:  # type: ignore[name-defined]
+    def stdout(self) -> paramiko.ChannelFile | None:
         """Override original NamedTuple with proper typing.
 
         :return: STDOUT interface
