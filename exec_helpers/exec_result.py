@@ -263,7 +263,7 @@ class ExecResult:
 
         self.__exit_code: ExitCodeT = proc_enums.INVALID
         self.__timestamp: datetime.datetime | None = None
-        self.exit_code = exit_code  # noqa: PLE0237
+        self.exit_code = exit_code
 
         self.__started: datetime.datetime | None = started
 
