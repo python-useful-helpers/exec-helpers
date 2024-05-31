@@ -981,15 +981,16 @@ class SSHClientBase(api.ExecHelper):
         """
         return _KeepAliveContext(ssh=self, enforce=int(enforce))
 
-    def _prepare_command(self, cmd: str, chroot_path: str | None = None) -> str:
-        """Prepare command: cower chroot and other cases.
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
+        """Prepare command: cover chroot and other cases.
 
         :param cmd: main command
         :param chroot_path: path to make chroot for execution
+        :param chroot_exe: chroot executable, default "chroot"
         :return: final command, includes chroot, if required
         """
         if not self.sudo_mode:
-            return super()._prepare_command(cmd=cmd, chroot_path=chroot_path)
+            return super()._prepare_command(cmd=cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
         quoted_command: str = shlex.quote(cmd)
         if chroot_path is self._chroot_path is None:
             return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
@@ -997,7 +998,7 @@ class SSHClientBase(api.ExecHelper):
             target_path: str = shlex.quote(chroot_path)
         else:
             target_path = shlex.quote(self._chroot_path)  # type: ignore[arg-type]
-        return f'chroot {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
+        return f'{chroot_exe} {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
 
     def _exec_command(  # type: ignore[override]
         self,
@@ -1094,6 +1095,7 @@ class SSHClientBase(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1112,6 +1114,8 @@ class SSHClientBase(api.ExecHelper):
         :type open_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1128,7 +1132,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return _SSHExecuteContext(
             transport=self._ssh_transport,
-            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
+            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
             open_stdout=open_stdout,
             open_stderr=open_stderr,
@@ -1155,6 +1159,7 @@ class SSHClientBase(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1183,6 +1188,8 @@ class SSHClientBase(api.ExecHelper):
         :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1199,6 +1206,7 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 2.1.0 Allow parallel calls
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         .. versionchanged:: 8.0.0 chroot path exposed.
+        .. versionchanged:: 8.1.0 chroot exe added.
         """
         return super().execute(
             command=command,
@@ -1211,6 +1219,7 @@ class SSHClientBase(api.ExecHelper):
             open_stderr=open_stderr,
             log_stderr=log_stderr,
             chroot_path=chroot_path,
+            chroot_exe=chroot_exe,
             get_pty=get_pty,
             width=width,
             height=height,
@@ -1230,6 +1239,7 @@ class SSHClientBase(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1258,6 +1268,8 @@ class SSHClientBase(api.ExecHelper):
         :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param get_pty: Get PTY for connection
         :type get_pty: bool
         :param width: PTY width
@@ -1645,6 +1657,7 @@ class SSHClientBase(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
         exception_class: type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
@@ -1670,6 +1683,8 @@ class SSHClientBase(api.ExecHelper):
         :type open_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param verbose: produce verbose log record on command call
         :type verbose: bool
         :param log_mask_re: regex lookup rule to mask command for logger.
@@ -1705,6 +1720,7 @@ class SSHClientBase(api.ExecHelper):
                 log_mask_re=log_mask_re,
                 log_level=log_level,
                 chroot_path=chroot_path,
+                chroot_exe=chroot_exe,
                 **kwargs,
             )
             # pylint: enable=protected-access
@@ -1715,6 +1731,7 @@ class SSHClientBase(api.ExecHelper):
                 open_stdout=open_stdout,
                 open_stderr=open_stderr,
                 chroot_path=chroot_path,
+                chroot_exe=chroot_exe,
                 timeout=timeout,
                 **kwargs,
             ) as async_result:
