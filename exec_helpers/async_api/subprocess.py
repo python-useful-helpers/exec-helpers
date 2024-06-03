@@ -355,6 +355,7 @@ class Subprocess(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -372,6 +373,8 @@ class Subprocess(api.ExecHelper):
         :type open_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
@@ -389,7 +392,7 @@ class Subprocess(api.ExecHelper):
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
             env.update(env_patch)  # type: ignore[arg-type]
         return _SubprocessExecuteContext(
-            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path)}\n",
+            command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
             open_stdout=open_stdout,
             open_stderr=open_stderr,
@@ -412,6 +415,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -440,6 +444,8 @@ class Subprocess(api.ExecHelper):
         :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
@@ -468,6 +474,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             log_stderr=log_stderr,
             chroot_path=chroot_path,
+            chroot_exe=chroot_exe,
             cwd=cwd,
             env=env,
             env_patch=env_patch,
@@ -487,6 +494,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
+        chroot_exe: str = "chroot",
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -515,6 +523,8 @@ class Subprocess(api.ExecHelper):
         :type log_stderr: bool
         :param chroot_path: chroot path override
         :type chroot_path: str | None
+        :param chroot_exe: chroot path override
+        :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
@@ -541,6 +551,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             log_stderr=log_stderr,
             chroot_path=chroot_path,
+            chroot_exe=chroot_exe,
             cwd=cwd,
             env=env,
             env_patch=env_patch,
