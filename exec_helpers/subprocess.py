@@ -67,7 +67,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
-        :return: control interface
+        :return: Control interface.
         :rtype: subprocess.Popen[bytes]
         """
         return super().interface  # type: ignore[no-any-return]
@@ -76,7 +76,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     def stdin(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
-        :return: STDIN interface
+        :return: STDIN interface.
         :rtype: typing.IO[bytes] | None
         """
         warnings.warn(
@@ -90,7 +90,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     def stderr(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
-        :return: STDERR interface
+        :return: STDERR interface.
         :rtype: typing.IO[bytes] | None
         """
         return super().stderr
@@ -99,7 +99,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     def stdout(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
-        :return: STDOUT interface
+        :return: STDOUT interface.
         :rtype: typing.IO[bytes] | None
         """
         return super().stdout
@@ -124,21 +124,21 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
     ) -> None:
         """Subprocess Execute context.
 
-        :param command: Command for execution (fully formatted)
+        :param command: Command for execution (fully formatted).
         :type command: str
-        :param stdin: pass STDIN text to the process (fully formatted)
+        :param stdin: Pass STDIN text to the process (fully formatted).
         :type stdin: bytes
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
         :type env: Mapping[str | bytes, str | bytes] | None
-        :param logger: instance logger
+        :param logger: Logger instance.
         :type logger: logging.Logger
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         """
         super().__init__(
@@ -174,11 +174,11 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
     def __enter__(self) -> SubprocessExecuteAsyncResult:
         """Context manager enter.
 
-        :return: raw execution information
+        :return: Raw execution information.
         :rtype: SshExecuteAsyncResult
-        :raises OSError: stdin write failed/stdin close failed
+        :raises OSError: STDIN write failed/STDIN close failed.
 
-        Command is executed only in context manager to be sure, that everything will be cleaned up properly.
+        The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
         started = datetime.datetime.now(tz=datetime.timezone.utc)
 
@@ -245,16 +245,16 @@ class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[Subpro
 class Subprocess(api.ExecHelper):
     """Subprocess helper with timeouts and lock-free FIFO.
 
-    For excluding race-conditions we allow to run 1 command simultaneously
+    For excluding race conditions, we allow to run one command simultaneously
 
-    :param log_mask_re: regex lookup rule to mask command for logger.
-                        all MATCHED groups will be replaced by '<*masked*>'
+    :param log_mask_re: Regex lookup rule to mask command for logger.
+                        All MATCHED groups will be replaced by '<*masked*>'.
     :type log_mask_re: str | re.Pattern[str] | None
 
-    .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+    .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd.
     .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
     .. versionchanged:: 3.2.0 Logger can be enforced.
-    .. versionchanged:: 4.1.0 support chroot
+    .. versionchanged:: 4.1.0 support chroot.
     .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
     """
 
@@ -282,32 +282,32 @@ class Subprocess(api.ExecHelper):
         log_stderr: bool = True,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
-        """Get exit status from channel with timeout.
+        """Get exit status from a channel with timeout.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str
-        :param async_result: execute_async result
+        :param async_result: execute_async result.
         :type async_result: SubprocessExecuteAsyncResult
-        :param timeout: Timeout for command execution
+        :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param verbose: produce verbose log record on command call
+        :param verbose: Produce verbose log record on command call.
         :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises OSError: exception during process kill (and not regarding to already closed process)
-        :raises ExecHelperNoKillError: Process not dies on SIGTERM & SIGKILL
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises OSError: Exception during process kill (and not regarding already closed process).
+        :raises ExecHelperNoKillError: The process doesn't die on SIGTERM & SIGKILL.
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
         .. versionadded:: 1.2.0
         """
@@ -385,17 +385,17 @@ class Subprocess(api.ExecHelper):
     ) -> _SubprocessExecuteContext:
         """Get execution context manager.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: chroot exe override.
         :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
@@ -403,9 +403,9 @@ class Subprocess(api.ExecHelper):
         :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: Mapping[str | bytes, str | bytes] | None
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execute context
+        :return: Execute context.
         :rtype: _SubprocessExecuteContext
         .. versionadded:: 8.0.0
         """
@@ -445,28 +445,28 @@ class Subprocess(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: chroot exe override.
         :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
@@ -474,14 +474,14 @@ class Subprocess(api.ExecHelper):
         :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: Mapping[str | bytes, str | bytes] | None
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
         :raises ExecHelperTimeoutError: Timeout exceeded
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 2.1.0 Allow parallel calls.
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         .. versionchanged:: 8.0.0 chroot path exposed.
         """
@@ -524,28 +524,28 @@ class Subprocess(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot path override
+        :param chroot_exe: chroot path override.
         :type chroot_exe: str
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
@@ -553,14 +553,14 @@ class Subprocess(api.ExecHelper):
         :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: Mapping[str | bytes, str | bytes] | None
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 2.1.0 Allow parallel calls.
         """
         return super().__call__(
             command=command,
@@ -603,30 +603,30 @@ class Subprocess(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param error_info: Text for error details, if fail happens
+        :param error_info: Text for error details, if fail happens.
         :type error_info: str | None
-        :param expected: expected return codes (0 by default)
+        :param expected: Expected return codes (0 by default).
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param raise_on_err: Raise exception on unexpected return code
+        :param raise_on_err: Raise exception on unexpected return code.
         :type raise_on_err: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
@@ -636,16 +636,16 @@ class Subprocess(api.ExecHelper):
         :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: type[exceptions.CalledProcessError]
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code
+        :raises ExecHelperTimeoutError: Timeout exceeded.
+        :raises CalledProcessError: Unexpected exit code.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 3.2.0 Exception class can be substituted.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
         """
         return super().check_call(
             command=command,
@@ -690,30 +690,30 @@ class Subprocess(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param error_info: Text for error details, if fail happens
+        :param error_info: Text for error details, if fail happens.
         :type error_info: str | None
-        :param raise_on_err: Raise exception on unexpected return code
+        :param raise_on_err: Raise exception on unexpected return code.
         :type raise_on_err: bool
-        :param expected: expected return codes (0 by default)
+        :param expected: Expected return codes (0 by default).
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
@@ -723,16 +723,16 @@ class Subprocess(api.ExecHelper):
         :type env_patch: Mapping[str | bytes, str | bytes] | None
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: type[exceptions.CalledProcessError]
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code or stderr presents
+        :raises ExecHelperTimeoutError: Timeout exceeded.
+        :raises CalledProcessError: Unexpected exit code or stderr presents.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 3.2.0 Exception class can be substituted.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
         """
         return super().check_stderr(
             command=command,

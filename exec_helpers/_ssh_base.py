@@ -97,16 +97,16 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     def interface(self) -> paramiko.Channel:
         """Override original NamedTuple with proper typing.
 
-        :return: control interface
+        :return: Control interface.
         :rtype: paramiko.Channel
         """
         return super().interface  # type: ignore[no-any-return]
 
     @property
-    def stdin(self) -> paramiko.ChannelFile:
+    def stdin(self) -> paramiko.channel.ChannelStdinFile:
         """Override original NamedTuple with proper typing.
 
-        :return: STDIN interface
+        :return: STDIN interface.
         :rtype: paramiko.ChannelFile
         """
         warnings.warn(
@@ -117,19 +117,19 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin  # type: ignore[return-value]
 
     @property
-    def stderr(self) -> paramiko.ChannelFile | None:
+    def stderr(self) -> paramiko.channel.ChannelStderrFile | None:
         """Override original NamedTuple with proper typing.
 
-        :return: STDERR interface
+        :return: STDERR interface.
         :rtype: paramiko.ChannelFile | None
         """
         return super().stderr
 
     @property
-    def stdout(self) -> paramiko.ChannelFile | None:
+    def stdout(self) -> paramiko.channel.ChannelFile | None:
         """Override original NamedTuple with proper typing.
 
-        :return: STDOUT interface
+        :return: STDOUT interface.
         :rtype: paramiko.ChannelFile | None
         """
         return super().stdout
@@ -170,29 +170,29 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     ) -> None:
         """Execute async context manager.
 
-        :param transport: Executor instance (low level)
+        :param transport: Executor instance (low level).
         :type transport: paramiko.Transport
-        :param command: Command for execution (fully formatted)
+        :param command: Command for execution (fully formatted).
         :type command: str
-        :param stdin: pass STDIN text to the process (fully formatted)
+        :param stdin: Pass STDIN text to the process (fully formatted).
         :type stdin: bytes
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
-        :param timeout: timeout for connection (will be set on channel)
+        :param timeout: Timeout for connection (will be set on channel).
         :type timeout: int | float | None
-        :param sudo_mode: use sudo for command execution
+        :param sudo_mode: Use sudo for command execution.
         :type sudo_mode: bool
-        :param logger: instance logger
+        :param logger: Instance logger.
         :type logger: logging.Logger
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         """
         super().__init__(
@@ -241,7 +241,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     def get_pty(self) -> bool:
         """Get PTY for connection.
 
-        :return: PTY should be opened
+        :return: PTY should be opened.
         :rtype: bool
         """
         return self.__get_pty
@@ -250,7 +250,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     def width(self) -> int:
         """PTY width.
 
-        :return: width in symbols
+        :return: Width in symbols.
         :rtype: int
         """
         return self.__width
@@ -259,16 +259,16 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     def height(self) -> int:
         """PTY height.
 
-        :return: height in symbols
+        :return: Height in symbols.
         :rtype: int
         """
         return self.__height
 
     @property
     def timeout(self) -> OptionalTimeoutT:
-        """Timeout for connection (will be set on channel).
+        """Timeout for connection (will be set on a channel).
 
-        :return: connection timeout
+        :return: Connection timeout.
         :rtype: int | float | None
         """
         return self.__timeout
@@ -277,7 +277,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     def sudo_mode(self) -> bool:
         """Use sudo for command execution.
 
-        :return: require sudo
+        :return: Require sudo.
         :rtype: bool
         """
         return self.__sudo_mode
@@ -285,10 +285,10 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
     def __enter__(self) -> SshExecuteAsyncResult:
         """Context manager enter.
 
-        :return: raw execution information
+        :return: Raw execution information.
         :rtype: SshExecuteAsyncResult
 
-        Command is executed only in context manager to be sure, that everything will be cleaned up properly.
+        The Command is executed only in a context manager to be sure that everything will be cleaned up properly.
         """
         self.__chan = self.__transport.open_session()
         chan: paramiko.Channel = self.__chan.__enter__()
@@ -361,9 +361,9 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
 class _SudoContext(typing.ContextManager[None]):
     """Context manager for call commands with sudo.
 
-    :param ssh: connection instance
+    :param ssh: Connection instance.
     :type ssh: SSHClientBase
-    :param enforce: sudo mode for context manager
+    :param enforce: Sudo mode for context manager.
     :type enforce: bool | None
     """
 
@@ -392,9 +392,9 @@ class _SudoContext(typing.ContextManager[None]):
 class _KeepAliveContext(typing.ContextManager[None]):
     """Context manager for keepalive management.
 
-    :param ssh: connection instance
+    :param ssh: Connection instance.
     :type ssh: SSHClientBase
-    :param enforce: keepalive period for context manager
+    :param enforce: Keepalive period for context manager.
     :type enforce: int
     """
 
@@ -429,17 +429,17 @@ class _KeepAliveContext(typing.ContextManager[None]):
 class SSHClientBase(api.ExecHelper):
     """SSH Client helper.
 
-    :param host: remote hostname
+    :param host: Remote hostname.
     :type host: str
-    :param port: remote ssh port
+    :param port: Remote ssh port.
     :type port: int | None
-    :param username: remote username.
+    :param username: Remote username.
     :type username: str | None
-    :param password: remote password
+    :param password: Remote password.
     :type password: str | None
-    :param auth: credentials for connection
+    :param auth: Credentials for connection.
     :type auth: ssh_auth.SSHAuth | None
-    :param verbose: show additional error/warning messages
+    :param verbose: Show additional error/warning messages.
     :type verbose: bool
     :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
     :type ssh_config:
@@ -450,30 +450,30 @@ class SSHClientBase(api.ExecHelper):
         | None
     :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
     :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
-    :param sock: socket for connection. Useful for ssh proxies support
+    :param sock: Socket for connection. Useful for ssh proxies support.
     :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
-    :param keepalive: keepalive period
+    :param keepalive: Keepalive period.
     :type keepalive: int | bool
-    :param allow_ssh_agent: use SSH Agent if available
+    :param allow_ssh_agent: Use SSH Agent if available.
     :type allow_ssh_agent: bool
 
-    .. note:: auth has priority over username/password/private_keys
+    .. note:: auth has priority over username/password/private_keys.
     .. note::
 
         for proxy connection auth information is collected from SSHConfig
-        if ssh_auth_map record is not available
+        if ssh_auth_map record is not available.
 
-    .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments
-    .. versionchanged:: 6.0.0 added optional ssh_config for ssh-proxy & low level connection parameters handling
-    .. versionchanged:: 6.0.0 added optional ssh_auth_map for ssh proxy cases with authentication on each step
-    .. versionchanged:: 6.0.0 added optional sock for manual proxy chain handling
-    .. versionchanged:: 6.0.0 keepalive exposed to constructor
-    .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as period of keepalive requests
-    .. versionchanged:: 6.0.0 private_keys is deprecated
-    .. versionchanged:: 7.0.0 private_keys is removed
-    .. versionchanged:: 7.0.0 keepalive_mode is removed
-    .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
-    .. versionchanged:: 8.0.0 expose SSH Agent usage override
+    .. versionchanged:: 6.0.0 private_keys, auth and verbose became keyword-only arguments.
+    .. versionchanged:: 6.0.0 Added optional ssh_config for ssh-proxy & low-level connection parameters handling.
+    .. versionchanged:: 6.0.0 Added optional ssh_auth_map for ssh proxy cases with authentication on each step.
+    .. versionchanged:: 6.0.0 Added optional sock for manual proxy chain handling.
+    .. versionchanged:: 6.0.0 keepalive exposed to constructor.
+    .. versionchanged:: 6.0.0 keepalive became int, now used in ssh transport as a period of keepalive requests.
+    .. versionchanged:: 6.0.0 private_keys is deprecated.
+    .. versionchanged:: 7.0.0 private_keys is removed.
+    .. versionchanged:: 7.0.0 keepalive_mode is removed.
+    .. versionchanged:: 7.4.0 Return of keepalive_mode to prevent mix with a keepalive period. Default is `False`.
+    .. versionchanged:: 8.0.0 Expose SSH Agent usage override.
     """
 
     __slots__ = (
@@ -495,7 +495,7 @@ class SSHClientBase(api.ExecHelper):
     def __hash__(self) -> int:
         """Hash for usage as dict keys.
 
-        :return: hash describing current connection
+        :return: Hash describing the current connection.
         :rtype: int
         """
         return hash((self.__class__, self.hostname, self.port, self.auth))
@@ -526,13 +526,15 @@ class SSHClientBase(api.ExecHelper):
         self.__sftp: paramiko.SFTPClient | None = None
         self.__allow_agent = allow_ssh_agent
 
-        # Init ssh config. It's main source for connection parameters
+        # Init ssh config. It's the main source for connection parameters
         if isinstance(ssh_config, _ssh_helpers.HostsSSHConfigs):
             self.__ssh_config: _ssh_helpers.HostsSSHConfigs = ssh_config
         else:
             self.__ssh_config = _ssh_helpers.parse_ssh_config(ssh_config, host)
 
-        # Get config. We are not resolving full chain. If you are have a chain by some reason - init config manually.
+        # Get config.
+        # We are not resolving a full chain.
+        # If you are having a chain for some reason - init config manually.
         config: _ssh_helpers.SSHConfig = self.__ssh_config[host]
 
         # Save resolved hostname and port
@@ -571,10 +573,10 @@ class SSHClientBase(api.ExecHelper):
         )
 
         # Update config for target host: merge with data from credentials and parameters.
-        # SSHConfig is the single source for hostname/port/... during low level connection construction.
+        # SSHConfig is the single source for hostname/port/... during low-level connection construction.
         self.__rebuild_ssh_config()
 
-        # Build connection chain once and use it for connection later
+        # Build a connection chain once and use it for connection later
         if sock is None:
             self.__conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = self.__build_connection_chain()
         else:
@@ -603,7 +605,7 @@ class SSHClientBase(api.ExecHelper):
         return self.__auth_mapping[self.hostname]
 
     def __rebuild_ssh_config(self) -> None:
-        """Rebuild main ssh config from available information."""
+        """Rebuild the main ssh config from available information."""
         self.__ssh_config[self.hostname] = self.__ssh_config[self.hostname].overridden_by(
             _ssh_helpers.SSHConfig(
                 hostname=self.hostname,
@@ -614,9 +616,9 @@ class SSHClientBase(api.ExecHelper):
         )
 
     def __build_connection_chain(self) -> list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]]:
-        """Build ssh connection chain to reach destination host.
+        """Build the ssh connection chain to reach destination host.
 
-        :return: list of SSHConfig - SSHAuth pairs in order of connection
+        :return: List of SSHConfig - SSHAuth pairs in order of connection
         :rtype: list[tuple[SSHConfig, ssh_auth.SSHAuth]]
         """
         conn_chain: list[tuple[_ssh_helpers.SSHConfig, ssh_auth.SSHAuth]] = []
@@ -638,14 +640,14 @@ class SSHClientBase(api.ExecHelper):
 
     @property
     def auth(self) -> ssh_auth.SSHAuth:
-        """Internal authorisation object.
+        """Internal authorization object.
 
         Attention: this public property is mainly for inheritance,
         debug and information purposes.
-        Calls outside SSHClient and child classes is sign of incorrect design.
+        Calls outside SSHClient and child classes is a sign of incorrect design.
         Change is completely disallowed.
 
-        :return: SSH authorisation object for current connection.
+        :return: SSH authorization object for current connection.
         :rtype: ssh_auth.SSHAuth
         """
         return self.__auth_mapping[self.hostname]
@@ -654,7 +656,7 @@ class SSHClientBase(api.ExecHelper):
     def allow_ssh_agent(self) -> bool:
         """Use SSH Agent if available.
 
-        :return: SSH Agent usage allowed
+        :return: SSH Agent usage allowed.
         :rtype: bool
         """
         return self.__allow_agent
@@ -663,7 +665,7 @@ class SSHClientBase(api.ExecHelper):
     def hostname(self) -> str:
         """Connected remote host name.
 
-        :return: remote hostname
+        :return: Remote hostname.
         :rtype: str
         """
         return self.__hostname
@@ -672,7 +674,7 @@ class SSHClientBase(api.ExecHelper):
     def port(self) -> int:
         """Connected remote port number.
 
-        :return: remote port
+        :return: Remote port.
         :rtype: int
         """
         return self.__port
@@ -681,7 +683,7 @@ class SSHClientBase(api.ExecHelper):
     def ssh_config(self) -> _ssh_helpers.HostsSSHConfigs:
         """SSH connection config.
 
-        :return: SSH config for connection
+        :return: SSH config for connection.
         :rtype: HostsSSHConfigs
         """
         return copy.deepcopy(self.__ssh_config)
@@ -692,7 +694,7 @@ class SSHClientBase(api.ExecHelper):
 
         :return: Paramiko transport.
         :rtype: paramiko.Transport
-        :raises ConnectionError: Can not get SSH transport (with reconnect)
+        :raises ConnectionError: Cannot get SSH transport (with reconnect).
         Used internally.
         """
         with self.lock:
@@ -718,7 +720,7 @@ class SSHClientBase(api.ExecHelper):
     def __repr__(self) -> str:
         """Representation for debug purposes.
 
-        :return: brief connection information for debug purposes
+        :return: Brief connection information for debug purposes.
         :rtype: str
         """
         return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}, auth={self.auth!r})"
@@ -726,7 +728,7 @@ class SSHClientBase(api.ExecHelper):
     def __str__(self) -> str:  # pragma: no cover
         """Representation for debug purposes.
 
-        :return: short string with connection information
+        :return: Short string with connection information.
         :rtype: str
         """
         return f"{self.__class__.__name__}(host={self.hostname}, port={self.port}) for user {self.auth.username}"
@@ -735,8 +737,7 @@ class SSHClientBase(api.ExecHelper):
     def _ssh(self) -> paramiko.SSHClient:
         """Ssh client object getter for inheritance support only.
 
-        Attention: ssh client object creation and change
-        is allowed only by __init__ and reconnect call.
+        Attention: ssh client object creation and change are allowed only by __init__ and reconnect call.
 
         :rtype: paramiko.SSHClient
         """
@@ -771,11 +772,11 @@ class SSHClientBase(api.ExecHelper):
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
-        :return: paramiko ssh connection object
+        :return: Paramiko ssh connection object.
         :rtype: paramiko.SSHClient
-        :raises ValueError: ProxyCommand found in connection chain after first host reached
-        :raises RuntimeError: Unexpected state
-        :raises ConnectionError: Can not get SSH transport
+        :raises ValueError: ProxyCommand found in a connection chain after the first host reached an.
+        :raises RuntimeError: Unexpected state.
+        :raises ConnectionError: Cannot get SSH transport.
         """
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
@@ -833,7 +834,7 @@ class SSHClientBase(api.ExecHelper):
         """SFTP channel access for inheritance.
 
         :rtype: paramiko.sftp_client.SFTPClient
-        :raises paramiko.SSHException: SFTP connection failed
+        :raises paramiko.SSHException: SFTP connection failed.
         """
         if self.__sftp is not None:
             return self.__sftp
@@ -863,7 +864,7 @@ class SSHClientBase(api.ExecHelper):
         """Destructor helper: close channel and threads BEFORE closing others.
 
         Due to threading in paramiko, default destructor could generate asserts on close,
-        so we calling channel close before closing main ssh object.
+        so we're calling channel close before a closing main ssh object.
         """
         try:
             self.__ssh.close()
@@ -879,9 +880,9 @@ class SSHClientBase(api.ExecHelper):
     ) -> None:
         """Exit context manager.
 
-        .. versionchanged:: 1.0.0 disconnect enforced on close
-        .. versionchanged:: 1.1.0 release lock on exit
-        .. versionchanged:: 1.2.1 disconnect enforced on close only not in keepalive mode
+        .. versionchanged:: 1.0.0 Disconnect enforced on close.
+        .. versionchanged:: 1.1.0 Release lock on exit.
+        .. versionchanged:: 1.2.1 Disconnect enforced on close only not in keepalive mode.
         """
         if self._context_count == 1 and not self.__keepalive_mode:
             self.close()
@@ -889,7 +890,7 @@ class SSHClientBase(api.ExecHelper):
 
     @property
     def sudo_mode(self) -> bool:
-        """Persistent sudo mode for connection object.
+        """Persistent sudo mode for a connection object.
 
         :rtype: bool
         """
@@ -899,7 +900,7 @@ class SSHClientBase(api.ExecHelper):
     def sudo_mode(self, mode: bool) -> None:
         """Persistent sudo mode change for connection object.
 
-        :param mode: sudo status: enabled | disabled
+        :param mode: Sudo status: enabled | disabled.
         :type mode: bool
         """
         self.__sudo_mode = mode
@@ -915,9 +916,9 @@ class SSHClientBase(api.ExecHelper):
 
     @keepalive_period.setter
     def keepalive_period(self, period: KeepAlivePeriodT) -> None:
-        """Keepalive period change for connection object.
+        """Keepalive period change for a connection object.
 
-        :param period: keepalive period change
+        :param period: Keepalive period change.
         :type period: int | bool
         If 0 - close connection on exit from context manager.
         """
@@ -938,7 +939,7 @@ class SSHClientBase(api.ExecHelper):
     def keepalive_mode(self, mode: bool) -> None:
         """Keepalive mode.
 
-        :param mode: new mode
+        :param mode: New mode.
         :type mode: bool
         Do not close connection on __exit__ if set.
         """
@@ -961,9 +962,9 @@ class SSHClientBase(api.ExecHelper):
     def sudo(self, enforce: bool | None = None) -> _SudoContext:
         """Call contextmanager for sudo mode change.
 
-        :param enforce: Enforce sudo enabled or disabled. By default: None
+        :param enforce: Enforce sudo enabled or disabled. By default: None.
         :type enforce: bool | None
-        :return: context manager with selected sudo state inside
+        :return: Context manager with selected sudo state inside.
         :rtype: typing.ContextManager[None]
         """
         return _SudoContext(ssh=self, enforce=enforce)
@@ -971,9 +972,9 @@ class SSHClientBase(api.ExecHelper):
     def keepalive(self, enforce: KeepAlivePeriodT = 1) -> _KeepAliveContext:
         """Call contextmanager with keepalive period change.
 
-        :param enforce: Enforce keepalive period.
+        :param enforce: Enforce a keepalive period.
         :type enforce: int | bool
-        :return: context manager with selected keepalive state inside
+        :return: Context manager with selected keepalive state inside.
         :rtype: typing.ContextManager[None]
 
         .. Note:: Enter and exit ssh context manager is produced as well.
@@ -984,10 +985,10 @@ class SSHClientBase(api.ExecHelper):
     def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
         """Prepare command: cover chroot and other cases.
 
-        :param cmd: main command
-        :param chroot_path: path to make chroot for execution
-        :param chroot_exe: chroot executable, default "chroot"
-        :return: final command, includes chroot, if required
+        :param cmd: Main command.
+        :param chroot_path: Path to make chroot for execution.
+        :param chroot_exe: chroot executable, default "chroot".
+        :return: The final command includes chroot, if required.
         """
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
@@ -1015,28 +1016,28 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
-        :param command: executed command (for logs)
+        :param command: Executed command (for logs).
         :type command: str
-        :param async_result: execute_async result
+        :param async_result: execute_async result.
         :type async_result: SshExecuteAsyncResult
-        :param timeout: timeout before stop execution with TimeoutError
+        :param timeout: Timeout before stop execution with TimeoutError.
         :type timeout: int | float | None
-        :param verbose: produce log.info records for STDOUT/STDERR
+        :param verbose: Produce log.info records for STDOUT/STDERR.
         :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
         """
@@ -1104,29 +1105,29 @@ class SSHClientBase(api.ExecHelper):
     ) -> _SSHExecuteContext:
         """Get execution context manager.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: chroot exe override.
         :type chroot_exe: str
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
         :param timeout: Timeout for **connection open**.
         :type timeout: int | float | None
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execute context
+        :return: Execute context.
         :rtype: _SSHExecuteContext
         .. versionadded:: 8.0.0
         """
@@ -1167,43 +1168,43 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: chroot exe override.
         :type chroot_exe: str
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 1.2.0 default timeout 1 hour.
+        .. versionchanged:: 2.1.0 Allow parallel calls.
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         .. versionchanged:: 8.0.0 chroot path exposed.
         .. versionchanged:: 8.1.0 chroot exe added.
@@ -1247,43 +1248,43 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: Chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: Chroot exe override.
         :type chroot_exe: str
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 2.1.0 Allow parallel calls
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 2.1.0 Allow parallel calls.
         """
         return super().__call__(
             command=command,
@@ -1324,49 +1325,49 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command and check for return code.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param error_info: Text for error details, if fail happens
+        :param error_info: Text for error details, if fail happens.
         :type error_info: str | None
-        :param expected: expected return codes (0 by default)
+        :param expected: Expected return codes (0 by default).
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param raise_on_err: Raise exception on unexpected return code
+        :param raise_on_err: Raise exception on unexpected return code.
         :type raise_on_err: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: type[exceptions.CalledProcessError]
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code
+        :raises ExecHelperTimeoutError: Timeout exceeded.
+        :raises CalledProcessError: Unexpected exit code.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 3.2.0 Exception class can be substituted.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
         """
         return super().check_call(
             command=command,
@@ -1411,49 +1412,49 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command expecting return code 0 and empty STDERR.
 
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param error_info: Text for error details, if fail happens
+        :param error_info: Text for error details, if fail happens.
         :type error_info: str | None
-        :param raise_on_err: Raise exception on unexpected return code
+        :param raise_on_err: Raise exception on unexpected return code.
         :type raise_on_err: bool
-        :param expected: expected return codes (0 by default)
+        :param expected: Expected return codes (0 by default).
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param get_pty: Get PTY for connection
+        :param get_pty: Get PTY for connection.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
         :param exception_class: Exception class for errors. Subclass of CalledProcessError is mandatory.
         :type exception_class: type[exceptions.CalledProcessError]
-        :param kwargs: additional parameters for call.
+        :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
-        :raises CalledProcessError: Unexpected exit code or stderr presents
+        :raises ExecHelperTimeoutError: Timeout exceeded.
+        :raises CalledProcessError: Unexpected exit code or stderr presents.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 3.2.0 Exception class can be substituted.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
         """
         return super().check_stderr(
             command=command,
@@ -1490,17 +1491,17 @@ class SSHClientBase(api.ExecHelper):
     ) -> Self:
         """Start new SSH connection using current as proxy.
 
-        :param host: remote hostname
+        :param host: Remote hostname.
         :type host: str
-        :param port: remote ssh port
+        :param port: Remote ssh port.
         :type port: int | None
-        :param username: remote username.
+        :param username: Remote username.
         :type username: str | None
-        :param password: remote password
+        :param password: Remote password
         :type password: str | None
-        :param auth: credentials for connection
+        :param auth: Credentials for connection.
         :type auth: ssh_auth.SSHAuth | None
-        :param verbose: show additional error/warning messages
+        :param verbose: Show additional error/warning messages.
         :type verbose: bool
         :param ssh_config: SSH configuration for connection. Maybe config path, parsed as dict and paramiko parsed.
         :type ssh_config:
@@ -1511,12 +1512,12 @@ class SSHClientBase(api.ExecHelper):
             | None
         :param ssh_auth_map: SSH authentication information mapped to host names. Useful for complex SSH Proxy cases.
         :type ssh_auth_map: dict[str, ssh_auth.SSHAuth] | ssh_auth.SSHAuthMapping | None
-        :param keepalive: keepalive period
+        :param keepalive: Keepalive period.
         :type keepalive: int | bool
-        :return: new ssh client instance using current as a proxy
+        :return: New ssh client instance using current as a proxy.
         :rtype: SSHClientBase
 
-        .. note:: auth has priority over username/password
+        .. note:: auth has priority over username/password.
 
         .. versionadded:: 6.0.0
         """
@@ -1575,48 +1576,48 @@ class SSHClientBase(api.ExecHelper):
     ) -> exec_result.ExecResult:
         """Execute command on remote host through currently connected host.
 
-        :param hostname: target hostname
+        :param hostname: Target hostname.
         :type hostname: str
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
-        :param auth: credentials for target machine
+        :param auth: Credentials for target machine.
         :type auth: ssh_auth.SSHAuth | None
-        :param port: target port
+        :param port: Target port.
         :type port: int | None
-        :param verbose: Produce log.info records for command call and output
+        :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param log_stdout: log STDOUT during read
+        :param log_stdout: Log STDOUT during read.
         :type log_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param log_stderr: log STDERR during read
+        :param log_stderr: Log STDERR during read.
         :type log_stderr: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param get_pty: open PTY on target machine
+        :param get_pty: Open PTY on target machine.
         :type get_pty: bool
-        :param width: PTY width
+        :param width: PTY width.
         :type width: int
-        :param height: PTY height
+        :param height: PTY height.
         :type height: int
-        :return: Execution result
+        :return: Execution result.
         :rtype: ExecResult
-        :raises ExecHelperTimeoutError: Timeout exceeded
+        :raises ExecHelperTimeoutError: Timeout exceeded.
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments
-        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
-        .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage
-        .. versionchanged:: 6.0.0 only hostname and command are positional argument, target_port changed to port.
-        .. versionchanged:: 7.0.0 target_port argument removed
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd.
+        .. versionchanged:: 3.2.0 Expose pty options as optional keyword-only arguments.
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments.
+        .. versionchanged:: 6.0.0 Move channel open to separate method and make proper ssh-proxy usage.
+        .. versionchanged:: 6.0.0 Only hostname and command are positional argument, target_port changed to port.
+        .. versionchanged:: 7.0.0 target_port argument removed.
         """
         conn: Self
         if auth is None:
@@ -1665,53 +1666,53 @@ class SSHClientBase(api.ExecHelper):
     ) -> dict[tuple[str, int], exec_result.ExecResult]:
         """Execute command on multiple remotes in async mode.
 
-        :param remotes: Connections to execute on
+        :param remotes: Connections to execute on.
         :type remotes: Iterable[SSHClientBase]
-        :param command: Command for execution
+        :param command: Command for execution.
         :type command: str | Iterable[str]
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
-        :param expected: expected return codes (0 by default)
+        :param expected: Expected return codes (0 by default).
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param raise_on_err: Raise exception on unexpected return code
+        :param raise_on_err: Raise exception on unexpected return code.
         :type raise_on_err: bool
-        :param stdin: pass STDIN text to the process
+        :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
-        :param open_stdout: open STDOUT stream for read
+        :param open_stdout: Open STDOUT stream for read.
         :type open_stdout: bool
-        :param open_stderr: open STDERR stream for read
+        :param open_stderr: Open STDERR stream for read.
         :type open_stderr: bool
-        :param chroot_path: chroot path override
+        :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot exe override
+        :param chroot_exe: chroot exe override.
         :type chroot_exe: str
-        :param verbose: produce verbose log record on command call
+        :param verbose: Produce verbose log record on command call.
         :type verbose: bool
-        :param log_mask_re: regex lookup rule to mask command for logger.
-                            all MATCHED groups will be replaced by '<*masked*>'
+        :param log_mask_re: Regex lookup rule to mask command for logger.
+                            All MATCHED groups will be replaced by '<*masked*>'.
         :type log_mask_re: str | re.Pattern[str] | None
-        :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError
+        :param exception_class: Exception to raise on error. Mandatory subclass of exceptions.ParallelCallProcessError.
         :type exception_class: type[exceptions.ParallelCallProcessError]
-        :param kwargs: additional parameters for execute_async call.
+        :param kwargs: Additional parameters for execute_async call.
         :type kwargs: typing.Any
-        :return: dictionary {(hostname, port): result}
+        :return: Dictionary {(hostname, port): result}.
         :rtype: dict[tuple[str, int], exec_result.ExecResult]
-        :raises ParallelCallProcessError: Unexpected any code at lest on one target
-        :raises ParallelCallExceptionsError: At lest one exception raised during execution (including timeout)
+        :raises ParallelCallProcessError: Unexpected any code at lest on one target.
+        :raises ParallelCallExceptionsError: At lest one exception raised during execution (including timeout).
 
-        .. versionchanged:: 1.2.0 default timeout 1 hour
-        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
-        .. versionchanged:: 3.2.0 Exception class can be substituted
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
-        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments
+        .. versionchanged:: 1.2.0 Default timeout 1 hour.
+        .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd.
+        .. versionchanged:: 3.2.0 Exception class can be substituted.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
+        .. versionchanged:: 4.0.0 Expose stdin and log_mask_re as optional keyword-only arguments.
         """
 
         def get_result(remote: SSHClientBase) -> exec_result.ExecResult:
             """Get result from remote call.
 
-            :param remote: SSH connection instance
-            :return: execution result
-            :raises ExecHelperTimeoutError: Timeout exceeded
+            :param remote: SSH connection instance.
+            :return: Execution result.
+            :raises ExecHelperTimeoutError: Timeout exceeded.
             """
             # pylint: disable=protected-access
             cmd_for_log: str = remote._mask_command(cmd=cmd, log_mask_re=log_mask_re)
@@ -1792,11 +1793,11 @@ class SSHClientBase(api.ExecHelper):
     def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
         """Open file on remote using SFTP session.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :param mode: open file mode ('t' is not supported)
+        :param mode: Open file mode ('t' is not supported).
         :type mode: str
-        :return: file.open() stream
+        :return: file.open() stream.
         :rtype: paramiko.SFTPFile
         """
         return self._sftp.open(pathlib.PurePath(path).as_posix(), mode)  # pragma: no cover
@@ -1804,9 +1805,9 @@ class SSHClientBase(api.ExecHelper):
     def exists(self, path: SupportPathT) -> bool:
         """Check for file existence using SFTP session.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :return: path is valid (object exists)
+        :return: path is valid (an object exists).
         :rtype: bool
         """
         try:
@@ -1819,9 +1820,9 @@ class SSHClientBase(api.ExecHelper):
     def stat(self, path: SupportPathT) -> paramiko.sftp_attr.SFTPAttributes:
         """Get stat info for path with following symlinks.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :return: stat like information for remote path
+        :return: stat like information for a remote path.
         :rtype: paramiko.sftp_attr.SFTPAttributes
         """
         return self._sftp.stat(pathlib.PurePath(path).as_posix())  # pragma: no cover
@@ -1829,9 +1830,9 @@ class SSHClientBase(api.ExecHelper):
     def utime(self, path: SupportPathT, times: tuple[int, int] | None = None) -> None:
         """Set atime, mtime.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :param times: (atime, mtime)
+        :param times: (atime, mtime).
         :type times: tuple[int, int] | None
 
         .. versionadded:: 1.0.0
@@ -1841,9 +1842,9 @@ class SSHClientBase(api.ExecHelper):
     def isfile(self, path: SupportPathT) -> bool:
         """Check, that path is file using SFTP session.
 
-        :param path: remote path to validate
+        :param path: Remote path to validate.
         :type path: str | pathlib.PurePath
-        :return: path is file
+        :return: path is file.
         :rtype: bool
         """
         try:
@@ -1857,9 +1858,9 @@ class SSHClientBase(api.ExecHelper):
     def isdir(self, path: SupportPathT) -> bool:
         """Check, that path is directory using SFTP session.
 
-        :param path: remote path to validate
+        :param path: Remote path to validate.
         :type path: str | pathlib.PurePath
-        :return: path is directory
+        :return: path is directory.
         :rtype: bool
         """
         try:
@@ -1873,9 +1874,9 @@ class SSHClientBase(api.ExecHelper):
     def islink(self, path: SupportPathT) -> bool:
         """Check, that path is symlink using SFTP session.
 
-        :param path: remote path to validate
+        :param path: Remote path to validate.
         :type path: str | pathlib.PurePath
-        :return: path is symlink
+        :return: path is symlink.
         :rtype: bool
         """
         try:
@@ -1887,11 +1888,11 @@ class SSHClientBase(api.ExecHelper):
             return False
 
     def symlink(self, source: SupportPathT, dest: SupportPathT) -> None:
-        """Produce symbolic link like `os.symlink`.
+        """Produce a symbolic link like `os.symlink`.
 
-        :param source: source path
+        :param source: Source path.
         :type source: str | pathlib.PurePath
-        :param dest: source path
+        :param dest: Destination path.
         :type dest: str | pathlib.PurePath
         """
         self._sftp.symlink(pathlib.PurePath(source).as_posix(), pathlib.PurePath(dest).as_posix())  # pragma: no cover
@@ -1899,9 +1900,9 @@ class SSHClientBase(api.ExecHelper):
     def chmod(self, path: SupportPathT, mode: int) -> None:
         """Change the mode (permissions) of a file like `os.chmod`.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :param mode: new permissions
+        :param mode: New permissions.
         :type mode: int
         """
         self._sftp.chmod(pathlib.PurePath(path).as_posix(), mode)  # pragma: no cover
@@ -1909,11 +1910,11 @@ class SSHClientBase(api.ExecHelper):
     def chown(self, path: SupportPathT, uid: int, gid: int) -> None:
         """Change ownership for remote file.
 
-        :param path: filesystem object path
+        :param path: Filesystem object path.
         :type path: str | pathlib.PurePath
-        :param uid: user identifier
+        :param uid: User identifier.
         :type uid: int
-        :param gid: group identifier
+        :param gid: Group identifier.
         :type gid: int
         """
         self._sftp.chown(path=pathlib.PurePath(path).as_posix(), uid=uid, gid=gid)  # pragma: no cover

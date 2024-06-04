@@ -39,9 +39,9 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
     def safe_stop(proc: psutil.Process, kill: bool = False) -> None:
         """Do not crash on already stopped process.
 
-        :param proc: target process
+        :param proc: Target process.
         :type proc: psutil.Process
-        :param kill: use SIGKILL instead of SIGTERM
+        :param kill: Use SIGKILL instead of SIGTERM.
         :type kill: bool
         """
         with contextlib.suppress(psutil.NoSuchProcess):
@@ -52,7 +52,7 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
     try:
         parent = psutil.Process(pid)
     except psutil.NoSuchProcess:
-        # Process is already closed
+        # The process is already closed
         return
     children: list[psutil.Process] = parent.children(recursive=True)
     child: psutil.Process

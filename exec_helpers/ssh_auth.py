@@ -55,17 +55,17 @@ class SSHAuth:
         Single SSHAuth object is associated with single host:port.
         Password and key is private, other data is read-only.
 
-        :param username: remote username.
+        :param username: Remote username.
         :type username: str | None
-        :param password: remote password
+        :param password: Remote password.
         :type password: str | None
-        :param key: Main connection key
+        :param key: Main connection key.
         :type key: paramiko.PKey | None
-        :param keys: Alternate connection keys
+        :param keys: Alternate connection keys.
         :type keys: Sequence[paramiko.PKey | None] | None
-        :param key_filename: filename(s) for additional key files
+        :param key_filename: Filename(s) for additional key files.
         :type key_filename: Iterable[str] | str | None
-        :param passphrase: passphrase for keys. Need, if differs from password
+        :param passphrase: Passphrase for keys. Need, if differs from password.
         :type passphrase: str | None
 
         .. versionchanged:: 1.0.0
@@ -107,7 +107,7 @@ class SSHAuth:
     def username(self) -> str | None:
         """Username for auth.
 
-        :return: auth username
+        :return: Auth username.
         :rtype: str
         """
         return self.__username
@@ -116,9 +116,9 @@ class SSHAuth:
     def __get_public_key(key: paramiko.PKey | None) -> str | None:
         """Internal method for get public key from private.
 
-        :param key: SSH private key
+        :param key: SSH private key.
         :type key: paramiko.PKey
-        :return: public key text if applicable
+        :return: Public key text if applicable.
         :rtype: str | None
         """
         if key is None:
@@ -127,9 +127,9 @@ class SSHAuth:
 
     @property
     def public_key(self) -> str | None:
-        """Public key for stored private key if presents else None.
+        """Public key for the stored private key if presents else None.
 
-        :return: public key for current private key
+        :return: Public key for the current private key.
         :rtype: str
         """
         return self.__get_public_key(self.__keys[self.__key_index])
@@ -138,7 +138,7 @@ class SSHAuth:
     def key_filename(self) -> Collection[str]:
         """Key filename(s).
 
-        :return: copy of used key filename (original should not be changed via mutability).
+        :return: Copy of used key filename (original should not be changed via mutability).
         .. versionadded:: 1.0.0
         .. versionchanged:: 7.0.5 changed type relying on paramiko sources
         """
@@ -149,7 +149,7 @@ class SSHAuth:
 
         Note: required for 'sudo' call
 
-        :param tgt: Target
+        :param tgt: Target.
         :type tgt: typing.BinaryIO
         """
         # noinspection PyTypeChecker
@@ -165,19 +165,19 @@ class SSHAuth:
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         allow_ssh_agent: bool = True,
     ) -> None:
-        """Connect SSH client object using credentials.
+        """Connect the SSH client object using credentials.
 
-        :param client: SSH Client (low level)
+        :param client: SSH Client (low level).
         :type client: paramiko.SSHClient
-        :param hostname: remote hostname
+        :param hostname: Remote hostname.
         :type hostname: str
-        :param port: remote ssh port
+        :param port: Remote ssh port.
         :type port: int
-        :param log: Log on generic connection failure
+        :param log: Log on generic connection failure.
         :type log: bool
-        :param sock: socket for connection. Useful for ssh proxies support
+        :param sock: Socket for connection. Useful for ssh proxies support.
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
-        :param allow_ssh_agent: use SSH Agent if available
+        :param allow_ssh_agent: Use SSH Agent if available.
         :type allow_ssh_agent: bool
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
@@ -223,7 +223,7 @@ class SSHAuth:
     def __hash__(self) -> int:
         """Hash for usage as dict keys and comparison.
 
-        :return: hash value
+        :return: Hash value.
         :rtype: int
         """
         return hash(
@@ -240,9 +240,9 @@ class SSHAuth:
     def __eq__(self, other: object) -> bool:
         """Comparison helper.
 
-        :param other: other SSHAuth instance
+        :param other: Another SSHAuth instance.
         :type other: typing.Any
-        :return: current object equals other
+        :return: Current object equals other.
         :rtype: bool
         """
         return hash(self) == hash(other)
@@ -250,9 +250,9 @@ class SSHAuth:
     def __ne__(self, other: object) -> bool:
         """Comparison helper.
 
-        :param other: other SSHAuth instance
+        :param other: Another SSHAuth instance.
         :type other: typing.Any
-        :return: current object not equals other
+        :return: Current object doesn't equal other.
         :rtype: bool
         """
         return not self.__eq__(other)
@@ -260,9 +260,9 @@ class SSHAuth:
     def __deepcopy__(self, memo: typing.Any) -> SSHAuth:
         """Helper for copy.deepcopy.
 
-        :param memo: copy.deepcopy() memodict
+        :param memo: copy.deepcopy() memodict.
         :type memo: typing.Any
-        :return: re-constructed copy of current class
+        :return: Re-constructed copy of the current class.
         :rtype: SSHAuth
         """
         # noinspection PyTypeChecker
@@ -278,7 +278,7 @@ class SSHAuth:
     def __copy__(self) -> SSHAuth:
         """Copy self.
 
-        :return: re-constructed copy of current class
+        :return: Re-constructed copy of the current class.
         :rtype: SSHAuth
         """
         # noinspection PyTypeChecker
@@ -294,7 +294,7 @@ class SSHAuth:
     def __repr__(self) -> str:
         """Representation for debug purposes.
 
-        :return: partial instance fields in human-friendly format
+        :return: Partial instance fields in human-friendly format.
         :rtype: str
         """
         if self.__keys[self.__key_index] is None:
@@ -322,16 +322,16 @@ class SSHAuth:
     def __str__(self) -> str:
         """Representation for debug purposes.
 
-        :return: user name related to class instance
+        :return: Username related to class instance.
         :rtype: str
         """
         return f"{self.__class__.__name__} for {self.username}"
 
 
 class SSHAuthMapping(typing.Dict[str, SSHAuth]):
-    """Specific dictionary for  ssh hostname - auth mapping.
+    """Specific dictionary for ssh hostname - auth mapping.
 
-    keys are always string and saved/collected lowercase.
+    Keys are always string and saved/collected lowercase.
     """
 
     __slots__ = ()
@@ -341,13 +341,13 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
         auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None = None,
         **auth_mapping: SSHAuth,
     ) -> None:
-        """Specific dictionary for  ssh hostname - auth mapping.
+        """Specific dictionary for ssh hostname - auth mapping.
 
-        :param auth_dict: original hostname - source ssh auth mapping (dictionary of SSHAuthMapping)
+        :param auth_dict: Original hostname - source ssh auth mapping (dictionary of SSHAuthMapping).
         :type auth_dict: dict[str, SSHAuth] | SSHAuthMapping | None
-        :param auth_mapping: SSHAuth setting via **kwargs
+        :param auth_mapping: SSHAuth setting via **kwargs.
         :type auth_mapping: SSHAuth
-        :raises TypeError: Incorrect type of auth dict or auth object
+        :raises TypeError: Incorrect type of auth dict or auth object.
         """
         super().__init__()
         if auth_dict is not None:
@@ -366,11 +366,11 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
     def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
         """Dict-like access.
 
-        :param hostname: key - hostname
+        :param hostname: Key - hostname.
         :type hostname: str
-        :param auth: value - SSHAuth object
+        :param auth: value - SSHAuth object.
         :type auth: SSHAuth
-        :raises TypeError: key is not string or value is not SSHAuth.
+        :raises TypeError: Key is not string or value is not SSHAuth.
         """
         if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
@@ -381,11 +381,11 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
     def __getitem__(self, hostname: str) -> SSHAuth:
         """Dict-like access.
 
-        :param hostname: key - hostname
+        :param hostname: Key - hostname.
         :type hostname: str
-        :return: associated SSHAuth object
+        :return: Associated SSHAuth object.
         :rtype: SSHAuth
-        :raises TypeError: key is not string.
+        :raises TypeError: Key is not a string.
         """
         if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
@@ -417,17 +417,17 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
     ) -> SSHAuth | None:
         """Try to guess hostname with credentials.
 
-        :param hostname: expected target hostname
+        :param hostname: Expected target hostname.
         :type hostname: str
-        :param host_names: alternate host names
+        :param host_names: Alternate host names.
         :type host_names: str
-        :param default: credentials if hostname not found
+        :param default: Credentials if hostname not found.
         :type default: SSHAuth | None
-        :return: guessed credentials
+        :return: Guessed credentials.
         :rtype: SSHAuth | None
-        :raises TypeError: Default SSH Auth object is not SSHAuth
+        :raises TypeError: Default SSH Auth object is not SSHAuth.
 
-        Method used in cases, when 1 host share 2 or more names in config.
+        Method used in cases when 1 host shares two or more names in config.
         """
         if default is not None and not isinstance(default, SSHAuth):  # pragma: no cover
             raise TypeError(f"Default SSH Auth object is not SSHAuth!. (got {default!r})")
@@ -441,9 +441,9 @@ class SSHAuthMapping(typing.Dict[str, SSHAuth]):
     def __delitem__(self, hostname: str) -> None:
         """Dict-like access.
 
-        :param hostname: key - hostname
+        :param hostname: Key - hostname.
         :type hostname: str
-        :raises TypeError: key is not string.
+        :raises TypeError: Key is not a string.
         """
         if not isinstance(hostname, str):  # pragma: no cover
             raise TypeError(f"Hostname should be string only! Got: {hostname!r}")

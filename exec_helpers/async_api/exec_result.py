@@ -44,10 +44,10 @@ class ExecResult(exec_result.ExecResult):
     ) -> list[bytes]:
         """Stream poll helper.
 
-        :param src: source to read from
-        :param log: logger instance, if line per line logging expected
-        :param verbose: use INFO level for logging
-        :return: read result as list of bytes strings
+        :param src: Source to read from.
+        :param log: Logger instance, if line per-line logging is expected.
+        :param verbose: Use INFO level for logging.
+        :return: Read result as a list of byte strings.
         """
         dst: list[bytes] = []
         with contextlib.suppress(IOError):
@@ -68,13 +68,13 @@ class ExecResult(exec_result.ExecResult):
     ) -> None:
         """Read asyncio stdout transport to stdout.
 
-        :param src: source
+        :param src: Source.
         :type src: AsyncIterable[bytes] | None
-        :param log: logger
+        :param log: Logger.
         :type log: logging.Logger | None
-        :param verbose: use log.info instead of log.debug
+        :param verbose: Use log.info instead of log.debug.
         :type verbose: bool
-        :raises RuntimeError: Exit code is already received
+        :raises RuntimeError: Exit code is already received.
 
         .. versionadded:: 3.0.0
         """
@@ -95,13 +95,13 @@ class ExecResult(exec_result.ExecResult):
     ) -> None:
         """Read asyncio stderr transport to stdout.
 
-        :param src: source
+        :param src: Source.
         :type src: AsyncIterable[bytes] | None
-        :param log: logger
+        :param log: Logger.
         :type log: logging.Logger | None
-        :param verbose: use log.info instead of log.debug
+        :param verbose: Use log.info instead of log.debug.
         :type verbose: bool
-        :raises RuntimeError: Exit code is already received
+        :raises RuntimeError: Exit code is already received.
 
         .. versionadded:: 3.0.0
         """

@@ -39,9 +39,9 @@ class SSHClient(_ssh_base.SSHClientBase):
     def _path_esc(path: str) -> str:
         """Escape space character in the path.
 
-        :param path: path to be escaped
+        :param path: Path to be escaped.
         :type path: str
-        :return: path with escaped spaces
+        :return: Path with escaped spaces.
         :rtype: str
         """
         return path.replace(" ", r"\ ")
@@ -49,7 +49,7 @@ class SSHClient(_ssh_base.SSHClientBase):
     def mkdir(self, path: SupportPathT) -> None:
         """Run 'mkdir -p path' on remote.
 
-        :param path: path to create
+        :param path: Path to create.
         :type path: str | pathlib.PurePath
         """
         if self.exists(path):
@@ -60,7 +60,7 @@ class SSHClient(_ssh_base.SSHClientBase):
     def rm_rf(self, path: SupportPathT) -> None:
         """Run 'rm -rf path' on remote.
 
-        :param path: path to remove
+        :param path: Path to remove.
         :type path: str | pathlib.PurePath
         """
         # noinspection PyTypeChecker
@@ -69,9 +69,9 @@ class SSHClient(_ssh_base.SSHClientBase):
     def upload(self, source: SupportPathT, target: SupportPathT) -> None:
         """Upload file(s) from source to target using SFTP session.
 
-        :param source: local path
+        :param source: Local path.
         :type source: str | pathlib.PurePath
-        :param target: remote path
+        :param target: Remote path.
         :type target: str | pathlib.PurePath
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
@@ -101,11 +101,11 @@ class SSHClient(_ssh_base.SSHClientBase):
     def download(self, destination: SupportPathT, target: SupportPathT) -> bool:
         """Download file(s) to target from destination.
 
-        :param destination: remote path
+        :param destination: Remote path.
         :type destination: str | pathlib.PurePath
-        :param target: local path
+        :param target: Local path.
         :type target: str | pathlib.PurePath
-        :return: downloaded file present on local filesystem
+        :return: Downloaded file present on local filesystem.
         :rtype: bool
         """
         self.logger.debug(f"Copying '{destination}' -> '{target}' from remote to local host")

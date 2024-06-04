@@ -71,7 +71,7 @@ class SigNum(enum.IntEnum):
     def __str__(self) -> str:
         """Representation for logs.
 
-        :return: string with value in decimal, hex and text information
+        :return: String with value in decimal, hex and text information.
         :rtype: str
         """
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"  # pragma: no cover
@@ -177,7 +177,7 @@ class ExitCodes(enum.IntEnum):
     def __str__(self) -> str:
         """Representation for logs.
 
-        :return: string with value in decimal, hex and text information
+        :return: String with value in decimal, hex and text information.
         :rtype: str
         """
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"
@@ -191,8 +191,8 @@ INVALID: ExitCodeT = 0xDEADBEEF if sys.platform == "win32" else ExitCodes.EX_INV
 def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
     """Convert exit code to enum if possible.
 
-    :param code: code to convert from
-    :return: enum code if suitable else original code
+    :param code: Code to convert from.
+    :return: Enum code if suitable else original code.
     """
     if sys.platform == "win32":
         return int(code)
@@ -204,8 +204,8 @@ def exit_code_to_enum(code: ExitCodeT) -> ExitCodeT:  # pragma: no cover
 def exit_codes_to_enums(codes: Iterable[ExitCodeT] | None = None) -> Sequence[ExitCodeT]:
     """Convert integer exit codes to enums.
 
-    :param codes: exit codes to process
-    :return: exit codes as enums if suitable
+    :param codes: Exit codes to process.
+    :return: Exit codes as enums if suitable.
     """
     if codes is None:
         # noinspection PyRedundantParentheses

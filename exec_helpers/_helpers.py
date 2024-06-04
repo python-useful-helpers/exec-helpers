@@ -12,10 +12,10 @@ if typing.TYPE_CHECKING:
 
 
 def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
-    """Get bytes string from string/bytes/bytearray union.
+    """Get byte string from string/bytes/bytearray union.
 
-    :param src: source string or bytes-like object
-    :return: Byte string
+    :param src: Source string or bytes-like object.
+    :return: Byte string.
     :rtype: bytes
     :raises TypeError: unexpected source type.
     """
@@ -31,11 +31,11 @@ def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
 def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
     """Mask part of text using rules.
 
-    :param text: source text
+    :param text: Source text.
     :type text: str
-    :param rules: regex rules to mask.
+    :param rules: Regex rules to mask.
     :type rules: str | re.Pattern
-    :return: source with all MATCHED groups replaced by '<*masked*>'
+    :return: Source with all MATCHED groups replaced by '<*masked*>'.
     :rtype: str
     """
     masked: list[str] = []
@@ -55,11 +55,11 @@ def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
 def mask_command(text: str, *rules: str | re.Pattern[str] | None) -> str:
     """Apply all rules to command.
 
-    :param text: source text
+    :param text: Source text.
     :type text: str
-    :param rules: regex rules to mask.
+    :param rules: Regex rules to mask.
     :type rules: str | re.Pattern[str] | None
-    :return: source with all MATCHED groups replaced by '<*masked*>'
+    :return: Source with all MATCHED groups replaced by '<*masked*>'.
     :rtype: str
     """
     return functools.reduce(_mask_command, (rule for rule in rules if rule is not None), text)
@@ -68,9 +68,9 @@ def mask_command(text: str, *rules: str | re.Pattern[str] | None) -> str:
 def cmd_to_string(command: str | Iterable[str]) -> str:
     """Convert command to string for usage with shell.
 
-    :param command: original command.
+    :param command: Original command.
     :type command: str | Iterable[str]
-    :return: command as single string
+    :return: Command as single string.
     :rtype: str
     """
     if isinstance(command, str):
@@ -81,13 +81,13 @@ def cmd_to_string(command: str | Iterable[str]) -> str:
 def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
     """Prepare command for chroot execution.
 
-    :param command: original command.
+    :param command: Original command.
     :type command: str
-    :param chroot_path: chroot path
+    :param chroot_path: chroot path.
     :type chroot_path: str | None
-    :param chroot_exe: chroot executable
+    :param chroot_exe: chroot executable.
     :type chroot_exe: str
-    :return: command to be executed with chroot rules if applicable
+    :return: Command to be executed with chroot rules if applicable.
     :rtype: str
     """
     if chroot_path and chroot_path != "/":

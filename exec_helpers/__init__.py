@@ -87,8 +87,8 @@ _deprecated: dict[str, str] = {}
 def __getattr__(name: str) -> typing.Any:
     """Get attributes lazy.
 
-    :return: attribute by name
-    :raises AttributeError: attribute is not defined for lazy load
+    :return: Attribute by name.
+    :raises AttributeError: Attribute is not defined for the lazy load.
     """
     if name in _deprecated:
         warnings.warn(

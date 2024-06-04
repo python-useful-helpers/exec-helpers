@@ -27,9 +27,9 @@ SSH_CONFIG_FILE_USER = pathlib.Path("~/.ssh/config").expanduser()
 def _parse_ssh_config_file(file_path: pathlib.Path) -> paramiko.SSHConfig | None:
     """Parse ssh config file.
 
-    :param file_path: file path for parsing
+    :param file_path: File path for parsing.
     :type file_path: pathlib.Path
-    :return: SSH config if file found and parsed else None
+    :return: SSH config if file found and parsed else None.
     :rtype: paramiko.SSHConfig | None
     """
     if not file_path.exists():
@@ -73,21 +73,21 @@ class SSHConfig:
     ):
         """SSH Config for creation connection.
 
-        :param hostname: hostname, which config relates
+        :param hostname: Hostname, which config relates.
         :type hostname: str
-        :param port: remote port
+        :param port: Remote port.
         :type port: str | int | None
-        :param user: remote user
+        :param user: Remote user.
         :type user: str | None
-        :param identityfile: connection ssh keys file names
+        :param identityfile: Connection ssh keys file names.
         :type identityfile: Collection[str] | None
-        :param proxycommand: proxy command for ssh connection
+        :param proxycommand: Proxy command for ssh connection.
         :type proxycommand: str | None
+        :param proxyjump: Proxy host name.
         :type proxyjump: str | None
-        :param proxyjump: proxy host name
-        :param controlpath: shared socket file path for re-using connection by multiple instances
+        :param controlpath: Shared socket file path for re-using connection by multiple instances.
         :type controlpath: str | None
-        :param controlmaster: re-use connection
+        :param controlmaster: Re-use connection.
         :type controlmaster: str | bool | None
         :raises ValueError: Invalid argument provided.
 
@@ -114,7 +114,7 @@ class SSHConfig:
     def __hash__(self) -> int:  # pragma: no cover
         """Hash for caching possibility.
 
-        :return: hash for instance
+        :return: hash for instance.
         :rtype: int
         """
         return hash(
@@ -134,7 +134,7 @@ class SSHConfig:
     def __repr__(self) -> str:
         """Debug support.
 
-        :return: string representation allowing to re-construct object
+        :return: String representation allowing to re-construct an object.
         :rtype: str
         """
         return (
@@ -158,13 +158,13 @@ class SSHConfig:
     ) -> str:
         """Make human-readable representation of object.
 
-        :param log_wrap: logwrap instance
+        :param log_wrap: Logwrap instance.
         :type log_wrap: logwrap.PrettyRepr
-        :param indent: start indentation
+        :param indent: Start indentation.
         :type indent: int
-        :param no_indent_start: do not indent open bracket and simple parameters
+        :param no_indent_start: Do not indent open bracket and simple parameters.
         :type no_indent_start: bool
-        :return: formatted string
+        :return: Formatted string.
         :rtype: str
         """
         next_indent = log_wrap.next_indent(indent)
@@ -186,9 +186,9 @@ class SSHConfig:
     def _parse_optional_int(value: str | int | None) -> int | None:
         """Parse optional integer field in source data.
 
-        :param value: value to process
+        :param value: Value to process.
         :type value: str | int | None
-        :return: integer value if applicable
+        :return: Integer value if applicable.
         :rtype: int | None
         """
         if value is None or isinstance(value, int):
@@ -199,9 +199,9 @@ class SSHConfig:
     def _parse_optional_bool(value: str | bool | None) -> bool | None:
         """Parse optional bool field in source data.
 
-        :param value: value to process
+        :param value: Value to process.
         :type value: str | bool | None
-        :return: boolean value if applicable
+        :return: Boolean value if applicable.
         :rtype: bool | None
         """
         if value is None or isinstance(value, bool):
@@ -215,9 +215,9 @@ class SSHConfig:
     ) -> SSHConfig:
         """Construct config from Paramiko parsed file.
 
-        :param ssh_config: paramiko parsed ssh config or it reconstruction as a dict
+        :param ssh_config: Paramiko parsed ssh config or it reconstruction as a dict.
         :type ssh_config: paramiko.config.SSHConfigDict | dict[str, str | int | bool | list[str]]
-        :return: SSHConfig with supported values from config
+        :return: SSHConfig with supported values from config.
         :rtype: SSHConfig
         """
         return cls(
@@ -235,7 +235,7 @@ class SSHConfig:
     def as_dict(self) -> SSHConfigDictLikeT:
         """Dictionary for rebuilding config.
 
-        :return: config as dictionary with only not None values
+        :return: Config as dictionary with only not None values.
         :rtype: dict[str, str | int | bool | list[str]]
         """
         result: SSHConfigDictLikeT = {"hostname": self.hostname}
@@ -258,9 +258,9 @@ class SSHConfig:
     def overridden_by(self, ssh_config: SSHConfig) -> SSHConfig:
         """Get copy with values overridden by another config.
 
-        :param ssh_config: Other ssh config
+        :param ssh_config: Other ssh config.
         :type ssh_config: SSHConfig
-        :return: Composite from 2 configs with priority of second one
+        :return: Composite from two configs with priority of second one.
         :rtype: SSHConfig
         """
         cls: type[SSHConfig] = self.__class__
@@ -281,7 +281,7 @@ class SSHConfig:
     ) -> bool | type(NotImplemented):  # type: ignore[valid-type]
         """Equality check.
 
-        :return: other equals self
+        :return: Other equals self.
         :rtype: bool
         """
         if isinstance(other, SSHConfig):
@@ -306,7 +306,7 @@ class SSHConfig:
     def hostname(self) -> str:
         """Hostname which config relates.
 
-        :return: remote hostname
+        :return: Remote hostname.
         :rtype: str
         """
         return self.__hostname
@@ -315,7 +315,7 @@ class SSHConfig:
     def port(self) -> int | None:
         """Remote port.
 
-        :return: propagated remote port for connection
+        :return: Propagated remote port for connection.
         :rtype: int | None
         """
         return self.__port
@@ -324,7 +324,7 @@ class SSHConfig:
     def user(self) -> str | None:
         """Remote user.
 
-        :return: propagated username for connection
+        :return: Propagated username for connection.
         :rtype: str | None
         """
         return self.__user
@@ -333,7 +333,7 @@ class SSHConfig:
     def identityfile(self) -> Collection[str]:
         """Connection ssh keys file names.
 
-        :return: list of ssh private keys names
+        :return: List of ssh private keys names.
         :rtype: Collection[str]
         """
         if self.__identityfile is None:
@@ -346,7 +346,7 @@ class SSHConfig:
     def proxycommand(self) -> str | None:
         """Proxy command for ssh connection.
 
-        :return: command to be executed for socket creation if applicable
+        :return: Command to be executed for socket creation if applicable.
         :rtype: str | None
         """
         return self.__proxycommand
@@ -355,7 +355,7 @@ class SSHConfig:
     def proxyjump(self) -> str | None:
         """Proxy host name.
 
-        :return: proxy hostname if applicable
+        :return: Proxy hostname if applicable.
         :rtype: str | None
         """
         return self.__proxyjump
@@ -364,7 +364,7 @@ class SSHConfig:
     def controlpath(self) -> str | None:
         """Shared socket file path for re-using connection by multiple instances.
 
-        :return: shared socket filesystem path
+        :return: Shared socket filesystem path.
         :rtype: str | None
         """
         return self.__controlpath
@@ -373,7 +373,7 @@ class SSHConfig:
     def controlmaster(self) -> bool | None:
         """Re-use connection.
 
-        :return: connection should be re-used if possible
+        :return: Connection should be re-used if possible.
         :rtype: bool | None
         """
         return self.__controlmaster
@@ -382,17 +382,17 @@ class SSHConfig:
 class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
     """Specific dictionary for managing SSHConfig records.
 
-    Instead of creating new record by request just generate default value and return if not exists.
+    Instead of creating a new record by request, just generate default value and return if not exists.
     """
 
     def __missing__(self, key: str) -> SSHConfig:
         """Missing key handling.
 
-        :param key: nonexistent key
+        :param key: Nonexistent key.
         :type key: str
-        :return: generated ssh config for host
+        :return: Generated ssh config for host.
         :rtype: SSHConfig
-        :raises KeyError: key is not string
+        :raises KeyError: key is not string.
         .. versionadded:: 6.0.0
         """
         if isinstance(key, str):
@@ -403,11 +403,11 @@ class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
 def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHConfigs:
     """Parse Paramiko ssh config for specific host to dictionary.
 
-    :param conf: Paramiko SSHConfig instance
+    :param conf: Paramiko SSHConfig instance.
     :type conf: paramiko.SSHConfig
-    :param host: hostname to seek in config
+    :param host: Hostname to seek in config.
     :type host: str
-    :return: parsed dictionary with proxy jump path, if available
+    :return: Parsed dictionary with a proxy jump path, if available.
     :rtype: HostsSSHConfigs
     """
     config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.lookup(host))})
@@ -424,11 +424,11 @@ def _parse_paramiko_ssh_config(conf: paramiko.SSHConfig, host: str) -> HostsSSHC
 def _parse_dict_ssh_config(conf: SSHConfigsDictT, host: str) -> HostsSSHConfigs:
     """Extract required data from pre-parsed ssh config for specific host to dictionary.
 
-    :param conf: pre-parsed dictionary
+    :param conf: Pre-parsed dictionary.
     :type conf: dict[str, dict[str, str | int | bool | list[str]]]
-    :param host: hostname to seek in config
+    :param host: Hostname to seek in config.
     :type host: str
-    :return: parsed dictionary with proxy jump path, if available
+    :return: Parsed dictionary with a proxy jump path, if available.
     :rtype: HostsSSHConfigs
     """
     config = HostsSSHConfigs({host: SSHConfig.from_ssh_config(conf.get(host, {"hostname": host}))})
@@ -454,9 +454,9 @@ def parse_ssh_config(
         | paramiko.SSHConfig
         | dict[str, dict[str, str | int | bool | list[str]]]
         | None
-    :param host: remote hostname
+    :param host: Remote hostname.
     :type host: str
-    :return: parsed ssh config if available
+    :return: Parsed ssh config if available.
     :rtype: HostsSSHConfigs
     """
     if isinstance(ssh_config, paramiko.SSHConfig):

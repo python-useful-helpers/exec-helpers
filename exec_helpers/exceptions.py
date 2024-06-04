@@ -59,7 +59,7 @@ class ExecCalledProcessError(ExecHelperError):
 
 
 class ExecHelperTimeoutProcessError(ExecCalledProcessError):
-    """Timeout based errors."""
+    """Timeout-based errors."""
 
     __slots__ = ("result", "timeout")
 
@@ -72,11 +72,11 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     ) -> None:
         """Exception for error on process calls.
 
-        :param message: exception message
+        :param message: Exception message.
         :type message: str
-        :param result: execution result
+        :param result: Execution result.
         :type result: exec_result.ExecResult
-        :param timeout: timeout for command
+        :param timeout: Timeout for command.
         :type timeout: int | float
         """
         super().__init__(message)
@@ -87,7 +87,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def cmd(self) -> str:
         """Failed command.
 
-        :return: command
+        :return: Command.
         """
         return self.result.cmd
 
@@ -95,7 +95,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def stdout(self) -> str:
         """Command stdout.
 
-        :return: command stdout as string
+        :return: Command STDOUT as string.
         """
         return self.result.stdout_str
 
@@ -103,7 +103,7 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
     def stderr(self) -> str:
         """Command stderr.
 
-        :return: command stderr as string
+        :return: Command STDERR as string.
         """
         return self.result.stderr_str
 
@@ -123,9 +123,9 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
     ) -> None:
         """Exception for error on process calls.
 
-        :param result: execution result
+        :param result: Execution result.
         :type result: exec_result.ExecResult
-        :param timeout: timeout for command
+        :param timeout: Timeout for command.
         :type timeout: int | float
         """
         message: str = (
@@ -142,8 +142,8 @@ class ExecHelperNoKillError(ExecHelperTimeoutProcessError):
 class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
     """Execution timeout.
 
-    .. versionchanged:: 1.3.0 provide full result and timeout inside.
-    .. versionchanged:: 1.3.0 subclass ExecCalledProcessError
+    .. versionchanged:: 1.3.0 Provide full result and timeout inside.
+    .. versionchanged:: 1.3.0 Subclass ExecCalledProcessError
     """
 
     __slots__ = ()
@@ -155,9 +155,9 @@ class ExecHelperTimeoutError(ExecHelperTimeoutProcessError):
     ) -> None:
         """Exception for error on process calls.
 
-        :param result: execution result
+        :param result: Execution result.
         :type result: exec_result.ExecResult
-        :param timeout: timeout for command
+        :param timeout: Timeout for command.
         :type timeout: int | float
         """
         message: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)
@@ -176,13 +176,13 @@ class CalledProcessError(ExecCalledProcessError):
     ) -> None:
         """Exception for error on process calls.
 
-        :param result: execution result
+        :param result: Execution result.
         :type result: exec_result.ExecResult
-        :param expected: expected return codes
+        :param expected: Expected return codes.
         :type expected: Iterable[int | proc_enums.ExitCodes]
 
-        .. versionchanged:: 1.1.1 - provide full result
-        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
+        .. versionchanged:: 1.1.1 - provide full result.
+        .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent.
         """
         self.result: exec_result.ExecResult = result
         self.expected: Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
@@ -198,7 +198,7 @@ class CalledProcessError(ExecCalledProcessError):
     def returncode(self) -> ExitCodeT:
         """Command return code.
 
-        :return: command return code
+        :return: Command return code.
         """
         return self.result.exit_code
 
@@ -206,7 +206,7 @@ class CalledProcessError(ExecCalledProcessError):
     def cmd(self) -> str:
         """Failed command.
 
-        :return: command
+        :return: Command.
         """
         return self.result.cmd
 
@@ -214,7 +214,7 @@ class CalledProcessError(ExecCalledProcessError):
     def stdout(self) -> str:
         """Command stdout.
 
-        :return: command stdout as string
+        :return: Command STDOUT as string.
         """
         return self.result.stdout_str
 
@@ -222,7 +222,7 @@ class CalledProcessError(ExecCalledProcessError):
     def stderr(self) -> str:
         """Command stderr.
 
-        :return: command stderr as string
+        :return: Command STDERR as string.
         """
         return self.result.stderr_str
 
@@ -243,15 +243,15 @@ class ParallelCallProcessError(ExecCalledProcessError):
     ) -> None:
         """Exception during parallel execution.
 
-        :param command: command
+        :param command: Command.
         :type command: str
-        :param errors: results with errors
+        :param errors: Results with errors.
         :type errors: dict[tuple[str, int], ExecResult]
-        :param results: all results
+        :param results: All results.
         :type results: dict[tuple[str, int], ExecResult]
-        :param expected: expected return codes
+        :param expected: Expected return codes.
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param _message: message override
+        :param _message: Message override.
         :type _message: str | None
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent
@@ -288,17 +288,17 @@ class ParallelCallExceptionsError(ParallelCallProcessError):
     ) -> None:
         """Exception raised during parallel call as result of exceptions.
 
-        :param command: command
+        :param command: Command.
         :type command: str
-        :param exceptions: Exceptions on connections
+        :param exceptions: Exceptions on connections.
         :type exceptions: dict[tuple[str, int], Exception]
-        :param errors: results with errors
+        :param errors: Results with errors.
         :type errors: dict[tuple[str, int], ExecResult]
-        :param results: all results
+        :param results: All results.
         :type results: dict[tuple[str, int], ExecResult]
-        :param expected: expected return codes
+        :param expected: Expected return codes.
         :type expected: Iterable[int | proc_enums.ExitCodes]
-        :param _message: message override
+        :param _message: Message override.
         :type _message: str | None
 
         .. versionchanged:: 3.4.0 Expected is not optional, defaults os dependent

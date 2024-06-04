@@ -81,14 +81,14 @@ def _handle_deserialize(
     def decorator(method: Callable[[ExecResult], _T]) -> Callable[[ExecResult], _T]:
         """Decorator for decoder getter.
 
-        :return: wrapped to try/except getter
+        :return: Wrapped to try/except getter.
         """
 
         @functools.wraps(method)
         def wrapper(self: ExecResult) -> _T:
             """Getter wrapper.
 
-            :return: getter output
+            :return: Getter output.
             """
             try:
                 return method(self)
@@ -106,22 +106,22 @@ def _handle_deserialize(
 
 
 def _get_str_from_bin(src: bytearray) -> str:
-    """Join data in list to the string.
+    """Join data in a list to the string.
 
-    :param src: source to process
+    :param src: Source to process.
     :type src: bytearray
-    :return: decoded string
+    :return: Decoded string.
     :rtype: str
     """
     return src.rstrip().decode(encoding="utf-8", errors="backslashreplace")
 
 
 def _get_bytearray_from_array(src: Iterable[bytes]) -> bytearray:
-    """Get bytearray from array of bytes blocks.
+    """Get bytearray from an array of bytes blocks.
 
-    :param src: source to process
+    :param src: Source to process.
     :type src: list[bytes]
-    :return: bytearray
+    :return: bytearray.
     :rtype: bytearray
     """
     return bytearray(b"".join(src))
@@ -135,7 +135,7 @@ class LinesAccessProxy:
     def __init__(self, data: Sequence[bytes]) -> None:
         """Lines access proxy.
 
-        :param data: data to work with.
+        :param data: Data to work with.
         :type data: Sequence[bytes]
         """
         self._data: tuple[bytes, ...] = tuple(data)
@@ -147,11 +147,11 @@ class LinesAccessProxy:
     ) -> str:
         """Access magic.
 
-        :param item: index
+        :param item: Index.
         :type item: int | slice | Iterable[int | slice | ellipsis]
-        :return: Joined selected lines
+        :return: Joined selected lines.
         :rtype: str
-        :raises TypeError: Unexpected key
+        :raises TypeError: Unexpected key.
         """
         if isinstance(item, int):
             return _get_str_from_bin(_get_bytearray_from_array([self._data[item]]))
@@ -174,7 +174,7 @@ class LinesAccessProxy:
     def __len__(self) -> int:  # pragma: no cover
         """Data len.
 
-        :return: strings count
+        :return: Strings count.
         :rtype: int
         """
         return len(self._data)
@@ -182,7 +182,7 @@ class LinesAccessProxy:
     def __str__(self) -> str:  # pragma: no cover
         """Get string for debug purposes.
 
-        :return: string representation for full content
+        :return: String representation for full content.
         :rtype: str
         """
         return self[:]
@@ -190,7 +190,7 @@ class LinesAccessProxy:
     def __repr__(self) -> str:
         """Repr for debug purposes.
 
-        :return: full representation for debug purposes
+        :return: Full representation for debug purposes.
         :rtype: str
         """
         return f"{self.__class__.__name__}(data={self._data!r})"
@@ -227,17 +227,17 @@ class ExecResult:
     ) -> None:
         """Command execution result.
 
-        :param cmd: command
+        :param cmd: Command.
         :type cmd: str
-        :param stdin: string STDIN
+        :param stdin: String STDIN.
         :type stdin: bytes | str | bytearray | None
-        :param stdout: binary STDOUT
+        :param stdout: Binary STDOUT.
         :type stdout: Iterable[bytes] | None
-        :param stderr: binary STDERR
+        :param stderr: Binary STDERR.
         :type stderr: Iterable[bytes] | None
         :param exit_code: Exit code. If integer - try to convert to BASH enum.
         :type exit_code: int | proc_enums.ExitCodes
-        :param started: Timestamp of command start
+        :param started: Timestamp of command start.
         :type started: datetime.datetime | None
         """
         self.__stdout_lock = threading.RLock()
@@ -277,7 +277,7 @@ class ExecResult:
     def stdout_lock(self) -> threading.RLock:
         """Lock object for thread-safe operation.
 
-        :return: internal lock for stdout
+        :return: Internal lock for stdout.
         :rtype: threading.RLock
 
         .. versionadded:: 2.2.0
@@ -288,7 +288,7 @@ class ExecResult:
     def stderr_lock(self) -> threading.RLock:
         """Lock object for thread-safe operation.
 
-        :return: internal lock for stderr
+        :return: Internal lock for stderr.
         :rtype: threading.RLock
 
         .. versionadded:: 2.2.0
@@ -299,7 +299,7 @@ class ExecResult:
     def timestamp(self) -> datetime.datetime | None:
         """Timestamp.
 
-        :return: exit code timestamp
+        :return: Exit code timestamp.
         :rtype: datetime.datetime | None
         """
         return self.__timestamp
@@ -318,9 +318,9 @@ class ExecResult:
     def _get_brief(cls, data: tuple[bytes, ...]) -> str:
         """Get brief output: 7 lines maximum (3 first + ... + 3 last).
 
-        :param data: source to process
+        :param data: Source to process.
         :type data: tuple[bytes, ...]
-        :return: brief from source
+        :return: Brief from source.
         :rtype: str
         """
         if len(data) <= 7:
@@ -331,7 +331,7 @@ class ExecResult:
     def cmd(self) -> str:
         """Executed command.
 
-        :return: command string
+        :return: Command string.
         :rtype: str
         """
         return self.__cmd
@@ -349,7 +349,7 @@ class ExecResult:
     def stdout(self) -> tuple[bytes, ...]:
         """Stdout output as list of binaries.
 
-        :return: STDOUT as tuple of binary strings
+        :return: STDOUT as tuple of binary strings.
         :rtype: tuple[bytes, ...]
         """
         return self._stdout
@@ -358,7 +358,7 @@ class ExecResult:
     def stderr(self) -> tuple[bytes, ...]:
         """Stderr output as list of binaries.
 
-        :return: STDERR as tuple of binary strings
+        :return: STDERR as tuple of binary strings.
         :rtype: tuple[bytes, ...]
         """
         return self._stderr
@@ -371,10 +371,10 @@ class ExecResult:
     ) -> list[bytes]:
         """Stream poll helper.
 
-        :param src: source to read from
-        :param log: logger instance, if line per line logging expected
-        :param verbose: use INFO level for logging
-        :return: read result as list of bytes strings
+        :param src: Source to read from.
+        :param log: Logger instance, if line per-line logging is expected.
+        :param verbose: Use INFO level for logging.
+        :return: A read result as a list of byte strings.
         :rtype: list[bytes]
         """
         dst: list[bytes] = []
@@ -396,13 +396,13 @@ class ExecResult:
     ) -> None:
         """Read stdout file-like object to stdout.
 
-        :param src: source
+        :param src: Source.
         :type src: Iterable[bytes] | None
-        :param log: logger
+        :param log: Logger.
         :type log: logging.Logger | None
-        :param verbose: use log.info instead of log.debug
+        :param verbose: Use log.info instead of `log.debug`.
         :type verbose: bool
-        :raises RuntimeError: Exit code is already received
+        :raises RuntimeError: Exit code is already received.
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -423,13 +423,13 @@ class ExecResult:
     ) -> None:
         """Read stderr file-like object to stdout.
 
-        :param src: source
+        :param src: Source.
         :type src: Iterable[bytes] | None
-        :param log: logger
+        :param log: Logger.
         :type log: logging.Logger | None
-        :param verbose: use log.info instead of log.debug
+        :param verbose: Use log.info instead of `log.debug`.
         :type verbose: bool
-        :raises RuntimeError: Exit code is already received
+        :raises RuntimeError: Exit code is already received.
 
         .. versionchanged:: 1.2.0 - src can be None
         """
@@ -447,8 +447,8 @@ class ExecResult:
         """Stdout in binary format.
 
         Sometimes logging is used to log binary objects too (example: Session),
-        and for debug purposes we can use this as data source.
-        :return: full STDOUT output as bytearray.
+        and for debug we can use this as a data source.
+        :return: Full STDOUT output as bytearray.
         :rtype: bytearray
         """
         with self.stdout_lock:
@@ -458,7 +458,7 @@ class ExecResult:
     def stderr_bin(self) -> bytearray:
         """Stderr in binary format.
 
-        :return: full STDERR output as bytearray.
+        :return: Full STDERR output as bytearray.
         :rtype: bytearray
         """
         with self.stderr_lock:
@@ -468,7 +468,7 @@ class ExecResult:
     def stdout_str(self) -> str:
         """Stdout output as string.
 
-        :return: full STDOUT output.
+        :return: Full STDOUT output.
         :rtype: str
         """
         with self.stdout_lock:
@@ -480,7 +480,7 @@ class ExecResult:
     def stderr_str(self) -> str:
         """Stderr output as string.
 
-        :return: full STDERR output.
+        :return: Full STDERR output.
         :rtype: str
         """
         with self.stderr_lock:
@@ -492,7 +492,7 @@ class ExecResult:
     def stdout_brief(self) -> str:
         """Brief stdout output (mostly for exceptions).
 
-        :return: up to 3 first and 3 last lines of output.
+        :return: Up to 3 first and 3 last lines of output.
         :rtype: str
         """
         with self.stdout_lock:
@@ -504,7 +504,7 @@ class ExecResult:
     def stderr_brief(self) -> str:
         """Brief stderr output (mostly for exceptions).
 
-        :return: up to 3 first and 3 last lines of output.
+        :return: Up to 3 first and 3 last lines of output.
         :rtype: str
         """
         with self.stderr_lock:
@@ -516,7 +516,7 @@ class ExecResult:
     def stdout_lines(self) -> LinesAccessProxy:
         """Get lines by indexes.
 
-        :return: proxy object for lines join by line indexes
+        :return: Proxy object for lines join by line indexes.
         :rtype: LinesAccessProxy
 
         Usage example:
@@ -531,7 +531,7 @@ class ExecResult:
     def stderr_lines(self) -> LinesAccessProxy:
         """Magic to get lines human-friendly way.
 
-        :return: proxy object for lines join by line indexes
+        :return: Proxy object for lines join by line indexes.
         :rtype: LinesAccessProxy
         """
         return LinesAccessProxy(self.stderr)
@@ -540,7 +540,7 @@ class ExecResult:
     def exit_code(self) -> ExitCodeT:
         """Return(exit) code of command.
 
-        :return: exit code
+        :return: Exit code.
         :rtype: int | proc_enums.ExitCodes
         """
         return self.__exit_code
@@ -549,10 +549,10 @@ class ExecResult:
     def exit_code(self, new_val: ExitCodeT) -> None:
         """Return(exit) code of command.
 
-        :param new_val: new exit code
+        :param new_val: New exit code.
         :type new_val: int | proc_enums.ExitCodes
-        :raises RuntimeError: Exit code is already received
-        :raises TypeError: exit code is not int instance
+        :raises RuntimeError: Exit code is already received.
+        :raises TypeError: Exit code is not `int` instance.
 
         If valid exit code is set - object became read-only.
         """
@@ -569,7 +569,7 @@ class ExecResult:
     def ok(self) -> bool:
         """Exit code is EX_OK.
 
-        :return: Exit code is EX_OK
+        :return: Exit code is EX_OK.
         :rtype: bool
         """
         return self.exit_code == 0  # pylint: disable=use-implicit-booleaness-not-comparison-to-zero
@@ -586,19 +586,19 @@ class ExecResult:
     ) -> None:
         """Check exit code and log/raise for unexpected code.
 
-        :param error_info: optional additional error information
+        :param error_info: Optional additional error information.
         :type error_info: str | None
-        :param raise_on_err: raise `exception_class` in case of error
+        :param raise_on_err: Raise `exception_class` in case of error.
         :type raise_on_err: bool
-        :param expected_codes: iterable expected exit codes
+        :param expected_codes: Iterable expected exit codes.
         :type expected_codes: Iterable[int | ExitCodes]
-        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :param exception_class: Exception class for usage in case of errors (subclass of CalledProcessError).
         :type exception_class: type[exceptions.CalledProcessError]
-        :param logger: logger instance for error log
+        :param logger: Logger instance for error log.
         :type logger: logging.Logger
-        :param verbose: produce verbose log in case of failure
+        :param verbose: Produce verbose log in case of failure.
         :type verbose: bool
-        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+        :raises exceptions.CalledProcessError: Unexpected exit code and raise_on_err enabled.
         """
         append: str = error_info + "\n" if error_info else ""
         expected = tuple(frozenset(expected_codes))
@@ -620,11 +620,11 @@ class ExecResult:
     ) -> None:
         """Requests-like exit code checker.
 
-        :param expected_codes: iterable expected exit codes
+        :param expected_codes: Iterable expected exit codes.
         :type expected_codes: Iterable[int | ExitCodes]
-        :param exception_class: exception class for usage in case of errors (subclass of CalledProcessError)
+        :param exception_class: Exception class for usage in case of errors (subclass of CalledProcessError).
         :type exception_class: type[exceptions.CalledProcessError]
-        :raises exceptions.CalledProcessError: unexpected exit code and raise_on_err enabled
+        :raises exceptions.CalledProcessError: Unexpected exit code and raise_on_err enabled.
         """
         if self.exit_code in expected_codes:
             return
@@ -635,7 +635,7 @@ class ExecResult:
     def started(self) -> datetime.datetime | None:
         """Timestamp of command start.
 
-        :return: timestamp from command start, if applicable
+        :return: Timestamp from command start, if applicable.
         :rtype: datetime.datetime | None
         .. versionadded:: 4.0.0
         """
@@ -648,9 +648,9 @@ class ExecResult:
     ) -> typing.Any:
         """JSON from stdout.
 
-        :return: decoded JSON document
+        :return: Decoded JSON document.
         :rtype: typing.Any
-        :raises DeserializeValueError: STDOUT can not be deserialized as JSON
+        :raises DeserializeValueError: STDOUT cannot be deserialized as JSON.
         """
         with self.stdout_lock:
             return json.loads(self.stdout_str)
@@ -662,9 +662,9 @@ class ExecResult:
         def stdout_yaml(self) -> typing.Any:
             """YAML from stdout.
 
-            :return: decoded YAML document
+            :return: Decoded YAML document.
             :rtype: typing.Any
-            :raises DeserializeValueError: STDOUT can not be deserialized as YAML
+            :raises DeserializeValueError: STDOUT cannot be deserialized as YAML.
             """
             with self.stdout_lock:
                 if yaml is not None:
@@ -680,9 +680,9 @@ class ExecResult:
         def stdout_xml(self) -> xml.etree.ElementTree.Element:
             """XML from stdout.
 
-            :return: decoded XML document
+            :return: Decoded XML document.
             :rtype: xml.etree.ElementTree.Element
-            :raises DeserializeValueError: STDOUT can not be deserialized as XML
+            :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
             """
             with self.stdout_lock:
                 return defusedxml.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[no-any-return]
@@ -694,9 +694,9 @@ class ExecResult:
         def stdout_lxml(self) -> lxml.etree.Element:
             """XML from stdout using lxml.
 
-            :return: decoded XML document
+            :return: Decoded XML document.
             :rtype: lxml.etree.Element
-            :raises DeserializeValueError: STDOUT can not be deserialized as XML
+            :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
 
             .. note:: Can be insecure.
             """
@@ -736,11 +736,11 @@ class ExecResult:
     def __getitem__(self, item: str) -> typing.Any:
         """Dict like get data.
 
-        :param item: key
+        :param item: Key.
         :type item: str
-        :return: item if attribute exists
+        :return: Item if attribute exists.
         :rtype: typing.Any
-        :raises IndexError: no attribute exists or not allowed to get (not in dir())
+        :raises IndexError: No attribute exists or not allowed to get (not in dir()).
         """
         if item in dir(self):
             return getattr(self, item)
@@ -769,13 +769,13 @@ class ExecResult:
     ) -> str:
         """Make human-readable representation of object.
 
-        :param log_wrap: logwrap instance
+        :param log_wrap: Logwrap instance.
         :type log_wrap: logwrap.PrettyRepr
-        :param indent: start indentation
+        :param indent: Start indentation.
         :type indent: int
-        :param no_indent_start: do not indent open bracket and simple parameters
+        :param no_indent_start: Do not indent open bracket and simple parameters.
         :type no_indent_start: bool
-        :return: formatted string
+        :return: Formatted string.
         :rtype: str
         """
         next_indent = log_wrap.next_indent(indent)
@@ -796,7 +796,7 @@ class ExecResult:
     def __str__(self) -> str:
         """Representation for logging.
 
-        :return: string representation with brief information
+        :return: String representation with brief information.
         :rtype: str
         """
         if self.started:
@@ -823,9 +823,9 @@ class ExecResult:
     def __eq__(self, other: object) -> bool:
         """Comparison.
 
-        :param other: other ExecResult instance.
+        :param other: Other ExecResult instance.
         :type other: typing.Any
-        :return: current object equals other
+        :return: Current object equals other.
         :rtype: bool
         """
         return (
@@ -843,9 +843,9 @@ class ExecResult:
     def __ne__(self, other: object) -> bool:
         """Comparison.
 
-        :param other: other ExecResult instance.
+        :param other: Other ExecResult instance.
         :type other: typing.Any
-        :return: current object not equals other
+        :return: Current object doesn't equal other.
         :rtype: bool
         """
         return not self.__eq__(other)
@@ -853,7 +853,7 @@ class ExecResult:
     def __hash__(self) -> int:
         """Hash for usage as dict key and in sets.
 
-        :return: calculated hash value
+        :return: Calculated hash value.
         :rtype: int
         """
         return hash((self.__class__, self.cmd, self.stdin, self.stdout, self.stderr, self.exit_code))
