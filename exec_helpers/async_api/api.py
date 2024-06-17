@@ -161,28 +161,28 @@ class _ChRootContext(typing.AsyncContextManager[None]):
     :param path: chroot path or None for no chroot.
     :type path: str | pathlib.Path | None
     :param chroot_exe: chroot executable.
-    :type chroot_exe: str
+    :type chroot_exe: str | None
     :raises TypeError: incorrect type of path or chroot_exe variable.
     """
 
-    def __init__(self, conn: ExecHelper, path: ChRootPathSetT = None, chroot_exe: str = "chroot") -> None:
+    def __init__(self, conn: ExecHelper, path: ChRootPathSetT = None, chroot_exe: str | None = None) -> None:
         """Context manager for call commands with sudo.
 
         :raises TypeError: incorrect type of path or chroot_exe variable
         """
         self._conn: ExecHelper = conn
         self._chroot_status: str | None = conn._chroot_path
-        self._chroot_exe_status: str = conn._chroot_exe
+        self._chroot_exe_status: str | None = conn._chroot_exe
         if path is None or isinstance(path, str):
             self._path: str | None = path
         elif isinstance(path, pathlib.Path):
             self._path = path.as_posix()  # get an absolute path
         else:
             raise TypeError(f"path={path!r} is not instance of {ChRootPathSetT}")
-        if isinstance(chroot_exe, str):
-            self._exe: str = chroot_exe
+        if chroot_exe is None or isinstance(chroot_exe, str):
+            self._exe: str | None = chroot_exe
         else:
-            raise TypeError(f"chroot_exe={chroot_exe!r} is not instance of str")
+            raise TypeError(f"chroot_exe={chroot_exe!r} is not None or instance of str")
 
     async def __aenter__(self) -> None:
         await self._conn.__aenter__()
@@ -224,7 +224,7 @@ class ExecHelper(
         self.__logger: logging.Logger = logger
         self.log_mask_re: LogMaskReT = log_mask_re
         self.__chroot_path: str | None = None
-        self.__chroot_exe: str = "chroot"
+        self.__chroot_exe: str | None = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -269,27 +269,27 @@ class ExecHelper(
         self.__chroot_path = None
 
     @property
-    def _chroot_exe(self) -> str:
+    def _chroot_exe(self) -> str | None:
         """Exe for chroot
 
-        :rtype: str
+        :rtype: str | None
         .. versionadded:: 8.1.0
         """
         return self.__chroot_exe
 
     @_chroot_exe.setter
-    def _chroot_exe(self, new_state: str) -> None:
+    def _chroot_exe(self, new_state: str | None) -> None:
         """Executable for chroot if set.
 
         :param new_state: New exe.
-        :type new_state: str
+        :type new_state: str | None
         :raises TypeError: Not supported exe information.
         .. versionadded:: 8.1.0
         """
-        if isinstance(new_state, str):
+        if new_state is None or isinstance(new_state, str):
             self.__chroot_exe = new_state
         else:
-            raise TypeError(f"chroot_exe is expected to be string, but set {new_state!r}")
+            raise TypeError(f"chroot_exe is expected to be None or string, but set {new_state!r}")
 
     @_chroot_exe.deleter
     def _chroot_exe(self) -> None:
@@ -297,15 +297,15 @@ class ExecHelper(
 
         .. versionadded:: 8.1.0
         """
-        self.__chroot_exe = "chroot"
+        self.__chroot_exe = None
 
-    def chroot(self, path: ChRootPathSetT, chroot_exe: str = "chroot") -> _ChRootContext:
+    def chroot(self, path: ChRootPathSetT, chroot_exe: str | None = None) -> _ChRootContext:
         """Context manager for changing chroot rules.
 
         :param path: chroot path or none for working without chroot.
         :type path: str | pathlib.Path | None
-        :param chroot_exe: chroot exe.
-        :type chroot_exe: str
+        :param chroot_exe: chroot executable.
+        :type chroot_exe: str | None
         :return: Context manager with selected chroot state inside.
         :rtype: typing.ContextManager
 
@@ -351,17 +351,21 @@ class ExecHelper(
 
         return _helpers.mask_command(cmd.rstrip(), self.log_mask_re, log_mask_re)
 
-    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
         """Prepare command: cower chroot and other cases.
 
         :param cmd: Main command.
         :type cmd: str
         :param chroot_path: Path to make chroot for execution.
         :type chroot_path: str | None
+        :param chroot_exe: chroot exe override
+        :type chroot_exe: str | None
         :return: Final command, includes chroot, if required.
         :rtype: str
         """
-        return _helpers.chroot_command(cmd, chroot_path=chroot_path or self._chroot_path, chroot_exe=chroot_exe)
+        return _helpers.chroot_command(
+            cmd, chroot_path=chroot_path or self._chroot_path, chroot_exe=chroot_exe or self._chroot_exe
+        )
 
     @abc.abstractmethod
     async def _exec_command(
@@ -428,7 +432,7 @@ class ExecHelper(
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         **kwargs: typing.Any,
     ) -> ExecuteContext:
         """Get execution context manager.
@@ -444,7 +448,7 @@ class ExecHelper(
         :param chroot_path: Chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: Chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         .. versionadded:: 8.0.0
@@ -463,7 +467,7 @@ class ExecHelper(
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -490,7 +494,7 @@ class ExecHelper(
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result.
@@ -546,7 +550,7 @@ class ExecHelper(
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Execute command and wait for return code.
@@ -573,7 +577,7 @@ class ExecHelper(
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         :return: Execution result.
