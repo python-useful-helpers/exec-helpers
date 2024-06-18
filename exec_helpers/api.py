@@ -405,7 +405,9 @@ class ExecHelper(
         :rtype: str
         """
         return _helpers.chroot_command(
-            cmd, chroot_path=chroot_path or self._chroot_path, chroot_exe=chroot_exe or self._chroot_exe
+            cmd,
+            chroot_path=chroot_path or self._chroot_path,
+            chroot_exe=chroot_exe or self._chroot_exe,
         )
 
     @abc.abstractmethod
