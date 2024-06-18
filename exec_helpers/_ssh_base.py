@@ -982,7 +982,7 @@ class SSHClientBase(api.ExecHelper):
         """
         return _KeepAliveContext(ssh=self, enforce=int(enforce))
 
-    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
         """Prepare command: cover chroot and other cases.
 
         :param cmd: Main command.
@@ -990,6 +990,7 @@ class SSHClientBase(api.ExecHelper):
         :param chroot_exe: chroot executable, default "chroot".
         :return: The final command includes chroot, if required.
         """
+        chroot_exe = chroot_exe or "chroot"
         if not self.sudo_mode:
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
         quoted_command: str = shlex.quote(cmd)
@@ -1096,7 +1097,7 @@ class SSHClientBase(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1116,7 +1117,7 @@ class SSHClientBase(api.ExecHelper):
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param get_pty: Get PTY for connection.
         :type get_pty: bool
         :param width: PTY width.
@@ -1160,7 +1161,7 @@ class SSHClientBase(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1190,7 +1191,7 @@ class SSHClientBase(api.ExecHelper):
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param get_pty: Get PTY for connection.
         :type get_pty: bool
         :param width: PTY width.
@@ -1240,7 +1241,7 @@ class SSHClientBase(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         get_pty: bool = False,
         width: int = 80,
         height: int = 24,
@@ -1270,7 +1271,7 @@ class SSHClientBase(api.ExecHelper):
         :param chroot_path: Chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: Chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param get_pty: Get PTY for connection.
         :type get_pty: bool
         :param width: PTY width.
@@ -1658,7 +1659,7 @@ class SSHClientBase(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
         exception_class: type[exceptions.ParallelCallProcessError] = exceptions.ParallelCallProcessError,
@@ -1685,7 +1686,7 @@ class SSHClientBase(api.ExecHelper):
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param verbose: Produce verbose log record on command call.
         :type verbose: bool
         :param log_mask_re: Regex lookup rule to mask command for logger.

@@ -355,7 +355,7 @@ class Subprocess(api.ExecHelper):
         open_stdout: bool = True,
         open_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -374,7 +374,7 @@ class Subprocess(api.ExecHelper):
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
@@ -415,7 +415,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -445,7 +445,7 @@ class Subprocess(api.ExecHelper):
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
         :param chroot_exe: chroot exe override.
-        :type chroot_exe: str
+        :type chroot_exe: str | None
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
@@ -494,7 +494,7 @@ class Subprocess(api.ExecHelper):
         open_stderr: bool = True,
         log_stderr: bool = True,
         chroot_path: str | None = None,
-        chroot_exe: str = "chroot",
+        chroot_exe: str | None = None,
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
@@ -523,8 +523,8 @@ class Subprocess(api.ExecHelper):
         :type log_stderr: bool
         :param chroot_path: chroot path override.
         :type chroot_path: str | None
-        :param chroot_exe: chroot path override.
-        :type chroot_exe: str
+        :param chroot_exe: chroot exe override.
+        :type chroot_exe: str | None
         :param cwd: Sets the current directory before the child is executed.
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.

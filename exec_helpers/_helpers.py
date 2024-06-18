@@ -78,7 +78,7 @@ def cmd_to_string(command: str | Iterable[str]) -> str:
     return shlex.join(command)
 
 
-def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str = "chroot") -> str:
+def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
     """Prepare command for chroot execution.
 
     :param command: Original command.
@@ -86,10 +86,11 @@ def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str
     :param chroot_path: chroot path.
     :type chroot_path: str | None
     :param chroot_exe: chroot executable.
-    :type chroot_exe: str
+    :type chroot_exe: str | None
     :return: Command to be executed with chroot rules if applicable.
     :rtype: str
     """
+    chroot_exe = chroot_exe or "chroot"
     if chroot_path and chroot_path != "/":
         chroot_dst: str = shlex.quote(chroot_path.strip())
         quoted_command = shlex.quote(command)
