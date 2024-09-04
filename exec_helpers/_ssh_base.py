@@ -1745,7 +1745,8 @@ class SSHClientBase(api.ExecHelper):
                 if done:
                     res.exit_code = async_result.interface.recv_exit_status()
                     return res
-            result.set_timestamp()
+
+            res.set_timestamp()
 
             wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=res, timeout=timeout)
             remote.logger.debug(wait_err_msg)

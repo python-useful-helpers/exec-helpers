@@ -179,6 +179,7 @@ extend-select = [
   "ISC",  # flake8-implicit-str-concat
   "RET", "SIM", "C4",  # flake8-return, flake8-simplify, flake8-comprehensions
   "ICN", "PGH",  # flake8-import-conventions, pygrep-hooks
+  "TID",  # flake8-tidy-imports
   "Q",  # quotes
   "FLY",  # Flynt
   "FURB",  # Refurb
@@ -191,6 +192,7 @@ extend-ignore = [
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
   "TRY003",  # long messages prepare outside, ...
+  "TID252",  # relative imports from parent modules
 ]
 
 [tool.ruff.lint.isort]
@@ -202,6 +204,9 @@ allow-dunder-method-names = ["__pretty_repr__", "__pretty_str__", "__rich_repr__
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.refurb]
 python_version = "3.8"
