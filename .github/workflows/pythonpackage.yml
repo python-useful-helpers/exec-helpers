@@ -24,7 +24,7 @@ jobs:
           pip install --upgrade ruff
       - name: Lint with ruff
         run: |
-          ruff . --output-format github
+          ruff check . --output-format github
 
   PyLint:
     runs-on: ubuntu-latest

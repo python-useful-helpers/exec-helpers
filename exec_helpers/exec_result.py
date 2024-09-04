@@ -50,7 +50,7 @@ except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
-    import xml.etree.ElementTree  # nosec  # for typing only
+    import xml.etree.ElementTree as ET  # nosec  # for typing only
     from collections.abc import Callable
     from collections.abc import Collection
     from collections.abc import Iterable
@@ -677,7 +677,7 @@ class ExecResult:
         # noinspection PyUnresolvedReferences
         @property
         @_handle_deserialize("xml")
-        def stdout_xml(self) -> xml.etree.ElementTree.Element:
+        def stdout_xml(self) -> ET.Element:
             """XML from stdout.
 
             :return: Decoded XML document.

@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import datetime
 import unittest
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 from unittest import mock
 
 import exec_helpers
@@ -297,10 +297,10 @@ class TestExecResult(unittest.TestCase):
     def test_stdout_xml(self):
         """Test xml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
-        expect = xml.etree.ElementTree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
+        expect = ET.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
         self.assertEqual(
-            xml.etree.ElementTree.tostring(expect),
-            xml.etree.ElementTree.tostring(result.stdout_xml),
+            ET.tostring(expect),
+            ET.tostring(result.stdout_xml),
         )
 
     @unittest.skipIf(lxml is None, "no lxml installed")

@@ -1773,11 +1773,11 @@ class SSHClientBase(api.ExecHelper):
         for remote, future in futures.items():
             try:
                 result = future.result(timeout=0.1)
-                results[(remote.hostname, remote.port)] = result
+                results[remote.hostname, remote.port] = result
                 if result.exit_code not in prep_expected:
-                    errors[(remote.hostname, remote.port)] = result
+                    errors[remote.hostname, remote.port] = result
             except Exception as e:  # noqa: PERF203
-                raised_exceptions[(remote.hostname, remote.port)] = e
+                raised_exceptions[remote.hostname, remote.port] = e
 
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptionsError(
