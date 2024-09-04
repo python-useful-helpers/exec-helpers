@@ -96,7 +96,7 @@ jobs:
           pip install --upgrade refurb
       - name: Lint with refurb
         run: |
-          refurb exec_helpers
+          refurb --format github exec_helpers
   Test:
     needs: [PEP8, PyLint, MyPy, Black, Refurb]  # isort is broken
     runs-on: ${{ matrix.os }}
