@@ -5,7 +5,6 @@ from __future__ import annotations
 import functools
 import pathlib
 import typing
-from collections import UserDict
 from collections.abc import Collection
 
 import paramiko
@@ -379,7 +378,7 @@ class SSHConfig:
         return self.__controlmaster
 
 
-class HostsSSHConfigs(UserDict[str, SSHConfig]):
+class HostsSSHConfigs(dict[str, SSHConfig]):
     """Specific dictionary for managing SSHConfig records.
 
     Instead of creating a new record by request, just generate default value and return if not exists.
