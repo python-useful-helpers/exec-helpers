@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import copy
 import datetime
 import errno
@@ -28,6 +29,7 @@ import pathlib
 import subprocess  # nosec  # Expected usage
 import typing
 import warnings
+from collections.abc import Mapping
 
 from exec_helpers import api
 from exec_helpers import constants
@@ -51,9 +53,7 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("CwdT", "EnvT", "Subprocess", "SubprocessExecuteAsyncResult")
 
-EnvT = typing.Optional[
-    typing.Union[typing.Mapping[bytes, typing.Union[bytes, str]], typing.Mapping[str, typing.Union[bytes, str]]]
-]
+EnvT = typing.Optional[Mapping[str, str]]
 CwdT = typing.Optional[typing.Union[str, bytes, pathlib.Path]]
 
 
@@ -105,7 +105,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SubprocessExecuteContext(api.ExecuteContext, typing.ContextManager[SubprocessExecuteAsyncResult]):
+class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SubprocessExecuteAsyncResult]):
     """Subprocess Execute context."""
 
     __slots__ = ("__cwd", "__env", "__process")
@@ -412,7 +412,7 @@ class Subprocess(api.ExecHelper):
         if env_patch is not None:
             # make mutable copy
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
-            env.update(env_patch)  # type: ignore[arg-type]
+            env.update(env_patch)
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),

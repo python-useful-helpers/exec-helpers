@@ -21,10 +21,14 @@
 from __future__ import annotations
 
 import abc
+import contextlib
 import logging
 import pathlib
+import re
 import threading
 import typing
+from collections.abc import Callable
+from collections.abc import Iterable
 
 from exec_helpers import constants
 from exec_helpers import exceptions
@@ -55,13 +59,13 @@ __all__ = (
     "OptionalTimeoutT",
 )
 
-CommandT = typing.Union[str, typing.Iterable[str]]
-LogMaskReT = typing.Union[str, typing.Pattern[str], None]
+CommandT = typing.Union[str, Iterable[str]]
+LogMaskReT = typing.Union[str, re.Pattern[str], None]
 ErrorInfoT = typing.Optional[str]
 ChRootPathSetT = typing.Optional[typing.Union[str, pathlib.Path]]
-ExpectedExitCodesT = typing.Iterable[ExitCodeT]
+ExpectedExitCodesT = Iterable[ExitCodeT]
 OptionalTimeoutT = typing.Union[int, float, None]
-CalledProcessErrorSubClassT = typing.Type[exceptions.CalledProcessError]
+CalledProcessErrorSubClassT = type[exceptions.CalledProcessError]
 
 
 class ExecuteAsyncResult(typing.NamedTuple):
@@ -74,7 +78,7 @@ class ExecuteAsyncResult(typing.NamedTuple):
     started: datetime.datetime
 
 
-class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
+class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.ABC):
     """Execute context manager."""
 
     __slots__ = (
@@ -165,7 +169,7 @@ class ExecuteContext(typing.ContextManager[ExecuteAsyncResult], abc.ABC):
 
 
 # noinspection PyProtectedMember
-class _ChRootContext(typing.ContextManager[None]):
+class _ChRootContext(contextlib.AbstractContextManager[None]):
     """Context manager for call commands with chroot.
 
     :param conn: Connection instance.
@@ -219,8 +223,8 @@ class _ChRootContext(typing.ContextManager[None]):
 
 
 class ExecHelper(
-    typing.Callable[..., exec_result.ExecResult],  # type: ignore[misc]
-    typing.ContextManager["ExecHelper"],
+    Callable[..., exec_result.ExecResult],  # type: ignore[misc]
+    contextlib.AbstractContextManager["ExecHelper"],
     abc.ABC,
 ):
     """ExecHelper global API.

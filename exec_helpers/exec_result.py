@@ -802,8 +802,8 @@ class ExecResult:
         if self.started:
             started = f"\tstarted={self.started.strftime('%Y-%m-%d %H:%M:%S')},\n"
             if self.timestamp:
-                _spent = (self.timestamp - self.started).seconds
-                spent = f"\tspent={_spent // (60 * 60):02d}:{_spent // 60:02d}:{_spent % 60:02d},\n"
+                spent_ = (self.timestamp - self.started).seconds
+                spent = f"\tspent={spent_ // (60 * 60):02d}:{spent_ // 60:02d}:{spent_ % 60:02d},\n"
             else:
                 spent = ""
         else:

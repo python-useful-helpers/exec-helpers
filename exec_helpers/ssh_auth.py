@@ -21,6 +21,7 @@ from __future__ import annotations
 import copy
 import logging
 import typing
+from collections import UserDict
 
 import paramiko
 
@@ -74,7 +75,7 @@ class SSHAuth:
         self.__username: str | None = username
         self.__password: str | None = password
 
-        self.__keys: list[None | paramiko.PKey] = []
+        self.__keys: list[paramiko.PKey | None] = []
 
         if key is not None:
             # noinspection PyTypeChecker
@@ -298,22 +299,22 @@ class SSHAuth:
         :rtype: str
         """
         if self.__keys[self.__key_index] is None:
-            _key: str | None = None
+            key: str | None = None
         else:
-            _key = f"<private for pub: {self.public_key}>"
-        _keys: list[str | None] = []
+            key = f"<private for pub: {self.public_key}>"
+        keys: list[str | None] = []
         for idx, k in enumerate(self.__keys):
             if idx == self.__key_index:
                 continue
             # noinspection PyTypeChecker
-            _keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
+            keys.append(f"<private for pub: {self.__get_public_key(key=k)}>" if k is not None else None)
 
         return (
             f"{self.__class__.__name__}("
             f"username={self.username!r}, "
             f"password=<*masked*>, "
-            f"key={_key}, "
-            f"keys={_keys}, "
+            f"key={key}, "
+            f"keys={keys}, "
             f"key_filename={self.key_filename!r}, "
             f"passphrase=<*masked*>,"
             f")"
@@ -328,7 +329,7 @@ class SSHAuth:
         return f"{self.__class__.__name__} for {self.username}"
 
 
-class SSHAuthMapping(typing.Dict[str, SSHAuth]):
+class SSHAuthMapping(UserDict[str, SSHAuth]):
     """Specific dictionary for ssh hostname - auth mapping.
 
     Keys are always string and saved/collected lowercase.

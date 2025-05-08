@@ -55,12 +55,12 @@ password = "pass"
 def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Reject key and allow to connect without key."""
     # Helper code
-    _ssh = mock.call
+    ssh_ = mock.call
 
     connect = mock.Mock(side_effect=[paramiko.AuthenticationException, mock.Mock()])
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     private_keys = gen_private_keys(1)
 
@@ -90,11 +90,11 @@ def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_log
     kwargs_full["pkey"] = pkey
 
     expected_calls = [
-        _ssh.set_missing_host_key_policy("WarningPolicy"),
-        _ssh.connect(**kwargs_full),
-        _ssh.connect(**kwargs_no_key),
-        _ssh.get_transport(),
-        _ssh.get_transport().set_keepalive(1),
+        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.connect(**kwargs_full),
+        ssh_.connect(**kwargs_no_key),
+        ssh_.get_transport(),
+        ssh_.get_transport().set_keepalive(1),
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -103,7 +103,7 @@ def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_log
 def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
     """Reject 1 key and use next one."""
     # Helper code
-    _ssh = mock.call
+    ssh_ = mock.call
 
     connect = mock.Mock(
         side_effect=[
@@ -112,9 +112,9 @@ def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_lo
             mock.Mock(),
         ]
     )
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     private_keys = gen_private_keys(2)
 
@@ -144,12 +144,12 @@ def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_lo
     kwargs_key_1["pkey"] = private_keys[1]
 
     expected_calls = [
-        _ssh.set_missing_host_key_policy("WarningPolicy"),
-        _ssh.connect(**kwargs_key_0),
-        _ssh.connect(**kwargs_key_1),
-        _ssh.connect(**kwargs_no_key),
-        _ssh.get_transport(),
-        _ssh.get_transport().set_keepalive(1),
+        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.connect(**kwargs_key_0),
+        ssh_.connect(**kwargs_key_1),
+        ssh_.connect(**kwargs_no_key),
+        ssh_.get_transport(),
+        ssh_.get_transport().set_keepalive(1),
     ]
 
     assert expected_calls == paramiko_ssh_client().mock_calls
@@ -163,9 +163,9 @@ def test_003_password_required(
     """No password provided."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.PasswordRequiredException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     private_keys = gen_private_keys(2)
 
@@ -186,9 +186,9 @@ def test_004_unexpected_password_required(
     """Password available, but requested anyway."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.PasswordRequiredException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     private_keys = gen_private_keys(2)
 
@@ -215,9 +215,9 @@ def test_005_auth_impossible_password(
     """Reject password."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     # Test
     with pytest.raises(paramiko.AuthenticationException):
@@ -233,9 +233,9 @@ def test_006_auth_impossible_key(
     """Reject key."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     # Test
     with pytest.raises(paramiko.AuthenticationException):
@@ -254,9 +254,9 @@ def test_007_auth_impossible_key_keys(
     """Reject key."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     # Test
     with pytest.raises(paramiko.AuthenticationException):
@@ -278,9 +278,9 @@ def test_008_auth_impossible_key_no_verbose(
     """Reject auth without log."""
     # Helper code
     connect = mock.Mock(side_effect=paramiko.AuthenticationException)
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
 
     # Test
     with pytest.raises(paramiko.AuthenticationException):
@@ -300,9 +300,9 @@ def test_009_auth_pass_no_key(
     """Reject key and use password."""
     # Helper code
     connect = mock.Mock(side_effect=[paramiko.AuthenticationException, mock.Mock()])
-    _ssh_inst = mock.Mock()
-    _ssh_inst.attach_mock(connect, "connect")
-    paramiko_ssh_client.return_value = _ssh_inst
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
     key = gen_private_keys(1).pop()
 
     # Test
@@ -346,18 +346,18 @@ def test_011_clear_failed(
 ):
     """TearDown failed."""
     # Helper code
-    _ssh = mock.Mock()
-    _ssh.attach_mock(
+    ssh_ = mock.Mock()
+    ssh_.attach_mock(
         mock.Mock(side_effect=[Exception("Mocked SSH close()"), mock.Mock()]),
         "close",
     )
-    _sftp = mock.Mock()
-    _sftp.attach_mock(
+    sftp_ = mock.Mock()
+    sftp_.attach_mock(
         mock.Mock(side_effect=[Exception("Mocked SFTP close()"), mock.Mock()]),
         "close",
     )
-    _ssh.attach_mock(mock.Mock(return_value=_sftp), "open_sftp")
-    paramiko_ssh_client.return_value = _ssh
+    ssh_.attach_mock(mock.Mock(return_value=sftp_), "open_sftp")
+    paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")
@@ -402,13 +402,13 @@ def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logg
 
     ssh.reconnect()
 
-    _ssh = mock.call()
+    ssh_ = mock.call()
 
     expected_calls = [
-        _ssh.close(),
-        _ssh,
-        _ssh.set_missing_host_key_policy("WarningPolicy"),
-        _ssh.connect(
+        ssh_.close(),
+        ssh_,
+        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.connect(
             hostname="127.0.0.1",
             password=None,
             pkey=None,
@@ -417,8 +417,8 @@ def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logg
             key_filename=(),
             allow_agent=True,
         ),
-        _ssh.get_transport(),
-        _ssh.get_transport().set_keepalive(1),
+        ssh_.get_transport(),
+        ssh_.get_transport().set_keepalive(1),
     ]
 
     assert paramiko_ssh_client.mock_calls == expected_calls
@@ -434,9 +434,9 @@ def test_013_no_sftp(
     # Helper code
     open_sftp = mock.Mock(side_effect=paramiko.SSHException)
 
-    _ssh = mock.Mock()
-    _ssh.attach_mock(open_sftp, "open_sftp")
-    paramiko_ssh_client.return_value = _ssh
+    ssh_ = mock.Mock()
+    ssh_.attach_mock(open_sftp, "open_sftp")
+    paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")
@@ -466,12 +466,12 @@ def test_014_sftp_repair(
 ):
     """No sftp available."""
     # Helper code
-    _sftp = mock.Mock()
-    open_sftp = mock.Mock(side_effect=[paramiko.SSHException, _sftp, _sftp])
+    sftp_ = mock.Mock()
+    open_sftp = mock.Mock(side_effect=[paramiko.SSHException, sftp_, sftp_])
 
-    _ssh = mock.Mock()
-    _ssh.attach_mock(open_sftp, "open_sftp")
-    paramiko_ssh_client.return_value = _ssh
+    ssh_ = mock.Mock()
+    ssh_.attach_mock(open_sftp, "open_sftp")
+    paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
     log = ssh_logger.getChild(f"{host}:{port}")

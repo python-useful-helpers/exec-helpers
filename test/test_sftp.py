@@ -40,16 +40,16 @@ password = "pass"
 class TestSftp(unittest.TestCase):
     @staticmethod
     def prepare_sftp_file_tests(client):
-        _ssh = mock.Mock()
-        client.return_value = _ssh
-        _sftp = mock.Mock()
-        open_sftp = mock.Mock(parent=_ssh, return_value=_sftp)
-        _ssh.attach_mock(open_sftp, "open_sftp")
+        ssh_ = mock.Mock()
+        client.return_value = ssh_
+        sftp = mock.Mock()
+        open_sftp = mock.Mock(parent=ssh_, return_value=sftp)
+        ssh_.attach_mock(open_sftp, "open_sftp")
 
-        with mock.patch(
-            "exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM",
-            autospec=True,
-        ) as conf_sys, mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True) as conf_user:
+        with (
+            mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True) as conf_sys,
+            mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_USER", autospec=True) as conf_user,
+        ):
             conf_sys.exists.return_value = False
             conf_user.exists.return_value = False
 
@@ -59,12 +59,12 @@ class TestSftp(unittest.TestCase):
                 port=port,
                 auth=exec_helpers.SSHAuth(username=username, password=password),
             )
-            return ssh, _sftp
+            return ssh, sftp
 
     def test_exists(self, client, *args):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         lstat = mock.Mock()
-        _sftp.attach_mock(lstat, "lstat")
+        sftp.attach_mock(lstat, "lstat")
         dst = "/etc"
 
         # noinspection PyTypeChecker
@@ -82,9 +82,9 @@ class TestSftp(unittest.TestCase):
         lstat.assert_called_once_with(dst)
 
     def test_stat(self, client, *args):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         stat = mock.Mock()
-        _sftp.attach_mock(stat, "stat")
+        sftp.attach_mock(stat, "stat")
         stat.return_value = paramiko.sftp_attr.SFTPAttributes()
         stat.return_value.st_size = 0
         stat.return_value.st_uid = 0
@@ -102,9 +102,9 @@ class TestSftp(unittest.TestCase):
             def __init__(self, mode):
                 self.st_mode = mode
 
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         lstat = mock.Mock()
-        _sftp.attach_mock(lstat, "lstat")
+        sftp.attach_mock(lstat, "lstat")
         lstat.return_value = Attrs(stat.S_IFREG)
         dst = "/etc/passwd"
 
@@ -135,9 +135,9 @@ class TestSftp(unittest.TestCase):
             def __init__(self, mode):
                 self.st_mode = mode
 
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         lstat = mock.Mock()
-        _sftp.attach_mock(lstat, "lstat")
+        sftp.attach_mock(lstat, "lstat")
         lstat.return_value = Attrs(stat.S_IFDIR)
         dst = "/etc/passwd"
 
@@ -167,9 +167,9 @@ class TestSftp(unittest.TestCase):
             def __init__(self, mode):
                 self.st_mode = mode
 
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         lstat = mock.Mock()
-        _sftp.attach_mock(lstat, "lstat")
+        sftp.attach_mock(lstat, "lstat")
         lstat.return_value = Attrs(stat.S_IFLNK)
         dst = "/etc/passwd"
 
@@ -243,9 +243,9 @@ class TestSftp(unittest.TestCase):
         execute.assert_called_once_with(f"rm -rf {dst}")
 
     def test_open(self, client, *args):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         fopen = mock.Mock(return_value=True)
-        _sftp.attach_mock(fopen, "open")
+        sftp.attach_mock(fopen, "open")
 
         dst = "/etc/passwd"
         mode = "r"
@@ -269,7 +269,7 @@ class TestSftp(unittest.TestCase):
         policy,
         _logger,
     ):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True
         exists.side_effect = [True, False, False]
         remote_isdir.side_effect = [False, False, True]
@@ -284,7 +284,7 @@ class TestSftp(unittest.TestCase):
         exists.assert_called_once_with(posixpath.join(target, os.path.basename(dst)))
         remote_isdir.assert_called_once_with(dst)
         remote_exists.assert_called_once_with(dst)
-        _sftp.assert_has_calls(
+        sftp.assert_has_calls(
             mock.call.get(
                 dst,
                 posixpath.join(target, os.path.basename(dst)),
@@ -303,7 +303,7 @@ class TestSftp(unittest.TestCase):
     @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
     def test_upload_file(self, isdir, remote_isdir, client, *args):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = False
         remote_isdir.return_value = False
         target = "/etc/environment"
@@ -313,7 +313,7 @@ class TestSftp(unittest.TestCase):
         ssh.upload(source=source, target=target)
         isdir.assert_called_once_with(source)
         remote_isdir.assert_called_once_with(target)
-        _sftp.assert_has_calls((mock.call.put(source, target),))
+        sftp.assert_has_calls((mock.call.put(source, target),))
 
     @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
     @mock.patch("exec_helpers.ssh.SSHClient.exists")
@@ -322,7 +322,7 @@ class TestSftp(unittest.TestCase):
     @mock.patch("exec_helpers.ssh.SSHClient.isdir")
     @mock.patch("os.path.isdir", autospec=True)
     def test_upload_dir(self, isdir, remote_isdir, walk, mkdir, exists, client, *args):
-        ssh, _sftp = self.prepare_sftp_file_tests(client)
+        ssh, sftp = self.prepare_sftp_file_tests(client)
         isdir.return_value = True
         remote_isdir.return_value = True
         exists.return_value = True
@@ -339,7 +339,7 @@ class TestSftp(unittest.TestCase):
         remote_isdir.assert_called_once_with(target)
         mkdir.assert_called_once_with(expected_path)
         exists.assert_called_once_with(expected_file)
-        _sftp.assert_has_calls(
+        sftp.assert_has_calls(
             (
                 mock.call.unlink(expected_file),
                 mock.call.put(

@@ -274,7 +274,7 @@ class ParallelCallProcessError(ExecCalledProcessError):
 class ParallelCallExceptionsError(ParallelCallProcessError):
     """Exception raised during parallel call as result of exceptions."""
 
-    __slots__ = ("cmd", "exceptions")
+    __slots__ = ("exceptions",)
 
     def __init__(
         self,

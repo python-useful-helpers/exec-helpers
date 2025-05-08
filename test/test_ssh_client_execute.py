@@ -216,9 +216,9 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
     transport = mock.Mock()
     transport.attach_mock(open_session, "open_session")
     get_transport = mock.Mock(return_value=transport)
-    _ssh = mock.Mock()
-    _ssh.attach_mock(get_transport, "get_transport")
-    paramiko_ssh_client.return_value = _ssh
+    ssh_ = mock.Mock()
+    ssh_.attach_mock(get_transport, "get_transport")
+    paramiko_ssh_client.return_value = ssh_
     return chan
 
 

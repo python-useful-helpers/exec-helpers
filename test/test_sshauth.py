@@ -129,19 +129,19 @@ def test_001_init_checks(run_parameters) -> None:
     else:
         assert auth.public_key is None
 
-    _key = None if auth.public_key is None else f"<private for pub: {auth.public_key}>"
-    _keys = []
+    key_ = None if auth.public_key is None else f"<private for pub: {auth.public_key}>"
+    keys = []
     for k in int_keys:
         if k is key or (k is not None and key is not None and k == key):
             continue
-        _keys.append(f"<private for pub: {gen_public_key(k)}>" if k is not None else None)
+        keys.append(f"<private for pub: {gen_public_key(k)}>" if k is not None else None)
 
     assert repr(auth) == (
         f"{exec_helpers.SSHAuth.__name__}("
         f"username={auth.username!r}, "
         f"password=<*masked*>, "
-        f"key={_key}, "
-        f"keys={_keys}, "
+        f"key={key_}, "
+        f"keys={keys}, "
         f"key_filename={auth.key_filename!r}, "
         f"passphrase=<*masked*>,"
         f")"

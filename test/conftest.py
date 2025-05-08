@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from unittest import mock  # noqa: TCH003
+from unittest import mock  # noqa: TC003
 
 import pytest
 

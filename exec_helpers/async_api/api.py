@@ -21,9 +21,12 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import contextlib
 import logging
 import pathlib
 import typing
+from collections.abc import Awaitable
+from collections.abc import Callable
 
 from exec_helpers import api
 from exec_helpers import constants
@@ -62,7 +65,7 @@ __all__ = (
 )
 
 
-class ExecuteContext(typing.AsyncContextManager[api.ExecuteAsyncResult], abc.ABC):
+class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResult], abc.ABC):
     """Execute context manager."""
 
     __slots__ = (
@@ -153,7 +156,7 @@ class ExecuteContext(typing.AsyncContextManager[api.ExecuteAsyncResult], abc.ABC
 
 
 # noinspection PyProtectedMember
-class _ChRootContext(typing.AsyncContextManager[None]):
+class _ChRootContext(contextlib.AbstractAsyncContextManager[None]):
     """Async extension for chroot.
 
     :param conn: Connection instance.
@@ -203,8 +206,8 @@ class _ChRootContext(typing.AsyncContextManager[None]):
 
 
 class ExecHelper(
-    typing.Callable[..., typing.Awaitable["ExecHelper"]],  # type: ignore[misc]
-    typing.AsyncContextManager["ExecHelper"],
+    Callable[..., Awaitable["ExecHelper"]],  # type: ignore[misc]
+    contextlib.AbstractAsyncContextManager["ExecHelper"],
     abc.ABC,
 ):
     """Subprocess helper with timeouts and lock-free FIFO.

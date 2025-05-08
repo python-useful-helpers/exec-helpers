@@ -106,7 +106,7 @@ def test_init_base(
 ):
     """Parametrized validation of SSH client initialization."""
     # Helper code
-    _ssh = mock.call
+    ssh_ = mock.call
     port = run_parameters.get("port", 22)
 
     username = run_parameters.get("username", None)
@@ -122,8 +122,8 @@ def test_init_base(
 
     if auth is None:
         expected_calls = [
-            _ssh.set_missing_host_key_policy("WarningPolicy"),
-            _ssh.connect(
+            ssh_.set_missing_host_key_policy("WarningPolicy"),
+            ssh_.connect(
                 hostname=host,
                 password=password,
                 pkey=None,
@@ -132,8 +132,8 @@ def test_init_base(
                 key_filename=(),
                 allow_agent=True,
             ),
-            _ssh.get_transport(),
-            _ssh.get_transport().set_keepalive(1),
+            ssh_.get_transport(),
+            ssh_.get_transport().set_keepalive(1),
         ]
 
         assert expected_calls == paramiko_ssh_client().mock_calls

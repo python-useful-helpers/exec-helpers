@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import copy
 import datetime
 import getpass
@@ -135,7 +136,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsyncResult]):
+class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SshExecuteAsyncResult]):
     """SSH Execute context."""
 
     __slots__ = (
@@ -358,7 +359,7 @@ class _SSHExecuteContext(api.ExecuteContext, typing.ContextManager[SshExecuteAsy
             self.__chan = None
 
 
-class _SudoContext(typing.ContextManager[None]):
+class _SudoContext(contextlib.AbstractContextManager[None]):
     """Context manager for call commands with sudo.
 
     :param ssh: Connection instance.
@@ -389,7 +390,7 @@ class _SudoContext(typing.ContextManager[None]):
         self.__ssh.sudo_mode = self.__sudo_status
 
 
-class _KeepAliveContext(typing.ContextManager[None]):
+class _KeepAliveContext(contextlib.AbstractContextManager[None]):
     """Context manager for keepalive management.
 
     :param ssh: Connection instance.
@@ -869,7 +870,8 @@ class SSHClientBase(api.ExecHelper):
         try:
             self.__ssh.close()
         except BaseException as e:  # pragma: no cover  # NOSONAR
-            self.logger.debug(f"Exception in {self!s} destructor call: {e}")
+            with contextlib.suppress(AttributeError):
+                self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
 
     def __exit__(
@@ -995,12 +997,12 @@ class SSHClientBase(api.ExecHelper):
             return super()._prepare_command(cmd=cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
         quoted_command: str = shlex.quote(cmd)
         if chroot_path is self._chroot_path is None:
-            return f'sudo -S sh -c {shlex.quote(f"eval {quoted_command}")}'
+            return f"sudo -S sh -c {shlex.quote(f'eval {quoted_command}')}"
         if chroot_path is not None:
             target_path: str = shlex.quote(chroot_path)
         else:
             target_path = shlex.quote(self._chroot_path)  # type: ignore[arg-type]
-        return f'{chroot_exe} {target_path} sudo sh -c {shlex.quote(f"eval {quoted_command}")}'
+        return f"{chroot_exe} {target_path} sudo sh -c {shlex.quote(f'eval {quoted_command}')}"
 
     def _exec_command(  # type: ignore[override]
         self,

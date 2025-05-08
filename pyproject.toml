@@ -11,7 +11,7 @@ build-backend="setuptools.build_meta"
 [project]
 name = "exec-helpers"
 description = "Execution helpers for simplified usage of subprocess and ssh."
-requires-python = ">=3.8.0"
+requires-python = ">=3.9.0"
 keywords = ["subprocess", "ssh"]
 license={text="Apache-2.0"}  # Use SPDX classifier
 readme = {file = "README.rst", content-type = "text/x-rst"}
@@ -67,7 +67,7 @@ write_to = "exec_helpers/_version.py"
 
 [tool.black]
 line-length = 120
-target-version = ["py38"]
+target-version = ["py39"]
 
 [tool.isort]
 line_length = 120
@@ -160,7 +160,7 @@ pretty_print = true
 [tool.ruff]
 line-length = 120
 output-format = "full"
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.lint]
 extend-select = [
@@ -209,7 +209,7 @@ convention = "pep257"
 docstring-code-format = true
 
 [tool.refurb]
-python_version = "3.8"
+python_version = "3.9"
 enable_all = true
 ignore = ["FURB120"]
 
@@ -217,7 +217,7 @@ ignore = ["FURB120"]
 extension-pkg-whitelist = ["lxml.etree"]
 ignore = ["CVS", "_version.py"]
 jobs = 0
-py-version = "3.8"
+py-version = "3.9"
 
 load-plugins = [
   "pylint.extensions.docparams",
@@ -247,6 +247,7 @@ disable = [
   "too-many-locals",
   "too-many-statements",
   "too-many-instance-attributes",
+  "too-many-positional-arguments",
   "too-many-lines",
   "broad-except",
   "logging-fstring-interpolation",

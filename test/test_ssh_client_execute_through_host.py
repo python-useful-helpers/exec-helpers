@@ -93,9 +93,9 @@ def ssh_intermediate_channel(paramiko_ssh_client):
     transport = mock.MagicMock(spec=paramiko.Transport)
     transport.attach_mock(chan, "open_channel")
     get_transport = mock.MagicMock(return_value=transport)
-    _ssh = mock.MagicMock(spec=paramiko.SSHClient)
-    _ssh.attach_mock(get_transport, "get_transport")
-    paramiko_ssh_client.return_value = _ssh
+    ssh_ = mock.MagicMock(spec=paramiko.SSHClient)
+    ssh_.attach_mock(get_transport, "get_transport")
+    paramiko_ssh_client.return_value = ssh_
     return chan
 
 

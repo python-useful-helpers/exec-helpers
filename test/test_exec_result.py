@@ -152,8 +152,8 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stdout_bin, bytearray(b"".join(tst_stdout)))
         self.assertEqual(result.stderr_bin, bytearray(b"".join(tst_stderr)))
 
-        stdout_br = tst_stdout[:3] + [b"...\n"] + tst_stdout[-3:]
-        stderr_br = tst_stderr[:3] + [b"...\n"] + tst_stderr[-3:]
+        stdout_br = [*tst_stdout[:3], b"...\n", *tst_stdout[-3:]]
+        stderr_br = [*tst_stderr[:3], b"...\n", *tst_stderr[-3:]]
 
         stdout_brief = b"".join(stdout_br).strip().decode(encoding="utf-8")
         stderr_brief = b"".join(stderr_br).strip().decode(encoding="utf-8")

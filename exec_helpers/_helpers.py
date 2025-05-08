@@ -94,5 +94,5 @@ def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str
     if chroot_path and chroot_path != "/":
         chroot_dst: str = shlex.quote(chroot_path.strip())
         quoted_command = shlex.quote(command)
-        return f'{chroot_exe} {chroot_dst} sh -c {shlex.quote(f"eval {quoted_command}")}'
+        return f"{chroot_exe} {chroot_dst} sh -c {shlex.quote(f'eval {quoted_command}')}"
     return command

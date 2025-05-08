@@ -106,7 +106,9 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
         return super().stdout  # type: ignore[return-value]
 
 
-class _SubprocessExecuteContext(api.ExecuteContext, typing.AsyncContextManager[SubprocessExecuteAsyncResult]):
+class _SubprocessExecuteContext(
+    api.ExecuteContext, contextlib.AbstractAsyncContextManager[SubprocessExecuteAsyncResult]
+):
     """Subprocess Execute context."""
 
     __slots__ = ("__cwd", "__env", "__process")
@@ -390,7 +392,7 @@ class Subprocess(api.ExecHelper):
         if env_patch is not None:
             # make mutable copy
             env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
-            env.update(env_patch)  # type: ignore[arg-type]
+            env.update(env_patch)
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),

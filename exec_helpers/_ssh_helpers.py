@@ -5,17 +5,17 @@ from __future__ import annotations
 import functools
 import pathlib
 import typing
+from collections import UserDict
+from collections.abc import Collection
 
 import paramiko
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection
-
     # noinspection PyPackageRequirements
     import logwrap
 
-SSHConfigDictLikeT = typing.Dict[str, typing.Union[str, int, bool, typing.Collection[str]]]
-SSHConfigsDictT = typing.Dict[str, SSHConfigDictLikeT]
+SSHConfigDictLikeT = dict[str, typing.Union[str, int, bool, Collection[str]]]
+SSHConfigsDictT = dict[str, SSHConfigDictLikeT]
 
 
 # Parse default SSHConfig if available
@@ -379,7 +379,7 @@ class SSHConfig:
         return self.__controlmaster
 
 
-class HostsSSHConfigs(typing.Dict[str, SSHConfig]):
+class HostsSSHConfigs(UserDict[str, SSHConfig]):
     """Specific dictionary for managing SSHConfig records.
 
     Instead of creating a new record by request, just generate default value and return if not exists.

@@ -20,7 +20,7 @@ import importlib
 import typing
 import warnings
 
-try:  # noqa: FURB107,SIM105,RUF100
+try:  # noqa:SIM105,RUF100
     from ._version import version as __version__  # noqa: F401
 except ImportError:
     pass
