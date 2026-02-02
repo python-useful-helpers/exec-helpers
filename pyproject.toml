@@ -13,9 +13,9 @@ name = "exec-helpers"
 description = "Execution helpers for simplified usage of subprocess and ssh."
 requires-python = ">=3.9.0"
 keywords = ["subprocess", "ssh"]
-license={text="Apache-2.0"}  # Use SPDX classifier
+license="Apache-2.0"  # Use SPDX classifier
 readme = {file = "README.rst", content-type = "text/x-rst"}
-authors=[{name="Alexey Stepanov", email="penguinolog@gmail.com"}]
+authors=[{name="Aleksei Stepanov", email="penguinolog@gmail.com"}]
 maintainers=[
   {name="Aleksei Stepanov", email="penguinolog@gmail.com"},
   {name="Antonio Esposito", email="esposito.cloud@gmail.com"},
@@ -53,11 +53,11 @@ dependencies = {file = ["requirements.txt"]}
 classifiers = {file = ["classifiers.txt"]}
 
 [project.optional-dependencies]
-xml = ["defusedxml"]
+xml = []
 lxml = ["lxml>=4.6.2"]
 yaml = ["PyYAML>=3.12"]
-all_formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
-all-formats = ["defusedxml", "lxml>=4.6.2", "PyYAML>=3.12"]
+all_formats = ["lxml>=4.6.2", "PyYAML>=3.12"]
+all-formats = ["lxml>=4.6.2", "PyYAML>=3.12"]
 
 [tool.distutils.bdist_wheel]
 universal = 0
@@ -104,7 +104,6 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
   "psutil",
-  "defusedxml.*",
   "lxml.*"
 ]
 ignore_missing_imports = true
@@ -191,6 +190,7 @@ extend-ignore = [
   "PLR6301",  # "maybe staticmethod"
   "RET504",  # Unnecessary variable assignment before return statement
   "SIM108",  # Use ternary operator,
+  "S314",  # use "defusedxml" which is stale
   "TRY003",  # long messages prepare outside, ...
   "TID252",  # relative imports from parent modules
 ]

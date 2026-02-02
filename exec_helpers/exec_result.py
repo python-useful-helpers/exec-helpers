@@ -25,6 +25,7 @@ import json
 import logging
 import threading
 import typing
+import xml.etree
 
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
@@ -40,17 +41,11 @@ except ImportError:
     ruamel_yaml = None  # type: ignore[assignment]
 try:
     # noinspection PyPackageRequirements
-    import defusedxml.ElementTree
-except ImportError:
-    defusedxml = None  # pylint: disable=invalid-name
-try:
-    # noinspection PyPackageRequirements
     import lxml.etree  # nosec
 except ImportError:
     lxml = None  # pylint: disable=invalid-name
 
 if typing.TYPE_CHECKING:
-    import xml.etree.ElementTree as ET  # nosec  # for typing only
     from collections.abc import Callable
     from collections.abc import Collection
     from collections.abc import Iterable
@@ -673,19 +668,17 @@ class ExecResult:
                     return yaml.safe_load(self.stdout_str)  # pragma: no cover
                 return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
 
-    if defusedxml is not None:
-        # noinspection PyUnresolvedReferences
-        @property
-        @_handle_deserialize("xml")
-        def stdout_xml(self) -> ET.Element:
-            """XML from stdout.
+    @property
+    @_handle_deserialize("xml")
+    def stdout_xml(self) -> xml.etree.ElementTree.Element:
+        """XML from stdout.
 
-            :return: Decoded XML document.
-            :rtype: xml.etree.ElementTree.Element
-            :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
-            """
-            with self.stdout_lock:
-                return defusedxml.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[no-any-return]
+        :return: Decoded XML document.
+        :rtype: xml.etree.ElementTree.Element
+        :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
+        """
+        with self.stdout_lock:
+            return xml.etree.ElementTree.fromstring(b"".join(self.stdout))
 
     if lxml is not None:
 
@@ -724,11 +717,10 @@ class ExecResult:
             "stderr_lines",
             "stdout_json",
             "lock",
+            "stdout_xml",
         ]
         if yaml is not None or ruamel_yaml is not None:
             content.append("stdout_yaml")
-        if defusedxml is not None:
-            content.append("stdout_xml")
         if lxml is not None:
             content.append("stdout_lxml")
         return content

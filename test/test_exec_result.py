@@ -37,10 +37,6 @@ try:
 except ImportError:
     ruamel_yaml = None
 try:
-    import defusedxml.ElementTree
-except ImportError:
-    defusedxml = None
-try:
     import lxml.etree
 except ImportError:
     lxml = None
@@ -293,7 +289,6 @@ class TestExecResult(unittest.TestCase):
         with self.assertRaises(TypeError):
             _ = result.stdout_lines[1, "aaa"]
 
-    @unittest.skipIf(defusedxml is None, "defusedxml is not installed")
     def test_stdout_xml(self):
         """Test xml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
