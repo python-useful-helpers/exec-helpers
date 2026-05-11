@@ -457,6 +457,8 @@ class SSHClientBase(api.ExecHelper):
     :type keepalive: int | bool
     :param allow_ssh_agent: Use SSH Agent if available.
     :type allow_ssh_agent: bool
+    :param missing_host_key_policy: Missing host key policy class. See paramiko.MissingHostKeyPolicy for details.
+    :type missing_host_key_policy: type[paramiko.MissingHostKeyPolicy]
 
     .. note:: auth has priority over username/password/private_keys.
     .. note::
@@ -475,6 +477,7 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 7.0.0 keepalive_mode is removed.
     .. versionchanged:: 7.4.0 Return of keepalive_mode to prevent mix with a keepalive period. Default is `False`.
     .. versionchanged:: 8.0.0 Expose SSH Agent usage override.
+    .. versionchanged:: 8.1.4 Allow specifying missing_host_key_policy.
     """
 
     __slots__ = (
@@ -491,6 +494,7 @@ class SSHClientBase(api.ExecHelper):
         "__ssh_config",
         "__sudo_mode",
         "__verbose",
+        "_missing_host_key_policy",
     )
 
     def __hash__(self) -> int:
@@ -515,6 +519,7 @@ class SSHClientBase(api.ExecHelper):
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         keepalive: KeepAlivePeriodT = 1,
         allow_ssh_agent: bool = True,
+        missing_host_key_policy: type[paramiko.MissingHostKeyPolicy] = paramiko.WarningPolicy,
     ) -> None:
         """Main SSH Client helper."""
         self.__sudo_mode = False
@@ -522,6 +527,7 @@ class SSHClientBase(api.ExecHelper):
         self.__keepalive_mode = False
         self.__verbose: bool = verbose
         self.__sock = sock
+        self._missing_host_key_policy = missing_host_key_policy
 
         self.__ssh: paramiko.SSHClient
         self.__sftp: paramiko.SFTPClient | None = None
@@ -755,7 +761,7 @@ class SSHClientBase(api.ExecHelper):
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
-                self.__ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+                self.__ssh.set_missing_host_key_policy(self._missing_host_key_policy())
                 self.auth.connect(
                     client=self.__ssh,
                     hostname=self.hostname,
@@ -781,7 +787,7 @@ class SSHClientBase(api.ExecHelper):
         """
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
-        last_ssh_client.set_missing_host_key_policy(paramiko.WarningPolicy())  # noqa: S507,RUF100
+        last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy())
 
         config, auth = self.__conn_chain[0]
 
@@ -795,7 +801,7 @@ class SSHClientBase(api.ExecHelper):
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.WarningPolicy())  # noqa: S507,RUF100
+            ssh.set_missing_host_key_policy(self._missing_host_key_policy())
 
             if config.proxyjump:
                 transport = last_ssh_client.get_transport()

@@ -678,7 +678,7 @@ class ExecResult:
         :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
         """
         with self.stdout_lock:
-            return xml.etree.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[attr-defined]
+            return xml.etree.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[attr-defined]  # nosec[B314]
 
     if lxml is not None:
 
@@ -694,7 +694,7 @@ class ExecResult:
             .. note:: Can be insecure.
             """
             with self.stdout_lock:
-                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec[blacklist]
+                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec[B314]
 
     def __dir__(self) -> list[str]:
         """Override dir for IDE and as source for getitem checks.
