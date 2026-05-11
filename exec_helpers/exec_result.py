@@ -670,7 +670,7 @@ class ExecResult:
 
     @property
     @_handle_deserialize("xml")
-    def stdout_xml(self) -> xml.etree.ElementTree.Element:
+    def stdout_xml(self) -> xml.etree.ElementTree.Element:  # type: ignore[name-defined]
         """XML from stdout.
 
         :return: Decoded XML document.
@@ -678,7 +678,7 @@ class ExecResult:
         :raises DeserializeValueError: STDOUT cannot be deserialized as XML.
         """
         with self.stdout_lock:
-            return xml.etree.ElementTree.fromstring(b"".join(self.stdout))
+            return xml.etree.ElementTree.fromstring(b"".join(self.stdout))  # type: ignore[attr-defined]
 
     if lxml is not None:
 

@@ -391,7 +391,7 @@ class Subprocess(api.ExecHelper):
         """
         if env_patch is not None:
             # make mutable copy
-            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))  # type: ignore[arg-type]
+            env = dict(copy.deepcopy(os.environ) if env is None else copy.deepcopy(env))
             env.update(env_patch)
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
