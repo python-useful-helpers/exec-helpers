@@ -38,12 +38,6 @@ def paramiko_ssh_client(mocker, no_real_ssh_config) -> mock.MagicMock:
 
 
 @pytest.fixture
-def paramiko_keys_policy(mocker) -> mock.MagicMock:
-    """Minimal paramiko.WarningPolicy mock."""
-    return mocker.patch("paramiko.WarningPolicy", return_value="WarningPolicy")
-
-
-@pytest.fixture
 def ssh_auth_logger(mocker) -> mock.MagicMock:
     """Minimal exec_helpers.ssh_auth.logger mock."""
     return mocker.patch("exec_helpers.ssh_auth.LOGGER")

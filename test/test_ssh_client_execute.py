@@ -226,7 +226,6 @@ def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
 def ssh(
     paramiko_ssh_client,
     ssh_transport_channel,
-    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -241,7 +240,6 @@ def ssh(
 def ssh2(
     paramiko_ssh_client,
     ssh_transport_channel,
-    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -266,7 +264,12 @@ def exec_result(run_parameters):
 @pytest.fixture
 def execute_async(mocker, run_parameters):
     def get_patched_execute_async_retval(
-        ec=0, stdout=(), stderr=(), open_stdout=True, open_stderr=True, **kwargs
+        ec=0,
+        stdout=(),
+        stderr=(),
+        open_stdout=True,
+        open_stderr=True,
+        **kwargs,
     ) -> SshExecuteAsyncResult:
         stdout_part = FakeFileStream(*stdout) if open_stdout else None
         stderr_part = FakeFileStream(*stderr) if open_stderr else None

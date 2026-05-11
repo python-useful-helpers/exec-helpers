@@ -761,7 +761,7 @@ class SSHClientBase(api.ExecHelper):
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
-                self.__ssh.set_missing_host_key_policy(self._missing_host_key_policy())
+                self.__ssh.set_missing_host_key_policy(self._missing_host_key_policy)
                 self.auth.connect(
                     client=self.__ssh,
                     hostname=self.hostname,
@@ -787,7 +787,7 @@ class SSHClientBase(api.ExecHelper):
         """
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
-        last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy())
+        last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
 
         config, auth = self.__conn_chain[0]
 
@@ -801,7 +801,7 @@ class SSHClientBase(api.ExecHelper):
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(self._missing_host_key_policy())
+            ssh.set_missing_host_key_policy(self._missing_host_key_policy)
 
             if config.proxyjump:
                 transport = last_ssh_client.get_transport()

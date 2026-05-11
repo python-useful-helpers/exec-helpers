@@ -52,7 +52,10 @@ username = "user"
 password = "pass"
 
 
-def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
+def test_001_require_key(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+):
     """Reject key and allow to connect without key."""
     # Helper code
     ssh_ = mock.call
@@ -71,7 +74,6 @@ def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_log
     )
 
     paramiko_ssh_client.assert_called_once()
-    paramiko_keys_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
@@ -90,7 +92,7 @@ def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_log
     kwargs_full["pkey"] = pkey
 
     expected_calls = [
-        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_full),
         ssh_.connect(**kwargs_no_key),
         ssh_.get_transport(),
@@ -100,7 +102,10 @@ def test_001_require_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_log
     assert expected_calls == paramiko_ssh_client().mock_calls
 
 
-def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
+def test_002_use_next_key(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+):
     """Reject 1 key and use next one."""
     # Helper code
     ssh_ = mock.call
@@ -125,7 +130,6 @@ def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_lo
     )
 
     paramiko_ssh_client.assert_called_once()
-    paramiko_keys_policy.assert_called_once()
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
@@ -144,7 +148,7 @@ def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_lo
     kwargs_key_1["pkey"] = private_keys[1]
 
     expected_calls = [
-        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_key_0),
         ssh_.connect(**kwargs_key_1),
         ssh_.connect(**kwargs_no_key),
@@ -157,7 +161,6 @@ def test_002_use_next_key(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_lo
 
 def test_003_password_required(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """No password provided."""
@@ -180,7 +183,6 @@ def test_003_password_required(
 
 def test_004_unexpected_password_required(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Password available, but requested anyway."""
@@ -209,7 +211,6 @@ def test_004_unexpected_password_required(
 
 def test_005_auth_impossible_password(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject password."""
@@ -227,7 +228,6 @@ def test_005_auth_impossible_password(
 
 def test_006_auth_impossible_key(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject key."""
@@ -248,7 +248,6 @@ def test_006_auth_impossible_key(
 
 def test_007_auth_impossible_key_keys(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject key."""
@@ -272,7 +271,6 @@ def test_007_auth_impossible_key_keys(
 
 def test_008_auth_impossible_key_no_verbose(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject auth without log."""
@@ -294,7 +292,6 @@ def test_008_auth_impossible_key_no_verbose(
 
 def test_009_auth_pass_no_key(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
 ):
     """Reject key and use password."""
@@ -318,13 +315,14 @@ def test_009_auth_pass_no_key(
     assert ssh.auth.public_key is None
 
 
-def test_010_context(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
+def test_010_context(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+):
     """Context manager."""
     # Test
     with exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth()) as ssh:
         paramiko_ssh_client.assert_called_once()
-        paramiko_keys_policy.assert_called_once()
-
         ssh_auth_logger.assert_not_called()
 
         assert ssh.auth == exec_helpers.SSHAuth()
@@ -340,7 +338,6 @@ def test_010_context(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger)
 
 def test_011_clear_failed(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -366,7 +363,6 @@ def test_011_clear_failed(
     ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth())
 
     paramiko_ssh_client.assert_called_once()
-    paramiko_keys_policy.assert_called_once()
 
     ssh_logger.assert_not_called()
     ssh_auth_logger.assert_not_called()
@@ -392,13 +388,18 @@ def test_011_clear_failed(
     )
 
 
-def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logger):
+def test_012_re_connect(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+):
     """Re-connect."""
     # Test
-    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth())
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(),
+    )
 
     paramiko_ssh_client.reset_mock()
-    paramiko_keys_policy.reset_mock()
 
     ssh.reconnect()
 
@@ -407,7 +408,7 @@ def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logg
     expected_calls = [
         ssh_.close(),
         ssh_,
-        ssh_.set_missing_host_key_policy("WarningPolicy"),
+        ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(
             hostname="127.0.0.1",
             password=None,
@@ -426,7 +427,6 @@ def test_012_re_connect(paramiko_ssh_client, paramiko_keys_policy, ssh_auth_logg
 
 def test_013_no_sftp(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
@@ -460,7 +460,6 @@ def test_013_no_sftp(
 
 def test_014_sftp_repair(
     paramiko_ssh_client,
-    paramiko_keys_policy,
     ssh_auth_logger,
     get_logger,
 ):
