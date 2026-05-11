@@ -11,9 +11,9 @@
 # serve to show the default.
 
 # External Dependencies
-import pkg_resources
+import importlib.metadata
 
-release = pkg_resources.get_distribution("exec-helpers").version
+release = importlib.metadata.version("exec_helpers")
 version = ".".join(release.split(".")[:2])
 
 # If extensions (or modules to document with autodoc) are in another directory,
