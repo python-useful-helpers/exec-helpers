@@ -99,7 +99,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    needs: [PEP8, PyLint, MyPy]  # isort is broken
+    needs: [PEP8, Formatting, PyLint, MyPy]
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 6
