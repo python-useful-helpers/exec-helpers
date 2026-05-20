@@ -232,7 +232,7 @@ class TestExecResult(unittest.TestCase):
 
     def test_started(self):
         """Test timestamp."""
-        started = datetime.datetime.now(tz=datetime.timezone.utc)
+        started = datetime.datetime.now(tz=datetime.UTC)
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
         spent = (result.timestamp - started).seconds
         self.assertIs(result.started, started)

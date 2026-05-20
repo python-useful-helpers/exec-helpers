@@ -1,63 +1,118 @@
 [build-system]
+build-backend = "setuptools.build_meta"
 # Minimum requirements for the build system to execute.
 # PEP 508 specifications for PEP 518.
 requires = [
-    "setuptools >= 61.0.0",
-    "setuptools_scm[toml]>=6.2",
-    "wheel",
+  "setuptools>=80.3",
+  "setuptools-scm[toml]>=10.0.5",
+  "wheel>=0.47.0",
 ]
-build-backend="setuptools.build_meta"
 
 [project]
 name = "exec-helpers"
 description = "Execution helpers for simplified usage of subprocess and ssh."
-requires-python = ">=3.9.0"
-keywords = ["subprocess", "ssh"]
-license="Apache-2.0"  # Use SPDX classifier
-readme = {file = "README.rst", content-type = "text/x-rst"}
-authors=[{name="Aleksei Stepanov", email="penguinolog@gmail.com"}]
-maintainers=[
-  {name="Aleksei Stepanov", email="penguinolog@gmail.com"},
-  {name="Antonio Esposito", email="esposito.cloud@gmail.com"},
-  {name="Dennis Dmitriev", email="dis-xcom@gmail.com"},
-]
-dynamic = ["version", "classifiers", "dependencies"]
-
+readme = { file = "README.rst", content-type = "text/x-rst" }
+keywords = [ "ssh", "subprocess" ]
+license = "Apache-2.0"  # Use SPDX classifier
+license-files = [ "LICENSE" ]
+requires-python = ">=3.11.0"
+dynamic = [ "classifiers", "dependencies", "version" ]
+[[project.authors]]
+name = "Aleksei Stepanov"
+email = "penguinolog@gmail.com"
+[[project.maintainers]]
+name = "Aleksei Stepanov"
+email = "penguinolog@gmail.com"
+[[project.maintainers]]
+name = "Antonio Esposito"
+email = "esposito.cloud@gmail.com"
+[[project.maintainers]]
+name = "Dennis Dmitriev"
+email = "dis-xcom@gmail.com"
+[project.optional-dependencies]
+xml = []
+lxml = [ "lxml>=4.6.2" ]
+yaml = [ "pyyaml>=3.12" ]
+all_formats = [ "lxml>=4.6.2", "pyyaml>=3.12" ]
+all-formats = [ "lxml>=4.6.2", "pyyaml>=3.12" ]
 [project.urls]
-"Documentation" = "https://exec-helpers.readthedocs.io/"
-"Repository" = "https://github.com/python-useful-helpers/exec-helpers"
+Documentation = "https://exec-helpers.readthedocs.io/"
+Repository = "https://github.com/python-useful-helpers/exec-helpers"
 "Bug Tracker" = "https://github.com/python-useful-helpers/exec-helpers/issues"
 
-[tool.setuptools.package-data]
-exec_helpers=[
-  "py.typed",
-  "*.pyi",
-  "*/*.pyi"
+[dependency-groups]
+dev = [
+  { include-group = "bandit" },
+  { include-group = "build" },
+  { include-group = "doc8" },
+  { include-group = "docs" },
+  { include-group = "mypy" },
+  { include-group = "prek" },
+  { include-group = "pylint" },
+  { include-group = "pyproject-fmt" },
+  { include-group = "pytest" },
+  { include-group = "ruff" },
+  { include-group = "tox" },
+]
+docs = [
+  "sphinx>=9.0.0",
+]
+bandit = [
+  "bandit>=1.9.4",
+]
+build = [
+  "build>=1.5.0",
+]
+doc8 = [
+  "doc8>=2.0.0",
+  "pygments>=2.20.0",
+]
+mypy = [
+  "mypy[faster-cache,reports]>=2.1",
+  "rich>=15.0.0",
+]
+prek = [
+  "prek>=0.4.1",
+]
+pylint = [
+  "pylint>=4.0.5",
+]
+pyproject-fmt = [
+  "pyproject-fmt>=2.21.2",
+]
+pytest = [
+  "asynctest>=0.13",
+  "coverage[toml]>=7.14",
+  "pytest>8.0",
+  "pytest-asyncio>=1.3.0",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.0",
+]
+readme = [
+  "twine>=6.2",
+  { include-group = "build" },
+]
+ruff = [
+  "ruff>=0.15.13",
+]
+tox = [
+  "tox>=4.53.1",
 ]
 
 [tool.setuptools]
 zip-safe = false
-
-[tool.setuptools.packages.find]
-exclude = [
-  "doc*",
-  "examples",
-  "test*",
-  "bin",
-  ".*"
-]
-namespaces = false
-
 [tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-classifiers = {file = ["classifiers.txt"]}
-
-[project.optional-dependencies]
-xml = []
-lxml = ["lxml>=4.6.2"]
-yaml = ["PyYAML>=3.12"]
-all_formats = ["lxml>=4.6.2", "PyYAML>=3.12"]
-all-formats = ["lxml>=4.6.2", "PyYAML>=3.12"]
+dependencies = { file = [ "requirements.txt" ] }
+classifiers = { file = [ "classifiers.txt" ] }
+[tool.setuptools.package-data]
+exec_helpers = [
+  "py.typed",
+  "*.pyi",
+  "*/*.pyi",
+]
+[tool.setuptools.packages.find]
+exclude = [ "doc*", "examples", "test*", "bin", ".*" ]
+namespaces = false
 
 [tool.distutils.bdist_wheel]
 universal = 0
@@ -65,160 +120,83 @@ universal = 0
 [tool.setuptools_scm]
 write_to = "exec_helpers/_version.py"
 
-[tool.black]
+[tool.uv.workspace]
+members = [ "." ]
+
+[tool.ruff]
+target-version = "py311"
 line-length = 120
-target-version = ["py39"]
+output-format = "full"
+[tool.ruff.format]
+docstring-code-format = true
+[tool.ruff.lint]
+extend-select = [
+  "A",     # flake8-builtins
+  "ASYNC", # flake8-async
+  "B",
+  "C4",    # flake8-return, flake8-simplify, flake8-comprehensions
+  "DTZ",   # flake8-datetimez
+  "E",
+  "EXE",   # flake8-bugbear, flake8-debugger, flake8-executable
+  "FA",    # from __future__ import annotations
+  "FLY",   # Flynt
+  "FURB",  # Refurb
+  "I",
+  "ICN",
+  "ISC",   # flake8-implicit-str-concat
+  "PERF",
+  "PGH",   # flake8-import-conventions, pygrep-hooks
+  "PL",
+  "PYI",   # flake8-pyi
+  "Q",     # quotes
+  "RET",
+  "RUF",   # tryceratops, pyupgrade, isort, pylint + perflint, Ruff-specific
+  "S",     # flake8-bandit
+  "SIM",
+  "SLOT",  # flake8-slots
+  "PTH",   # flake8-use-pathlib
+  "T10",
+  "TC",    # flake8-type-checking
+  "TID",   # flake8-tidy-imports
+  "TRY",
+  "UP",
+  "W",     # also pycodestyle warnings
+]
+extend-ignore = [
+  # refactor rules (too many statements/arguments/branches)
+  "PLR0904",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "PLR0917",
+  "PLR2004",
+  "PLR6301", # "maybe staticmethod"
+  "RET504",  # Unnecessary variable assignment before return statement
+  "SIM108",  # Use ternary operator,
+  "S314",    # use "defusedxml" which is stale
+  "TRY003",  # long messages prepare outside, ...
+  "TID252",  # relative imports from parent modules
+]
+[tool.ruff.lint.isort]
+force-single-line = true
+known-third-party = [ "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil" ]
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = [ "__pretty_repr__", "__pretty_str__", "__rich_repr__" ]
 
 [tool.isort]
 line_length = 120
 multi_line_output = 3
 force_single_line = true
-
-known_third_party = ["logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil"]
-
-[tool.doc8]
-max-line-length = 150
-
-[tool.pydocstyle]
-ignore = [
-  "D401",
-  "D202",
-  "D203",
-  "D213"
-]
-# First line should be in imperative mood; try rephrasing
-# No blank lines allowed after function docstring
-# 1 blank line required before class docstring
-# Multi-line docstring summary should start at the second line
-match = "(?!_version|test_)*.py"
-
-[tool.mypy]
-strict = true
-warn_unused_configs = true
-warn_redundant_casts = true
-show_error_context = true
-show_column_numbers = true
-show_error_codes = true
-pretty = true
-
-[[tool.mypy.overrides]]
-module = [
-  "psutil",
-  "lxml.*"
-]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-vvv -s -p no:django -p no:ipdb"
-testpaths = ["test"]
-mock_use_standalone_module = false
-junit_family = "xunit2"
-
-[tool.coverage.run]
-omit = ["test/*"]
-branch = true
-
-[tool.coverage.report]
-exclude_lines = [
-  # Have to re-enable the standard pragma
-  "pragma: no cover",
-
-  # Don't complain about missing debug-only code:
-  "def __repr__",
-
-  # Don't complain if tests don't hit defensive assertion code:
-  "raise NotImplementedError",
-
-  # Exclude methods marked as abstract
-  "@abstractmethod",
-
-  # Exclude import statements
-  "^from\b",
-  "^import\b",
-
-  # Exclude variable declarations that are executed when file is loaded
-  "^[a-zA-Z_]+\b\\s=",
-
-  # Code for static analysis is never covered:
-  "if typing.TYPE_CHECKING:",
-
-  # Fallback code with no installed deps is almost impossible to cover properly
-  "except ImportError:",
-
-  # Don't complain if non-runnable code isn't run:
-  "if __name__ == .__main__.:",
-
-  # OS Specific
-  "if platform.system()",
-]
-
-[tool.coverage.json]
-pretty_print = true
-
-[tool.ruff]
-line-length = 120
-output-format = "full"
-target-version = "py39"
-
-[tool.ruff.lint]
-extend-select = [
-  "E",
-  "W",  # also pycodestyle warnings
-  "PYI",  # flake8-pyi
-  "ASYNC",  # flake8-async
-  "FA",  # from __future__ import annotations
-  "DTZ",  # flake8-datetimez
-  "SLOT",  # flake8-slots
-  "TCH",  # flake8-type-checking
-  "PTH",  # flake8-use-pathlib
-  "S",  # flake8-bandit
-  "A",  # flake8-builtins
-  "B", "T10", "EXE",  # flake8-bugbear, flake8-debugger, flake8-executable
-  "ISC",  # flake8-implicit-str-concat
-  "RET", "SIM", "C4",  # flake8-return, flake8-simplify, flake8-comprehensions
-  "ICN", "PGH",  # flake8-import-conventions, pygrep-hooks
-  "TID",  # flake8-tidy-imports
-  "Q",  # quotes
-  "FLY",  # Flynt
-  "FURB",  # Refurb
-  "TRY", "UP", "I", "PL", "PERF", "RUF",  # tryceratops, pyupgrade, isort, pylint + perflint, Ruff-specific
-]
-extend-ignore = [
-  # refactor rules (too many statements/arguments/branches)
-  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "PLR2004",
-  "PLR6301",  # "maybe staticmethod"
-  "RET504",  # Unnecessary variable assignment before return statement
-  "SIM108",  # Use ternary operator,
-  "S314",  # use "defusedxml" which is stale
-  "TRY003",  # long messages prepare outside, ...
-  "TID252",  # relative imports from parent modules
-]
-
-[tool.ruff.lint.isort]
-force-single-line = true
-known-third-party = ["logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil"]
-
-[tool.ruff.lint.pylint]
-allow-dunder-method-names = ["__pretty_repr__", "__pretty_str__", "__rich_repr__"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "pep257"
-
-[tool.ruff.format]
-docstring-code-format = true
-
-[tool.refurb]
-python_version = "3.9"
-enable_all = true
-ignore = ["FURB120"]
+known_third_party = [ "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil" ]
 
 [tool.pylint]
-extension-pkg-whitelist = ["lxml.etree"]
-ignore = ["CVS", "_version.py"]
+extension-pkg-whitelist = [ "lxml.etree" ]
+ignore = [ "CVS", "_version.py" ]
 jobs = 0
-py-version = "3.9"
-
+py-version = "3.11"
 load-plugins = [
   "pylint.extensions.docparams",
   "pylint.extensions.docstyle",
@@ -231,7 +209,6 @@ load-plugins = [
   "pylint.extensions.empty_comment",
   "pylint.extensions.dunder",
 ]
-
 enable = "all"
 disable = [
   "locally-disabled",
@@ -244,10 +221,10 @@ disable = [
   "too-many-return-statements",
   "too-many-branches",
   "too-many-arguments",
+  "too-many-positional-arguments",
   "too-many-locals",
   "too-many-statements",
   "too-many-instance-attributes",
-  "too-many-positional-arguments",
   "too-many-lines",
   "broad-except",
   "logging-fstring-interpolation",
@@ -256,15 +233,193 @@ disable = [
 ]
 max-line-length = 120
 reports = false
-
 [tool.pylint.dunder]
-good-dunder-names = ["__pretty_repr__", "__pretty_str__"]
-
+good-dunder-names = [
+  "__pretty_repr__",
+  "__pretty_str__",
+]
 [tool.pylint.parameter_documentation]
 accept-no-param-doc = true
 accept-no-raise-doc = false
 accept-no-return-doc = false
 accept-no-yields-doc = false
-
-# Possible choices: ['sphinx', 'epytext', 'google', 'numpy', 'default']
 default-docstring-type = "default"
+
+[tool.pyproject-fmt]
+# After how many columns split arrays/dicts into multiple lines and wrap long strings;
+# use a trailing comma in arrays to force multiline format instead of lowering this value
+column_width = 120
+# Number of spaces for indentation
+indent = 2
+# Keep full version numbers (e.g., 1.0.0 instead of 1.0) in dependency specifiers
+keep_full_version = true
+# Automatically generate Python version classifiers based on requires-python
+# Set to false to disable automatic classifier generation
+generate_python_version_classifiers = false
+# Table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
+table_format = "long"
+# List of tables to force expand regardless of table_format setting
+expand_tables = []
+# List of tables to force collapse regardless of table_format or expand_tables settings
+collapse_tables = []
+# List of key patterns to skip string wrapping (supports wildcards like *.parse or tool.bumpversion.*)
+skip_wrap_for_keys = []
+
+[tool.mypy]
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+show_error_context = true
+show_column_numbers = true
+show_error_codes = true
+pretty = true
+[[tool.mypy.overrides]]
+module = [ "psutil", "lxml.*" ]
+ignore_missing_imports = true
+
+[tool.pytest]
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-vvv -s -p no:django -p no:ipdb"
+testpaths = [ "test" ]
+mock_use_standalone_module = false
+junit_family = "xunit2"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage]
+[tool.coverage.json]
+pretty_print = true
+[tool.coverage.report]
+exclude_lines = [
+  # Exclude methods marked as abstract
+  "@abstractmethod",
+
+  # Exclude variable declarations that are executed when file is loaded
+  "^[a-zA-Z_]+\\b\\s=",
+
+  # Exclude import statements
+  "^from\\b",
+  "^import\\b",
+
+  # Don't complain about missing debug-only code:
+  "def __repr__",
+
+  # Fallback code with no installed deps is almost impossible to cover properly
+  "except ImportError:",
+
+  # Don't complain if non-runnable code isn't run:
+  "if __name__ == .__main__.:",
+
+  # OS Specific
+  "if platform.system()",
+
+  # Code for static analysis is never covered:
+  "if typing.TYPE_CHECKING:",
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise NotImplementedError",
+]
+[tool.coverage.run]
+branch = true
+omit = [ "test/*" ]
+
+[tool.tox]
+requires = [
+  "tox>=4.53",
+]
+env_list = [
+  "ruff",
+  "pylint",
+  "mypy",
+  "pep257",
+  { prefix = "py3", start = 11, stop = 15 },
+  { prefix = "pypy3", start = 11, stop = 15 },
+  "readme",
+  "doc8",
+  "docs",
+]
+skip_missing_interpreters = true
+[tool.tox.env]
+py311.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+py312.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+py313.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+py314.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+py315.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+pypy311.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+pypy312.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+pypy313.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+pypy314.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+pypy315.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+[tool.tox.env.bandit]
+dependency_groups = [ "bandit" ]
+ommands = [ [ "bandit", "-r", "exec_helpers" ] ]
+[tool.tox.env.doc8]
+package = "skip"
+dependency_groups = [ "doc8" ]
+commands = [ [ "doc8", "README.rst", "doc/source" ] ]
+[tool.tox.env.docs]
+depends = [ "doc8", "readme" ]
+dependency_groups = [ "docs" ]
+commands = [ [ "sphinx-build", "doc/source/", "doc/build" ] ]
+[tool.tox.env.install]
+dependency_groups = []
+commands = [ [ "pip", "install", "./", "-vvv", "-U" ] ]
+[tool.tox.env.mypy]
+depends = [ "ruff", "ruff-format", "pep257", "bandit" ]
+dependency_groups = [ "mypy" ]
+deps = ["-r {toxinidir}/CI_REQUIREMENTS.txt"]
+commands = [
+  [ "mypy", "--strict", "--install-types", "--non-interactive", "--show-error-codes", "-p", "exec_helpers" ],
+]
+
+[tool.tox.env.pylint]
+depends = [ "ruff", "ruff-format", "pep257", "bandit" ]
+dependency_groups = [ "pylint" ]
+deps = ["-r {toxinidir}/CI_REQUIREMENTS.txt"]
+commands = [ [ "pylint", "exec_helpers" ] ]
+[tool.tox.env.readme]
+package = "skip"
+dependency_groups = [ "readme" ]
+commands = [
+  [ "python", "-m", "build", "-s" ],
+  [ "twine", "check", "{tox_root}{/}dist{/}*" ],
+]
+
+[tool.tox.env.ruff]
+package = "skip"
+depends = [ "ruff-format" ]
+dependency_groups = [ "ruff" ]
+commands = [ [ "ruff", "check", "." ] ]
+[tool.tox.env.ruff-format]
+package = "skip"
+dependency_groups = [ "ruff" ]
+commands = [ [ "ruff", "format", "--check", "." ] ]
+[tool.tox.env.venv]
+commands = [ [ "{posargs}" ] ]
+[tool.tox.env_run_base]
+recreate = true
+package = "editable"
+pass_env = [
+  "http_proxy",
+  "HTTP_PROXY",
+  "https_proxy",
+  "HTTPS_PROXY",
+  "no_proxy",
+  "NO_PROXY",
+]
+set_env = { PYTHONDONTWRITEBYTECODE = "1" }
+dependency_groups = [ "pytest" ]
+commands = [
+  [ "pip", "freeze" ],
+  [ "py.test" ],
+]
+
+[tool.doc8]
+max-line-length = 150
+
+[tool.refurb]
+python_version = "3.11"
+enable_all = true
+ignore = [ "FURB120" ]

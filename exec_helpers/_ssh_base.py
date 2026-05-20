@@ -50,8 +50,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Sequence
     from types import TracebackType
-
-    from typing_extensions import Self
+    from typing import Self
 
     from exec_helpers.api import CalledProcessErrorSubClassT
     from exec_helpers.api import CommandT
@@ -66,8 +65,8 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
-KeepAlivePeriodT = typing.Union[int, bool]
-SupportPathT = typing.Union[str, pathlib.PurePath]
+KeepAlivePeriodT = int | bool
+SupportPathT = str | pathlib.PurePath
 
 
 class RetryOnExceptions(tenacity.retry_if_exception):
@@ -309,7 +308,7 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
             stderr = None
         _stdin: paramiko.channel.ChannelFile
         with chan.makefile("wb") as _stdin:
-            started = datetime.datetime.now(tz=datetime.timezone.utc)
+            started = datetime.datetime.now(tz=datetime.UTC)
             if self.__sudo_mode:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
                 if not stdout.channel.closed:
@@ -761,6 +760,7 @@ class SSHClientBase(api.ExecHelper):
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
+                self.__ssh.load_system_host_keys()
                 self.__ssh.set_missing_host_key_policy(self._missing_host_key_policy)
                 self.auth.connect(
                     client=self.__ssh,
@@ -787,6 +787,7 @@ class SSHClientBase(api.ExecHelper):
         """
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
+        last_ssh_client.load_system_host_keys()
         last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
 
         config, auth = self.__conn_chain[0]
@@ -801,6 +802,7 @@ class SSHClientBase(api.ExecHelper):
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
+            ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(self._missing_host_key_policy)
 
             if config.proxyjump:
@@ -1785,7 +1787,7 @@ class SSHClientBase(api.ExecHelper):
                 results[remote.hostname, remote.port] = result
                 if result.exit_code not in prep_expected:
                     errors[remote.hostname, remote.port] = result
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:
                 raised_exceptions[remote.hostname, remote.port] = e
 
         if raised_exceptions:  # always raise

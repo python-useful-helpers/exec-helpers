@@ -183,7 +183,7 @@ class ExitCodes(enum.IntEnum):
         return f"{self.name}<{self.value:d}(0x{self.value:02X})>"
 
 
-ExitCodeT = typing.Union[int, ExitCodes]
+ExitCodeT = int | ExitCodes
 EXPECTED: ExitCodeT = 0 if sys.platform == "win32" else ExitCodes.EX_OK
 INVALID: ExitCodeT = 0xDEADBEEF if sys.platform == "win32" else ExitCodes.EX_INVALID
 

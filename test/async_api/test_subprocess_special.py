@@ -127,7 +127,7 @@ configs = {
         "stdout": (),
         "command_parameters": CommandParameters(),
         "mock_parameters": MockParameters(
-            ec=(asyncio.TimeoutError(), -9),
+            ec=(TimeoutError(), -9),
         ),
         "expect_exc": exec_helpers.ExecHelperTimeoutError,
     },
@@ -135,7 +135,7 @@ configs = {
         "stdout": (),
         "command_parameters": CommandParameters(),
         "mock_parameters": MockParameters(
-            ec=(asyncio.TimeoutError(), None),
+            ec=(TimeoutError(), None),
         ),
         "expect_exc": exec_helpers.ExecHelperNoKillError,
     },

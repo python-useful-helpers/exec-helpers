@@ -183,7 +183,7 @@ class _SubprocessExecuteContext(
 
         The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
-        started = datetime.datetime.now(tz=datetime.timezone.utc)
+        started = datetime.datetime.now(tz=datetime.UTC)
 
         self.__process = await asyncio.create_subprocess_shell(
             cmd=self.command,
@@ -271,7 +271,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: str,
         async_result: SubprocessExecuteAsyncResult,
-        timeout: OptionalTimeoutT,
+        timeout: OptionalTimeoutT,  # noqa: ASYNC109
         *,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
@@ -328,7 +328,7 @@ class Subprocess(api.ExecHelper):
             # Wait real timeout here
             exit_code: int = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)
             result.exit_code = exit_code
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)
             exit_signal: int | None = await asyncio.wait_for(async_result.interface.wait(), timeout=0.001)
@@ -408,7 +408,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         *,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
@@ -487,7 +487,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         *,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
@@ -564,7 +564,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         error_info: ErrorInfoT = None,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
@@ -651,7 +651,7 @@ class Subprocess(api.ExecHelper):
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         error_info: ErrorInfoT = None,
         raise_on_err: bool = True,
         *,

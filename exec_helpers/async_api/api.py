@@ -46,8 +46,7 @@ from .. import _helpers
 if typing.TYPE_CHECKING:
     import types
     from collections.abc import Sequence
-
-    from typing_extensions import Self
+    from typing import Self
 
     from exec_helpers.async_api import exec_result
     from exec_helpers.proc_enums import ExitCodeT
@@ -377,7 +376,7 @@ class ExecHelper(
         self,
         command: str,
         async_result: api.ExecuteAsyncResult,
-        timeout: OptionalTimeoutT,
+        timeout: OptionalTimeoutT,  # noqa: ASYNC109
         *,
         verbose: bool = False,
         log_mask_re: LogMaskReT = None,
@@ -463,7 +462,7 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         *,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
@@ -546,7 +545,7 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         *,
         log_mask_re: LogMaskReT = None,
         stdin: OptionalStdinT = None,
@@ -610,7 +609,7 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         error_info: ErrorInfoT = None,
         expected: ExpectedExitCodesT = (proc_enums.EXPECTED,),
         raise_on_err: bool = True,
@@ -688,7 +687,7 @@ class ExecHelper(
         self,
         command: CommandT,
         verbose: bool = False,
-        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,
+        timeout: OptionalTimeoutT = constants.DEFAULT_TIMEOUT,  # noqa: ASYNC109
         error_info: ErrorInfoT = None,
         raise_on_err: bool = True,
         *,

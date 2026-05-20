@@ -120,6 +120,7 @@ def test_init_base(
 
     if auth is None:
         expected_calls = [
+            ssh_.load_system_host_keys(),
             ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
             ssh_.connect(
                 hostname=host,

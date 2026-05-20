@@ -43,8 +43,7 @@ if typing.TYPE_CHECKING:
     import datetime
     from collections.abc import Sequence
     from types import TracebackType
-
-    from typing_extensions import Self
+    from typing import Self
 
 __all__ = (
     "CalledProcessErrorSubClassT",
@@ -59,12 +58,12 @@ __all__ = (
     "OptionalTimeoutT",
 )
 
-CommandT = typing.Union[str, Iterable[str]]
-LogMaskReT = typing.Union[str, re.Pattern[str], None]
-ErrorInfoT = typing.Optional[str]
-ChRootPathSetT = typing.Optional[typing.Union[str, pathlib.Path]]
+CommandT = str | Iterable[str]
+LogMaskReT = str | re.Pattern[str] | None
+ErrorInfoT = str | None
+ChRootPathSetT = str | pathlib.Path | None
 ExpectedExitCodesT = Iterable[ExitCodeT]
-OptionalTimeoutT = typing.Union[int, float, None]
+OptionalTimeoutT = int | float | None
 CalledProcessErrorSubClassT = type[exceptions.CalledProcessError]
 
 

@@ -258,7 +258,7 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
             stdin=mock.Mock,
             stdout=stdout_part,
             stderr=stderr_part,
-            started=datetime.datetime.now(tz=datetime.timezone.utc),
+            started=datetime.datetime.now(tz=datetime.UTC),
         )
 
     execute_async = mocker.patch(

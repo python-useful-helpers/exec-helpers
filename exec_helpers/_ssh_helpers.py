@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
     import logwrap
 
-SSHConfigDictLikeT = dict[str, typing.Union[str, int, bool, Collection[str]]]
+SSHConfigDictLikeT = dict[str, str | int | bool | Collection[str]]
 SSHConfigsDictT = dict[str, SSHConfigDictLikeT]
 
 

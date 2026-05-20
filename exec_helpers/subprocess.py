@@ -53,8 +53,8 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("CwdT", "EnvT", "Subprocess", "SubprocessExecuteAsyncResult")
 
-EnvT = typing.Optional[Mapping[str, str]]
-CwdT = typing.Optional[typing.Union[str, bytes, pathlib.Path]]
+EnvT = Mapping[str, str] | None
+CwdT = str | bytes | pathlib.Path | None
 
 
 # noinspection PyTypeHints
@@ -180,7 +180,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
 
         The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
-        started = datetime.datetime.now(tz=datetime.timezone.utc)
+        started = datetime.datetime.now(tz=datetime.UTC)
 
         self.__process = subprocess.Popen(
             args=self.command,

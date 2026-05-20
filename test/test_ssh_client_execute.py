@@ -287,7 +287,7 @@ def execute_async(mocker, run_parameters):
             stdin=mock.Mock,
             stdout=stdout_part,
             stderr=stderr_part,
-            started=datetime.datetime.now(tz=datetime.timezone.utc),
+            started=datetime.datetime.now(tz=datetime.UTC),
         )
 
     return mocker.patch(

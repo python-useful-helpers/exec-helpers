@@ -62,7 +62,7 @@ __all__ = ("ExecResult", "OptionalStdinT")
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
-OptionalStdinT = typing.Union[bytes, str, bytearray, None]
+OptionalStdinT = bytes | str | bytearray | None
 
 
 def _handle_deserialize(
@@ -307,7 +307,7 @@ class ExecResult:
         .. versionadded:: 4.0.0
         """
         if self.timestamp is None:
-            self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+            self.__timestamp = datetime.datetime.now(tz=datetime.UTC)
 
     @classmethod
     def _get_brief(cls, data: tuple[bytes, ...]) -> str:
@@ -558,7 +558,7 @@ class ExecResult:
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+                self.__timestamp = datetime.datetime.now(tz=datetime.UTC)
 
     @property
     def ok(self) -> bool:

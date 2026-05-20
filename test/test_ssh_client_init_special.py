@@ -92,6 +92,7 @@ def test_001_require_key(
     kwargs_full["pkey"] = pkey
 
     expected_calls = [
+        ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_full),
         ssh_.connect(**kwargs_no_key),
@@ -148,6 +149,7 @@ def test_002_use_next_key(
     kwargs_key_1["pkey"] = private_keys[1]
 
     expected_calls = [
+        ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_key_0),
         ssh_.connect(**kwargs_key_1),
@@ -408,6 +410,7 @@ def test_012_re_connect(
     expected_calls = [
         ssh_.close(),
         ssh_,
+        ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(
             hostname="127.0.0.1",
