@@ -485,6 +485,8 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 8.0.0 Expose SSH Agent usage override.
     .. versionchanged:: 8.1.4 Allow specifying missing_host_key_policy.
     .. versionchanged:: 8.2.1 Added connect_timeout.
+    .. versionchanged:: 8.2.1 Direct connection to the local host accepts the host keys of this machine without
+        the unknown host key warning; a key of another server is handled by the missing host key policy as before.
     """
 
     __slots__ = (
@@ -806,6 +808,27 @@ class SSHClientBase(api.ExecHelper):
             transport: paramiko.Transport = self._ssh_transport
             transport.set_keepalive(1 if self.__keepalive_period else 0)  # send keepalive packets
 
+    def __host_key_policy(self, hostname: str) -> paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy]:
+        """Select the missing host key policy for a host which is connected to directly.
+
+        :param hostname: Host to connect to, without a proxy or a jump host.
+        :type hostname: str
+        :return: Configured policy; for the local host a policy, which accepts the keys of this machine first.
+        :rtype: paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy]
+
+        The local host is normally absent from `known_hosts`, so its own keys are the reference. A key of another
+        server (any local address can be a container, a tunnel or another server) goes to the configured policy as
+        before, so nothing which worked fails because of it. Without readable keys the configured policy decides.
+        The own key is accepted without asking the configured policy, so that policy does not see it.
+        """
+        try:
+            keys = _ssh_helpers.local_host_keys() if _ssh_helpers.is_local_host(hostname) else ()
+        except OSError:  # the answer only silences a warning, so a failure of the lookup must not fail the connection
+            keys = ()
+        if keys:
+            return _ssh_helpers.LocalHostKeyPolicy(keys, fallback=self._missing_host_key_policy)
+        return self._missing_host_key_policy
+
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
@@ -839,7 +862,9 @@ class SSHClientBase(api.ExecHelper):
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
         opened.append(last_ssh_client)
         last_ssh_client.load_system_host_keys()
-        last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
+        last_ssh_client.set_missing_host_key_policy(
+            self._missing_host_key_policy if config.proxycommand else self.__host_key_policy(config.hostname)
+        )
 
         auth.connect(
             last_ssh_client,
