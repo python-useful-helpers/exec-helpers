@@ -128,22 +128,29 @@ async def test_output_is_not_lost_on_process_exit(fake_async_popen) -> None:
 
 
 async def test_output_open_after_process_exit(mocker, fake_async_popen, logger) -> None:
-    """The execution does not wait for the output that stays open, and the incomplete result is logged."""
+    """The execution does not wait for the output that stays open, keeps what was read, and logs the case."""
 
-    class OpenForever:
-        """Stream held open by a child of the process: it never reaches the end."""
+    class OpenAfterLine:
+        """Stream held open by a child of the process: it gives one line and never reaches the end."""
 
-        def __aiter__(self) -> OpenForever:
+        def __aiter__(self) -> OpenAfterLine:
             return self
 
+        def __init__(self) -> None:
+            self.sent = False
+
         async def __anext__(self) -> bytes:
+            if not self.sent:
+                self.sent = True
+                return b"hi\n"
             await asyncio.Event().wait()
             raise StopAsyncIteration
 
     mocker.patch("exec_helpers.async_api.subprocess._READERS_DRAIN_TIMEOUT", 0.01)
-    fake_async_popen().stdout = OpenForever()
+    fake_async_popen().stdout = OpenAfterLine()
 
     res = await exec_helpers.async_api.Subprocess().execute(command)
 
     assert res.exit_code == 0
+    assert res.stdout == (b"hi\n",)
     assert any("may miss the output" in str(call) for call in logger.mock_calls if call[0] == "debug")

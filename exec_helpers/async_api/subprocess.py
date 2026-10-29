@@ -417,6 +417,8 @@ class Subprocess(api.ExecHelper):
         finally:
             stdout_task.cancel()
             stderr_task.cancel()
+            # The readers keep the lines read so far in the result when they are cancelled.
+            await asyncio.gather(stdout_task, stderr_task, return_exceptions=True)
             result.set_timestamp()
 
         wait_err_msg: str = _log_templates.CMD_WAIT_ERROR.format(result=result, timeout=timeout)

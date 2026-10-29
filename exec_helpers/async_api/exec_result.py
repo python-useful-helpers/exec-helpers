@@ -41,15 +41,19 @@ class ExecResult(exec_result.ExecResult):
         src: AsyncIterable[bytes],
         log: logging.Logger | None = None,
         verbose: bool = False,
+        *,
+        dst: list[bytes] | None = None,
     ) -> list[bytes]:
         """Stream poll helper.
 
         :param src: Source to read from.
         :param log: Logger instance, if line per-line logging is expected.
         :param verbose: Use INFO level for logging.
+        :param dst: List to append the lines to as they arrive, so the lines read are kept if the read is cancelled.
         :return: Read result as a list of byte strings.
         """
-        dst: list[bytes] = []
+        if dst is None:
+            dst = []
         with contextlib.suppress(IOError):
             async for line in src:
                 dst.append(line)
@@ -84,8 +88,12 @@ class ExecResult(exec_result.ExecResult):
             raise RuntimeError("Final exit code received.")
 
         with self.stdout_lock:
-            self._stdout_str = self._stdout_brief = None
-            self._stdout += tuple(await self._poll_stream(src, log, verbose))
+            lines: list[bytes] = []
+            try:
+                await self._poll_stream(src, log, verbose, dst=lines)
+            finally:
+                self._stdout_str = self._stdout_brief = None
+                self._stdout += tuple(lines)
 
     async def read_stderr(  # type: ignore[override]  # pylint: disable=invalid-overridden-method
         self,
@@ -111,5 +119,9 @@ class ExecResult(exec_result.ExecResult):
             raise RuntimeError("Final exit code received.")
 
         with self.stderr_lock:
-            self._stderr_str = self._stderr_brief = None
-            self._stderr += tuple(await self._poll_stream(src, log, verbose))
+            lines: list[bytes] = []
+            try:
+                await self._poll_stream(src, log, verbose, dst=lines)
+            finally:
+                self._stderr_str = self._stderr_brief = None
+                self._stderr += tuple(lines)
