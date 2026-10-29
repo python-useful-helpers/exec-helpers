@@ -266,20 +266,28 @@ def test_upload_file(mocker, tmp_path, sftp_client, remote_isdir, expected_targe
     sftp.put.assert_called_once_with(source.resolve().as_posix(), expected_target, confirm=True)
 
 
-def test_upload_dir(mocker, tmp_path, sftp_client) -> None:
-    """A directory is copied recursively: subdirectories are created and existing remote files are replaced."""
+@pytest.mark.parametrize(
+    ("target", "remote_isdir"),
+    [
+        pytest.param("/etc", True, id="into_dir"),
+        pytest.param("/etc/bash", False, id="as_target"),
+    ],
+)
+def test_upload_dir(mocker, tmp_path, sftp_client, target, remote_isdir) -> None:
+    """A directory is copied recursively: its directories are created and existing remote files are replaced."""
     ssh, sftp = sftp_client
     source = tmp_path / "bash"
     (source / "completions").mkdir(parents=True)
     (source / "bashrc").write_text("")
     (source / "completions" / "git").write_text("")
-    mocker.patch.object(exec_helpers.SSHClient, "isdir", return_value=True)
+    mocker.patch.object(exec_helpers.SSHClient, "isdir", return_value=remote_isdir)
     mkdir = mocker.patch.object(exec_helpers.SSHClient, "mkdir")
     remote_files = {"/etc/bash/bashrc"}
     mocker.patch.object(exec_helpers.SSHClient, "exists", side_effect=remote_files.__contains__)
 
-    ssh.upload(source=source, target="/etc")
-    mkdir.assert_any_call("/etc/bash/completions")
+    ssh.upload(source=source, target=target)
+    # The root first: the files and directories below it are created inside it.
+    assert mkdir.call_args_list == [mock.call("/etc/bash"), mock.call("/etc/bash/completions")]
     sftp.unlink.assert_called_once_with("/etc/bash/bashrc")
     sftp.put.assert_has_calls(
         [

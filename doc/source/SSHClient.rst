@@ -555,6 +555,8 @@ API: SSHClient and SSHAuth.
         :type source: ``str``
         :type target: ``str``
 
+        .. versionchanged:: 8.2.2 uploading a directory creates the remote directory it is copied to
+
     .. py:method:: download(destination, target)
 
         Download file(s) to target from destination.
