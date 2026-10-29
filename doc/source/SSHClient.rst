@@ -10,7 +10,7 @@ API: SSHClient and SSHAuth.
 
     SSHClient helper.
 
-    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1, allow_ssh_agent=True)
+    .. py:method:: __init__(host, port=22, username=None, password=None, *, auth=None, verbose=True, ssh_config=None, ssh_auth_map=None, sock=None, keepalive=1, allow_ssh_agent=True, connect_timeout=None)
 
         :param host: remote hostname
         :type host: ``str``
@@ -34,6 +34,9 @@ API: SSHClient and SSHAuth.
         :type keepalive: int | bool
         :param allow_ssh_agent: use SSH Agent if available
         :type allow_ssh_agent: bool
+        :param connect_timeout: timeout of the TCP connection, the SSH banner, the key exchange and the authentication,
+            applied to every connection step (a connection attempt is retried 3 times with a 3 s pause)
+        :type connect_timeout: float | None
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -52,6 +55,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 7.0.0 keepalive_mode is removed
         .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
         .. versionchanged:: 8.0.0 expose SSH Agent usage override
+        .. versionchanged:: 8.2.1 added connect_timeout
 
     .. py:attribute:: log_mask_re
 

@@ -458,6 +458,13 @@ class SSHClientBase(api.ExecHelper):
     :type allow_ssh_agent: bool
     :param missing_host_key_policy: Missing host key policy class. See paramiko.MissingHostKeyPolicy for details.
     :type missing_host_key_policy: type[paramiko.MissingHostKeyPolicy]
+    :param connect_timeout: Timeout in seconds for the TCP connection, the SSH banner, the key exchange and the
+        authentication of every connection step, including hosts reached through `proxy_to`.
+        An authentication timeout is reported as an authentication failure. By default: None
+        (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s). A connection attempt
+        is retried 3 times with a 3 s pause, so a hung host takes up to 3 times the timeout plus 6 s to report.
+    :type connect_timeout: float | None
+    :raises ValueError: connect_timeout is not positive.
 
     .. note:: auth has priority over username/password/private_keys.
     .. note::
@@ -477,12 +484,14 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 7.4.0 Return of keepalive_mode to prevent mix with a keepalive period. Default is `False`.
     .. versionchanged:: 8.0.0 Expose SSH Agent usage override.
     .. versionchanged:: 8.1.4 Allow specifying missing_host_key_policy.
+    .. versionchanged:: 8.2.1 Added connect_timeout.
     """
 
     __slots__ = (
         "__allow_agent",
         "__auth_mapping",
         "__conn_chain",
+        "__connect_timeout",
         "__hostname",
         "__keepalive_mode",
         "__keepalive_period",
@@ -519,6 +528,7 @@ class SSHClientBase(api.ExecHelper):
         keepalive: KeepAlivePeriodT = 1,
         allow_ssh_agent: bool = True,
         missing_host_key_policy: type[paramiko.MissingHostKeyPolicy] = paramiko.WarningPolicy,
+        connect_timeout: float | None = None,
     ) -> None:
         """Initialize the SSH client helper."""
         self.__sudo_mode = False
@@ -527,6 +537,9 @@ class SSHClientBase(api.ExecHelper):
         self.__verbose: bool = verbose
         self.__sock = sock
         self._missing_host_key_policy = missing_host_key_policy
+        if connect_timeout is not None and connect_timeout <= 0:
+            raise ValueError(f"connect_timeout should be positive, got {connect_timeout!r}")
+        self.__connect_timeout = connect_timeout
 
         self.__ssh: paramiko.SSHClient
         self.__sftp: paramiko.SFTPClient | None = None
@@ -749,14 +762,30 @@ class SSHClientBase(api.ExecHelper):
         """
         return self.__ssh
 
+    def __connect(self) -> None:
+        """Open the connection, with retries unless a socket was supplied.
+
+        A failed attempt closes the supplied socket, so there is nothing to retry on:
+        the next attempt would only fail on the closed socket and hide the original error.
+        """
+        with self.lock:
+            if self.__sock is None:
+                self.__connect_with_retries()
+            else:
+                self.__connect_once()
+
     @tenacity.retry(
         retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
         stop=tenacity.stop.stop_after_attempt(3),
         wait=tenacity.wait.wait_fixed(3),
         reraise=True,
     )
-    def __connect(self) -> None:
-        """Open the connection."""
+    def __connect_with_retries(self) -> None:
+        """Open the connection, retry on the connection errors."""
+        self.__connect_once()
+
+    def __connect_once(self) -> None:
+        """Open the connection, one attempt."""
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
@@ -769,6 +798,7 @@ class SSHClientBase(api.ExecHelper):
                     log=self.__verbose,
                     sock=self.__sock,
                     allow_ssh_agent=self.allow_ssh_agent,
+                    timeout=self.__connect_timeout,
                 )
             else:
                 self.__ssh = self.__get_client()
@@ -785,11 +815,31 @@ class SSHClientBase(api.ExecHelper):
         :raises RuntimeError: Unexpected state.
         :raises ConnectionError: Cannot get SSH transport.
         """
+        opened: list[paramiko.SSHClient] = []
+        try:
+            return self.__connect_chain(opened)
+        except BaseException:
+            for client in reversed(opened):  # paramiko leaves the transports of a failed connect running
+                client.close()
+            raise
+
+    def __connect_chain(self, opened: list[paramiko.SSHClient]) -> paramiko.SSHClient:
+        """Connect the hosts of the connection chain one by one.
+
+        :param opened: Every client created here is added to the list at once, for the cleanup on failure.
+        :type opened: list[paramiko.SSHClient]
+        :return: Paramiko ssh connection object of the last host.
+        :rtype: paramiko.SSHClient
+        :raises ValueError: ProxyCommand found in a connection chain after the first host reached an.
+        :raises RuntimeError: Unexpected state.
+        :raises ConnectionError: Cannot get SSH transport.
+        """
+        config, auth = self.__conn_chain[0]
+
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
+        opened.append(last_ssh_client)
         last_ssh_client.load_system_host_keys()
         last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
-
-        config, auth = self.__conn_chain[0]
 
         auth.connect(
             last_ssh_client,
@@ -797,10 +847,12 @@ class SSHClientBase(api.ExecHelper):
             port=config.port or 22,
             sock=paramiko.ProxyCommand(config.proxycommand) if config.proxycommand else None,
             allow_ssh_agent=self.allow_ssh_agent,
+            timeout=self.__connect_timeout,
         )
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
+            opened.append(ssh)
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(self._missing_host_key_policy)
 
@@ -819,6 +871,7 @@ class SSHClientBase(api.ExecHelper):
                     port=config.port or 22,
                     sock=sock,
                     allow_ssh_agent=self.allow_ssh_agent,
+                    timeout=self.__connect_timeout,
                 )
                 last_ssh_client = ssh
                 continue
@@ -1570,6 +1623,7 @@ class SSHClientBase(api.ExecHelper):
             sock=sock,
             ssh_auth_map=ssh_auth_map if ssh_auth_map is not None else self.__auth_mapping,
             keepalive=int(keepalive),
+            connect_timeout=self.__connect_timeout,
         )
 
     def execute_through_host(

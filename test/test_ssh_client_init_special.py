@@ -95,6 +95,7 @@ def test_001_require_key(
         ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_full),
+        ssh_.close(),  # the failed attempt is closed before the next one
         ssh_.connect(**kwargs_no_key),
         ssh_.get_transport(),
         ssh_.get_transport().set_keepalive(1),
@@ -152,7 +153,9 @@ def test_002_use_next_key(
         ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_key_0),
+        ssh_.close(),
         ssh_.connect(**kwargs_key_1),
+        ssh_.close(),
         ssh_.connect(**kwargs_no_key),
         ssh_.get_transport(),
         ssh_.get_transport().set_keepalive(1),

@@ -165,6 +165,7 @@ class SSHAuth:
         *,
         sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None = None,
         allow_ssh_agent: bool = True,
+        timeout: float | None = None,
     ) -> None:
         """Connect the SSH client object using credentials.
 
@@ -180,8 +181,13 @@ class SSHAuth:
         :type sock: paramiko.ProxyCommand | paramiko.Channel | socket.socket | None
         :param allow_ssh_agent: Use SSH Agent if available.
         :type allow_ssh_agent: bool
+        :param timeout: Timeout in seconds for the TCP connection, the SSH banner and the authentication.
+        :type timeout: float | None
         :raises PasswordRequiredException: No password has been set, but required.
-        :raises AuthenticationException: Authentication failed.
+        :raises AuthenticationException: Authentication failed (an authentication timeout is reported the same way).
+        :raises TimeoutError: TCP connection timeout.
+        :raises paramiko.SSHException: Banner or key exchange timeout.
+        :raises BaseException: Any other failure of a connection attempt; the client is closed first.
         """
         kwargs: dict[str, typing.Any] = {}
 
@@ -189,6 +195,8 @@ class SSHAuth:
             kwargs["passphrase"] = self.__passphrase
         if sock is not None:
             kwargs["sock"] = sock
+        if timeout is not None:
+            kwargs.update(timeout=timeout, banner_timeout=timeout, auth_timeout=timeout)
 
         for index, key in sorted(enumerate(self.__keys), key=lambda i_k: i_k[0] != self.__key_index):
             kwargs["pkey"] = key
@@ -207,13 +215,20 @@ class SSHAuth:
                     self.__key_index = index
                     LOGGER.debug(f"Main key has been updated, public key is: \n{self.public_key}")
             except paramiko.PasswordRequiredException:
+                client.close()  # paramiko leaves the transport of a failed connect running
                 if self.__password is None:
                     LOGGER.exception("No password has been set!")
                     raise
                 LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
             except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
+                client.close()  # this also closes the supplied sock, so it can not be used for the next key
+                if sock is not None:
+                    break
                 continue
+            except BaseException:
+                client.close()
+                raise
             else:
                 return
         msg: str = "Connection using stored authentication info failed!"

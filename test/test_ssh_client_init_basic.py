@@ -155,3 +155,68 @@ def test_init_base(
     assert ssh.ssh_config[host] == expected_config_dict[host]
     assert ssh.ssh_config == expected_config_dict
     assert ssh.ssh_config[host].hostname == host
+
+
+@pytest.mark.parametrize("through", ("direct", "sock", "proxyjump", "proxy_to"))
+def test_connect_timeout_every_step(paramiko_ssh_client, ssh_auth_logger, through):
+    """The connect timeout is applied to every connection step."""
+    kwargs = {}
+    if through == "sock":
+        kwargs["sock"] = mock.Mock()
+    elif through == "proxyjump":
+        kwargs["ssh_config"] = {
+            "jump": {"hostname": "192.0.2.1"},
+            host: {"hostname": host, "proxyjump": "jump"},
+        }
+        kwargs["ssh_auth_map"] = {"192.0.2.1": exec_helpers.SSHAuth(), host: exec_helpers.SSHAuth()}
+
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(), connect_timeout=7, **kwargs)
+    if through == "proxy_to":
+        ssh.proxy_to("192.0.2.2", auth=exec_helpers.SSHAuth())
+
+    connects = [call for call in paramiko_ssh_client.return_value.mock_calls if call[0] == "connect"]
+    assert len(connects) >= (2 if through in {"proxyjump", "proxy_to"} else 1)
+    for call in connects:
+        assert (call.kwargs["timeout"], call.kwargs["banner_timeout"], call.kwargs["auth_timeout"]) == (7, 7, 7)
+
+
+@pytest.mark.parametrize("value", (0, -1))
+def test_connect_timeout_not_positive(paramiko_ssh_client, value):
+    """A timeout that disables waiting is rejected."""
+    with pytest.raises(ValueError, match="connect_timeout"):
+        exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(), connect_timeout=value)
+
+
+def test_failed_chain_closes_every_reached_host(paramiko_ssh_client, ssh_auth_logger):
+    """A failure on a jump host chain closes the clients of all the hosts created so far."""
+    first = mock.Mock()
+    second = mock.Mock()
+    second.connect.side_effect = TimeoutError
+    paramiko_ssh_client.side_effect = [first, second]
+    config = {
+        "jump": {"hostname": "192.0.2.1"},
+        host: {"hostname": host, "proxyjump": "jump"},
+    }
+
+    with pytest.raises(TimeoutError):
+        exec_helpers.SSHClient(
+            host=host,
+            auth=exec_helpers.SSHAuth(),
+            ssh_config=config,
+            ssh_auth_map={"192.0.2.1": exec_helpers.SSHAuth(), host: exec_helpers.SSHAuth()},
+        )
+
+    first.close.assert_called()
+    second.close.assert_called()
+
+
+@pytest.mark.parametrize(("supplied_sock", "attempts"), ((False, 3), (True, 1)))
+def test_connect_retries(paramiko_ssh_client, ssh_auth_logger, supplied_sock, attempts):
+    """A failed connection is retried, except on a supplied socket: the failed attempt has closed it."""
+    paramiko_ssh_client.return_value.connect.side_effect = paramiko.SSHException("banner")
+    kwargs = {"sock": mock.Mock()} if supplied_sock else {}
+
+    with pytest.raises(paramiko.SSHException, match="banner"):
+        exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(), **kwargs)
+
+    assert paramiko_ssh_client.return_value.connect.call_count == attempts
