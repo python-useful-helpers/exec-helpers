@@ -574,3 +574,24 @@ def test_016_sftp_after_close_reconnect_failed(
         ssh._sftp  # pylint: disable=pointless-statement  # noqa: B018
 
     fake.transport.open_sftp_client.assert_not_called()
+
+
+@pytest.mark.parametrize("check", ["exists", "isfile", "isdir", "islink"])
+def test_017_sftp_path_check_after_close_reconnect_failed(
+    check: str,
+    paramiko_ssh_client,
+    ssh_auth_logger,
+    get_logger,
+):
+    """A failed reconnect is raised by a path check, not reported as a missing path."""
+    fake = ClosableSSHClient()
+    paramiko_ssh_client.return_value = fake
+
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(password=password))
+    ssh.close()
+    fake.connect.side_effect = ConnectionRefusedError("connect failed")
+
+    with pytest.raises(ConnectionRefusedError, match="connect failed"):
+        getattr(ssh, check)("/path")
+
+    fake.sftp.lstat.assert_not_called()
