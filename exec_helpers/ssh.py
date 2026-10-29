@@ -73,6 +73,8 @@ class SSHClient(_ssh_base.SSHClientBase):
         :type source: str | pathlib.PurePath
         :param target: Remote path.
         :type target: str | pathlib.PurePath
+
+        .. versionchanged:: 8.2.2 Uploading a directory creates the remote directory it is copied to.
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 
@@ -87,6 +89,7 @@ class SSHClient(_ssh_base.SSHClientBase):
             self._sftp.put(src.as_posix(), tgt.as_posix(), confirm=True)
             return
 
+        self.mkdir(tgt.as_posix())  # glob below yields only what is inside src, never src itself
         for pth in src.glob("**/*"):
             relative = pth.relative_to(src).as_posix()
             destination: str = os.path.normpath(tgt.joinpath(relative).as_posix()).replace("\\", "/")

@@ -1903,9 +1903,15 @@ class SSHClientBase(api.ExecHelper):
         :type path: str | pathlib.PurePath
         :return: path is valid (an object exists).
         :rtype: bool
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error.
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
+
+        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
         """
+        sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
-            self._sftp.lstat(pathlib.PurePath(path).as_posix())
+            sftp.lstat(pathlib.PurePath(path).as_posix())
         except OSError:
             return False
 
@@ -1940,9 +1946,15 @@ class SSHClientBase(api.ExecHelper):
         :type path: str | pathlib.PurePath
         :return: path is file.
         :rtype: bool
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error.
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
+
+        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
         """
+        sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
+            attrs: paramiko.sftp_attr.SFTPAttributes = sftp.lstat(pathlib.PurePath(path).as_posix())
             if attrs.st_mode is None:
                 return False
             return stat.S_ISREG(attrs.st_mode)
@@ -1956,9 +1968,15 @@ class SSHClientBase(api.ExecHelper):
         :type path: str | pathlib.PurePath
         :return: path is directory.
         :rtype: bool
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error.
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
+
+        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
         """
+        sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
+            attrs: paramiko.sftp_attr.SFTPAttributes = sftp.lstat(pathlib.PurePath(path).as_posix())
             if attrs.st_mode is None:
                 return False
             return stat.S_ISDIR(attrs.st_mode)
@@ -1972,9 +1990,15 @@ class SSHClientBase(api.ExecHelper):
         :type path: str | pathlib.PurePath
         :return: path is symlink.
         :rtype: bool
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error.
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
+
+        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
         """
+        sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
-            attrs: paramiko.sftp_attr.SFTPAttributes = self._sftp.lstat(pathlib.PurePath(path).as_posix())
+            attrs: paramiko.sftp_attr.SFTPAttributes = sftp.lstat(pathlib.PurePath(path).as_posix())
             if attrs.st_mode is None:
                 return False
             return stat.S_ISLNK(attrs.st_mode)

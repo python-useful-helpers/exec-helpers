@@ -18,13 +18,13 @@
 
 from __future__ import annotations
 
-import os
-import posixpath
+import pathlib
 import stat
 import unittest
 from unittest import mock
 
 import paramiko
+import pytest
 
 import exec_helpers
 
@@ -194,54 +194,6 @@ class TestSftp(unittest.TestCase):
         self.assertFalse(result)
         lstat.assert_called_once_with(dst)
 
-    @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh.SSHClient.exists")
-    @mock.patch("exec_helpers.ssh.SSHClient.execute")
-    def test_mkdir(self, execute, exists, *args):
-        exists.side_effect = [False, True]
-
-        dst = "~/tst dir"
-        escaped_dst = r"~/tst\ dir"
-
-        # noinspection PyTypeChecker
-        ssh = exec_helpers.SSHClient(
-            host=host,
-            port=port,
-            auth=exec_helpers.SSHAuth(username=username, password=password),
-        )
-
-        # Path not exists
-        # noinspection PyTypeChecker
-        ssh.mkdir(dst)
-        exists.assert_called_once_with(dst)
-        execute.assert_called_once_with(f"mkdir -p {escaped_dst}\n")
-
-        # Path exists
-        exists.reset_mock()
-        execute.reset_mock()
-
-        # noinspection PyTypeChecker
-        ssh.mkdir(dst)
-        exists.assert_called_once_with(dst)
-        execute.assert_not_called()
-
-    @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh.SSHClient.execute")
-    def test_rm_rf(self, execute, *args):
-        dst = "~/tst"
-
-        # noinspection PyTypeChecker
-        ssh = exec_helpers.SSHClient(
-            host=host,
-            port=port,
-            auth=exec_helpers.SSHAuth(username=username, password=password),
-        )
-
-        # Path not exists
-        # noinspection PyTypeChecker
-        ssh.rm_rf(dst)
-        execute.assert_called_once_with(f"rm -rf {dst}")
-
     def test_open(self, client, *args):
         ssh, sftp = self.prepare_sftp_file_tests(client)
         fopen = mock.Mock(return_value=True)
@@ -254,97 +206,117 @@ class TestSftp(unittest.TestCase):
         fopen.assert_called_once_with(dst, mode)
         self.assertTrue(result)
 
-    @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh.SSHClient.exists")
-    @mock.patch("os.path.exists", autospec=True)
-    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
-    @mock.patch("os.path.isdir", autospec=True)
-    def test_download(
-        self,
-        isdir,
-        remote_isdir,
-        exists,
-        remote_exists,
-        client,
-        policy,
-        _logger,
-    ):
-        ssh, sftp = self.prepare_sftp_file_tests(client)
-        isdir.return_value = True
-        exists.side_effect = [True, False, False]
-        remote_isdir.side_effect = [False, False, True]
-        remote_exists.side_effect = [True, False, False]
 
-        dst = "/etc/environment"
-        target = "/tmp/environment"
-        # noinspection PyTypeChecker
-        result = ssh.download(destination=dst, target=target)
-        self.assertTrue(result)
-        isdir.assert_called_once_with(target)
-        exists.assert_called_once_with(posixpath.join(target, os.path.basename(dst)))
-        remote_isdir.assert_called_once_with(dst)
-        remote_exists.assert_called_once_with(dst)
-        sftp.assert_has_calls(
-            mock.call.get(
-                dst,
-                posixpath.join(target, os.path.basename(dst)),
-            )
-        )
+@pytest.fixture
+def sftp_client(paramiko_ssh_client, ssh_auth_logger, get_logger) -> tuple[exec_helpers.SSHClient, mock.Mock]:
+    """Create the client and the SFTP session mock it opens."""
+    sftp = mock.Mock()
+    transport = mock.Mock(open_sftp_client=mock.Mock(return_value=sftp))
+    paramiko_ssh_client.return_value = mock.Mock(get_transport=mock.Mock(return_value=transport))
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        port=port,
+        auth=exec_helpers.SSHAuth(username=username, password=password),
+    )
+    return ssh, sftp
 
-        # Negative scenarios
-        # noinspection PyTypeChecker
-        result = ssh.download(destination=dst, target=target)
-        self.assertFalse(result)
 
-        # noinspection PyTypeChecker
-        ssh.download(destination=dst, target=target)
+def test_mkdir(mocker, sftp_client) -> None:
+    """The directory is created by a command with the escaped path, only when it is missing."""
+    ssh, _ = sftp_client
+    exists = mocker.patch.object(exec_helpers.SSHClient, "exists", side_effect=[False, True])
+    execute = mocker.patch.object(exec_helpers.SSHClient, "execute")
 
-    @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
-    @mock.patch("os.path.isdir", autospec=True)
-    def test_upload_file(self, isdir, remote_isdir, client, *args):
-        ssh, sftp = self.prepare_sftp_file_tests(client)
-        isdir.return_value = False
-        remote_isdir.return_value = False
-        target = "/etc/environment"
-        source = "/tmp/environment"
+    ssh.mkdir("~/tst dir")
+    exists.assert_called_once_with("~/tst dir")
+    execute.assert_called_once_with("mkdir -p ~/tst\\ dir\n")
 
-        # noinspection PyTypeChecker
-        ssh.upload(source=source, target=target)
-        isdir.assert_called_once_with(source)
-        remote_isdir.assert_called_once_with(target)
-        sftp.assert_has_calls((mock.call.put(source, target),))
+    exists.reset_mock()
+    execute.reset_mock()
+    ssh.mkdir("~/tst dir")
+    exists.assert_called_once_with("~/tst dir")
+    execute.assert_not_called()
 
-    @unittest.skip("Need to port to pytest: too huge chain of mocks and setup")
-    @mock.patch("exec_helpers.ssh.SSHClient.exists")
-    @mock.patch("exec_helpers.ssh.SSHClient.mkdir")
-    @mock.patch("os.walk")
-    @mock.patch("exec_helpers.ssh.SSHClient.isdir")
-    @mock.patch("os.path.isdir", autospec=True)
-    def test_upload_dir(self, isdir, remote_isdir, walk, mkdir, exists, client, *args):
-        ssh, sftp = self.prepare_sftp_file_tests(client)
-        isdir.return_value = True
-        remote_isdir.return_value = True
-        exists.return_value = True
-        target = "/etc"
-        source = "/tmp/bash"
-        filename = "bashrc"
-        walk.return_value = ((source, "", [filename]),)
-        expected_path = posixpath.join(target, os.path.basename(source))
-        expected_file = posixpath.join(expected_path, filename)
 
-        # noinspection PyTypeChecker
-        ssh.upload(source=source, target=target)
-        isdir.assert_called_once_with(source)
-        remote_isdir.assert_called_once_with(target)
-        mkdir.assert_called_once_with(expected_path)
-        exists.assert_called_once_with(expected_file)
-        sftp.assert_has_calls(
-            (
-                mock.call.unlink(expected_file),
-                mock.call.put(
-                    os.path.normpath(os.path.join(source, filename)),
-                    expected_file,
-                ),
-            )
-        )
+def test_rm_rf(mocker, sftp_client) -> None:
+    """The path is removed by a command with the escaped path."""
+    ssh, _ = sftp_client
+    execute = mocker.patch.object(exec_helpers.SSHClient, "execute")
+
+    ssh.rm_rf("~/tst dir")
+    execute.assert_called_once_with("rm -rf ~/tst\\ dir")
+
+
+@pytest.mark.parametrize(
+    ("remote_isdir", "expected_target"),
+    [
+        pytest.param(False, "/etc/environment", id="to_file"),
+        pytest.param(True, "/etc/environment/environment", id="into_dir"),
+    ],
+)
+def test_upload_file(mocker, tmp_path, sftp_client, remote_isdir, expected_target) -> None:
+    """A file is put to the target, or into it when the target is a directory."""
+    ssh, sftp = sftp_client
+    source = tmp_path / "environment"
+    source.write_text("A=1\n")
+    isdir = mocker.patch.object(exec_helpers.SSHClient, "isdir", return_value=remote_isdir)
+
+    ssh.upload(source=source, target="/etc/environment")
+    isdir.assert_called_once_with("/etc/environment")
+    sftp.put.assert_called_once_with(source.resolve().as_posix(), expected_target, confirm=True)
+
+
+@pytest.mark.parametrize(
+    ("target", "remote_isdir"),
+    [
+        pytest.param("/etc", True, id="into_dir"),
+        pytest.param("/etc/bash", False, id="as_target"),
+    ],
+)
+def test_upload_dir(mocker, tmp_path, sftp_client, target, remote_isdir) -> None:
+    """A directory is copied recursively: its directories are created and existing remote files are replaced."""
+    ssh, sftp = sftp_client
+    source = tmp_path / "bash"
+    (source / "completions").mkdir(parents=True)
+    (source / "bashrc").write_text("")
+    (source / "completions" / "git").write_text("")
+    mocker.patch.object(exec_helpers.SSHClient, "isdir", return_value=remote_isdir)
+    mkdir = mocker.patch.object(exec_helpers.SSHClient, "mkdir")
+    remote_files = {"/etc/bash/bashrc"}
+    mocker.patch.object(exec_helpers.SSHClient, "exists", side_effect=remote_files.__contains__)
+
+    ssh.upload(source=source, target=target)
+    # The root first: the files and directories below it are created inside it.
+    assert mkdir.call_args_list == [mock.call("/etc/bash"), mock.call("/etc/bash/completions")]
+    sftp.unlink.assert_called_once_with("/etc/bash/bashrc")
+    sftp.put.assert_has_calls(
+        [
+            mock.call((source / "bashrc").resolve().as_posix(), "/etc/bash/bashrc", confirm=True),
+            mock.call((source / "completions" / "git").resolve().as_posix(), "/etc/bash/completions/git", confirm=True),
+        ],
+        any_order=True,
+    )
+    assert sftp.put.call_count == 2
+
+
+@pytest.mark.parametrize(
+    ("remote_isdir", "remote_exists", "downloaded"),
+    [
+        pytest.param(False, True, True, id="file"),
+        pytest.param(False, False, False, id="missing"),
+        pytest.param(True, True, False, id="directory"),
+    ],
+)
+def test_download(mocker, tmp_path, sftp_client, remote_isdir, remote_exists, downloaded) -> None:
+    """A remote file is got into a local directory; a missing path or a directory is not downloaded."""
+    ssh, sftp = sftp_client
+    mocker.patch.object(exec_helpers.SSHClient, "isdir", return_value=remote_isdir)
+    mocker.patch.object(exec_helpers.SSHClient, "exists", return_value=remote_exists)
+    target = tmp_path.resolve() / "environment"
+    sftp.get.side_effect = lambda _remote, local: pathlib.Path(local).write_text("A=1\n")
+
+    assert ssh.download(destination="/etc/environment", target=tmp_path) is downloaded
+    if downloaded:
+        sftp.get.assert_called_once_with("/etc/environment", target.as_posix())
+    else:
+        sftp.get.assert_not_called()

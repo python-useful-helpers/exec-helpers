@@ -447,6 +447,11 @@ API: SSHClient and SSHAuth.
         :type path: ``str``
         :return: path is valid (object exists)
         :rtype: ``bool``
+        :raises ConnectionError: SSH session was closed and the reconnect failed
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
+
+        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
 
     .. py:method:: stat(path)
 
@@ -477,6 +482,11 @@ API: SSHClient and SSHAuth.
         :type path: ``str``
         :return: path is file
         :rtype: ``bool``
+        :raises ConnectionError: SSH session was closed and the reconnect failed
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
+
+        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
 
     .. py:method:: isdir(path)
 
@@ -486,6 +496,11 @@ API: SSHClient and SSHAuth.
         :type path: ``str``
         :return: path is directory
         :rtype: ``bool``
+        :raises ConnectionError: SSH session was closed and the reconnect failed
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
+
+        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
 
     .. py:method:: islink(path)
 
@@ -495,6 +510,11 @@ API: SSHClient and SSHAuth.
         :type path: ``str``
         :return: path is symlink
         :rtype: ``bool``
+        :raises ConnectionError: SSH session was closed and the reconnect failed
+        :raises OSError: SSH session was closed and the reconnect failed with a socket error
+        :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
+
+        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
 
     .. py:method:: symlink(source, dest)
 
@@ -534,6 +554,8 @@ API: SSHClient and SSHAuth.
 
         :type source: ``str``
         :type target: ``str``
+
+        .. versionchanged:: 8.2.2 uploading a directory creates the remote directory it is copied to
 
     .. py:method:: download(destination, target)
 
