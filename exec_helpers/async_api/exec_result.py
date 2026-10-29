@@ -26,7 +26,7 @@ import typing
 if typing.TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
-from exec_helpers import exec_result  # pylint: disable=wrong-import-position
+from exec_helpers import exec_result
 
 __all__ = ("ExecResult",)
 

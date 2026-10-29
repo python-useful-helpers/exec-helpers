@@ -1,3 +1,5 @@
+"""Sphinx documentation build configuration."""
+
 # exec-helpers documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 30 13:40:52 2016.
 #

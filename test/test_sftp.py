@@ -43,8 +43,8 @@ class TestSftp(unittest.TestCase):
         ssh_ = mock.Mock()
         client.return_value = ssh_
         sftp = mock.Mock()
-        open_sftp = mock.Mock(parent=ssh_, return_value=sftp)
-        ssh_.attach_mock(open_sftp, "open_sftp")
+        open_sftp = mock.Mock(parent=ssh_.get_transport(), return_value=sftp)
+        ssh_.get_transport().attach_mock(open_sftp, "open_sftp_client")
 
         with (
             mock.patch("exec_helpers._ssh_helpers.SSH_CONFIG_FILE_SYSTEM", autospec=True) as conf_sys,

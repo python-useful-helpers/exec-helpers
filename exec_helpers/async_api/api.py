@@ -70,6 +70,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
 
     __slots__ = (
         "__command",
+        "__log_mask_re",
         "__logger",
         "__open_stderr",
         "__open_stdout",
@@ -84,6 +85,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         open_stdout: bool = True,
         open_stderr: bool = True,
         logger: logging.Logger,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> None:
         """Execute async context manager.
@@ -98,6 +100,8 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :type open_stderr: bool
         :param logger: Logger instance.
         :type logger: logging.Logger
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         """
@@ -106,6 +110,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         self.__open_stdout = open_stdout
         self.__open_stderr = open_stderr
         self.__logger = logger
+        self.__log_mask_re = log_mask_re
         if kwargs:
             self.__logger.warning(f"Unexpected arguments: {kwargs!r}.", stack_info=True)
 
@@ -117,6 +122,15 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :rtype: logging.Logger
         """
         return self.__logger
+
+    @property
+    def _masked_command(self) -> str:
+        """Command with the log mask applied, for debug output.
+
+        :return: Command without the masked parts.
+        :rtype: str
+        """
+        return _helpers.mask_command(self.__command.rstrip(), self.__log_mask_re)
 
     @property
     def command(self) -> str:
@@ -273,7 +287,7 @@ class ExecHelper(
 
     @property
     def _chroot_exe(self) -> str | None:
-        """Exe for chroot
+        """Return the exe for chroot.
 
         :rtype: str | None
         .. versionadded:: 8.1.0
@@ -282,7 +296,7 @@ class ExecHelper(
 
     @_chroot_exe.setter
     def _chroot_exe(self, new_state: str | None) -> None:
-        """Executable for chroot if set.
+        """Set the executable for chroot.
 
         :param new_state: New exe.
         :type new_state: str | None
@@ -338,6 +352,16 @@ class ExecHelper(
         if self.__alock is not None:
             self.__alock.release()
 
+    def _command_to_string(self, command: CommandT) -> str:
+        """Convert the command to the string form used for execution and logs.
+
+        :param command: Original command.
+        :type command: str | Iterable[str]
+        :return: Command as a single string.
+        :rtype: str
+        """
+        return _helpers.cmd_to_string(command)
+
     def _mask_command(self, cmd: str, log_mask_re: LogMaskReT = None) -> str:
         """Log command with masking and return parsed cmd.
 
@@ -351,7 +375,6 @@ class ExecHelper(
 
         .. versionadded:: 1.2.0
         """
-
         return _helpers.mask_command(cmd.rstrip(), self.log_mask_re, log_mask_re)
 
     def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
@@ -511,7 +534,7 @@ class ExecHelper(
         .. versionchanged:: 8.1.0 chroot_exe added.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        cmd = _helpers.cmd_to_string(command)
+        cmd = self._command_to_string(command)
         self._log_command_execute(
             command=cmd,
             log_mask_re=log_mask_re,
@@ -542,7 +565,8 @@ class ExecHelper(
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    async def __call__(  # pylint: disable=invalid-overridden-method
+    # Callable[..., X] declares no fixed signature, so arguments-differ is a false positive.
+    async def __call__(  # pylint: disable=invalid-overridden-method,arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,
@@ -773,7 +797,7 @@ class ExecHelper(
         expected: ExpectedExitCodesT,
         exception_class: CalledProcessErrorSubClassT,
     ) -> exec_result.ExecResult:
-        """Internal check_stderr logic (synchronous).
+        """Check STDERR of the result (synchronous).
 
         :param result: Execution result for validation.
         :type result: exec_result.ExecResult

@@ -43,7 +43,7 @@ class FakeFileStream:
         self.__src = list(args)
 
     def __aiter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         return self
 
     async def __anext__(self):
@@ -130,7 +130,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
-    """Tests parametrization."""
+    """Test parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -150,7 +150,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
-    """Tests configuration apply."""
+    """Test configuration apply."""
     return configs[request.param]
 
 
@@ -222,7 +222,7 @@ def create_subprocess_shell(mocker, monkeypatch, run_parameters):
 
 @pytest.fixture
 def logger(mocker):
-    """Simple mock of logger instance."""
+    """Mock a logger instance."""
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
 
 

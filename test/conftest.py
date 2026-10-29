@@ -21,6 +21,12 @@ from unittest import mock  # noqa: TC003
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def no_real_local_host_keys(mocker):
+    """Do not allow real host SSH server keys usage."""
+    mocker.patch("exec_helpers._ssh_helpers.local_host_keys", return_value=())
+
+
 @pytest.fixture
 def no_real_ssh_config(mocker):
     """Do not allow real host ssh config usage."""
