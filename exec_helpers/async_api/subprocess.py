@@ -26,6 +26,7 @@ import datetime as dt
 import errno
 import logging
 import os
+import shlex
 import typing
 import warnings
 
@@ -112,7 +113,7 @@ class _SubprocessExecuteContext(
 ):
     """Subprocess Execute context."""
 
-    __slots__ = ("__cwd", "__env", "__process")
+    __slots__ = ("__cwd", "__env", "__process", "__shell")
 
     def __init__(
         self,
@@ -123,6 +124,7 @@ class _SubprocessExecuteContext(
         open_stderr: bool = True,
         cwd: CwdT = None,
         env: EnvT = None,
+        use_shell: bool = True,
         logger: logging.Logger,
         **kwargs: typing.Any,
     ) -> None:
@@ -140,6 +142,9 @@ class _SubprocessExecuteContext(
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
         :type env: Mapping[str | bytes, str | bytes] | None
+        :param use_shell: Run the command by the shell.
+            Otherwise, the command is split to arguments and executed directly.
+        :type use_shell: bool
         :param logger: Logger instance.
         :type logger: logging.Logger
         :param kwargs: Additional parameters for call.
@@ -155,6 +160,7 @@ class _SubprocessExecuteContext(
         )
         self.__cwd = cwd
         self.__env = env
+        self.__shell = use_shell
         self.__process: asyncio.subprocess.Process | None = None
 
     def __repr__(self) -> str:
@@ -171,6 +177,7 @@ class _SubprocessExecuteContext(
             f"open_stderr={self.open_stderr!r}, "
             f"cwd={self.__cwd!r}, "
             f"env={_helpers.repr_env(self.__env)}, "
+            f"shell={self.__shell!r}, "
             f"logger={self.logger!r}) "
             f"at {id(self)}>"
         )
@@ -186,16 +193,20 @@ class _SubprocessExecuteContext(
         """
         started = dt.datetime.now(tz=dt.UTC)
 
-        self.__process = await asyncio.create_subprocess_shell(
-            cmd=self.command,
-            stdout=asyncio.subprocess.PIPE if self.open_stdout else asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.PIPE if self.open_stderr else asyncio.subprocess.DEVNULL,
-            stdin=asyncio.subprocess.PIPE,
-            cwd=self.__cwd,
-            env=self.__env,
-            universal_newlines=False,
-            **_subprocess_helpers.subprocess_kw,
-        )
+        kwargs: dict[str, typing.Any] = {
+            "stdout": asyncio.subprocess.PIPE if self.open_stdout else asyncio.subprocess.DEVNULL,
+            "stderr": asyncio.subprocess.PIPE if self.open_stderr else asyncio.subprocess.DEVNULL,
+            "stdin": asyncio.subprocess.PIPE,
+            "cwd": self.__cwd,
+            "env": self.__env,
+            "universal_newlines": False,
+        }
+        kwargs.update(_subprocess_helpers.subprocess_kw)
+        # Running a shell command line is the default mode of this class, `shell=False` is the opt-out.
+        if self.__shell:
+            self.__process = await asyncio.create_subprocess_shell(self.command, **kwargs)
+        else:
+            self.__process = await asyncio.create_subprocess_exec(*shlex.split(self.command), **kwargs)
         process = self.__process
 
         if self.stdin is not None:
@@ -250,23 +261,76 @@ class Subprocess(api.ExecHelper):
     :type log_mask_re: str | re.Pattern[str] | None
     :param logger: Logger instance to use.
     :type logger: logging.Logger
+    :param shell: Run commands by the shell. If disabled, commands are accepted only as a list of arguments and
+                  are executed directly, so no shell syntax or expansion is applied to them (chroot included).
+                  The low level `open_execute_context` takes the already joined command and splits it with `shlex`.
+    :type shell: bool
 
     .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
     .. versionchanged:: 3.2.0 Logger can be enforced.
     .. versionchanged:: 4.1.0 Support chroot
     .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
+    .. versionchanged:: 8.2.1 Added shell option: commands can be executed without a shell.
     """
 
-    __slots__ = ()
+    __slots__ = ("__shell",)
 
     def __init__(
         self,
         log_mask_re: LogMaskReT = None,
         *,
         logger: logging.Logger = logging.getLogger(__name__),  # noqa: B008
+        shell: bool = True,
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
+        self.__shell = shell
         super().__init__(logger=logger, log_mask_re=log_mask_re)
+
+    @property
+    def shell(self) -> bool:
+        """Run commands by the shell.
+
+        :return: False if commands are executed directly, without a shell.
+        :rtype: bool
+        """
+        return self.__shell
+
+    def _command_to_string(self, command: CommandT) -> str:
+        """Convert the command to the string form used for execution and logs.
+
+        :param command: Original command.
+        :type command: str | Iterable[str]
+        :return: Command as a single string.
+        :rtype: str
+        :raises TypeError: Command is a string, but shell is disabled.
+        :raises ValueError: Command has no arguments, but shell is disabled.
+        """
+        if not self.__shell and isinstance(command, str):
+            raise TypeError("Without a shell the command is expected as a list of arguments, not as a string")
+        cmd = super()._command_to_string(command)
+        if not self.__shell and not cmd:
+            raise ValueError("Without a shell the command needs at least the program to execute")
+        return cmd
+
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
+        """Prepare command: cover chroot and other cases.
+
+        :param cmd: Main command.
+        :type cmd: str
+        :param chroot_path: Path to make chroot for execution.
+        :type chroot_path: str | None
+        :param chroot_exe: chroot exe override.
+        :type chroot_exe: str | None
+        :return: Final command, includes chroot, if required.
+        :rtype: str
+        """
+        if self.__shell:
+            return super()._prepare_command(cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
+        return _helpers.chroot_argv_command(
+            cmd,
+            chroot_path=chroot_path or self._chroot_path,
+            chroot_exe=chroot_exe or self._chroot_exe,
+        )
 
     async def _exec_command(  # type: ignore[override]
         self,
@@ -401,6 +465,7 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            use_shell=self.__shell,
             logger=self.logger,
             log_mask_re=self.log_mask_re,
             **kwargs,

@@ -99,6 +99,23 @@ def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str
     return command
 
 
+def chroot_argv_command(command: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
+    """Prepare command for chroot execution without a shell, only the arguments are joined.
+
+    :param command: Original command, a result of `shlex.join`.
+    :type command: str
+    :param chroot_path: chroot path.
+    :type chroot_path: str | None
+    :param chroot_exe: chroot executable, may carry its own arguments.
+    :type chroot_exe: str | None
+    :return: Command to be executed with chroot rules if applicable.
+    :rtype: str
+    """
+    if chroot_path and chroot_path != "/":
+        return shlex.join([*shlex.split(chroot_exe or "chroot"), chroot_path.strip(), *shlex.split(command)])
+    return command
+
+
 def repr_stdin(stdin: bytes | None) -> str:
     """Describe STDIN data for a debug string without exposing it.
 

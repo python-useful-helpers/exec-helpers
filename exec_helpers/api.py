@@ -395,6 +395,16 @@ class ExecHelper(
         self.__context_count -= 1
         self.lock.release()
 
+    def _command_to_string(self, command: CommandT) -> str:
+        """Convert the command to the string form used for execution and logs.
+
+        :param command: Original command.
+        :type command: str | Iterable[str]
+        :return: Command as a single string.
+        :rtype: str
+        """
+        return _helpers.cmd_to_string(command)
+
     def _mask_command(self, cmd: str, log_mask_re: LogMaskReT = None) -> str:
         """Log command with masking and return parsed cmd.
 
@@ -570,7 +580,7 @@ class ExecHelper(
         .. versionchanged:: 8.1.0 chroot_exe added.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
-        cmd = _helpers.cmd_to_string(command)
+        cmd = self._command_to_string(command)
         self._log_command_execute(
             command=cmd,
             log_mask_re=log_mask_re,
