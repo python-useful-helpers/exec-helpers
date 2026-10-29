@@ -403,7 +403,11 @@ Keyword arguments:
 - cwd - working directory.
 - env - environment variables dict.
 
-.. note:: `shell=true` is always set.
+.. note:: The command is executed by the shell by default.
+   `Subprocess(shell=False)` (and `async_api.Subprocess(shell=False)`) executes it directly instead:
+   the command must be a list of arguments (a string raises `TypeError`),
+   and no shell syntax, expansion or `sh -c` inside a chroot is involved.
+   `SSHClient` can not do this: the remote side always passes the command to a shell.
 
 async_api.Subprocess specific
 -----------------------------

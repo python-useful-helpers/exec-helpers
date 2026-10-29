@@ -44,7 +44,7 @@ class FakeFileStream:
         self.__src = list(args)
 
     def __aiter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         return self
 
     async def __anext__(self):
@@ -94,7 +94,7 @@ class MockParameters(typing.NamedTuple):
 
     write: Exception | None = None
     stdin_close: Exception | None = None
-    ec: typing.Sequence[int | Exception] = (0,)
+    ec: typing.Sequence[int | Exception | None] = (0,)
 
 
 configs = {
@@ -189,7 +189,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
-    """Tests parametrization."""
+    """Test parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -216,7 +216,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
-    """Tests configuration apply."""
+    """Test configuration apply."""
     return configs[request.param]
 
 

@@ -44,7 +44,7 @@ def get_internal_keys(
     keys: typing.Iterable[paramiko.RSAKey] | None = None,
     **kwargs,
 ):
-    int_keys = []
+    int_keys: list[paramiko.RSAKey | None] = []
     if key is not None:
         int_keys.append(key)
     if keys is not None:
@@ -90,7 +90,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
-    """Tests parametrization."""
+    """Test parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -108,7 +108,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
-    """Tests configuration apply."""
+    """Test configuration apply."""
     return configs[request.param]
 
 
@@ -163,3 +163,56 @@ def test_002_equality_copy():
     assert auth3 is not copy.copy(auth3)
     assert auth3 == copy.deepcopy(auth3)
     assert auth3 is not copy.deepcopy(auth3)
+
+
+def test_connect_timeout(mocker):
+    """The connect timeout limits the TCP connection, the banner and the authentication."""
+    client = mocker.Mock()
+    auth = exec_helpers.SSHAuth(username="user", password="pass")
+
+    auth.connect(client, hostname="192.0.2.1", timeout=5)
+    kwargs = client.connect.call_args.kwargs
+    assert (kwargs["timeout"], kwargs["banner_timeout"], kwargs["auth_timeout"]) == (5, 5, 5)
+
+    client.reset_mock()
+    auth.connect(client, hostname="192.0.2.1")
+    kwargs = client.connect.call_args.kwargs
+    assert not {"timeout", "banner_timeout", "auth_timeout"} & set(kwargs)
+
+
+@pytest.mark.parametrize("error", (TimeoutError, paramiko.SSHException, paramiko.PasswordRequiredException))
+def test_connect_failure_closes_client(mocker, error):
+    """The transport of a failed connection attempt is closed: paramiko leaves it running."""
+    client = mocker.Mock()
+    client.connect.side_effect = error
+    auth = exec_helpers.SSHAuth(username="user", password="pass")
+
+    with pytest.raises(error):
+        auth.connect(client, hostname="192.0.2.1")
+
+    client.close.assert_called_once_with()
+
+
+def test_connect_all_attempts_failed_closes_client(mocker):
+    """Every failed attempt of the authentication loop is closed."""
+    client = mocker.Mock()
+    client.connect.side_effect = paramiko.AuthenticationException
+    auth = exec_helpers.SSHAuth(username="user", password="pass")
+
+    with pytest.raises(paramiko.AuthenticationException):
+        auth.connect(client, hostname="192.0.2.1", log=False)
+
+    assert client.close.call_count == client.connect.call_count >= 1
+
+
+def test_connect_supplied_sock_single_attempt(mocker):
+    """A supplied socket is closed with the failed attempt, so the next key is not tried on it."""
+    client = mocker.Mock()
+    client.connect.side_effect = paramiko.AuthenticationException
+    auth = exec_helpers.SSHAuth(username="user", keys=[paramiko.RSAKey.generate(1024), paramiko.RSAKey.generate(1024)])
+
+    with pytest.raises(paramiko.AuthenticationException, match="failed"):
+        auth.connect(client, hostname="192.0.2.1", sock=mocker.Mock(), log=False)
+
+    client.connect.assert_called_once()
+    client.close.assert_called_once_with()

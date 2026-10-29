@@ -63,8 +63,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install --upgrade --group pylint
           pip install --upgrade -r CI_REQUIREMENTS.txt
-          pip install --upgrade "pylint >= 3.0.0"
       - name: Install develop
         run: |
           pip install -e .
@@ -93,13 +93,36 @@ jobs:
           pip install -e .
       - name: Lint with MyPy
         run: |
-          mypy --strict --install-types --non-interactive exec_helpers
+          mypy -p exec_helpers
+
+  PyRefly:
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade --group pyrefly
+          pip install --upgrade -r CI_REQUIREMENTS.txt
+      - name: Install develop
+        run: |
+          pip install -e .
+      - name: Lint with PyRefly
+        run: |
+          pyrefly check
 
   Test:
     permissions:
       contents: read
       pull-requests: read
-    needs: [PEP8, Formatting, PyLint, MyPy]
+    needs: [PEP8, Formatting, PyLint, MyPy, PyRefly]
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 6

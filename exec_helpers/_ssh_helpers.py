@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 import functools
+import ipaddress
 import pathlib
+import socket
 import typing
 from collections.abc import Collection
+from collections.abc import Iterable
 
 import paramiko
+import psutil
 
 if typing.TYPE_CHECKING:
     # noinspection PyPackageRequirements
     import logwrap
+
+LOCAL_HOST_KEYS_PATTERN = "ssh_host_*_key.pub"
+LOCAL_HOST_KEYS_DIR = pathlib.Path("/etc/ssh")
 
 SSHConfigDictLikeT = dict[str, str | int | bool | Collection[str]]
 SSHConfigsDictT = dict[str, SSHConfigDictLikeT]
@@ -38,10 +45,98 @@ def _parse_ssh_config_file(file_path: pathlib.Path) -> paramiko.SSHConfig | None
         config = paramiko.SSHConfig()
         with file_path.open() as f_obj:
             config.parse(f_obj)
-    except Exception:
+    except Exception:  # noqa: BLE001  # any parse failure means no usable config
         config = None
 
     return config
+
+
+def is_local_host(hostname: str) -> bool:
+    """Check if the hostname points to the machine we are running on.
+
+    :param hostname: Host name or IP address from the connection parameters.
+    :type hostname: str
+    :return: Loopback address, `localhost`, own host name or an address of a local interface.
+    :rtype: bool
+
+    No name resolution is done: a name is local only if it is the own host name or its short form.
+    A link-local address without a scope id is ambiguous (any link has such addresses), so it is not local.
+    """
+    name = hostname.strip("[]").lower()
+    try:
+        address = ipaddress.ip_address(name.partition("%")[0])
+    except ValueError:
+        own_name = socket.gethostname().lower()
+        return name in {"localhost", own_name, own_name.partition(".")[0]}
+
+    if address.is_loopback:
+        return True
+    if address.is_link_local and "%" not in name:
+        return False
+    try:
+        return any(
+            address == ipaddress.ip_address(addr.address.partition("%")[0])
+            for addrs in psutil.net_if_addrs().values()
+            for addr in addrs
+            if addr.family in {socket.AF_INET, socket.AF_INET6}
+        )
+    except (OSError, ValueError):  # the answer only silences a warning: no verdict means "not local"
+        return False
+
+
+def local_host_keys() -> tuple[paramiko.PKey, ...]:
+    """Read the public host keys of the SSH server of this machine.
+
+    :return: Parsed keys, empty if there are none or they are not readable.
+    :rtype: tuple[paramiko.PKey, ...]
+
+    The files are read on every call: a key rotation must not leave stale keys, and the read costs less than
+    the connection itself.
+    """
+    keys: list[paramiko.PKey] = []
+    for key_file in sorted(LOCAL_HOST_KEYS_DIR.glob(LOCAL_HOST_KEYS_PATTERN)):
+        try:
+            # known_hosts line format: "<names> <type> <base64 key>"
+            entry = paramiko.hostkeys.HostKeyEntry.from_line(f"local {key_file.read_text(encoding='ascii')}")
+        except (OSError, ValueError, paramiko.SSHException, paramiko.hostkeys.InvalidHostKey):
+            continue
+        if entry is not None and entry.key is not None:
+            keys.append(entry.key)
+    return tuple(keys)
+
+
+class LocalHostKeyPolicy(paramiko.MissingHostKeyPolicy):
+    """Missing host key policy for the local host: accept the host keys of this machine, ask the fallback otherwise.
+
+    :param keys: Public host keys of the SSH server of this machine.
+    :type keys: collections.abc.Iterable[paramiko.PKey]
+    :param fallback: Policy for any other key, so a server which is not this machine is treated as it was before.
+    :type fallback: paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy]
+    """
+
+    __slots__ = ("__fallback", "__keys")
+
+    def __init__(
+        self,
+        keys: Iterable[paramiko.PKey],
+        fallback: paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy],
+    ) -> None:
+        """Remember the keys and the fallback policy."""
+        self.__keys = frozenset(key.asbytes() for key in keys)
+        self.__fallback = fallback() if isinstance(fallback, type) else fallback
+
+    def missing_host_key(self, client: paramiko.SSHClient, hostname: str, key: paramiko.PKey) -> None:
+        """Accept the key of this machine, ask the fallback policy about any other key.
+
+        :param client: SSH client (low level).
+        :type client: paramiko.SSHClient
+        :param hostname: Name of the host in `known_hosts` format.
+        :type hostname: str
+        :param key: Key offered by the server.
+        :type key: paramiko.PKey
+        """
+        if key.asbytes() not in self.__keys:
+            self.__fallback.missing_host_key(client, hostname, key)
 
 
 class SSHConfig:

@@ -19,13 +19,13 @@
 from __future__ import annotations
 
 import concurrent.futures
-import contextlib
 import copy
-import datetime
+import datetime as dt
 import errno
 import logging
 import os
 import pathlib
+import shlex
 import subprocess  # nosec  # Expected usage
 import typing
 import warnings
@@ -37,6 +37,7 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 
+from . import _helpers
 from . import _log_templates
 from . import _subprocess_helpers
 
@@ -64,6 +65,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
@@ -73,6 +75,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdin(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -87,6 +90,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stderr(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -96,6 +100,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdout(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -105,10 +110,10 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SubprocessExecuteAsyncResult]):
+class _SubprocessExecuteContext(api.ExecuteContext):
     """Subprocess Execute context."""
 
-    __slots__ = ("__cwd", "__env", "__process")
+    __slots__ = ("__cwd", "__env", "__process", "__shell")
 
     def __init__(
         self,
@@ -119,6 +124,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
         open_stderr: bool = True,
         cwd: CwdT = None,
         env: EnvT = None,
+        use_shell: bool = True,
         logger: logging.Logger,
         **kwargs: typing.Any,
     ) -> None:
@@ -136,6 +142,9 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
         :type cwd: str | bytes | pathlib.Path | None
         :param env: Defines the environment variables for the new process.
         :type env: Mapping[str | bytes, str | bytes] | None
+        :param use_shell: Run the command by the shell.
+            Otherwise, the command is split to arguments and executed directly.
+        :type use_shell: bool
         :param logger: Logger instance.
         :type logger: logging.Logger
         :param kwargs: Additional parameters for call.
@@ -151,6 +160,7 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
         )
         self.__cwd = cwd
         self.__env = env
+        self.__shell = use_shell
         self.__process: subprocess.Popen[bytes] | None = None
 
     def __repr__(self) -> str:
@@ -161,12 +171,13 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
         """
         return (
             f"<Subprocess().open_execute_context("
-            f"command={self.command!r}, "
-            f"stdin={self.stdin!r}, "
+            f"command={self._masked_command!r}, "
+            f"stdin={_helpers.repr_stdin(self.stdin)}, "
             f"open_stdout={self.open_stdout!r}, "
             f"open_stderr={self.open_stderr!r}, "
             f"cwd={self.__cwd!r}, "
-            f"env={self.__env!r}, "
+            f"env={_helpers.repr_env(self.__env)}, "
+            f"shell={self.__shell!r}, "
             f"logger={self.logger!r}) "
             f"at {id(self)}>"
         )
@@ -180,14 +191,15 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
 
         The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
-        started = datetime.datetime.now(tz=datetime.UTC)
+        started = dt.datetime.now(tz=dt.UTC)
 
-        self.__process = subprocess.Popen(
-            args=self.command,
+        # Running a shell command line is the default mode of this class, `shell=False` is the opt-out.
+        self.__process = subprocess.Popen(  # noqa: S603  # the arguments come from the caller by design
+            args=self.command if self.__shell else shlex.split(self.command),
             stdout=subprocess.PIPE if self.open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if self.open_stderr else subprocess.DEVNULL,
             stdin=subprocess.PIPE,
-            shell=True,
+            shell=self.__shell,
             cwd=self.__cwd,
             env=self.__env,
             universal_newlines=False,
@@ -223,13 +235,8 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
                         raise
 
         # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(
-            interface=process,
-            stdin=None,
-            stderr=process.stderr,
-            stdout=process.stdout,
-            started=started,
-        )
+        # The fields are typed by properties of the subclass, which type checkers do not accept as constructor arguments
+        return SubprocessExecuteAsyncResult._make((process, None, process.stderr, process.stdout, started))
 
     def __exit__(
         self,
@@ -250,23 +257,77 @@ class Subprocess(api.ExecHelper):
     :param log_mask_re: Regex lookup rule to mask command for logger.
                         All MATCHED groups will be replaced by '<*masked*>'.
     :type log_mask_re: str | re.Pattern[str] | None
+    :param shell: Run commands by the shell. If disabled, commands are accepted only as a list of arguments and
+                  are executed directly, so no shell syntax or expansion is applied to them (chroot included).
+                  The low level `open_execute_context` takes the already joined command and splits it with `shlex`.
+    :type shell: bool
 
     .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd.
     .. versionchanged:: 3.1.0 Not singleton anymore. Only lock is shared between all instances.
     .. versionchanged:: 3.2.0 Logger can be enforced.
     .. versionchanged:: 4.1.0 support chroot.
     .. versionchanged:: 4.3.0 Lock is not shared anymore: allow parallel call of different instances.
+    .. versionchanged:: 8.2.1 Added shell option: commands can be executed without a shell.
     """
 
     def __init__(
         self,
         log_mask_re: LogMaskReT = None,
+        *,
+        shell: bool = True,
     ) -> None:
         """Subprocess helper with timeouts and lock-free FIFO."""
+        self.__shell = shell
         mod_name = "exec_helpers" if self.__module__.startswith("exec_helpers") else self.__module__
         super().__init__(
             logger=logging.getLogger(f"{mod_name}.{self.__class__.__name__}"),
             log_mask_re=log_mask_re,
+        )
+
+    @property
+    def shell(self) -> bool:
+        """Run commands by the shell.
+
+        :return: False if commands are executed directly, without a shell.
+        :rtype: bool
+        """
+        return self.__shell
+
+    def _command_to_string(self, command: CommandT) -> str:
+        """Convert the command to the string form used for execution and logs.
+
+        :param command: Original command.
+        :type command: str | Iterable[str]
+        :return: Command as a single string.
+        :rtype: str
+        :raises TypeError: Command is a string, but shell is disabled.
+        :raises ValueError: Command has no arguments, but shell is disabled.
+        """
+        if not self.__shell and isinstance(command, str):
+            raise TypeError("Without a shell the command is expected as a list of arguments, not as a string")
+        cmd = super()._command_to_string(command)
+        if not self.__shell and not cmd:
+            raise ValueError("Without a shell the command needs at least the program to execute")
+        return cmd
+
+    def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
+        """Prepare command: cover chroot and other cases.
+
+        :param cmd: Main command.
+        :type cmd: str
+        :param chroot_path: Path to make chroot for execution.
+        :type chroot_path: str | None
+        :param chroot_exe: chroot exe override.
+        :type chroot_exe: str | None
+        :return: Final command, includes chroot, if required.
+        :rtype: str
+        """
+        if self.__shell:
+            return super()._prepare_command(cmd, chroot_path=chroot_path, chroot_exe=chroot_exe)
+        return _helpers.chroot_argv_command(
+            cmd,
+            chroot_path=chroot_path or self._chroot_path,
+            chroot_exe=chroot_exe or self._chroot_exe,
         )
 
     def _exec_command(  # type: ignore[override]
@@ -420,7 +481,9 @@ class Subprocess(api.ExecHelper):
             open_stderr=open_stderr,
             cwd=cwd,
             env=env,
+            use_shell=self.__shell,
             logger=self.logger,
+            log_mask_re=self.log_mask_re,
             **kwargs,
         )
 

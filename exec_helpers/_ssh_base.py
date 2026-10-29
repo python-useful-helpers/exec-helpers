@@ -21,7 +21,7 @@ from __future__ import annotations
 import concurrent.futures
 import contextlib
 import copy
-import datetime
+import datetime as dt
 import getpass
 import logging
 import pathlib
@@ -94,6 +94,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def interface(self) -> paramiko.Channel:
         """Override original NamedTuple with proper typing.
 
@@ -103,6 +104,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdin(self) -> paramiko.channel.ChannelStdinFile:
         """Override original NamedTuple with proper typing.
 
@@ -117,6 +119,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin  # type: ignore[return-value]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stderr(self) -> paramiko.channel.ChannelStderrFile | None:
         """Override original NamedTuple with proper typing.
 
@@ -126,6 +129,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdout(self) -> paramiko.channel.ChannelFile | None:
         """Override original NamedTuple with proper typing.
 
@@ -135,7 +139,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SshExecuteAsyncResult]):
+class _SSHExecuteContext(api.ExecuteContext):
     """SSH Execute context."""
 
     __slots__ = (
@@ -222,8 +226,8 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
         """
         return (
             f"<SSHClient().open_execute_context("
-            f"command={self.command!r}, "
-            f"stdin={self.stdin!r}, "
+            f"command={self._masked_command!r}, "
+            f"stdin={_helpers.repr_stdin(self.stdin)}, "
             f"open_stdout={self.open_stdout!r}, "
             f"open_stderr={self.open_stderr!r}, "
             f"get_pty={self.__get_pty!r}, "
@@ -308,7 +312,7 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
             stderr = None
         _stdin: paramiko.channel.ChannelFile
         with chan.makefile("wb") as _stdin:
-            started = datetime.datetime.now(tz=datetime.UTC)
+            started = dt.datetime.now(tz=dt.UTC)
             if self.__sudo_mode:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
                 if not stdout.channel.closed:
@@ -333,13 +337,8 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
             res_stdout = None
 
         # noinspection PyArgumentList
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=_stdin,
-            stderr=stderr,
-            stdout=res_stdout,
-            started=started,
-        )
+        # The fields are typed by properties of the subclass, which type checkers do not accept as constructor arguments
+        return SshExecuteAsyncResult._make((chan, _stdin, stderr, res_stdout, started))
 
     def __exit__(
         self,
@@ -458,6 +457,13 @@ class SSHClientBase(api.ExecHelper):
     :type allow_ssh_agent: bool
     :param missing_host_key_policy: Missing host key policy class. See paramiko.MissingHostKeyPolicy for details.
     :type missing_host_key_policy: type[paramiko.MissingHostKeyPolicy]
+    :param connect_timeout: Timeout in seconds for the TCP connection, the SSH banner, the key exchange and the
+        authentication of every connection step, including hosts reached through `proxy_to`.
+        An authentication timeout is reported as an authentication failure. By default: None
+        (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s). A connection attempt
+        is retried 3 times with a 3 s pause, so a hung host takes up to 3 times the timeout plus 6 s to report.
+    :type connect_timeout: float | None
+    :raises ValueError: connect_timeout is not positive.
 
     .. note:: auth has priority over username/password/private_keys.
     .. note::
@@ -477,12 +483,16 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 7.4.0 Return of keepalive_mode to prevent mix with a keepalive period. Default is `False`.
     .. versionchanged:: 8.0.0 Expose SSH Agent usage override.
     .. versionchanged:: 8.1.4 Allow specifying missing_host_key_policy.
+    .. versionchanged:: 8.2.1 Added connect_timeout.
+    .. versionchanged:: 8.2.1 Direct connection to the local host accepts the host keys of this machine without
+        the unknown host key warning; a key of another server is handled by the missing host key policy as before.
     """
 
     __slots__ = (
         "__allow_agent",
         "__auth_mapping",
         "__conn_chain",
+        "__connect_timeout",
         "__hostname",
         "__keepalive_mode",
         "__keepalive_period",
@@ -519,14 +529,18 @@ class SSHClientBase(api.ExecHelper):
         keepalive: KeepAlivePeriodT = 1,
         allow_ssh_agent: bool = True,
         missing_host_key_policy: type[paramiko.MissingHostKeyPolicy] = paramiko.WarningPolicy,
+        connect_timeout: float | None = None,
     ) -> None:
-        """Main SSH Client helper."""
+        """Initialize the SSH client helper."""
         self.__sudo_mode = False
         self.__keepalive_period: int = int(keepalive)
         self.__keepalive_mode = False
         self.__verbose: bool = verbose
         self.__sock = sock
         self._missing_host_key_policy = missing_host_key_policy
+        if connect_timeout is not None and connect_timeout <= 0:
+            raise ValueError(f"connect_timeout should be positive, got {connect_timeout!r}")
+        self.__connect_timeout = connect_timeout
 
         self.__ssh: paramiko.SSHClient
         self.__sftp: paramiko.SFTPClient | None = None
@@ -749,14 +763,30 @@ class SSHClientBase(api.ExecHelper):
         """
         return self.__ssh
 
+    def __connect(self) -> None:
+        """Open the connection, with retries unless a socket was supplied.
+
+        A failed attempt closes the supplied socket, so there is nothing to retry on:
+        the next attempt would only fail on the closed socket and hide the original error.
+        """
+        with self.lock:
+            if self.__sock is None:
+                self.__connect_with_retries()
+            else:
+                self.__connect_once()
+
     @tenacity.retry(
         retry=RetryOnExceptions(retry_on=paramiko.SSHException, reraise=paramiko.AuthenticationException),
         stop=tenacity.stop.stop_after_attempt(3),
         wait=tenacity.wait.wait_fixed(3),
         reraise=True,
     )
-    def __connect(self) -> None:
-        """Main method for connection open."""
+    def __connect_with_retries(self) -> None:
+        """Open the connection, retry on the connection errors."""
+        self.__connect_once()
+
+    def __connect_once(self) -> None:
+        """Open the connection, one attempt."""
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
@@ -769,12 +799,34 @@ class SSHClientBase(api.ExecHelper):
                     log=self.__verbose,
                     sock=self.__sock,
                     allow_ssh_agent=self.allow_ssh_agent,
+                    timeout=self.__connect_timeout,
                 )
             else:
                 self.__ssh = self.__get_client()
 
             transport: paramiko.Transport = self._ssh_transport
             transport.set_keepalive(1 if self.__keepalive_period else 0)  # send keepalive packets
+
+    def __host_key_policy(self, hostname: str) -> paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy]:
+        """Select the missing host key policy for a host which is connected to directly.
+
+        :param hostname: Host to connect to, without a proxy or a jump host.
+        :type hostname: str
+        :return: Configured policy; for the local host a policy, which accepts the keys of this machine first.
+        :rtype: paramiko.MissingHostKeyPolicy | type[paramiko.MissingHostKeyPolicy]
+
+        The local host is normally absent from `known_hosts`, so its own keys are the reference. A key of another
+        server (any local address can be a container, a tunnel or another server) goes to the configured policy as
+        before, so nothing which worked fails because of it. Without readable keys the configured policy decides.
+        The own key is accepted without asking the configured policy, so that policy does not see it.
+        """
+        try:
+            keys = _ssh_helpers.local_host_keys() if _ssh_helpers.is_local_host(hostname) else ()
+        except OSError:  # the answer only silences a warning, so a failure of the lookup must not fail the connection
+            keys = ()
+        if keys:
+            return _ssh_helpers.LocalHostKeyPolicy(keys, fallback=self._missing_host_key_policy)
+        return self._missing_host_key_policy
 
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
@@ -785,12 +837,33 @@ class SSHClientBase(api.ExecHelper):
         :raises RuntimeError: Unexpected state.
         :raises ConnectionError: Cannot get SSH transport.
         """
+        opened: list[paramiko.SSHClient] = []
+        try:
+            return self.__connect_chain(opened)
+        except BaseException:
+            for client in reversed(opened):  # paramiko leaves the transports of a failed connect running
+                client.close()
+            raise
+
+    def __connect_chain(self, opened: list[paramiko.SSHClient]) -> paramiko.SSHClient:
+        """Connect the hosts of the connection chain one by one.
+
+        :param opened: Every client created here is added to the list at once, for the cleanup on failure.
+        :type opened: list[paramiko.SSHClient]
+        :return: Paramiko ssh connection object of the last host.
+        :rtype: paramiko.SSHClient
+        :raises ValueError: ProxyCommand found in a connection chain after the first host reached an.
+        :raises RuntimeError: Unexpected state.
+        :raises ConnectionError: Cannot get SSH transport.
+        """
+        config, auth = self.__conn_chain[0]
 
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
+        opened.append(last_ssh_client)
         last_ssh_client.load_system_host_keys()
-        last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
-
-        config, auth = self.__conn_chain[0]
+        last_ssh_client.set_missing_host_key_policy(
+            self._missing_host_key_policy if config.proxycommand else self.__host_key_policy(config.hostname)
+        )
 
         auth.connect(
             last_ssh_client,
@@ -798,10 +871,12 @@ class SSHClientBase(api.ExecHelper):
             port=config.port or 22,
             sock=paramiko.ProxyCommand(config.proxycommand) if config.proxycommand else None,
             allow_ssh_agent=self.allow_ssh_agent,
+            timeout=self.__connect_timeout,
         )
 
         for config, auth in self.__conn_chain[1:]:  # start has another logic, so do it out of cycle
             ssh = paramiko.SSHClient()
+            opened.append(ssh)
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(self._missing_host_key_policy)
 
@@ -820,6 +895,7 @@ class SSHClientBase(api.ExecHelper):
                     port=config.port or 22,
                     sock=sock,
                     allow_ssh_agent=self.allow_ssh_agent,
+                    timeout=self.__connect_timeout,
                 )
                 last_ssh_client = ssh
                 continue
@@ -831,10 +907,11 @@ class SSHClientBase(api.ExecHelper):
         return last_ssh_client
 
     def __connect_sftp(self) -> None:
-        """SFTP connection opener."""
+        """Open the SFTP channel, reconnecting the SSH session first if it was closed."""
         with self.lock:
+            transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
             try:
-                self.__sftp = self.__ssh.open_sftp()
+                self.__sftp = transport.open_sftp_client()
             except paramiko.SSHException:
                 self.logger.warning("SFTP enable failed! SSH only is accessible.")
 
@@ -844,6 +921,11 @@ class SSHClientBase(api.ExecHelper):
 
         :rtype: paramiko.sftp_client.SFTPClient
         :raises paramiko.SSHException: SFTP connection failed.
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises paramiko.SSHException: SSH session was closed and the reconnect failed (the original exception).
+
+        .. versionchanged:: 8.2.1 The SFTP channel is opened through the reconnecting transport getter,
+            so a closed SSH session is restored instead of failing with `AttributeError`.
         """
         if self.__sftp is not None:
             return self.__sftp
@@ -877,7 +959,7 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             self.__ssh.close()
-        except BaseException as e:  # pragma: no cover  # NOSONAR
+        except BaseException as e:  # noqa: BLE001  # pragma: no cover  # NOSONAR
             with contextlib.suppress(AttributeError):
                 self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
@@ -908,7 +990,7 @@ class SSHClientBase(api.ExecHelper):
 
     @sudo_mode.setter
     def sudo_mode(self, mode: bool) -> None:
-        """Persistent sudo mode change for connection object.
+        """Change the persistent sudo mode of the connection object.
 
         :param mode: Sudo status: enabled | disabled.
         :type mode: bool
@@ -1061,7 +1143,7 @@ class SSHClientBase(api.ExecHelper):
                 result.read_stderr(src=async_result.stderr, log=self.logger if log_stderr else None, verbose=verbose)
 
         def poll_pipes() -> None:
-            """Polling task for FIFO buffers."""
+            """Poll FIFO buffers."""
             while not async_result.interface.status_event.is_set():
                 time.sleep(0.1)
                 if async_result.stdout or async_result.stderr:
@@ -1155,6 +1237,7 @@ class SSHClientBase(api.ExecHelper):
             sudo_mode=self.sudo_mode,
             auth=self.auth,
             logger=self.logger,
+            log_mask_re=self.log_mask_re,
             **kwargs,
         )
 
@@ -1564,6 +1647,7 @@ class SSHClientBase(api.ExecHelper):
             sock=sock,
             ssh_auth_map=ssh_auth_map if ssh_auth_map is not None else self.__auth_mapping,
             keepalive=int(keepalive),
+            connect_timeout=self.__connect_timeout,
         )
 
     def execute_through_host(
@@ -1787,7 +1871,7 @@ class SSHClientBase(api.ExecHelper):
                 results[remote.hostname, remote.port] = result
                 if result.exit_code not in prep_expected:
                     errors[remote.hostname, remote.port] = result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # stored and reported to the caller
                 raised_exceptions[remote.hostname, remote.port] = e
 
         if raised_exceptions:  # always raise

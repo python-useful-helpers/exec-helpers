@@ -10,7 +10,7 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.15.13
+    rev: v0.17.3
     hooks:
       # Run the linter.
       - id: ruff-check
@@ -29,6 +29,6 @@ repos:
   - repo: https://github.com/tox-dev/pyproject-fmt
     # Use the sha / tag you want to point at
     # or use `pre-commit autoupdate` to get the latest version
-    rev: "v2.21.2"
+    rev: "v2.30.3"
     hooks:
       - id: pyproject-fmt

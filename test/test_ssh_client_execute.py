@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import logging
 from unittest import mock
 
@@ -35,7 +35,7 @@ class FakeFileStream:
         self.closed = False
 
     def __iter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         for _ in range(len(self.__src)):
             yield self.__src.pop(0)
 
@@ -153,7 +153,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
-    """Tests parametrization."""
+    """Test parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -175,7 +175,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
-    """Tests configuration apply."""
+    """Test configuration apply."""
     return configs[request.param]
 
 
@@ -282,13 +282,8 @@ def execute_async(mocker, run_parameters):
         status_event.attach_mock(mock.Mock(), "wait")
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=mock.Mock,
-            stdout=stdout_part,
-            stderr=stderr_part,
-            started=datetime.datetime.now(tz=datetime.UTC),
-        )
+        # the fields are typed by properties of the class, so they are passed in the order of the fields
+        return SshExecuteAsyncResult._make((chan, mock.Mock, stderr_part, stdout_part, dt.datetime.now(tz=dt.UTC)))
 
     return mocker.patch(
         "exec_helpers.ssh.SSHClient._execute_async",

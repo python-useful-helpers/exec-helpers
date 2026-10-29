@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import typing
 from unittest import mock
 
 import paramiko
@@ -79,7 +80,7 @@ def test_001_require_key(
 
     pkey = private_keys[0]
 
-    kwargs_no_key = {
+    kwargs_no_key: dict[str, typing.Any] = {
         "hostname": host,
         "pkey": None,
         "port": port,
@@ -95,6 +96,7 @@ def test_001_require_key(
         ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_full),
+        ssh_.close(),  # the failed attempt is closed before the next one
         ssh_.connect(**kwargs_no_key),
         ssh_.get_transport(),
         ssh_.get_transport().set_keepalive(1),
@@ -134,7 +136,7 @@ def test_002_use_next_key(
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
-    kwargs_no_key = {
+    kwargs_no_key: dict[str, typing.Any] = {
         "hostname": host,
         "pkey": None,
         "port": port,
@@ -152,7 +154,9 @@ def test_002_use_next_key(
         ssh_.load_system_host_keys(),
         ssh_.set_missing_host_key_policy(paramiko.WarningPolicy),
         ssh_.connect(**kwargs_key_0),
+        ssh_.close(),
         ssh_.connect(**kwargs_key_1),
+        ssh_.close(),
         ssh_.connect(**kwargs_no_key),
         ssh_.get_transport(),
         ssh_.get_transport().set_keepalive(1),
@@ -330,7 +334,7 @@ def test_010_context(
         assert ssh.auth == exec_helpers.SSHAuth()
 
         sftp = ssh._sftp
-        assert sftp == paramiko_ssh_client().open_sftp()
+        assert sftp == paramiko_ssh_client().get_transport().open_sftp_client()
 
         assert ssh._ssh == paramiko_ssh_client()
 
@@ -355,7 +359,7 @@ def test_011_clear_failed(
         mock.Mock(side_effect=[Exception("Mocked SFTP close()"), mock.Mock()]),
         "close",
     )
-    ssh_.attach_mock(mock.Mock(return_value=sftp_), "open_sftp")
+    ssh_.get_transport().attach_mock(mock.Mock(return_value=sftp_), "open_sftp_client")
     paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
@@ -372,7 +376,7 @@ def test_011_clear_failed(
     assert ssh.auth == exec_helpers.SSHAuth()
 
     sftp = ssh._sftp
-    assert sftp == paramiko_ssh_client().open_sftp()
+    assert sftp == paramiko_ssh_client().get_transport().open_sftp_client()
 
     assert ssh._ssh == paramiko_ssh_client()
 
@@ -438,7 +442,7 @@ def test_013_no_sftp(
     open_sftp = mock.Mock(side_effect=paramiko.SSHException)
 
     ssh_ = mock.Mock()
-    ssh_.attach_mock(open_sftp, "open_sftp")
+    ssh_.get_transport().attach_mock(open_sftp, "open_sftp_client")
     paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
@@ -472,7 +476,7 @@ def test_014_sftp_repair(
     open_sftp = mock.Mock(side_effect=[paramiko.SSHException, sftp_, sftp_])
 
     ssh_ = mock.Mock()
-    ssh_.attach_mock(open_sftp, "open_sftp")
+    ssh_.get_transport().attach_mock(open_sftp, "open_sftp_client")
     paramiko_ssh_client.return_value = ssh_
 
     ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
@@ -499,3 +503,74 @@ def test_014_sftp_repair(
     sftp = ssh._sftp
     assert sftp == open_sftp()
     log.assert_has_calls((mock.call.debug("SFTP is not connected, try to connect..."),))
+
+
+class ClosableSSHClient:
+    """Mimic the paramiko behavior: a closed client has no transport, so SFTP can not be opened without a connect."""
+
+    def __init__(self) -> None:
+        self.closed = False
+        self.transport = mock.Mock()
+        self.sftp = mock.Mock()
+        self.connect = mock.Mock(side_effect=self.__connect)
+        self.close = mock.Mock(side_effect=self.__close)
+        self.transport.open_sftp_client.side_effect = self.__open_sftp_client
+
+    def __connect(self, *args: object, **kwargs: object) -> None:
+        self.closed = False
+
+    def __close(self) -> None:
+        self.closed = True
+
+    def __open_sftp_client(self) -> mock.Mock:
+        if self.closed:
+            raise AttributeError("'NoneType' object has no attribute 'open_sftp_client'")
+        return self.sftp
+
+    def get_transport(self) -> mock.Mock | None:
+        return None if self.closed else self.transport
+
+    def set_missing_host_key_policy(self, *args: object) -> None:
+        """Ignore host key policy."""
+
+    def load_system_host_keys(self, *args: object) -> None:
+        """Ignore system host keys."""
+
+
+def test_015_sftp_after_close(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+    get_logger,
+):
+    """SFTP channel is opened after the closed SSH session was restored."""
+    fake = ClosableSSHClient()
+    paramiko_ssh_client.return_value = fake
+
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(password=password))
+    ssh.close()
+    assert not ssh.is_alive
+    assert fake.connect.call_count == 1
+
+    assert ssh._sftp == fake.sftp
+    assert ssh.is_alive
+    assert fake.connect.call_count == 2
+
+
+def test_016_sftp_after_close_reconnect_failed(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+    get_logger,
+):
+    """Failed reconnect is reported as is and no SFTP channel is opened."""
+    fake = ClosableSSHClient()
+    paramiko_ssh_client.return_value = fake
+
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(password=password))
+    ssh.close()
+    fake.connect.side_effect = paramiko.SSHException("connect failed")
+
+    with pytest.raises(paramiko.SSHException, match="connect failed"):
+        # noinspection PyStatementEffect
+        ssh._sftp  # pylint: disable=pointless-statement  # noqa: B018
+
+    fake.transport.open_sftp_client.assert_not_called()
