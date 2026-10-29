@@ -23,6 +23,7 @@ import paramiko
 import pytest
 
 import exec_helpers
+from exec_helpers import _ssh_helpers  # noqa: F401  # the module is used as exec_helpers._ssh_helpers
 
 
 def gen_private_keys(amount: int = 1) -> list[paramiko.RSAKey]:

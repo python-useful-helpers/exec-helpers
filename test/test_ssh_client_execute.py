@@ -22,62 +22,18 @@ from unittest import mock
 import pytest
 
 import exec_helpers
-from conftest import FakeFileStream
 from exec_helpers import proc_enums
+from fakes import fake_channel
+from fakes import host
+from fakes import host2
+from fakes import port
 from subprocess_cases import EXECUTE_ARGNAMES
 from subprocess_cases import EXECUTE_CASES
 from subprocess_cases import command
 from subprocess_cases import make_result
 from subprocess_cases import stdin_bytes
 
-host = "127.0.0.1"
-host2 = "127.0.0.2"
-port = 22
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
-
-
-@pytest.fixture
-def make_ssh(paramiko_ssh_client, ssh_auth_logger, get_logger):
-    """Create the client whose channel is the mock created by `fake_channel`."""
-
-    def create(channel: mock.MagicMock, *, hostname: str = host) -> exec_helpers.SSHClient:
-        transport = mock.Mock(open_session=mock.Mock(return_value=channel))
-        paramiko_ssh_client.return_value = mock.Mock(get_transport=mock.Mock(return_value=transport))
-        return exec_helpers.SSHClient(
-            host=hostname,
-            port=port,
-            auth=exec_helpers.SSHAuth(username="user", password="pass"),
-        )
-
-    return create
-
-
-def fake_channel(
-    *,
-    stdout: tuple[bytes, ...] | None = (),
-    stderr: tuple[bytes, ...] | None = (),
-    exit_code: int = 0,
-) -> mock.MagicMock:
-    """Create the finished channel: `None` instead of a stream means that the stream is not read."""
-    chan = mock.MagicMock(closed=False, exit_status=exit_code)
-    chan.__enter__.return_value = chan
-    chan.recv_exit_status.return_value = exit_code
-    chan.status_event.is_set.return_value = True
-    chan.status_event.wait.return_value = True
-    stdin_file = mock.MagicMock(channel=chan)
-    stdin_file.__enter__.return_value = stdin_file
-    chan.stdin_file = stdin_file
-
-    def makefile(flags: str) -> mock.MagicMock | FakeFileStream:
-        if flags == "wb":
-            return stdin_file
-        if flags == "rb":
-            return FakeFileStream(*(stdout or ()))
-        raise ValueError(f"Unexpected flags: {flags!r}")
-
-    chan.makefile.side_effect = makefile
-    chan.makefile_stderr.side_effect = lambda _flags: FakeFileStream(*(stderr or ()))
-    return chan
 
 
 @pytest.mark.parametrize("method", ["execute", "__call__"], ids=["execute", "call"])

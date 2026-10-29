@@ -18,45 +18,16 @@ from __future__ import annotations
 
 import asyncio
 import typing
-from unittest import mock  # noqa: TC003
+from unittest import mock
 
 import pytest
 
+import exec_helpers
+from fakes import FakeFileStream
+from fakes import host
+from fakes import port
+
 PROCESS_PID = 4242
-
-
-class FakeFileStream:
-    """Process stream, sync and async: yields the bytes lines and raises the exceptions found in the source."""
-
-    def __init__(self, *lines: bytes | BaseException) -> None:
-        self.__src = list(lines)
-        self.closed = False
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        """Iterate over the source until it is exhausted."""
-        while self.__src:
-            item = self.__src.pop(0)
-            if isinstance(item, BaseException):
-                raise item
-            yield item
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        """Iterate over the source the same way for the async reader."""
-        for item in self:
-            yield item
-
-    def fileno(self) -> int:
-        return id(self)
-
-    def close(self) -> None:
-        """Mark the stream as closed."""
-        self.closed = True
-
-    def __enter__(self) -> typing.Self:
-        return self
-
-    def __exit__(self, *exc_info: object) -> None:
-        self.close()
 
 
 @pytest.fixture(autouse=True)
@@ -175,5 +146,21 @@ def fake_async_popen(mocker, no_real_process_control) -> typing.Callable[..., mo
         proc.wait = mocker.AsyncMock(side_effect=process_wait)
         mocker.patch("asyncio.create_subprocess_shell", return_value=proc)
         return proc
+
+    return create
+
+
+@pytest.fixture
+def make_ssh(paramiko_ssh_client, ssh_auth_logger, get_logger):
+    """Create the client whose channel is the mock created by `fake_channel`."""
+
+    def create(channel: mock.MagicMock, *, hostname: str = host) -> exec_helpers.SSHClient:
+        transport = mock.Mock(open_session=mock.Mock(return_value=channel))
+        paramiko_ssh_client.return_value = mock.Mock(get_transport=mock.Mock(return_value=transport))
+        return exec_helpers.SSHClient(
+            host=hostname,
+            port=port,
+            auth=exec_helpers.SSHAuth(username="user", password="pass"),
+        )
 
     return create

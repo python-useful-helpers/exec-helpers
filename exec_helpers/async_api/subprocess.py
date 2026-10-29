@@ -57,6 +57,9 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
+# Seconds to wait for the streams to reach the end after the process exit.
+_READERS_DRAIN_TIMEOUT: typing.Final = 1.0
+
 
 # noinspection PyTypeHints,PyTypeChecker
 class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
@@ -392,6 +395,13 @@ class Subprocess(api.ExecHelper):
             # Wait real timeout here
             exit_code: int = await asyncio.wait_for(async_result.interface.wait(), timeout=timeout)
             result.exit_code = exit_code
+            # The process may exit before the readers took everything from the pipes.
+            _, unfinished = await asyncio.wait((stdout_task, stderr_task), timeout=_READERS_DRAIN_TIMEOUT)
+            if unfinished:
+                self.logger.debug(
+                    f"Process {cmd_for_log!r} exited, but its output is still open after "
+                    f"{_READERS_DRAIN_TIMEOUT} s: the result may miss the output."
+                )
         except TimeoutError as exc:
             # kill -9 for all subprocesses
             _subprocess_helpers.kill_proc_tree(async_result.interface.pid)

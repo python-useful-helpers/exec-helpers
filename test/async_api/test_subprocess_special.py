@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import typing
 from unittest import mock
 
 import pytest
@@ -43,7 +45,9 @@ async def test_execute_special(fake_async_popen, logger, stdout, execute_kwargs,
     fake_async_popen(stdout=stdout)
     runner = exec_helpers.async_api.Subprocess(**runner_kwargs)
 
-    res = await runner.execute(**{"command": command, **execute_kwargs})
+    kwargs: dict[str, typing.Any] = {"command": command, **execute_kwargs}
+
+    res = await runner.execute(**kwargs)
 
     expected_stdout = None if stdout is None else tuple(line for line in stdout if isinstance(line, bytes))
     assert res == exec_helpers.ExecResult(cmd=masked, stdout=expected_stdout, stderr=(), exit_code=0)
@@ -101,9 +105,45 @@ async def test_stdin_error(mocker, fake_async_popen, write, close) -> None:
         pytest.param(None, exec_helpers.ExecHelperNoKillError, id="not_killed"),
     ],
 )
-async def test_timeout(fake_async_popen, second_wait, expected_exc) -> None:
-    """The timeout is reported, and the process that survived the kill is reported separately."""
-    fake_async_popen(wait=(TimeoutError(), second_wait))
+async def test_timeout(mocker, fake_async_popen, second_wait, expected_exc) -> None:
+    """The process tree is killed on the timeout, and the process that survived is reported separately."""
+    kill_tree = mocker.patch("exec_helpers._subprocess_helpers.kill_proc_tree")
+    proc = fake_async_popen(wait=(TimeoutError(), second_wait))
 
     with pytest.raises(expected_exc):
         await exec_helpers.async_api.Subprocess().execute(command)
+
+    kill_tree.assert_called_with(proc.pid)
+    assert proc.wait.await_count == 2
+
+
+async def test_output_is_not_lost_on_process_exit(fake_async_popen) -> None:
+    """The output still in the pipes when the process exits is read completely."""
+    lines = tuple(f"{num}\n".encode() for num in range(50))
+    fake_async_popen(stdout=lines)
+
+    res = await exec_helpers.async_api.Subprocess().execute(command)
+
+    assert res.stdout == lines
+
+
+async def test_output_open_after_process_exit(mocker, fake_async_popen, logger) -> None:
+    """The execution does not wait for the output that stays open, and the incomplete result is logged."""
+
+    class OpenForever:
+        """Stream held open by a child of the process: it never reaches the end."""
+
+        def __aiter__(self) -> OpenForever:
+            return self
+
+        async def __anext__(self) -> bytes:
+            await asyncio.Event().wait()
+            raise StopAsyncIteration
+
+    mocker.patch("exec_helpers.async_api.subprocess._READERS_DRAIN_TIMEOUT", 0.01)
+    fake_async_popen().stdout = OpenForever()
+
+    res = await exec_helpers.async_api.Subprocess().execute(command)
+
+    assert res.exit_code == 0
+    assert any("may miss the output" in str(call) for call in logger.mock_calls if call[0] == "debug")

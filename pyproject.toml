@@ -288,6 +288,8 @@ ignore_missing_imports = true
 [tool.pyrefly]
 python-version = "3.11"
 project-includes = [ "exec_helpers", "test" ]
+# The tests import their shared helpers (fakes, subprocess_cases) as top-level modules, as pytest resolves them
+search-path = [ "test" ]
 # Written by setuptools-scm at build time
 ignore-missing-imports = [ "exec_helpers._version" ]
 

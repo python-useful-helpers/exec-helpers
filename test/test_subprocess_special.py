@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import subprocess
+import typing
 from unittest import mock
 
 import pytest
@@ -39,7 +40,9 @@ def test_execute_special(fake_popen, subprocess_logger, stdout, execute_kwargs, 
     fake_popen(stdout=stdout)
     runner = exec_helpers.Subprocess(**runner_kwargs)
 
-    res = runner.execute(**{"command": command, **execute_kwargs})
+    kwargs: dict[str, typing.Any] = {"command": command, **execute_kwargs}
+
+    res = runner.execute(**kwargs)
 
     expected_stdout = None if stdout is None else tuple(line for line in stdout if isinstance(line, bytes))
     assert res == exec_helpers.ExecResult(cmd=masked, stdout=expected_stdout, stderr=(), exit_code=0)
@@ -101,9 +104,13 @@ def test_stdin_error(mocker, fake_popen, write, close) -> None:
         pytest.param(None, exec_helpers.ExecHelperNoKillError, id="not_killed"),
     ],
 )
-def test_timeout(fake_popen, poll, expected_exc) -> None:
-    """The timeout is reported, and the process that survived the kill is reported separately."""
-    fake_popen(wait=(timeout_expired,), poll=(poll,))
+def test_timeout(mocker, fake_popen, poll, expected_exc) -> None:
+    """The process tree is killed on the timeout, and the process that survived is reported separately."""
+    kill_tree = mocker.patch("exec_helpers._subprocess_helpers.kill_proc_tree")
+    proc = fake_popen(wait=(timeout_expired,), poll=(poll,))
 
     with pytest.raises(expected_exc):
         exec_helpers.Subprocess().execute(command)
+
+    kill_tree.assert_called_once_with(proc.pid)
+    proc.poll.assert_called_once_with()
