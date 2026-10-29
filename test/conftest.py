@@ -23,11 +23,10 @@ from unittest import mock
 import pytest
 
 import exec_helpers
+from fakes import PROCESS_PID
 from fakes import FakeFileStream
 from fakes import host
 from fakes import port
-
-PROCESS_PID = 4242
 
 
 @pytest.fixture(autouse=True)

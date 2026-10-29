@@ -51,10 +51,10 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
 
     try:
         parent = psutil.Process(pid)
+        children: list[psutil.Process] = parent.children(recursive=True)
     except psutil.NoSuchProcess:
         # The process is already closed
         return
-    children: list[psutil.Process] = parent.children(recursive=True)
     child: psutil.Process
     for child in children:
         safe_stop(child)  # SIGTERM to allow cleanup
@@ -66,7 +66,8 @@ def kill_proc_tree(pid: int, including_parent: bool = True) -> None:  # pragma: 
         _, alive = psutil.wait_procs((parent,), timeout=1)
         if alive:
             safe_stop(parent, kill=True)  # 2nd shot: SIGKILL
-        parent.wait(5)
+        with contextlib.suppress(psutil.NoSuchProcess):
+            parent.wait(5)
 
 
 # Subprocess extra arguments.

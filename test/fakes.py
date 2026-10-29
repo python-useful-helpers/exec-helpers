@@ -23,6 +23,7 @@ from unittest import mock
 host = "127.0.0.1"
 host2 = "127.0.0.2"
 port = 22
+PROCESS_PID = 4242
 
 
 class FakeFileStream:
