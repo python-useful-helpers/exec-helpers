@@ -21,7 +21,7 @@ from __future__ import annotations
 import concurrent.futures
 import contextlib
 import copy
-import datetime
+import datetime as dt
 import errno
 import logging
 import os
@@ -180,9 +180,10 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
 
         The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
-        started = datetime.datetime.now(tz=datetime.UTC)
+        started = dt.datetime.now(tz=dt.UTC)
 
-        self.__process = subprocess.Popen(
+        # Running a shell command line is the purpose of this class.
+        self.__process = subprocess.Popen(  # noqa: S602
             args=self.command,
             stdout=subprocess.PIPE if self.open_stdout else subprocess.DEVNULL,
             stderr=subprocess.PIPE if self.open_stderr else subprocess.DEVNULL,

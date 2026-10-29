@@ -34,7 +34,7 @@ class FakeFileStream:
         self.channel = None
 
     def __iter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         for _ in range(len(self.__src)):
             yield self.__src.pop(0)
 

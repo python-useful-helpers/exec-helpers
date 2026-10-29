@@ -115,7 +115,7 @@ class SSHAuth:
 
     @staticmethod
     def __get_public_key(key: paramiko.PKey | None) -> str | None:
-        """Internal method for get public key from private.
+        """Get the public key from the private one.
 
         :param key: SSH private key.
         :type key: paramiko.PKey
@@ -259,7 +259,7 @@ class SSHAuth:
         return not self.__eq__(other)
 
     def __deepcopy__(self, memo: typing.Any) -> SSHAuth:
-        """Helper for copy.deepcopy.
+        """Copy the object for copy.deepcopy.
 
         :param memo: copy.deepcopy() memodict.
         :type memo: typing.Any
@@ -398,8 +398,7 @@ class SSHAuthMapping(UserDict[str, SSHAuth]):
         hostname: str,
         *host_names: str,
         default: SSHAuth,
-    ) -> SSHAuth:
-        """Try to guess hostname with credentials."""
+    ) -> SSHAuth: ...
 
     @typing.overload
     def get_with_alt_hostname(
@@ -407,8 +406,7 @@ class SSHAuthMapping(UserDict[str, SSHAuth]):
         hostname: str,
         *host_names: str,
         default: None = None,
-    ) -> SSHAuth | None:
-        """Try to guess hostname with credentials."""
+    ) -> SSHAuth | None: ...
 
     def get_with_alt_hostname(
         self,

@@ -16,14 +16,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import typing
 import warnings
 
-try:  # noqa: SIM105,S314,RUF100
+with contextlib.suppress(ImportError):
     from ._version import version as __version__  # noqa: F401
-except ImportError:
-    pass
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence

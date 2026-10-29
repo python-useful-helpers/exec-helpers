@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import unittest
 import xml.etree.ElementTree as ET
 from unittest import mock
@@ -232,7 +232,7 @@ class TestExecResult(unittest.TestCase):
 
     def test_started(self):
         """Test timestamp."""
-        started = datetime.datetime.now(tz=datetime.UTC)
+        started = dt.datetime.now(tz=dt.UTC)
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
         spent = (result.timestamp - started).seconds
         self.assertIs(result.started, started)

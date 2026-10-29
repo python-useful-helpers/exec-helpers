@@ -43,7 +43,7 @@ class FakeFileStream:
         self.closed = False
 
     def __iter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         for _ in range(len(self.__src)):
             val = self.__src.pop(0)
             if isinstance(val, bytes):
@@ -183,7 +183,7 @@ configs = {
 
 
 def pytest_generate_tests(metafunc):
-    """Tests parametrization."""
+    """Test parametrization."""
     if "run_parameters" in metafunc.fixturenames:
         metafunc.parametrize(
             "run_parameters",
@@ -210,7 +210,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def run_parameters(request):
-    """Tests configuration apply."""
+    """Test configuration apply."""
     return configs[request.param]
 
 

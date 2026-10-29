@@ -5,6 +5,7 @@ package = false
 # Extend the `pyproject.toml` file in the parent directory.
 extend = "../pyproject.toml"
 lint.extend-ignore = [
+  "D1",      # a test name is its description
   "PLC2701", # private members import
   "PLR0911",
   "PLR0912",

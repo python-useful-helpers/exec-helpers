@@ -21,7 +21,7 @@ from __future__ import annotations
 import concurrent.futures
 import contextlib
 import copy
-import datetime
+import datetime as dt
 import getpass
 import logging
 import pathlib
@@ -308,7 +308,7 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
             stderr = None
         _stdin: paramiko.channel.ChannelFile
         with chan.makefile("wb") as _stdin:
-            started = datetime.datetime.now(tz=datetime.UTC)
+            started = dt.datetime.now(tz=dt.UTC)
             if self.__sudo_mode:
                 chan.exec_command(self.command)  # nosec  # Sanitize on caller side
                 if not stdout.channel.closed:
@@ -520,7 +520,7 @@ class SSHClientBase(api.ExecHelper):
         allow_ssh_agent: bool = True,
         missing_host_key_policy: type[paramiko.MissingHostKeyPolicy] = paramiko.WarningPolicy,
     ) -> None:
-        """Main SSH Client helper."""
+        """Initialize the SSH client helper."""
         self.__sudo_mode = False
         self.__keepalive_period: int = int(keepalive)
         self.__keepalive_mode = False
@@ -756,7 +756,7 @@ class SSHClientBase(api.ExecHelper):
         reraise=True,
     )
     def __connect(self) -> None:
-        """Main method for connection open."""
+        """Open the connection."""
         with self.lock:
             if self.__sock is not None:
                 self.__ssh = paramiko.SSHClient()
@@ -785,7 +785,6 @@ class SSHClientBase(api.ExecHelper):
         :raises RuntimeError: Unexpected state.
         :raises ConnectionError: Cannot get SSH transport.
         """
-
         last_ssh_client: paramiko.SSHClient = paramiko.SSHClient()
         last_ssh_client.load_system_host_keys()
         last_ssh_client.set_missing_host_key_policy(self._missing_host_key_policy)
@@ -877,7 +876,7 @@ class SSHClientBase(api.ExecHelper):
         """
         try:
             self.__ssh.close()
-        except BaseException as e:  # pragma: no cover  # NOSONAR
+        except BaseException as e:  # noqa: BLE001  # pragma: no cover  # NOSONAR
             with contextlib.suppress(AttributeError):
                 self.logger.debug(f"Exception in {self!s} destructor call: {e}")
         self.__sftp = None
@@ -908,7 +907,7 @@ class SSHClientBase(api.ExecHelper):
 
     @sudo_mode.setter
     def sudo_mode(self, mode: bool) -> None:
-        """Persistent sudo mode change for connection object.
+        """Change the persistent sudo mode of the connection object.
 
         :param mode: Sudo status: enabled | disabled.
         :type mode: bool
@@ -1061,7 +1060,7 @@ class SSHClientBase(api.ExecHelper):
                 result.read_stderr(src=async_result.stderr, log=self.logger if log_stderr else None, verbose=verbose)
 
         def poll_pipes() -> None:
-            """Polling task for FIFO buffers."""
+            """Poll FIFO buffers."""
             while not async_result.interface.status_event.is_set():
                 time.sleep(0.1)
                 if async_result.stdout or async_result.stderr:
@@ -1787,7 +1786,7 @@ class SSHClientBase(api.ExecHelper):
                 results[remote.hostname, remote.port] = result
                 if result.exit_code not in prep_expected:
                     errors[remote.hostname, remote.port] = result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # stored and reported to the caller
                 raised_exceptions[remote.hostname, remote.port] = e
 
         if raised_exceptions:  # always raise

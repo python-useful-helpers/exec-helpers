@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import copy
-import datetime
+import datetime as dt
 import errno
 import logging
 import os
@@ -183,7 +183,7 @@ class _SubprocessExecuteContext(
 
         The Command is executed only in the context manager to be sure that everything will be cleaned up properly.
         """
-        started = datetime.datetime.now(tz=datetime.UTC)
+        started = dt.datetime.now(tz=dt.UTC)
 
         self.__process = await asyncio.create_subprocess_shell(
             cmd=self.command,

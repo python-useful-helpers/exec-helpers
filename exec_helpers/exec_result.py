@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import contextlib
-import datetime
+import datetime as dt
 import functools
 import json
 import logging
@@ -68,13 +68,13 @@ OptionalStdinT = bytes | str | bytearray | None
 def _handle_deserialize(
     fmt: str,
 ) -> Callable[[Callable[[ExecResult], _T]], Callable[[ExecResult], _T]]:
-    """Decorator fabric for decoder getters.
+    """Create a decorator for decoder getters.
 
     :return: real decorator
     """
 
     def decorator(method: Callable[[ExecResult], _T]) -> Callable[[ExecResult], _T]:
-        """Decorator for decoder getter.
+        """Decorate a decoder getter.
 
         :return: Wrapped to try/except getter.
         """
@@ -167,7 +167,7 @@ class LinesAccessProxy:
         raise TypeError(f"Unexpected key type: {item!r}")
 
     def __len__(self) -> int:  # pragma: no cover
-        """Data len.
+        """Return the data length.
 
         :return: Strings count.
         :rtype: int
@@ -218,7 +218,7 @@ class ExecResult:
         stderr: Iterable[bytes] | None = None,
         exit_code: ExitCodeT = proc_enums.INVALID,
         *,
-        started: datetime.datetime | None = None,
+        started: dt.datetime | None = None,
     ) -> None:
         """Command execution result.
 
@@ -257,10 +257,10 @@ class ExecResult:
             self._stderr = ()
 
         self.__exit_code: ExitCodeT = proc_enums.INVALID
-        self.__timestamp: datetime.datetime | None = None
+        self.__timestamp: dt.datetime | None = None
         self.exit_code = exit_code
 
-        self.__started: datetime.datetime | None = started
+        self.__started: dt.datetime | None = started
 
         # By default is none:
         self._stdout_str: str | None = None
@@ -291,7 +291,7 @@ class ExecResult:
         return self.__stderr_lock
 
     @property
-    def timestamp(self) -> datetime.datetime | None:
+    def timestamp(self) -> dt.datetime | None:
         """Timestamp.
 
         :return: Exit code timestamp.
@@ -307,7 +307,7 @@ class ExecResult:
         .. versionadded:: 4.0.0
         """
         if self.timestamp is None:
-            self.__timestamp = datetime.datetime.now(tz=datetime.UTC)
+            self.__timestamp = dt.datetime.now(tz=dt.UTC)
 
     @classmethod
     def _get_brief(cls, data: tuple[bytes, ...]) -> str:
@@ -558,7 +558,7 @@ class ExecResult:
         with self.stdout_lock, self.stderr_lock:
             self.__exit_code = proc_enums.exit_code_to_enum(new_val)
             if self.__exit_code != proc_enums.INVALID:
-                self.__timestamp = datetime.datetime.now(tz=datetime.UTC)
+                self.__timestamp = dt.datetime.now(tz=dt.UTC)
 
     @property
     def ok(self) -> bool:
@@ -627,7 +627,7 @@ class ExecResult:
         raise exception_class(self, expected_codes)
 
     @property
-    def started(self) -> datetime.datetime | None:
+    def started(self) -> dt.datetime | None:
         """Timestamp of command start.
 
         :return: Timestamp from command start, if applicable.
@@ -726,7 +726,7 @@ class ExecResult:
         return content
 
     def __getitem__(self, item: str) -> typing.Any:
-        """Dict like get data.
+        """Get data like from a dict.
 
         :param item: Key.
         :type item: str

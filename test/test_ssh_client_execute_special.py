@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import base64
-import datetime
+import datetime as dt
 import logging
 import threading
 from unittest import mock
@@ -38,7 +38,7 @@ class FakeFileStream:
         self.channel = None
 
     def __iter__(self):
-        """Normally we iter over source."""
+        """Iterate over the source normally."""
         for _ in range(len(self.__src)):
             yield self.__src.pop(0)
 
@@ -258,7 +258,7 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
             stdin=mock.Mock,
             stdout=stdout_part,
             stderr=stderr_part,
-            started=datetime.datetime.now(tz=datetime.UTC),
+            started=dt.datetime.now(tz=dt.UTC),
         )
 
     execute_async = mocker.patch(

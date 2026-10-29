@@ -38,7 +38,7 @@ def _parse_ssh_config_file(file_path: pathlib.Path) -> paramiko.SSHConfig | None
         config = paramiko.SSHConfig()
         with file_path.open() as f_obj:
             config.parse(f_obj)
-    except Exception:
+    except Exception:  # noqa: BLE001  # any parse failure means no usable config
         config = None
 
     return config

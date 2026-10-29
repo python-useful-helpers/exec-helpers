@@ -63,8 +63,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install --upgrade --group pylint
           pip install --upgrade -r CI_REQUIREMENTS.txt
-          pip install --upgrade "pylint >= 3.0.0"
       - name: Install develop
         run: |
           pip install -e .
@@ -93,7 +93,7 @@ jobs:
           pip install -e .
       - name: Lint with MyPy
         run: |
-          mypy --strict --install-types --non-interactive exec_helpers
+          mypy -p exec_helpers
 
   Test:
     permissions:

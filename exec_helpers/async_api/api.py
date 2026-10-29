@@ -272,7 +272,7 @@ class ExecHelper(
 
     @property
     def _chroot_exe(self) -> str | None:
-        """Exe for chroot
+        """Return the exe for chroot.
 
         :rtype: str | None
         .. versionadded:: 8.1.0
@@ -281,7 +281,7 @@ class ExecHelper(
 
     @_chroot_exe.setter
     def _chroot_exe(self, new_state: str | None) -> None:
-        """Executable for chroot if set.
+        """Set the executable for chroot.
 
         :param new_state: New exe.
         :type new_state: str | None
@@ -350,7 +350,6 @@ class ExecHelper(
 
         .. versionadded:: 1.2.0
         """
-
         return _helpers.mask_command(cmd.rstrip(), self.log_mask_re, log_mask_re)
 
     def _prepare_command(self, cmd: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:
@@ -541,7 +540,8 @@ class ExecHelper(
         self.logger.log(level=log_level, msg=f"Command {result.cmd!r} exit code: {result.exit_code!s}")
         return result
 
-    async def __call__(  # pylint: disable=invalid-overridden-method
+    # Callable[..., X] declares no fixed signature, so arguments-differ is a false positive.
+    async def __call__(  # pylint: disable=invalid-overridden-method,arguments-differ
         self,
         command: CommandT,
         verbose: bool = False,
@@ -772,7 +772,7 @@ class ExecHelper(
         expected: ExpectedExitCodesT,
         exception_class: CalledProcessErrorSubClassT,
     ) -> exec_result.ExecResult:
-        """Internal check_stderr logic (synchronous).
+        """Check STDERR of the result (synchronous).
 
         :param result: Execution result for validation.
         :type result: exec_result.ExecResult
