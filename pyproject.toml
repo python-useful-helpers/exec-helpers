@@ -17,18 +17,20 @@ license = "Apache-2.0"  # Use SPDX classifier
 license-files = [ "LICENSE" ]
 requires-python = ">=3.11.0"
 dynamic = [ "classifiers", "dependencies", "version" ]
-[[project.authors]]
-name = "Aleksei Stepanov"
-email = "penguinolog@gmail.com"
 [[project.maintainers]]
 name = "Aleksei Stepanov"
 email = "penguinolog@gmail.com"
+
 [[project.maintainers]]
 name = "Antonio Esposito"
 email = "esposito.cloud@gmail.com"
+
 [[project.maintainers]]
 name = "Dennis Dmitriev"
 email = "dis-xcom@gmail.com"
+[[project.authors]]
+name = "Aleksei Stepanov"
+email = "penguinolog@gmail.com"
 [project.optional-dependencies]
 xml = []
 lxml = [ "lxml>=4.6.2" ]
@@ -101,18 +103,18 @@ tox = [
 
 [tool.setuptools]
 zip-safe = false
-[tool.setuptools.dynamic]
-dependencies = { file = [ "requirements.txt" ] }
-classifiers = { file = [ "classifiers.txt" ] }
+[tool.setuptools.packages.find]
+exclude = [ ".*", "bin", "doc*", "examples", "test*" ]
+namespaces = false
 [tool.setuptools.package-data]
 exec_helpers = [
-  "py.typed",
   "*.pyi",
   "*/*.pyi",
+  "py.typed",
 ]
-[tool.setuptools.packages.find]
-exclude = [ "doc*", "examples", "test*", "bin", ".*" ]
-namespaces = false
+[tool.setuptools.dynamic]
+classifiers = { file = [ "classifiers.txt" ] }
+dependencies = { file = [ "requirements.txt" ] }
 
 [tool.distutils.bdist_wheel]
 universal = 0
@@ -129,6 +131,13 @@ line-length = 120
 output-format = "full"
 [tool.ruff.format]
 docstring-code-format = true
+[tool.ruff.lint.isort]
+force-single-line = true
+known-third-party = [ "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil" ]
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = [ "__pretty_repr__", "__pretty_str__", "__rich_repr__" ]
 [tool.ruff.lint]
 extend-select = [
   "A",     # flake8-builtins
@@ -147,6 +156,7 @@ extend-select = [
   "PERF",
   "PGH",   # flake8-import-conventions, pygrep-hooks
   "PL",
+  "PTH",   # flake8-use-pathlib
   "PYI",   # flake8-pyi
   "Q",     # quotes
   "RET",
@@ -154,7 +164,6 @@ extend-select = [
   "S",     # flake8-bandit
   "SIM",
   "SLOT",  # flake8-slots
-  "PTH",   # flake8-use-pathlib
   "T10",
   "TC",    # flake8-type-checking
   "TID",   # flake8-tidy-imports
@@ -173,30 +182,45 @@ extend-ignore = [
   "PLR2004",
   "PLR6301", # "maybe staticmethod"
   "RET504",  # Unnecessary variable assignment before return statement
-  "SIM108",  # Use ternary operator,
   "S314",    # use "defusedxml" which is stale
-  "TRY003",  # long messages prepare outside, ...
+  "SIM108",  # Use ternary operator,
   "TID252",  # relative imports from parent modules
+  "TRY003",  # long messages prepare outside, ...
 ]
-[tool.ruff.lint.isort]
-force-single-line = true
-known-third-party = [ "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil" ]
-[tool.ruff.lint.pydocstyle]
-convention = "pep257"
-[tool.ruff.lint.pylint]
-allow-dunder-method-names = [ "__pretty_repr__", "__pretty_str__", "__rich_repr__" ]
 
 [tool.isort]
 line_length = 120
 multi_line_output = 3
 force_single_line = true
-known_third_party = [ "logwrap", "paramiko", "tenacity", "pyyaml", "ruamel.yaml", "psutil" ]
+known_third_party = [ "logwrap", "paramiko", "psutil", "pyyaml", "ruamel.yaml", "tenacity" ]
 
 [tool.pylint]
+reports = false
+disable = [
+  "broad-except",
+  "file-ignored",
+  "invalid-name",
+  "locally-disabled",
+  "logging-format-interpolation",
+  "logging-fstring-interpolation",
+  "similarities",
+  "suppressed-message",
+  "too-few-public-methods",
+  "too-many-ancestors",
+  "too-many-arguments",
+  "too-many-branches",
+  "too-many-instance-attributes",
+  "too-many-lines",
+  "too-many-locals",
+  "too-many-positional-arguments",
+  "too-many-public-methods",
+  "too-many-return-statements",
+  "too-many-statements"
+]
+enable = "all"
 extension-pkg-whitelist = [ "lxml.etree" ]
-ignore = [ "CVS", "_version.py" ]
+ignore = [ "_version.py", "CVS" ]
 jobs = 0
-py-version = "3.11"
 load-plugins = [
   "pylint.extensions.docparams",
   "pylint.extensions.docstyle",
@@ -209,30 +233,8 @@ load-plugins = [
   "pylint.extensions.empty_comment",
   "pylint.extensions.dunder",
 ]
-enable = "all"
-disable = [
-  "locally-disabled",
-  "file-ignored",
-  "suppressed-message",
-  "similarities",
-  "too-many-ancestors",
-  "too-few-public-methods",
-  "too-many-public-methods",
-  "too-many-return-statements",
-  "too-many-branches",
-  "too-many-arguments",
-  "too-many-positional-arguments",
-  "too-many-locals",
-  "too-many-statements",
-  "too-many-instance-attributes",
-  "too-many-lines",
-  "broad-except",
-  "logging-fstring-interpolation",
-  "logging-format-interpolation",
-  "invalid-name"
-]
 max-line-length = 120
-reports = false
+py-version = "3.11"
 [tool.pylint.dunder]
 good-dunder-names = [
   "__pretty_repr__",
@@ -266,29 +268,30 @@ collapse_tables = []
 skip_wrap_for_keys = []
 
 [tool.mypy]
-strict = true
-warn_unused_configs = true
 warn_redundant_casts = true
+strict = true
 show_error_context = true
 show_column_numbers = true
-show_error_codes = true
 pretty = true
+warn_unused_configs = true
+show_error_codes = true
 [[tool.mypy.overrides]]
-module = [ "psutil", "lxml.*" ]
+module = [ "lxml.*", "psutil" ]
 ignore_missing_imports = true
 
 [tool.pytest]
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-vvv -s -p no:django -p no:ipdb"
 testpaths = [ "test" ]
-mock_use_standalone_module = false
+addopts = "-vvv -s -p no:django -p no:ipdb"
 junit_family = "xunit2"
 asyncio_default_fixture_loop_scope = "function"
+mock_use_standalone_module = false
 
 [tool.coverage]
-[tool.coverage.json]
-pretty_print = true
+[tool.coverage.run]
+omit = [ "test/*" ]
+branch = true
 [tool.coverage.report]
 exclude_lines = [
   # Exclude methods marked as abstract
@@ -321,37 +324,36 @@ exclude_lines = [
   # Don't complain if tests don't hit defensive assertion code:
   "raise NotImplementedError",
 ]
-[tool.coverage.run]
-branch = true
-omit = [ "test/*" ]
+[tool.coverage.json]
+pretty_print = true
 
 [tool.tox]
 requires = [
   "tox>=4.53",
 ]
 env_list = [
-  "ruff",
-  "pylint",
+  "doc8",
+  "docs",
   "mypy",
   "pep257",
   { prefix = "py3", start = 11, stop = 15 },
   { prefix = "pypy3", start = 11, stop = 15 },
+  "pylint",
   "readme",
-  "doc8",
-  "docs",
+  "ruff",
 ]
 skip_missing_interpreters = true
 [tool.tox.env]
-py311.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-py312.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-py313.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-py314.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-py315.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-pypy311.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-pypy312.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-pypy313.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-pypy314.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
-pypy315.depends = [ "pylint", "mypy", "ruff", "ruff-format", "pep257", "bandit" ]
+py311.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+py312.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+py313.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+py314.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+py315.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+pypy311.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+pypy312.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+pypy313.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+pypy314.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
+pypy315.depends = [ "bandit", "mypy", "pep257", "pylint", "ruff", "ruff-format" ]
 [tool.tox.env.bandit]
 dependency_groups = [ "bandit" ]
 ommands = [ [ "bandit", "-r", "exec_helpers" ] ]
@@ -360,25 +362,24 @@ package = "skip"
 dependency_groups = [ "doc8" ]
 commands = [ [ "doc8", "README.rst", "doc/source" ] ]
 [tool.tox.env.docs]
-depends = [ "doc8", "readme" ]
 dependency_groups = [ "docs" ]
 commands = [ [ "sphinx-build", "doc/source/", "doc/build" ] ]
+depends = [ "doc8", "readme" ]
 [tool.tox.env.install]
 dependency_groups = []
 commands = [ [ "pip", "install", "./", "-vvv", "-U" ] ]
 [tool.tox.env.mypy]
-depends = [ "ruff", "ruff-format", "pep257", "bandit" ]
+deps = [ "-r {toxinidir}/CI_REQUIREMENTS.txt" ]
 dependency_groups = [ "mypy" ]
-deps = ["-r {toxinidir}/CI_REQUIREMENTS.txt"]
 commands = [
   [ "mypy", "--strict", "--install-types", "--non-interactive", "--show-error-codes", "-p", "exec_helpers" ],
 ]
-
+depends = [ "bandit", "pep257", "ruff", "ruff-format" ]
 [tool.tox.env.pylint]
-depends = [ "ruff", "ruff-format", "pep257", "bandit" ]
+deps = [ "-r {toxinidir}/CI_REQUIREMENTS.txt" ]
 dependency_groups = [ "pylint" ]
-deps = ["-r {toxinidir}/CI_REQUIREMENTS.txt"]
 commands = [ [ "pylint", "exec_helpers" ] ]
+depends = [ "bandit", "pep257", "ruff", "ruff-format" ]
 [tool.tox.env.readme]
 package = "skip"
 dependency_groups = [ "readme" ]
@@ -386,12 +387,11 @@ commands = [
   [ "python", "-m", "build", "-s" ],
   [ "twine", "check", "{tox_root}{/}dist{/}*" ],
 ]
-
 [tool.tox.env.ruff]
 package = "skip"
-depends = [ "ruff-format" ]
 dependency_groups = [ "ruff" ]
 commands = [ [ "ruff", "check", "." ] ]
+depends = [ "ruff-format" ]
 [tool.tox.env.ruff-format]
 package = "skip"
 dependency_groups = [ "ruff" ]
@@ -399,8 +399,9 @@ commands = [ [ "ruff", "format", "--check", "." ] ]
 [tool.tox.env.venv]
 commands = [ [ "{posargs}" ] ]
 [tool.tox.env_run_base]
-recreate = true
 package = "editable"
+dependency_groups = [ "pytest" ]
+recreate = true
 pass_env = [
   "http_proxy",
   "HTTP_PROXY",
@@ -410,7 +411,6 @@ pass_env = [
   "NO_PROXY",
 ]
 set_env = { PYTHONDONTWRITEBYTECODE = "1" }
-dependency_groups = [ "pytest" ]
 commands = [
   [ "pip", "freeze" ],
   [ "py.test" ],
