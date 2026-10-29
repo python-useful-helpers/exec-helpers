@@ -12,300 +12,98 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""Async Subprocess: special cases of the stdin, the stdout, the timeouts and the masking of the command."""
+
 from __future__ import annotations
 
-import asyncio
-import errno
-import logging
-import random
-import typing
 from unittest import mock
 
 import pytest
 
 import exec_helpers
+from subprocess_cases import EINVAL
+from subprocess_cases import ESHUTDOWN
+from subprocess_cases import LINES
+from subprocess_cases import SPECIAL_ARGNAMES
+from subprocess_cases import SPECIAL_CASES
+from subprocess_cases import command
 
-pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
-
-# All test coroutines will be treated as marked.
-# pytestmark = pytest.mark.asyncio
-
-command = "ls ~\nline 2\nline 3\nline c кирилицей"
-command_log = f"Executing command:\n{command.rstrip()!r}\n"
-
-print_stdin = 'read line; echo "$line"'
-default_timeout = 60 * 60  # 1 hour
-
-
-class FakeFileStream:
-    """Mock-like object for stream emulation."""
-
-    def __init__(self, *args):
-        self.__src = list(args)
-
-    def __aiter__(self):
-        """Iterate over the source normally."""
-        return self
-
-    async def __anext__(self):
-        """Use iterator due to python 3.5 limitations."""
-        for _ in range(len(self.__src)):
-            val = self.__src.pop(0)
-            if isinstance(val, bytes):
-                return val
-
-            if isinstance(val, BaseException):
-                raise val
-
-            raise TypeError(val)
-        raise StopAsyncIteration()
-
-    def fileno(self):
-        return hash(tuple(self.__src))
-
-
-async def read_stream(stream: FakeFileStream):
-    res = [line async for line in stream]
-    return tuple(res)
-
-
-einval_exc = OSError()
-einval_exc.errno = errno.EINVAL
-epipe_exc = OSError()
-epipe_exc.errno = errno.EPIPE
-eshutdown_exc = OSError()
-eshutdown_exc.errno = errno.ESHUTDOWN
-
-
-class CommandParameters(typing.NamedTuple):
-    """Command parameters."""
-
-    def as_dict(self):
-        return self._asdict()
-
-    command: str | typing.Iterable[str] = command
-    stdin: str | None = None
-    verbose: bool | None = None
-    log_mask_re: str | None = None
-
-
-class MockParameters(typing.NamedTuple):
-    """Mock configuration parameters."""
-
-    write: Exception | None = None
-    stdin_close: Exception | None = None
-    ec: typing.Sequence[int | Exception | None] = (0,)
-
-
-configs = {
-    "positive_simple": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(),
-        "mock_parameters": MockParameters(),
-    },
-    "positive_verbose": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(verbose=True),
-        "mock_parameters": MockParameters(),
-    },
-    "positive_iterable": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(command=("echo", "hello world")),
-        "mock_parameters": MockParameters(),
-        "masked_cmd": "echo 'hello world'",
-    },
-    "no_stdout": {
-        "command_parameters": CommandParameters(),
-        "mock_parameters": MockParameters(),
-    },
-    "IOError_on_stdout_read": {
-        "stdout": (b" \n", b"2\n", OSError()),
-        "command_parameters": CommandParameters(),
-        "mock_parameters": MockParameters(),
-    },
-    "TimeoutError": {
-        "stdout": (),
-        "command_parameters": CommandParameters(),
-        "mock_parameters": MockParameters(
-            ec=(TimeoutError(), -9),
-        ),
-        "expect_exc": exec_helpers.ExecHelperTimeoutError,
-    },
-    "TimeoutError_no_kill": {
-        "stdout": (),
-        "command_parameters": CommandParameters(),
-        "mock_parameters": MockParameters(
-            ec=(TimeoutError(), None),
-        ),
-        "expect_exc": exec_helpers.ExecHelperNoKillError,
-    },
-    "stdin_closed_PIPE_windows": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(stdin="Warning"),
-        "mock_parameters": MockParameters(write=einval_exc),
-    },
-    "stdin_broken_PIPE": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(stdin="Warning"),
-        "mock_parameters": MockParameters(write=epipe_exc),
-    },
-    "stdin_closed_PIPE": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(stdin="Warning"),
-        "mock_parameters": MockParameters(write=eshutdown_exc),
-    },
-    "stdin_error": {
-        "mock_parameters": MockParameters(ec=(0xDEADBEEF,), write=OSError()),
-        "stdout": (),
-        "command_parameters": CommandParameters(stdin="Warning"),
-        "expect_exc": OSError,
-    },
-    "stdin_close_closed": {
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "command_parameters": CommandParameters(stdin="Stdin"),
-        "mock_parameters": MockParameters(stdin_close=eshutdown_exc),
-    },
-    "stdin_close_fail": {
-        "stdout": (),
-        "command_parameters": CommandParameters(stdin="Failed"),
-        "mock_parameters": MockParameters(ec=(0xDEADBEEF,), stdin_close=OSError()),
-        "expect_exc": OSError,
-    },
-    "mask_global": {
-        "command_parameters": CommandParameters(command="USE='secret=secret_pass' do task"),
-        "mock_parameters": MockParameters(),
-        "init_log_mask_re": r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
-        "masked_cmd": "USE='secret=<*masked*>' do task",
-    },
-    "mask_local": {
-        "command_parameters": CommandParameters(
-            command="USE='secret=secret_pass' do task",
-            log_mask_re=r"secret\s*=\s*([A-Z-a-z0-9_\-]+)",
-        ),
-        "mock_parameters": MockParameters(),
-        "masked_cmd": "USE='secret=<*masked*>' do task",
-    },
-}
-
-
-def pytest_generate_tests(metafunc):
-    """Test parametrization."""
-    if "run_parameters" in metafunc.fixturenames:
-        metafunc.parametrize(
-            "run_parameters",
-            [
-                "positive_simple",
-                "positive_verbose",
-                "positive_iterable",
-                "no_stdout",
-                "IOError_on_stdout_read",
-                "TimeoutError",
-                "TimeoutError_no_kill",
-                "stdin_closed_PIPE_windows",
-                "stdin_broken_PIPE",
-                "stdin_closed_PIPE",
-                "stdin_error",
-                "stdin_close_closed",
-                "stdin_close_fail",
-                "mask_global",
-                "mask_local",
-            ],
-            indirect=True,
-        )
-
-
-@pytest.fixture
-def run_parameters(request):
-    """Test configuration apply."""
-    return configs[request.param]
-
-
-@pytest.fixture
-def exec_result(run_parameters):
-    command_parameters: CommandParameters = run_parameters["command_parameters"]
-    mock_parameters: MockParameters = run_parameters["mock_parameters"]
-    stdout = run_parameters.get("stdout", None)
-    if stdout is None:
-        stdout_res = None
-    else:
-        stdout_res = tuple(elem for elem in run_parameters["stdout"] if isinstance(elem, bytes))
-
-    return exec_helpers.ExecResult(
-        cmd=run_parameters.get("masked_cmd", command),
-        stdin=command_parameters.stdin,
-        stdout=stdout_res,
-        stderr=(),
-        exit_code=0 if 0 in mock_parameters.ec else exec_helpers.ExitCodes.EX_INVALID,
-    )
-
-
-@pytest.fixture
-def create_subprocess_shell(mocker, monkeypatch, run_parameters):
-    command_parameters: CommandParameters = run_parameters["command_parameters"]
-    mock_parameters: MockParameters = run_parameters["mock_parameters"]
-
-    mocker.patch("psutil.Process")
-
-    def create_mock(
-        stdout: tuple | None = None,
-        **kwargs,
-    ):
-        """Parametrized code."""
-        proc = mock.AsyncMock()
-
-        run_shell = mock.AsyncMock(
-            asyncio.create_subprocess_shell,
-            name="create_subprocess_shell",
-            return_value=proc,
-        )
-
-        proc.configure_mock(pid=random.randint(1025, 65536))
-
-        if stdout is None:
-            proc.configure_mock(stdout=None)
-        else:
-            proc.attach_mock(FakeFileStream(*stdout), "stdout")
-
-        proc.configure_mock(stderr=None)
-
-        if command_parameters.stdin is not None:
-            stdin_mock = mock.AsyncMock()
-
-            stdin_mock.attach_mock(mock.Mock("write", side_effect=mock_parameters.write), "write")
-            stdin_mock.attach_mock(mock.AsyncMock("drain"), "drain")
-            stdin_mock.attach_mock(mock.Mock(side_effect=mock_parameters.stdin_close), "close")
-
-            proc.attach_mock(stdin_mock, "stdin")
-
-        proc.attach_mock(mock.AsyncMock(side_effect=mock_parameters.ec), "wait")
-        proc.configure_mock(returncode=(0,))
-
-        monkeypatch.setattr(asyncio, "create_subprocess_shell", run_shell)
-        return run_shell
-
-    return create_mock(**run_parameters)
+pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
 def logger(mocker):
+    """Mock the logger of the runner."""
     return mocker.patch("exec_helpers.async_api.subprocess.Subprocess.logger", autospec=True)
 
 
-async def test_special_cases(create_subprocess_shell, exec_result, logger, run_parameters) -> None:
-    """Parametrized validation of special cases."""
-    command_parameters: CommandParameters = run_parameters["command_parameters"]
-    runner = exec_helpers.async_api.Subprocess(log_mask_re=run_parameters.get("init_log_mask_re", None))
-    if "expect_exc" not in run_parameters:
-        res = await runner.execute(**command_parameters.as_dict())
-        level = logging.INFO if command_parameters.verbose else logging.DEBUG
+@pytest.mark.parametrize(SPECIAL_ARGNAMES, SPECIAL_CASES)
+async def test_execute_special(fake_async_popen, logger, stdout, execute_kwargs, runner_kwargs, masked, level) -> None:
+    """The result and the log do not depend on the stdout problems, and the secrets are masked in the log."""
+    fake_async_popen(stdout=stdout)
+    runner = exec_helpers.async_api.Subprocess(**runner_kwargs)
 
-        command_for_log = run_parameters.get("masked_cmd", command)
-        command_log = f"Executing command:\n{command_for_log.rstrip()!r}\n"
-        result_log = f"Command {command_for_log.rstrip()!r} exit code: {res.exit_code!s}"
+    res = await runner.execute(**{"command": command, **execute_kwargs})
 
-        assert logger.mock_calls[0] == mock.call.log(level=level, msg=command_log)
-        assert logger.mock_calls[-1] == mock.call.log(level=level, msg=result_log)
-        assert res == exec_result
-    else:
-        with pytest.raises(run_parameters["expect_exc"]):
-            await runner.execute(**command_parameters.as_dict())
+    expected_stdout = None if stdout is None else tuple(line for line in stdout if isinstance(line, bytes))
+    assert res == exec_helpers.ExecResult(cmd=masked, stdout=expected_stdout, stderr=(), exit_code=0)
+    assert logger.mock_calls[0] == mock.call.log(level=level, msg=f"Executing command:\n{masked.rstrip()!r}\n")
+    assert logger.mock_calls[-1] == mock.call.log(
+        level=level,
+        msg=f"Command {masked.rstrip()!r} exit code: {res.exit_code!s}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("write", "close", "warning"),
+    [
+        pytest.param(BrokenPipeError(), None, "STDIN Send failed: broken PIPE", id="write_broken_pipe"),
+        pytest.param(ESHUTDOWN, None, "STDIN Send failed: broken PIPE", id="write_shutdown"),
+        pytest.param(ConnectionResetError(), None, "STDIN Send failed: closed PIPE", id="write_closed_pipe"),
+        pytest.param(None, BrokenPipeError(), "STDIN Send failed: broken PIPE", id="close_broken_pipe"),
+        pytest.param(None, ESHUTDOWN, "STDIN Send failed: broken PIPE", id="close_shutdown"),
+        pytest.param(None, EINVAL, None, id="close_closed_pipe"),
+    ],
+)
+async def test_stdin_pipe_closed_by_process(fake_async_popen, logger, write, close, warning) -> None:
+    """The process that closed its stdin does not fail the execution."""
+    fake_async_popen(stdout=LINES, stdin_write=write, stdin_close=close)
+
+    res = await exec_helpers.async_api.Subprocess().execute(command, stdin="Warning")
+
+    assert res.exit_code == 0
+    assert (mock.call.warning(warning) in logger.mock_calls) == (warning is not None)
+
+
+@pytest.mark.parametrize(
+    ("write", "close"),
+    [
+        pytest.param(OSError(), None, id="write_error"),
+        pytest.param(None, OSError(), id="close_error"),
+    ],
+)
+async def test_stdin_error(mocker, fake_async_popen, write, close) -> None:
+    """Other stdin errors are raised, and the process is killed."""
+    kill_tree = mocker.patch("exec_helpers._subprocess_helpers.kill_proc_tree")
+    proc = fake_async_popen(stdout=LINES, stdin_write=write, stdin_close=close)
+
+    with pytest.raises(OSError):
+        await exec_helpers.async_api.Subprocess().execute(command, stdin="Failed")
+
+    proc.kill.assert_called()
+    kill_tree.assert_called_with(proc.pid)
+
+
+@pytest.mark.parametrize(
+    ("second_wait", "expected_exc"),
+    [
+        pytest.param(-9, exec_helpers.ExecHelperTimeoutError, id="killed"),
+        pytest.param(None, exec_helpers.ExecHelperNoKillError, id="not_killed"),
+    ],
+)
+async def test_timeout(fake_async_popen, second_wait, expected_exc) -> None:
+    """The timeout is reported, and the process that survived the kill is reported separately."""
+    fake_async_popen(wait=(TimeoutError(), second_wait))
+
+    with pytest.raises(expected_exc):
+        await exec_helpers.async_api.Subprocess().execute(command)

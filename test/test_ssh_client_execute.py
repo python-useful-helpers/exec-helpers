@@ -12,542 +12,168 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""SSHClient: execution of the commands over the channel, the arguments of the SSH, and the parallel execution."""
+
 from __future__ import annotations
 
-import datetime as dt
 import logging
 from unittest import mock
 
 import pytest
 
 import exec_helpers
+from conftest import FakeFileStream
 from exec_helpers import proc_enums
-from exec_helpers._ssh_base import SshExecuteAsyncResult
-
-pytestmark = pytest.mark.skip("Rewrite whole execute tests.")
-
-
-class FakeFileStream:
-    """Mock-like object for stream emulation."""
-
-    def __init__(self, *args):
-        self.__src = list(args)
-        self.closed = False
-
-    def __iter__(self):
-        """Iterate over the source normally."""
-        for _ in range(len(self.__src)):
-            yield self.__src.pop(0)
-
-    def fileno(self):
-        return hash(tuple(self.__src))
-
-    def close(self):
-        """We enforce close."""
-        self.closed = True
-
-
-def read_stream(stream: FakeFileStream) -> tuple[bytes, ...]:
-    return tuple(stream)
-
+from subprocess_cases import EXECUTE_ARGNAMES
+from subprocess_cases import EXECUTE_CASES
+from subprocess_cases import command
+from subprocess_cases import make_result
+from subprocess_cases import stdin_bytes
 
 host = "127.0.0.1"
 host2 = "127.0.0.2"
 port = 22
-username = "user"
-password = "pass"
-
-command = "ls ~\nline 2\nline 3\nline c кирилицей"
 command_log = f"Executing command:\n{command.rstrip()!r}\n"
 
-print_stdin = 'read line; echo "$line"'
-default_timeout = 60 * 60  # 1 hour
 
+@pytest.fixture
+def make_ssh(paramiko_ssh_client, ssh_auth_logger, get_logger):
+    """Create the client whose channel is the mock created by `fake_channel`."""
 
-configs = {
-    "positive_simple": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "with_pty": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": True,
-        "get_pty": True,
-    },
-    "with_pty_nonstandard": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": True,
-        "get_pty": True,
-        "width": 120,
-        "height": 100,
-    },
-    "with_stderr": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "negative": {
-        "ec": 1,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (b" \n", b"0\n", b"1\n", b" \n"),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "with_stdin_str": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": "stdin",
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "with_stdin_bytes": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": b"stdin",
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "with_stdin_bytearray": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": bytearray(b"stdin"),
-        "open_stdout": True,
-        "open_stderr": True,
-    },
-    "no_stderr": {
-        "ec": 0,
-        "stdout": (b" \n", b"2\n", b"3\n", b" \n"),
-        "stderr": (),
-        "stdin": None,
-        "open_stdout": True,
-        "open_stderr": False,
-    },
-    "no_stdout": {
-        "ec": 0,
-        "stdout": (),
-        "stderr": (),
-        "stdin": None,
-        "open_stdout": False,
-        "open_stderr": False,
-    },
-}
-
-
-def pytest_generate_tests(metafunc):
-    """Test parametrization."""
-    if "run_parameters" in metafunc.fixturenames:
-        metafunc.parametrize(
-            "run_parameters",
-            [
-                "positive_simple",
-                "with_pty",
-                "with_pty_nonstandard",
-                "with_stderr",
-                "negative",
-                "with_stdin_str",
-                "with_stdin_bytes",
-                "with_stdin_bytearray",
-                "no_stderr",
-                "no_stdout",
-            ],
-            indirect=True,
+    def create(channel: mock.MagicMock, *, hostname: str = host) -> exec_helpers.SSHClient:
+        transport = mock.Mock(open_session=mock.Mock(return_value=channel))
+        paramiko_ssh_client.return_value = mock.Mock(get_transport=mock.Mock(return_value=transport))
+        return exec_helpers.SSHClient(
+            host=hostname,
+            port=port,
+            auth=exec_helpers.SSHAuth(username="user", password="pass"),
         )
 
-
-@pytest.fixture
-def run_parameters(request):
-    """Test configuration apply."""
-    return configs[request.param]
+    return create
 
 
-@pytest.fixture
-def chan_makefile(run_parameters):
-    class MkFile:
-        def __init__(self):
-            self.stdin = None
-            self.stdout = None
-            self.channel = None
+def fake_channel(
+    *,
+    stdout: tuple[bytes, ...] | None = (),
+    stderr: tuple[bytes, ...] | None = (),
+    exit_code: int = 0,
+) -> mock.MagicMock:
+    """Create the finished channel: `None` instead of a stream means that the stream is not read."""
+    chan = mock.MagicMock(closed=False, exit_status=exit_code)
+    chan.__enter__.return_value = chan
+    chan.recv_exit_status.return_value = exit_code
+    chan.status_event.is_set.return_value = True
+    chan.status_event.wait.return_value = True
+    stdin_file = mock.MagicMock(channel=chan)
+    stdin_file.__enter__.return_value = stdin_file
+    chan.stdin_file = stdin_file
 
-        def __call__(self, flags: str):
-            if flags == "wb":
-                self.stdin = mock.Mock()
-                self.stdin.channel = self.channel
-                return self.stdin
-            if flags == "rb":
-                self.stdout = FakeFileStream(*run_parameters["stdout"])
-                return self.stdout
-            raise ValueError(f"Unexpected flags: {flags!r}")
+    def makefile(flags: str) -> mock.MagicMock | FakeFileStream:
+        if flags == "wb":
+            return stdin_file
+        if flags == "rb":
+            return FakeFileStream(*(stdout or ()))
+        raise ValueError(f"Unexpected flags: {flags!r}")
 
-    return MkFile()
-
-
-@pytest.fixture
-def ssh_transport_channel(paramiko_ssh_client, chan_makefile, run_parameters):
-    chan = mock.Mock(makefile=chan_makefile, closed=False)
-    chan_makefile.channel = chan
-    if run_parameters["open_stderr"]:
-        chan.attach_mock(
-            mock.Mock(return_value=FakeFileStream(*run_parameters["stderr"])),
-            "makefile_stderr",
-        )
-    chan.configure_mock(exit_status=run_parameters["ec"])
-    chan.attach_mock(mock.Mock(return_value=run_parameters["ec"]), "recv_exit_status")
-    chan.status_event.attach_mock(mock.Mock(return_value=True), "is_set")
-    open_session = mock.Mock(return_value=chan)
-    transport = mock.Mock()
-    transport.attach_mock(open_session, "open_session")
-    get_transport = mock.Mock(return_value=transport)
-    ssh_ = mock.Mock()
-    ssh_.attach_mock(get_transport, "get_transport")
-    paramiko_ssh_client.return_value = ssh_
+    chan.makefile.side_effect = makefile
+    chan.makefile_stderr.side_effect = lambda _flags: FakeFileStream(*(stderr or ()))
     return chan
 
 
-@pytest.fixture
-def ssh(
-    paramiko_ssh_client,
-    ssh_transport_channel,
-    ssh_auth_logger,
-    get_logger,
-):
-    return exec_helpers.SSHClient(
-        host=host,
-        port=port,
-        auth=exec_helpers.SSHAuth(username=username, password=password),
-    )
+@pytest.mark.parametrize("method", ["execute", "__call__"], ids=["execute", "call"])
+@pytest.mark.parametrize(EXECUTE_ARGNAMES, EXECUTE_CASES)
+def test_execute(make_ssh, get_logger, method, stdin, stdout, stderr, exit_code, open_stdout, open_stderr) -> None:
+    """The command result is built from the channel streams and the exit code, and STDIN is sent to the channel."""
+    chan = fake_channel(stdout=stdout, stderr=stderr, exit_code=exit_code)
+    ssh = make_ssh(chan)
 
+    res = getattr(ssh, method)(command, stdin=stdin, open_stdout=open_stdout, open_stderr=open_stderr)
 
-@pytest.fixture
-def ssh2(
-    paramiko_ssh_client,
-    ssh_transport_channel,
-    ssh_auth_logger,
-    get_logger,
-):
-    return exec_helpers.SSHClient(
-        host=host2,
-        port=port,
-        auth=exec_helpers.SSHAuth(username=username, password=password),
-    )
-
-
-@pytest.fixture
-def exec_result(run_parameters):
-    return exec_helpers.ExecResult(
-        cmd=command,
-        stdin=run_parameters["stdin"],
-        stdout=tuple(run_parameters["stdout"]) if run_parameters["stdout"] else None,
-        stderr=tuple(run_parameters["stderr"]) if run_parameters["stderr"] else None,
-        exit_code=run_parameters["ec"],
-    )
-
-
-@pytest.fixture
-def execute_async(mocker, run_parameters):
-    def get_patched_execute_async_retval(
-        ec=0,
-        stdout=(),
-        stderr=(),
-        open_stdout=True,
-        open_stderr=True,
-        **kwargs,
-    ) -> SshExecuteAsyncResult:
-        stdout_part = FakeFileStream(*stdout) if open_stdout else None
-        stderr_part = FakeFileStream(*stderr) if open_stderr else None
-
-        exit_code = ec
-        chan = mock.Mock()
-        chan.attach_mock(mock.Mock(return_value=exit_code), "recv_exit_status")
-
-        status_event = mock.Mock()
-        status_event.attach_mock(mock.Mock(), "wait")
-        chan.attach_mock(status_event, "status_event")
-        chan.configure_mock(exit_status=exit_code)
-        # the fields are typed by properties of the class, so they are passed in the order of the fields
-        return SshExecuteAsyncResult._make((chan, mock.Mock, stderr_part, stdout_part, dt.datetime.now(tz=dt.UTC)))
-
-    return mocker.patch(
-        "exec_helpers.ssh.SSHClient._execute_async",
-        side_effect=[
-            get_patched_execute_async_retval(**run_parameters),
-            get_patched_execute_async_retval(**run_parameters),
-        ],
-    )
-
-
-@pytest.fixture
-def execute(mocker, exec_result):
-    return mocker.patch(
-        "exec_helpers.ssh.SSHClient.execute",
-        name="execute",
-        return_value=exec_result,
-    )
-
-
-def test_002_execute(
-    ssh,
-    ssh_transport_channel,
-    exec_result,
-    run_parameters,
-    get_logger,
-) -> None:
-    kwargs = {}
-    if "get_pty" in run_parameters:
-        kwargs["get_pty"] = run_parameters["get_pty"]
-    if "width" in run_parameters:
-        kwargs["width"] = run_parameters["width"]
-    if "height" in run_parameters:
-        kwargs["height"] = run_parameters["height"]
-
-    res = ssh.execute(
-        command,
-        stdin=run_parameters["stdin"],
-        open_stdout=run_parameters["open_stdout"],
-        open_stderr=run_parameters["open_stderr"],
-        **kwargs,
-    )
     assert isinstance(res, exec_helpers.ExecResult)
-    assert res == exec_result
-    ssh_transport_channel.assert_has_calls((mock.call.status_event.is_set(),))
-    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:22")
+    assert res == make_result(
+        stdout=stdout or (),
+        stderr=stderr or (),
+        stdin=stdin,
+        exit_code=exit_code,
+    )
+    chan.exec_command.assert_called_once_with(f"{command}\n")
+    if stdin is None:
+        chan.stdin_file.write.assert_not_called()
+    else:
+        chan.stdin_file.write.assert_called_once_with(stdin_bytes(stdin))
+    log = get_logger(ssh.__class__.__name__).getChild(f"{host}:{port}")
     assert log.mock_calls[0] == mock.call.log(level=logging.DEBUG, msg=command_log)
 
 
-def test_003_context_manager(ssh, exec_result, run_parameters, mocker) -> None:
-    kwargs = {}
-    if "get_pty" in run_parameters:
-        kwargs["get_pty"] = run_parameters["get_pty"]
-    if "width" in run_parameters:
-        kwargs["width"] = run_parameters["width"]
-    if "height" in run_parameters:
-        kwargs["height"] = run_parameters["height"]
+@pytest.mark.parametrize(
+    ("kwargs", "pty_call"),
+    [
+        pytest.param({}, None, id="no_pty"),
+        pytest.param(
+            {"get_pty": True},
+            mock.call(term="vt100", width=80, height=24, width_pixels=0, height_pixels=0),
+            id="pty",
+        ),
+        pytest.param(
+            {"get_pty": True, "width": 120, "height": 100},
+            mock.call(term="vt100", width=120, height=100, width_pixels=0, height_pixels=0),
+            id="pty_custom_size",
+        ),
+    ],
+)
+def test_pty(make_ssh, kwargs, pty_call) -> None:
+    """PTY is requested from the channel only on demand, with the size given."""
+    chan = fake_channel()
 
-    lock_mock = mocker.patch("threading.RLock")
+    make_ssh(chan).execute(command, **kwargs)
 
-    with ssh:
-        res = ssh.execute(
-            command,
-            stdin=run_parameters["stdin"],
-            open_stdout=run_parameters["open_stdout"],
-            open_stderr=run_parameters["open_stderr"],
-            **kwargs,
-        )
-    lock_mock.acquire_assert_called_once()
-    lock_mock.release_assert_called_once()
-
-    assert isinstance(res, exec_helpers.ExecResult)
-    assert res == exec_result
-
-
-def test_004_check_call(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
-    ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild(f"{host}:{port}")
-
-    if exec_result.exit_code == exec_helpers.ExitCodes.EX_OK:
-        assert ssh.check_call(command, stdin=exec_result.stdin) == exec_result
-    else:
-        with pytest.raises(exec_helpers.CalledProcessError) as e:
-            ssh.check_call(command, stdin=exec_result.stdin)
-
-        exc: exec_helpers.CalledProcessError = e.value
-        assert exc.cmd == exec_result.cmd
-        assert exc.returncode == exec_result.exit_code
-        assert exc.stdout == exec_result.stdout_str
-        assert exc.stderr == exec_result.stderr_str
-        assert exc.result == exec_result
-        assert exc.expected == (proc_enums.EXPECTED,)
-
-        assert log.mock_calls[-1] == mock.call.error(
-            msg=f"Command {exc.result.cmd!r} returned exit code {exc.result.exit_code!s} "
-            f"while expected {exc.expected!r}"
-        )
+    assert chan.get_pty.call_args_list == ([pty_call] if pty_call else [])
 
 
-def test_005_check_call_no_raise(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
-    ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild(f"{host}:{port}")
+@pytest.mark.parametrize("method", ["check_call", "check_stderr"])
+def test_checkers_pass_ssh_arguments(mocker, make_ssh, method) -> None:
+    """The validators pass the SSH specific arguments to the execution."""
+    execute = mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=make_result(stdout=(), stderr=()))
+    ssh = make_ssh(fake_channel())
 
-    res = ssh.check_call(command, stdin=exec_result.stdin, raise_on_err=False)
-    assert res == exec_result
-    expected = (proc_enums.EXPECTED,)
+    getattr(ssh, method)(command, get_pty=True, width=120, height=100)
 
-    if exec_result.exit_code != exec_helpers.ExitCodes.EX_OK:
-        assert log.mock_calls[-1] == mock.call.error(
-            msg=f"Command {res.cmd!r} returned exit code {res.exit_code!s} while expected {expected!r}"
-        )
+    assert execute.call_args.kwargs.items() >= {"get_pty": True, "width": 120, "height": 100}.items()
 
 
-def test_006_check_call_expect(ssh, exec_result, mocker) -> None:
-    mocker.patch("exec_helpers.ssh.SSHClient.execute", return_value=exec_result)
-    assert ssh.check_call(command, stdin=exec_result.stdin, expected=[exec_result.exit_code]) == exec_result
+@pytest.mark.parametrize(
+    ("exit_codes", "expected"),
+    [
+        pytest.param((0, 0), (proc_enums.EXPECTED,), id="all_ok"),
+        pytest.param((1, 1), [1], id="expected_code"),
+    ],
+)
+def test_execute_together(make_ssh, exit_codes, expected) -> None:
+    """The result is given for each remote."""
+    remotes = [
+        make_ssh(fake_channel(stdout=(b"out\n",), exit_code=ec), hostname=name)
+        for name, ec in zip((host, host2), exit_codes, strict=True)
+    ]
+
+    results = exec_helpers.SSHClient.execute_together(remotes=remotes, command=command, expected=expected)
+
+    assert results == {
+        (host, port): make_result(stdout=(b"out\n",), exit_code=exit_codes[0]),
+        (host2, port): make_result(stdout=(b"out\n",), exit_code=exit_codes[1]),
+    }
 
 
-def test_007_check_stderr(ssh, exec_result, get_logger, mocker) -> None:
-    mocker.patch("exec_helpers.ssh.SSHClient.check_call", return_value=exec_result)
-    ssh_logger = get_logger(exec_helpers.SSHClient.__name__)
-    log = ssh_logger.getChild(f"{host}:{port}")
+def test_execute_together_failed(make_ssh) -> None:
+    """An unexpected exit code of any remote is raised with the results of all of them."""
+    remotes = [
+        make_ssh(fake_channel(stdout=(b"out\n",), exit_code=ec), hostname=name) for name, ec in ((host, 0), (host2, 1))
+    ]
 
-    if not exec_result.stderr:
-        assert (
-            ssh.check_stderr(
-                command,
-                stdin=exec_result.stdin,
-                expected=[exec_result.exit_code],
-            )
-            == exec_result
-        )
-    else:
-        with pytest.raises(exec_helpers.CalledProcessError) as e:
-            ssh.check_stderr(
-                command,
-                stdin=exec_result.stdin,
-                expected=[exec_result.exit_code],
-            )
-        exc: exec_helpers.CalledProcessError = e.value
-        assert exc.result == exec_result
-        assert exc.cmd == exec_result.cmd
-        assert exc.returncode == exec_result.exit_code
-        assert exc.stdout == exec_result.stdout_str
-        assert exc.stderr == exec_result.stderr_str
-        assert exc.result == exec_result
+    with pytest.raises(exec_helpers.ParallelCallProcessError) as exc_info:
+        exec_helpers.SSHClient.execute_together(remotes=remotes, command=command)
 
-        assert log.mock_calls[-1] == mock.call.error(
-            msg=f"Command {exc.result.cmd!r} output contains STDERR while not expected\n"
-            f"\texit code: {exc.result.exit_code!s}"
-        )
-
-
-def test_008_check_stderr_no_raise(ssh, exec_result, mocker) -> None:
-    mocker.patch("exec_helpers.ssh.SSHClient.check_call", return_value=exec_result)
-    assert (
-        ssh.check_stderr(
-            command,
-            stdin=exec_result.stdin,
-            expected=[exec_result.exit_code],
-            raise_on_err=False,
-        )
-        == exec_result
-    )
-
-
-def test_009_execute_together(ssh, ssh2, execute_async, exec_result, run_parameters):
-    remotes = [ssh, ssh2]
-
-    if run_parameters["ec"] == 0:
-        results = exec_helpers.SSHClient.execute_together(
-            remotes=remotes,
-            command=command,
-            stdin=run_parameters["stdin"],
-            open_stdout=run_parameters["open_stdout"],
-            open_stderr=run_parameters["open_stderr"],
-        )
-        execute_async.assert_has_calls(
-            (
-                mock.call(
-                    command,
-                    stdin=run_parameters["stdin"],
-                    log_mask_re=None,
-                    open_stdout=run_parameters["open_stdout"],
-                    open_stderr=run_parameters["open_stderr"],
-                    timeout=default_timeout,
-                ),
-                mock.call(
-                    command,
-                    stdin=run_parameters["stdin"],
-                    log_mask_re=None,
-                    open_stdout=run_parameters["open_stdout"],
-                    open_stderr=run_parameters["open_stderr"],
-                    timeout=default_timeout,
-                ),
-            )
-        )
-        assert results == {(host, port): exec_result, (host2, port): exec_result}
-    else:
-        with pytest.raises(exec_helpers.ParallelCallProcessError) as e:
-            exec_helpers.SSHClient.execute_together(remotes=remotes, command=command)
-        exc: exec_helpers.ParallelCallProcessError = e.value
-        assert exc.cmd == command
-        assert exc.expected == (proc_enums.EXPECTED,)
-        assert exc.results == {(host, port): exec_result, (host2, port): exec_result}
-
-
-def test_010_execute_together_expected(
-    ssh,
-    ssh2,
-    execute_async,
-    exec_result,
-    run_parameters,
-):
-    remotes = [ssh, ssh2]
-
-    results = exec_helpers.SSHClient.execute_together(
-        remotes=remotes,
-        command=command,
-        stdin=run_parameters["stdin"],
-        open_stdout=run_parameters["open_stdout"],
-        open_stderr=run_parameters["open_stderr"],
-        expected=[run_parameters["ec"]],
-    )
-    execute_async.assert_has_calls(
-        (
-            mock.call(
-                command,
-                stdin=run_parameters.get("stdin", None),
-                log_mask_re=None,
-                open_stdout=run_parameters["open_stdout"],
-                open_stderr=run_parameters["open_stderr"],
-                timeout=default_timeout,
-            ),
-            mock.call(
-                command,
-                stdin=run_parameters.get("stdin", None),
-                log_mask_re=None,
-                open_stdout=run_parameters["open_stdout"],
-                open_stderr=run_parameters["open_stderr"],
-                timeout=default_timeout,
-            ),
-        )
-    )
-    assert results == {(host, port): exec_result, (host2, port): exec_result}
-
-
-def test_011_call(ssh, ssh_transport_channel, exec_result, run_parameters) -> None:
-    kwargs = {}
-    if "get_pty" in run_parameters:
-        kwargs["get_pty"] = run_parameters["get_pty"]
-    if "width" in run_parameters:
-        kwargs["width"] = run_parameters["width"]
-    if "height" in run_parameters:
-        kwargs["height"] = run_parameters["height"]
-
-    res = ssh(
-        command,
-        stdin=run_parameters["stdin"],
-        open_stdout=run_parameters["open_stdout"],
-        open_stderr=run_parameters["open_stderr"],
-        **kwargs,
-    )
-    assert isinstance(res, exec_helpers.ExecResult)
-    assert res == exec_result
-    ssh_transport_channel.assert_has_calls((mock.call.status_event.is_set(),))
+    exc = exc_info.value
+    assert exc.cmd == command
+    assert exc.expected == (proc_enums.EXPECTED,)
+    assert set(exc.results) == {(host, port), (host2, port)}
+    assert set(exc.errors) == {(host2, port)}

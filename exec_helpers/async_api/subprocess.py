@@ -218,6 +218,12 @@ class _SubprocessExecuteContext(api.ExecuteContext):
                     self.logger.warning("STDIN Send failed: broken PIPE")
                 except ConnectionResetError:
                     self.logger.warning("STDIN Send failed: closed PIPE")
+                except OSError:
+                    # `__aexit__` is not called when `__aenter__` raises, so the process is stopped here.
+                    _subprocess_helpers.kill_proc_tree(process.pid)
+                    with contextlib.suppress(ProcessLookupError):
+                        process.kill()
+                    raise
                 try:
                     process.stdin.close()
                 except BrokenPipeError:
