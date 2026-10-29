@@ -94,7 +94,7 @@ class MockParameters(typing.NamedTuple):
 
     write: Exception | None = None
     stdin_close: Exception | None = None
-    ec: typing.Sequence[int | Exception] = (0,)
+    ec: typing.Sequence[int | Exception | None] = (0,)
 
 
 configs = {

@@ -134,7 +134,7 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stderr, result["stderr"])
 
         with self.assertRaises(TypeError):
-            result.exit_code = "code"
+            result.exit_code = "code"  # pyrefly: ignore[bad-argument-type]  # a wrong type is the point
 
         result.exit_code = 0
         self.assertEqual(result.exit_code, 0)
@@ -234,7 +234,7 @@ class TestExecResult(unittest.TestCase):
         """Test timestamp."""
         started = dt.datetime.now(tz=dt.UTC)
         result = exec_helpers.ExecResult(cmd, exit_code=0, started=started)
-        spent = (result.timestamp - started).seconds
+        spent = (result.timestamp - started).seconds  # pyrefly: ignore[unsupported-operation]  # set by exit_code
         self.assertIs(result.started, started)
         self.assertEqual(
             str(result),
@@ -285,9 +285,9 @@ class TestExecResult(unittest.TestCase):
         self.assertEqual(result.stdout_lines[0, ..., 2], "line0\n...\nline2")
         self.assertEqual(result.stdout_lines[:1, ..., 2], "line0\n...\nline2")
         with self.assertRaises(TypeError):
-            _ = result.stdout_lines["aaa"]
+            _ = result.stdout_lines["aaa"]  # pyrefly: ignore[bad-index]  # a wrong index is the point
         with self.assertRaises(TypeError):
-            _ = result.stdout_lines[1, "aaa"]
+            _ = result.stdout_lines[1, "aaa"]  # pyrefly: ignore[bad-index]  # a wrong index is the point
 
     def test_stdout_xml(self):
         """Test xml etree decode."""
@@ -302,7 +302,9 @@ class TestExecResult(unittest.TestCase):
     def test_stdout_lxml(self):
         """Test lxml etree decode."""
         result = exec_helpers.ExecResult("test", stdout=[b"<?xml version='1.0'?>\n", b"<data>123</data>\n"])
+        # pyrefly: ignore[missing-attribute]  # the test is skipped without lxml
         expect = lxml.etree.fromstring(b"<?xml version='1.0'?>\n<data>123</data>\n")
+        # pyrefly: ignore[missing-attribute]  # the test is skipped without lxml
         self.assertEqual(lxml.etree.tostring(expect), lxml.etree.tostring(result.stdout_lxml))
 
     @unittest.skipUnless(yaml is not None, "PyYAML parser should be installed")
@@ -316,7 +318,7 @@ class TestExecResult(unittest.TestCase):
     def test_pretty_repr(self):
         """Test repr with logwrap."""
         result = exec_helpers.ExecResult("test", stdout=[b"{test: data}"], stderr=[b"{test: stderr}"])
-        pretty_repr = logwrap.pretty_repr(result)
+        pretty_repr = logwrap.pretty_repr(result)  # pyrefly: ignore[missing-attribute]  # skipped without logwrap
         self.assertEqual(
             f"ExecResult(\n"
             f"    cmd='test',\n"

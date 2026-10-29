@@ -253,13 +253,8 @@ def test_006_execute_together_as_chain(ssh, ssh2, mocker) -> None:
         status_event.attach_mock(mock.Mock(), "wait")
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=mock.Mock,
-            stdout=stdout_part,
-            stderr=stderr_part,
-            started=dt.datetime.now(tz=dt.UTC),
-        )
+        # the fields are typed by properties of the class, so they are passed in the order of the fields
+        return SshExecuteAsyncResult._make((chan, mock.Mock, stderr_part, stdout_part, dt.datetime.now(tz=dt.UTC)))
 
     execute_async = mocker.patch(
         "exec_helpers.ssh.SSHClient._execute_async",

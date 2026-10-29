@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import typing
 from unittest import mock
 
 import paramiko
@@ -79,7 +80,7 @@ def test_001_require_key(
 
     pkey = private_keys[0]
 
-    kwargs_no_key = {
+    kwargs_no_key: dict[str, typing.Any] = {
         "hostname": host,
         "pkey": None,
         "port": port,
@@ -135,7 +136,7 @@ def test_002_use_next_key(
 
     ssh_auth_logger.debug.assert_called_once_with(f"Main key has been updated, public key is: \n{ssh.auth.public_key}")
 
-    kwargs_no_key = {
+    kwargs_no_key: dict[str, typing.Any] = {
         "hostname": host,
         "pkey": None,
         "port": port,

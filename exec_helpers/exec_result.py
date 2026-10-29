@@ -89,11 +89,11 @@ def _handle_deserialize(
                 return method(self)
             except Exception as exc:
                 tmpl: str = f"{{self.cmd}} stdout is not valid {fmt}:\n{{stdout!r}}\n"
-                LOGGER.exception(tmpl.format(self=self, stdout=self.stdout_str))
+                LOGGER.exception(tmpl.format_map({"self": self, "stdout": self.stdout_str}))
 
-                raise exceptions.DeserializeValueError(tmpl.format(self=self, stdout=self.stdout_brief)).with_traceback(
-                    exc.__traceback__
-                ) from exc
+                raise exceptions.DeserializeValueError(
+                    tmpl.format_map({"self": self, "stdout": self.stdout_brief})
+                ).with_traceback(exc.__traceback__) from exc
 
         return wrapper
 
@@ -666,7 +666,7 @@ class ExecResult:
                     if yaml.__with_libyaml__:  # pragma: no cover
                         return yaml.load(self.stdout_str, Loader=yaml.CSafeLoader)  # nosec  # Safe
                     return yaml.safe_load(self.stdout_str)  # pragma: no cover
-                return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # Safe
+                return ruamel_yaml.YAML(typ="safe").load(self.stdout_str)  # nosec  # pyrefly: ignore[missing-attribute]
 
     @property
     @_handle_deserialize("xml")
@@ -694,7 +694,7 @@ class ExecResult:
             .. note:: Can be insecure.
             """
             with self.stdout_lock:
-                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec[B314]
+                return lxml.etree.fromstring(b"".join(self.stdout))  # nosec[B314]  # pyrefly: ignore[missing-attribute]
 
     def __dir__(self) -> list[str]:
         """Override dir for IDE and as source for getitem checks.

@@ -379,33 +379,33 @@ class SSHAuthMapping(UserDict[str, SSHAuth]):
             else:  # pragma: no cover
                 raise TypeError(f"Auth object have incorrect type: (got {auth!r})")
 
-    def __setitem__(self, hostname: str, auth: SSHAuth) -> None:
+    def __setitem__(self, key: str, item: SSHAuth) -> None:
         """Dict-like access.
 
-        :param hostname: Key - hostname.
-        :type hostname: str
-        :param auth: value - SSHAuth object.
-        :type auth: SSHAuth
+        :param key: Key - hostname.
+        :type key: str
+        :param item: value - SSHAuth object.
+        :type item: SSHAuth
         :raises TypeError: Key is not string or value is not SSHAuth.
         """
-        if not isinstance(hostname, str):  # pragma: no cover
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        if not isinstance(auth, SSHAuth):  # pragma: no cover
-            raise TypeError(f"Value {auth!r} is not SSHAuth object!")
-        super().__setitem__(hostname.lower(), auth)
+        if not isinstance(key, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {key!r}")
+        if not isinstance(item, SSHAuth):  # pragma: no cover
+            raise TypeError(f"Value {item!r} is not SSHAuth object!")
+        super().__setitem__(key.lower(), item)
 
-    def __getitem__(self, hostname: str) -> SSHAuth:
+    def __getitem__(self, key: str) -> SSHAuth:
         """Dict-like access.
 
-        :param hostname: Key - hostname.
-        :type hostname: str
+        :param key: Key - hostname.
+        :type key: str
         :return: Associated SSHAuth object.
         :rtype: SSHAuth
         :raises TypeError: Key is not a string.
         """
-        if not isinstance(hostname, str):  # pragma: no cover
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        return super().__getitem__(hostname.lower())
+        if not isinstance(key, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {key!r}")
+        return super().__getitem__(key.lower())
 
     @typing.overload
     def get_with_alt_hostname(
@@ -452,13 +452,13 @@ class SSHAuthMapping(UserDict[str, SSHAuth]):
                 return self[host]
         return default
 
-    def __delitem__(self, hostname: str) -> None:
+    def __delitem__(self, key: str) -> None:
         """Dict-like access.
 
-        :param hostname: Key - hostname.
-        :type hostname: str
+        :param key: Key - hostname.
+        :type key: str
         :raises TypeError: Key is not a string.
         """
-        if not isinstance(hostname, str):  # pragma: no cover
-            raise TypeError(f"Hostname should be string only! Got: {hostname!r}")
-        super().__delitem__(hostname.lower())
+        if not isinstance(key, str):  # pragma: no cover
+            raise TypeError(f"Hostname should be string only! Got: {key!r}")
+        super().__delitem__(key.lower())

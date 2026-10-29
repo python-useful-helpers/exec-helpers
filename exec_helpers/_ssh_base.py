@@ -94,6 +94,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def interface(self) -> paramiko.Channel:
         """Override original NamedTuple with proper typing.
 
@@ -103,6 +104,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdin(self) -> paramiko.channel.ChannelStdinFile:
         """Override original NamedTuple with proper typing.
 
@@ -117,6 +119,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin  # type: ignore[return-value]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stderr(self) -> paramiko.channel.ChannelStderrFile | None:
         """Override original NamedTuple with proper typing.
 
@@ -126,6 +129,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdout(self) -> paramiko.channel.ChannelFile | None:
         """Override original NamedTuple with proper typing.
 
@@ -135,7 +139,7 @@ class SshExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SshExecuteAsyncResult]):
+class _SSHExecuteContext(api.ExecuteContext):
     """SSH Execute context."""
 
     __slots__ = (
@@ -333,13 +337,8 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
             res_stdout = None
 
         # noinspection PyArgumentList
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=_stdin,
-            stderr=stderr,
-            stdout=res_stdout,
-            started=started,
-        )
+        # The fields are typed by properties of the subclass, which type checkers do not accept as constructor arguments
+        return SshExecuteAsyncResult._make((chan, _stdin, stderr, res_stdout, started))
 
     def __exit__(
         self,

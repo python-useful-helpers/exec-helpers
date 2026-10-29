@@ -51,6 +51,7 @@ dev = [
   { include-group = "prek" },
   { include-group = "pylint" },
   { include-group = "pyproject-fmt" },
+  { include-group = "pyrefly" },
   { include-group = "pytest" },
   { include-group = "ruff" },
   { include-group = "tox" },
@@ -71,9 +72,7 @@ doc8 = [
 mypy = [
   "mypy[faster-cache,reports]>=2.4.1",
   "rich>=15.0.0",
-  "types-paramiko>=5.0.0",
-  "types-psutil>=7.2.2",
-  "types-pyyaml>=6.0.12",
+  { include-group = "types" },
 ]
 prek = [
   "prek>=0.5.7",
@@ -83,6 +82,11 @@ pylint = [
 ]
 pyproject-fmt = [
   "pyproject-fmt>=2.30.3",
+]
+pyrefly = [
+  "pyrefly>=1.4.0",
+  { include-group = "pytest" },
+  { include-group = "types" },
 ]
 pytest = [
   "asynctest>=0.13",
@@ -101,6 +105,11 @@ ruff = [
 ]
 tox = [
   "tox>=4.53.1",
+]
+types = [
+  "types-paramiko>=5.0.0",
+  "types-psutil>=7.2.2",
+  "types-pyyaml>=6.0.12",
 ]
 
 [tool.setuptools]
@@ -276,6 +285,12 @@ show_error_codes = true
 module = [ "lxml.*" ]
 ignore_missing_imports = true
 
+[tool.pyrefly]
+python-version = "3.11"
+project-includes = [ "exec_helpers", "test" ]
+# Written by setuptools-scm at build time
+ignore-missing-imports = [ "exec_helpers._version" ]
+
 [tool.pytest]
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -335,21 +350,22 @@ env_list = [
   { prefix = "py3", start = 11, stop = 15 },
   { prefix = "pypy3", start = 11, stop = 15 },
   "pylint",
+  "pyrefly",
   "readme",
   "ruff",
 ]
 skip_missing_interpreters = true
 [tool.tox.env]
-py311.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-py312.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-py313.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-py314.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-py315.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-pypy311.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-pypy312.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-pypy313.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-pypy314.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
-pypy315.depends = [ "bandit", "mypy", "pylint", "ruff", "ruff-format" ]
+py311.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+py312.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+py313.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+py314.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+py315.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+pypy311.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+pypy312.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+pypy313.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+pypy314.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
+pypy315.depends = [ "bandit", "mypy", "pylint", "pyrefly", "ruff", "ruff-format" ]
 [tool.tox.env.bandit]
 dependency_groups = [ "bandit" ]
 commands = [ [ "bandit", "-r", "exec_helpers" ] ]
@@ -375,6 +391,11 @@ depends = [ "bandit", "ruff", "ruff-format" ]
 deps = [ "-r {toxinidir}/CI_REQUIREMENTS.txt" ]
 dependency_groups = [ "pylint" ]
 commands = [ [ "pylint", "exec_helpers" ] ]
+depends = [ "bandit", "ruff", "ruff-format" ]
+[tool.tox.env.pyrefly]
+deps = [ "-r {toxinidir}/CI_REQUIREMENTS.txt" ]
+dependency_groups = [ "pyrefly" ]
+commands = [ [ "pyrefly", "check" ] ]
 depends = [ "bandit", "ruff", "ruff-format" ]
 [tool.tox.env.readme]
 package = "skip"

@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import typing
+
 import exec_helpers
 from exec_helpers import async_api
 
@@ -72,7 +74,8 @@ def test_context_repr_no_stdin():
 
 def test_context_repr_mixed_env_keys():
     """Names of an environment with mixed key types are listed without an error."""
-    ctx = exec_helpers.Subprocess().open_execute_context("true", env={b"A": SECRET, "B": SECRET})
+    env: dict[typing.Any, str] = {b"A": SECRET, "B": SECRET}
+    ctx = exec_helpers.Subprocess().open_execute_context("true", env=env)
     text = repr(ctx)
     assert SECRET not in text
     assert "env=<names: ['B', b'A']>" in text

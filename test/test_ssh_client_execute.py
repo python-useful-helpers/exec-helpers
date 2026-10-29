@@ -282,13 +282,8 @@ def execute_async(mocker, run_parameters):
         status_event.attach_mock(mock.Mock(), "wait")
         chan.attach_mock(status_event, "status_event")
         chan.configure_mock(exit_status=exit_code)
-        return SshExecuteAsyncResult(
-            interface=chan,
-            stdin=mock.Mock,
-            stdout=stdout_part,
-            stderr=stderr_part,
-            started=dt.datetime.now(tz=dt.UTC),
-        )
+        # the fields are typed by properties of the class, so they are passed in the order of the fields
+        return SshExecuteAsyncResult._make((chan, mock.Mock, stderr_part, stdout_part, dt.datetime.now(tz=dt.UTC)))
 
     return mocker.patch(
         "exec_helpers.ssh.SSHClient._execute_async",

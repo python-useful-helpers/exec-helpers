@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import socket
+import typing
 import warnings
 from unittest import mock
 
@@ -260,8 +261,8 @@ def test_unknown_host_key_policy_behind_proxy(mocker, paramiko_ssh_client, ssh_a
     """The local host name behind a proxy or jump host is resolved elsewhere, so the warning stays."""
     mocker.patch("exec_helpers._ssh_helpers.local_host_keys", return_value=(mock.Mock(),))
     ssh_ = mock.call
-    kwargs = {}
-    config = {host: {"hostname": host}}
+    kwargs: dict[str, typing.Any] = {}
+    config: dict[str, typing.Any] = {host: {"hostname": host}}
     if through == "proxycommand":
         config = {host: {"hostname": host, "proxycommand": "nc far-host 22"}}
     elif through == "proxyjump":
@@ -288,7 +289,7 @@ def test_unknown_host_key_policy_behind_proxy(mocker, paramiko_ssh_client, ssh_a
 @pytest.mark.parametrize("through", ("direct", "sock", "proxyjump", "proxy_to"))
 def test_connect_timeout_every_step(paramiko_ssh_client, ssh_auth_logger, through):
     """The connect timeout is applied to every connection step."""
-    kwargs = {}
+    kwargs: dict[str, typing.Any] = {}
     if through == "sock":
         kwargs["sock"] = mock.Mock()
     elif through == "proxyjump":
@@ -349,7 +350,7 @@ def test_failed_chain_closes_every_reached_host(paramiko_ssh_client, ssh_auth_lo
     second = mock.Mock()
     second.connect.side_effect = TimeoutError
     paramiko_ssh_client.side_effect = [first, second]
-    config = {
+    config: dict[str, typing.Any] = {
         "jump": {"hostname": "192.0.2.1"},
         host: {"hostname": host, "proxyjump": "jump"},
     }

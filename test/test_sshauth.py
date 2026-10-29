@@ -44,7 +44,7 @@ def get_internal_keys(
     keys: typing.Iterable[paramiko.RSAKey] | None = None,
     **kwargs,
 ):
-    int_keys = []
+    int_keys: list[paramiko.RSAKey | None] = []
     if key is not None:
         int_keys.append(key)
     if keys is not None:

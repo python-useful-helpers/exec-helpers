@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import contextlib
 import copy
 import datetime as dt
 import errno
@@ -66,6 +65,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
     __slots__ = ()
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def interface(self) -> subprocess.Popen[bytes]:
         """Override original NamedTuple with proper typing.
 
@@ -75,6 +75,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().interface  # type: ignore[no-any-return]
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdin(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -89,6 +90,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdin
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stderr(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -98,6 +100,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stderr
 
     @property
+    # pyrefly: ignore[bad-override]  # the property narrows the NamedTuple field type
     def stdout(self) -> typing.IO[bytes] | None:
         """Override original NamedTuple with proper typing.
 
@@ -107,7 +110,7 @@ class SubprocessExecuteAsyncResult(api.ExecuteAsyncResult):
         return super().stdout
 
 
-class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[SubprocessExecuteAsyncResult]):
+class _SubprocessExecuteContext(api.ExecuteContext):
     """Subprocess Execute context."""
 
     __slots__ = ("__cwd", "__env", "__process", "__shell")
@@ -232,13 +235,8 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
                         raise
 
         # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(
-            interface=process,
-            stdin=None,
-            stderr=process.stderr,
-            stdout=process.stdout,
-            started=started,
-        )
+        # The fields are typed by properties of the subclass, which type checkers do not accept as constructor arguments
+        return SubprocessExecuteAsyncResult._make((process, None, process.stderr, process.stdout, started))
 
     def __exit__(
         self,

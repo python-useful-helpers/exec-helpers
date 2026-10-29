@@ -108,9 +108,7 @@ class SubprocessExecuteAsyncResult(subprocess.SubprocessExecuteAsyncResult):
         return super().stdout  # type: ignore[return-value]
 
 
-class _SubprocessExecuteContext(
-    api.ExecuteContext, contextlib.AbstractAsyncContextManager[SubprocessExecuteAsyncResult]
-):
+class _SubprocessExecuteContext(api.ExecuteContext):
     """Subprocess Execute context."""
 
     __slots__ = ("__cwd", "__env", "__process", "__shell")
@@ -231,13 +229,8 @@ class _SubprocessExecuteContext(
                         raise
 
         # noinspection PyArgumentList
-        return SubprocessExecuteAsyncResult(
-            interface=process,
-            stdin=None,
-            stderr=process.stderr,
-            stdout=process.stdout,
-            started=started,
-        )
+        # The fields are typed by properties of the subclass, which type checkers do not accept as constructor arguments
+        return SubprocessExecuteAsyncResult._make((process, None, process.stderr, process.stdout, started))
 
     async def __aexit__(
         self,
