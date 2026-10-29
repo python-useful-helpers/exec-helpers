@@ -142,7 +142,7 @@ def test_init_base(
         ssh_auth_logger.assert_not_called()
 
     sftp = ssh._sftp
-    assert sftp == paramiko_ssh_client().open_sftp()
+    assert sftp == paramiko_ssh_client().get_transport().open_sftp_client()
     assert ssh._ssh == paramiko_ssh_client()
     assert ssh.hostname == host
     assert ssh.port == port

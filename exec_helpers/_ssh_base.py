@@ -830,10 +830,11 @@ class SSHClientBase(api.ExecHelper):
         return last_ssh_client
 
     def __connect_sftp(self) -> None:
-        """SFTP connection opener."""
+        """Open the SFTP channel, reconnecting the SSH session first if it was closed."""
         with self.lock:
+            transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
             try:
-                self.__sftp = self.__ssh.open_sftp()
+                self.__sftp = transport.open_sftp_client()
             except paramiko.SSHException:
                 self.logger.warning("SFTP enable failed! SSH only is accessible.")
 
@@ -843,6 +844,11 @@ class SSHClientBase(api.ExecHelper):
 
         :rtype: paramiko.sftp_client.SFTPClient
         :raises paramiko.SSHException: SFTP connection failed.
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises paramiko.SSHException: SSH session was closed and the reconnect failed (the original exception).
+
+        .. versionchanged:: 8.2.1 The SFTP channel is opened through the reconnecting transport getter,
+            so a closed SSH session is restored instead of failing with `AttributeError`.
         """
         if self.__sftp is not None:
             return self.__sftp
