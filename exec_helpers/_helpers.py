@@ -9,6 +9,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
+    from collections.abc import Mapping
 
 
 def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:
@@ -96,3 +97,25 @@ def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str
         quoted_command = shlex.quote(command)
         return f"{chroot_exe} {chroot_dst} sh -c {shlex.quote(f'eval {quoted_command}')}"
     return command
+
+
+def repr_stdin(stdin: bytes | None) -> str:
+    """Describe STDIN data for a debug string without exposing it.
+
+    :param stdin: Data for STDIN.
+    :type stdin: bytes | None
+    :return: Size of the data, as the content can hold secrets.
+    :rtype: str
+    """
+    return "None" if stdin is None else f"<{len(stdin)} bytes>"
+
+
+def repr_env(env: Mapping[str, str] | None) -> str:
+    """Describe an environment for a debug string without exposing the values.
+
+    :param env: Process environment.
+    :type env: Mapping[str, str] | None
+    :return: Variable names only, as the values can hold secrets.
+    :rtype: str
+    """
+    return "None" if env is None else f"<names: {sorted(env, key=repr)}>"

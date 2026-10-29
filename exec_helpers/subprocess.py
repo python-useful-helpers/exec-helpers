@@ -37,6 +37,7 @@ from exec_helpers import exceptions
 from exec_helpers import exec_result
 from exec_helpers import proc_enums
 
+from . import _helpers
 from . import _log_templates
 from . import _subprocess_helpers
 
@@ -161,12 +162,12 @@ class _SubprocessExecuteContext(api.ExecuteContext, contextlib.AbstractContextMa
         """
         return (
             f"<Subprocess().open_execute_context("
-            f"command={self.command!r}, "
-            f"stdin={self.stdin!r}, "
+            f"command={self._masked_command!r}, "
+            f"stdin={_helpers.repr_stdin(self.stdin)}, "
             f"open_stdout={self.open_stdout!r}, "
             f"open_stderr={self.open_stderr!r}, "
             f"cwd={self.__cwd!r}, "
-            f"env={self.__env!r}, "
+            f"env={_helpers.repr_env(self.__env)}, "
             f"logger={self.logger!r}) "
             f"at {id(self)}>"
         )
@@ -422,6 +423,7 @@ class Subprocess(api.ExecHelper):
             cwd=cwd,
             env=env,
             logger=self.logger,
+            log_mask_re=self.log_mask_re,
             **kwargs,
         )
 

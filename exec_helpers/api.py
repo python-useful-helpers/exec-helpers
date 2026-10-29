@@ -82,6 +82,7 @@ class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.
 
     __slots__ = (
         "__command",
+        "__log_mask_re",
         "__logger",
         "__open_stderr",
         "__open_stdout",
@@ -96,6 +97,7 @@ class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.
         open_stdout: bool = True,
         open_stderr: bool = True,
         logger: logging.Logger,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> None:
         """Execute async context manager.
@@ -110,6 +112,8 @@ class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.
         :type open_stderr: bool
         :param logger: Logger instance.
         :type logger: logging.Logger
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         """
@@ -118,6 +122,7 @@ class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.
         self.__open_stdout = open_stdout
         self.__open_stderr = open_stderr
         self.__logger = logger
+        self.__log_mask_re = log_mask_re
         if kwargs:
             self.__logger.warning(f"Unexpected arguments: {kwargs!r}.", stack_info=True)
 
@@ -129,6 +134,15 @@ class ExecuteContext(contextlib.AbstractContextManager[ExecuteAsyncResult], abc.
         :rtype: logging.Logger
         """
         return self.__logger
+
+    @property
+    def _masked_command(self) -> str:
+        """Command with the log mask applied, for debug output.
+
+        :return: Command without the masked parts.
+        :rtype: str
+        """
+        return _helpers.mask_command(self.__command.rstrip(), self.__log_mask_re)
 
     @property
     def command(self) -> str:

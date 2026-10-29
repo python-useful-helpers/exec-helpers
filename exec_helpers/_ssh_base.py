@@ -222,8 +222,8 @@ class _SSHExecuteContext(api.ExecuteContext, contextlib.AbstractContextManager[S
         """
         return (
             f"<SSHClient().open_execute_context("
-            f"command={self.command!r}, "
-            f"stdin={self.stdin!r}, "
+            f"command={self._masked_command!r}, "
+            f"stdin={_helpers.repr_stdin(self.stdin)}, "
             f"open_stdout={self.open_stdout!r}, "
             f"open_stderr={self.open_stderr!r}, "
             f"get_pty={self.__get_pty!r}, "
@@ -1160,6 +1160,7 @@ class SSHClientBase(api.ExecHelper):
             sudo_mode=self.sudo_mode,
             auth=self.auth,
             logger=self.logger,
+            log_mask_re=self.log_mask_re,
             **kwargs,
         )
 
