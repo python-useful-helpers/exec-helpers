@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import pathlib
 import subprocess
 import typing
 from unittest import mock
@@ -32,6 +33,8 @@ from subprocess_cases import command
 from subprocess_cases import default_timeout
 
 timeout_expired = subprocess.TimeoutExpired(command, default_timeout)
+# Frames under this directory are what ``__tracebackhide__`` leaves out of a pytest report.
+PACKAGE = pathlib.Path(exec_helpers.__file__).parent
 
 
 @pytest.mark.parametrize(SPECIAL_ARGNAMES, SPECIAL_CASES)
@@ -109,8 +112,22 @@ def test_timeout(mocker, fake_popen, poll, expected_exc) -> None:
     kill_tree = mocker.patch("exec_helpers._subprocess_helpers.kill_proc_tree")
     proc = fake_popen(wait=(timeout_expired,), poll=(poll,))
 
-    with pytest.raises(expected_exc):
+    with pytest.raises(expected_exc) as exc_info:
         exec_helpers.Subprocess().execute(command)
 
     kill_tree.assert_called_once_with(proc.pid)
     proc.poll.assert_called_once_with()
+    assert not [
+        entry for entry in exc_info.traceback.filter(exc_info) if pathlib.Path(entry.path).is_relative_to(PACKAGE)
+    ]
+
+
+def test_unexpected_error_keeps_traceback(mocker, fake_popen) -> None:
+    """An exception the package does not raise on purpose keeps the package frames in a pytest report."""
+    mocker.patch("exec_helpers._subprocess_helpers.kill_proc_tree", side_effect=RuntimeError)
+    fake_popen(wait=(timeout_expired,))
+
+    with pytest.raises(RuntimeError) as exc_info:
+        exec_helpers.Subprocess().execute(command)
+
+    assert [entry for entry in exc_info.traceback.filter(exc_info) if pathlib.Path(entry.path).is_relative_to(PACKAGE)]

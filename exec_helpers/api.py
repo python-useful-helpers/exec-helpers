@@ -58,6 +58,8 @@ __all__ = (
     "OptionalTimeoutT",
 )
 
+__tracebackhide__: typing.Final = _helpers.hide_traceback
+
 CommandT = str | Iterable[str]
 LogMaskReT = str | re.Pattern[str] | None
 ErrorInfoT = str | None

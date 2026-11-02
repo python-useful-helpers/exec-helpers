@@ -57,6 +57,8 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("Subprocess", "SubprocessExecuteAsyncResult")
 
+__tracebackhide__: typing.Final = _helpers.hide_traceback
+
 # Seconds to wait for the streams to reach the end after the process exit.
 _READERS_DRAIN_TIMEOUT: typing.Final = 1.0
 

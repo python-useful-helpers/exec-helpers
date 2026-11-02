@@ -54,6 +54,8 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("CwdT", "EnvT", "Subprocess", "SubprocessExecuteAsyncResult")
 
+__tracebackhide__: typing.Final = _helpers.hide_traceback
+
 EnvT = Mapping[str, str] | None
 CwdT = str | bytes | pathlib.Path | None
 

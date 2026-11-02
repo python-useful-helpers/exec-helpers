@@ -30,6 +30,8 @@ import xml.etree
 from exec_helpers import exceptions
 from exec_helpers import proc_enums
 
+from . import _helpers
+
 try:
     # noinspection PyPackageRequirements
     import yaml
@@ -59,6 +61,8 @@ if typing.TYPE_CHECKING:
     _T = typing.TypeVar("_T")
 
 __all__ = ("ExecResult", "OptionalStdinT")
+
+__tracebackhide__: typing.Final = _helpers.hide_traceback
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 

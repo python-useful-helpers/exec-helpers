@@ -65,6 +65,8 @@ if typing.TYPE_CHECKING:
 
 __all__ = ("SSHClientBase", "SshExecuteAsyncResult", "SupportPathT")
 
+__tracebackhide__: typing.Final = _helpers.hide_traceback
+
 KeepAlivePeriodT = int | bool
 SupportPathT = str | pathlib.PurePath
 
