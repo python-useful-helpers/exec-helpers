@@ -7,9 +7,36 @@ import re
 import shlex
 import typing
 
+from exec_helpers import exceptions
+
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Mapping
+
+
+class _ExceptionInfo(typing.Protocol):
+    """The part of ``pytest.ExceptionInfo`` that :func:`hide_traceback` reads."""
+
+    @property
+    def value(self) -> BaseException:
+        """Get the exception being reported."""
+
+
+def hide_traceback(excinfo: _ExceptionInfo | None) -> bool:
+    """Tell pytest whether to leave a frame of this package out of a failure report.
+
+    A module sets its ``__tracebackhide__`` global to this function, and pytest calls it for every frame of that module.
+    An error this package raises on purpose - a timeout, an unexpected exit code - already names the command
+    and carries its output, so the report shows the caller's line and the message.
+    Any other exception keeps the frames, because they show where it was raised.
+
+    :param excinfo: The exception pytest is reporting, or ``None`` when it filters frames without one.
+    :returns: Whether the frame is left out of the report.
+
+    >>> hide_traceback(None)
+    False
+    """
+    return excinfo is not None and isinstance(excinfo.value, exceptions.ExecHelperError)
 
 
 def string_bytes_bytearray_as_bytes(src: str | bytes | bytearray) -> bytes:

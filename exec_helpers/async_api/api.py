@@ -63,6 +63,8 @@ __all__ = (
     "OptionalTimeoutT",
 )
 
+__tracebackhide__: typing.Final = _helpers.hide_traceback
+
 
 class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResult], abc.ABC):
     """Execute context manager."""
