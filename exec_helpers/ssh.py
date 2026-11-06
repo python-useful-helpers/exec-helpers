@@ -74,7 +74,7 @@ class SSHClient(_ssh_base.SSHClientBase):
         :param target: Remote path.
         :type target: str | pathlib.PurePath
 
-        .. versionchanged:: 8.2.2 Uploading a directory creates the remote directory it is copied to.
+        .. versionchanged:: 8.1.4 Uploading a directory creates the remote directory it is copied to.
         """
         self.logger.debug(f"Copying '{source}' -> '{target}'")
 

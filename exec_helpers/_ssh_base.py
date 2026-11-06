@@ -1907,7 +1907,7 @@ class SSHClientBase(api.ExecHelper):
         :raises OSError: SSH session was closed and the reconnect failed with a socket error.
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
 
-        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
+        .. versionchanged:: 8.1.4 A closed SSH session is reconnected first, and a failed reconnect is raised.
         """
         sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
@@ -1950,7 +1950,7 @@ class SSHClientBase(api.ExecHelper):
         :raises OSError: SSH session was closed and the reconnect failed with a socket error.
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
 
-        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
+        .. versionchanged:: 8.1.4 A closed SSH session is reconnected first, and a failed reconnect is raised.
         """
         sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
@@ -1972,7 +1972,7 @@ class SSHClientBase(api.ExecHelper):
         :raises OSError: SSH session was closed and the reconnect failed with a socket error.
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
 
-        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
+        .. versionchanged:: 8.1.4 A closed SSH session is reconnected first, and a failed reconnect is raised.
         """
         sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:
@@ -1994,7 +1994,7 @@ class SSHClientBase(api.ExecHelper):
         :raises OSError: SSH session was closed and the reconnect failed with a socket error.
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error.
 
-        .. versionchanged:: 8.2.2 A failed reconnect is raised instead of being reported as a missing path.
+        .. versionchanged:: 8.1.4 A closed SSH session is reconnected first, and a failed reconnect is raised.
         """
         sftp = self._sftp  # a failed reconnect is raised, not reported as a missing path
         try:

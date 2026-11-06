@@ -451,7 +451,7 @@ API: SSHClient and SSHAuth.
         :raises OSError: SSH session was closed and the reconnect failed with a socket error
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
 
-        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
+        .. versionchanged:: 8.1.4 a closed SSH session is reconnected first, and a failed reconnect is raised
 
     .. py:method:: stat(path)
 
@@ -486,7 +486,7 @@ API: SSHClient and SSHAuth.
         :raises OSError: SSH session was closed and the reconnect failed with a socket error
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
 
-        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
+        .. versionchanged:: 8.1.4 a closed SSH session is reconnected first, and a failed reconnect is raised
 
     .. py:method:: isdir(path)
 
@@ -500,7 +500,7 @@ API: SSHClient and SSHAuth.
         :raises OSError: SSH session was closed and the reconnect failed with a socket error
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
 
-        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
+        .. versionchanged:: 8.1.4 a closed SSH session is reconnected first, and a failed reconnect is raised
 
     .. py:method:: islink(path)
 
@@ -514,7 +514,7 @@ API: SSHClient and SSHAuth.
         :raises OSError: SSH session was closed and the reconnect failed with a socket error
         :raises paramiko.SSHException: SFTP connection failed, or the reconnect failed with a paramiko error
 
-        .. versionchanged:: 8.2.2 a failed reconnect is raised instead of being reported as a missing path
+        .. versionchanged:: 8.1.4 a closed SSH session is reconnected first, and a failed reconnect is raised
 
     .. py:method:: symlink(source, dest)
 
@@ -555,7 +555,7 @@ API: SSHClient and SSHAuth.
         :type source: ``str``
         :type target: ``str``
 
-        .. versionchanged:: 8.2.2 uploading a directory creates the remote directory it is copied to
+        .. versionchanged:: 8.1.4 uploading a directory creates the remote directory it is copied to
 
     .. py:method:: download(destination, target)
 
