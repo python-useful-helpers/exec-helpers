@@ -45,7 +45,12 @@ def test_execute_through_host_connection(paramiko_ssh_client, make_ssh, auth, us
 
     ssh.execute_through_host(target, command, auth=auth)
 
-    open_channel.assert_called_once_with(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
+    open_channel.assert_called_once_with(
+        dest_addr=(target, port),
+        kind="direct-tcpip",
+        src_addr=(host, 0),
+        timeout=None,
+    )
     assert paramiko_client.connect.call_args_list == [
         mock.call(
             hostname=host, port=port, username="user", password="pass", pkey=None, key_filename=(), allow_agent=True

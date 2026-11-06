@@ -34,9 +34,11 @@ API: SSHClient and SSHAuth.
         :type keepalive: int | bool
         :param allow_ssh_agent: use SSH Agent if available
         :type allow_ssh_agent: bool
-        :param connect_timeout: timeout of the TCP connection, the SSH banner, the key exchange and the authentication,
-            applied to every connection step (a connection attempt is retried 3 times with a 3 s pause)
+        :param connect_timeout: timeout in seconds for each wait of a connection, on every host of the chain:
+            the TCP connection, the SSH banner with the key exchange, each authentication request
+            and the channel opened through a jump host. It does not limit the whole connection.
         :type connect_timeout: float | None
+        :raises ValueError: connect_timeout is not positive or is NaN
 
         .. note:: auth has priority over username/password/private_keys
         .. note::
@@ -56,6 +58,7 @@ API: SSHClient and SSHAuth.
         .. versionchanged:: 7.4.0 return of keepalive_mode to prevent mix with keepalive period. Default is `False`
         .. versionchanged:: 8.0.0 expose SSH Agent usage override
         .. versionchanged:: 8.2.1 added connect_timeout
+        .. versionchanged:: 8.2.3 connect_timeout also limits the channel opened through a jump host, NaN is rejected
 
     .. py:attribute:: log_mask_re
 

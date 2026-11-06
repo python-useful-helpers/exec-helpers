@@ -308,11 +308,15 @@ def test_connect_timeout_every_step(paramiko_ssh_client, ssh_auth_logger, throug
     assert len(connects) >= (2 if through in {"proxyjump", "proxy_to"} else 1)
     for call in connects:
         assert (call.kwargs["timeout"], call.kwargs["banner_timeout"], call.kwargs["auth_timeout"]) == (7, 7, 7)
+    channels = paramiko_ssh_client.return_value.get_transport.return_value.open_channel.call_args_list
+    assert len(channels) == (1 if through in {"proxyjump", "proxy_to"} else 0)
+    for call in channels:
+        assert call.kwargs["timeout"] == 7
 
 
-@pytest.mark.parametrize("value", (0, -1))
-def test_connect_timeout_not_positive(paramiko_ssh_client, value):
-    """A timeout that disables waiting is rejected."""
+@pytest.mark.parametrize("value", (0, -1, float("nan")))
+def test_connect_timeout_invalid(paramiko_ssh_client, value):
+    """A timeout that disables waiting or is not a number is rejected."""
     with pytest.raises(ValueError, match="connect_timeout"):
         exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(), connect_timeout=value)
 
@@ -366,6 +370,59 @@ def test_failed_chain_closes_every_reached_host(paramiko_ssh_client, ssh_auth_lo
 
     first.close.assert_called()
     second.close.assert_called()
+
+
+@pytest.mark.parametrize("action", ("close", "reconnect"))
+def test_chain_close_closes_every_reached_host(paramiko_ssh_client, ssh_auth_logger, action):
+    """Closing or reconnecting a jump host chain closes the clients of all its hosts, the target first."""
+    clients = mock.Mock()
+    paramiko_ssh_client.side_effect = [clients.jump, clients.target, clients.new_jump, clients.new_target]
+    config: dict[str, typing.Any] = {
+        "jump": {"hostname": "192.0.2.1"},
+        host: {"hostname": host, "proxyjump": "jump"},
+    }
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(),
+        ssh_config=config,
+        ssh_auth_map={"192.0.2.1": exec_helpers.SSHAuth(), host: exec_helpers.SSHAuth()},
+    )
+    clients.reset_mock()
+
+    getattr(ssh, action)()
+
+    assert [call[0] for call in clients.mock_calls if call[0].endswith(".close")] == ["target.close", "jump.close"]
+
+
+def test_chain_close_continues_after_failed_close(paramiko_ssh_client, ssh_auth_logger):
+    """A jump host whose connection fails to close does not keep the hosts nearer the origin open."""
+    clients = mock.Mock()
+    clients.middle.close.side_effect = EOFError
+    paramiko_ssh_client.side_effect = [clients.origin, clients.middle, clients.target]
+    config: dict[str, typing.Any] = {
+        "origin": {"hostname": "192.0.2.1"},
+        "middle": {"hostname": "192.0.2.2", "proxyjump": "origin"},
+        host: {"hostname": host, "proxyjump": "middle"},
+    }
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(),
+        ssh_config=config,
+        ssh_auth_map={
+            "192.0.2.1": exec_helpers.SSHAuth(),
+            "192.0.2.2": exec_helpers.SSHAuth(),
+            host: exec_helpers.SSHAuth(),
+        },
+    )
+    clients.reset_mock()
+
+    ssh.close()
+
+    assert [call[0] for call in clients.mock_calls if call[0].endswith(".close")] == [
+        "target.close",
+        "middle.close",
+        "origin.close",
+    ]
 
 
 @pytest.mark.parametrize(("supplied_sock", "attempts"), ((False, 3), (True, 1)))
