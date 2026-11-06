@@ -935,14 +935,22 @@ class SSHClientBase(api.ExecHelper):
             raise RuntimeError("Unexpected state: Final host by configuration, but requested host is not reached")
         return last_ssh_client
 
-    def __connect_sftp(self) -> None:
-        """Open the SFTP channel, reconnecting the SSH session first if it was closed."""
+    def __connect_sftp(self) -> paramiko.SFTPClient | None:
+        """Open the SFTP channel, reconnecting the SSH session first if it was closed.
+
+        :return: The SFTP channel; None when the server refused it.
+        :rtype: paramiko.SFTPClient | None
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises paramiko.SSHException: SSH session was closed and the reconnect failed (the original exception).
+        """
         with self.lock:
-            transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
-            try:
-                self.__sftp = transport.open_sftp_client()
-            except paramiko.SSHException:
-                self.logger.warning("SFTP enable failed! SSH only is accessible.")
+            if self.__sftp is None:  # another thread may have opened it while this one waited for the lock
+                transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
+                try:
+                    self.__sftp = transport.open_sftp_client()
+                except paramiko.SSHException:
+                    self.logger.warning("SFTP enable failed! SSH only is accessible.")
+            return self.__sftp
 
     @property
     def _sftp(self) -> paramiko.sftp_client.SFTPClient:
@@ -956,12 +964,11 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 8.2.1 The SFTP channel is opened through the reconnecting transport getter,
             so a closed SSH session is restored instead of failing with `AttributeError`.
         """
-        if self.__sftp is not None:
-            return self.__sftp
+        if (sftp := self.__sftp) is not None:  # read once: `close` in another thread can reset it after the check
+            return sftp
         self.logger.debug("SFTP is not connected, try to connect...")
-        self.__connect_sftp()
-        if self.__sftp is not None:
-            return self.__sftp
+        if (sftp := self.__connect_sftp()) is not None:
+            return sftp
         raise paramiko.SSHException("SFTP connection failed")
 
     def close(self) -> None:
