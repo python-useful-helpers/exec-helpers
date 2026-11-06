@@ -129,6 +129,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        exclude:  # setup-python has no Python 3.9 build for the Ubuntu 26.04 image behind ubuntu-latest
+          - os: ubuntu-latest
+            python-version: "3.9"
+        include:
+          - os: ubuntu-24.04
+            python-version: "3.9"
 
     name: "Script based python ${{ matrix.python-version }} on ${{ matrix.os }}"
     steps:
