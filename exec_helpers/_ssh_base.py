@@ -24,6 +24,7 @@ import copy
 import datetime as dt
 import getpass
 import logging
+import math
 import pathlib
 import shlex
 import stat
@@ -459,13 +460,20 @@ class SSHClientBase(api.ExecHelper):
     :type allow_ssh_agent: bool
     :param missing_host_key_policy: Missing host key policy class. See paramiko.MissingHostKeyPolicy for details.
     :type missing_host_key_policy: type[paramiko.MissingHostKeyPolicy]
-    :param connect_timeout: Timeout in seconds for the TCP connection, the SSH banner, the key exchange and the
-        authentication of every connection step, including hosts reached through `proxy_to`.
-        An authentication timeout is reported as an authentication failure. By default: None
-        (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s). A connection attempt
-        is retried 3 times with a 3 s pause, so a hung host takes up to 3 times the timeout plus 6 s to report.
+    :param connect_timeout: Timeout in seconds for each wait of a connection, on every host of the chain,
+        including hosts reached through `proxy_to`.
+        The waits are the TCP connection, the SSH banner with the key exchange, each authentication request,
+        and the channel opened through a jump host.
+        An authentication timeout is reported as an authentication failure.
+        By default: None (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s,
+        channel 3600 s).
+        The timeout does not limit the whole connection:
+        paramiko sends an authentication request per key and method,
+        and a host reached without a proxy tries every key of the credentials on a connection of its own.
+        Without `sock`, a connection failed with an SSH error other than an authentication failure
+        is attempted up to 3 times, with a 3 s pause.
     :type connect_timeout: float | None
-    :raises ValueError: connect_timeout is not positive.
+    :raises ValueError: connect_timeout is not positive or is NaN.
 
     .. note:: auth has priority over username/password/private_keys.
     .. note::
@@ -488,6 +496,8 @@ class SSHClientBase(api.ExecHelper):
     .. versionchanged:: 8.2.1 Added connect_timeout.
     .. versionchanged:: 8.2.1 Direct connection to the local host accepts the host keys of this machine without
         the unknown host key warning; a key of another server is handled by the missing host key policy as before.
+    .. versionchanged:: 8.2.3 connect_timeout also limits the channel opened through a jump host,
+        and NaN is rejected.
     """
 
     __slots__ = (
@@ -540,8 +550,8 @@ class SSHClientBase(api.ExecHelper):
         self.__verbose: bool = verbose
         self.__sock = sock
         self._missing_host_key_policy = missing_host_key_policy
-        if connect_timeout is not None and connect_timeout <= 0:
-            raise ValueError(f"connect_timeout should be positive, got {connect_timeout!r}")
+        if connect_timeout is not None and (math.isnan(connect_timeout) or connect_timeout <= 0):
+            raise ValueError(f"connect_timeout should be a positive number, got {connect_timeout!r}")
         self.__connect_timeout = connect_timeout
 
         self.__ssh: paramiko.SSHClient
@@ -890,6 +900,7 @@ class SSHClientBase(api.ExecHelper):
                     kind="direct-tcpip",
                     dest_addr=(config.hostname, config.port or 22),
                     src_addr=(config.proxyjump, 0),
+                    timeout=self.__connect_timeout,
                 )
                 auth.connect(
                     ssh,
@@ -1640,6 +1651,7 @@ class SSHClientBase(api.ExecHelper):
             kind="direct-tcpip",
             dest_addr=(host_config.hostname, dest_port),
             src_addr=(self.hostname, 0),
+            timeout=self.__connect_timeout,
         )
 
         cls: type[Self] = self.__class__

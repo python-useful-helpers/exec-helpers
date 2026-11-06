@@ -308,11 +308,15 @@ def test_connect_timeout_every_step(paramiko_ssh_client, ssh_auth_logger, throug
     assert len(connects) >= (2 if through in {"proxyjump", "proxy_to"} else 1)
     for call in connects:
         assert (call.kwargs["timeout"], call.kwargs["banner_timeout"], call.kwargs["auth_timeout"]) == (7, 7, 7)
+    channels = paramiko_ssh_client.return_value.get_transport.return_value.open_channel.call_args_list
+    assert len(channels) == (1 if through in {"proxyjump", "proxy_to"} else 0)
+    for call in channels:
+        assert call.kwargs["timeout"] == 7
 
 
-@pytest.mark.parametrize("value", (0, -1))
-def test_connect_timeout_not_positive(paramiko_ssh_client, value):
-    """A timeout that disables waiting is rejected."""
+@pytest.mark.parametrize("value", (0, -1, float("nan")))
+def test_connect_timeout_invalid(paramiko_ssh_client, value):
+    """A timeout that disables waiting or is not a number is rejected."""
     with pytest.raises(ValueError, match="connect_timeout"):
         exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(), connect_timeout=value)
 
