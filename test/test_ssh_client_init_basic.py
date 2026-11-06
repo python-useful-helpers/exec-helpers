@@ -372,6 +372,59 @@ def test_failed_chain_closes_every_reached_host(paramiko_ssh_client, ssh_auth_lo
     second.close.assert_called()
 
 
+@pytest.mark.parametrize("action", ("close", "reconnect"))
+def test_chain_close_closes_every_reached_host(paramiko_ssh_client, ssh_auth_logger, action):
+    """Closing or reconnecting a jump host chain closes the clients of all its hosts, the target first."""
+    clients = mock.Mock()
+    paramiko_ssh_client.side_effect = [clients.jump, clients.target, clients.new_jump, clients.new_target]
+    config: dict[str, typing.Any] = {
+        "jump": {"hostname": "192.0.2.1"},
+        host: {"hostname": host, "proxyjump": "jump"},
+    }
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(),
+        ssh_config=config,
+        ssh_auth_map={"192.0.2.1": exec_helpers.SSHAuth(), host: exec_helpers.SSHAuth()},
+    )
+    clients.reset_mock()
+
+    getattr(ssh, action)()
+
+    assert [call[0] for call in clients.mock_calls if call[0].endswith(".close")] == ["target.close", "jump.close"]
+
+
+def test_chain_close_continues_after_failed_close(paramiko_ssh_client, ssh_auth_logger):
+    """A jump host whose connection fails to close does not keep the hosts nearer the origin open."""
+    clients = mock.Mock()
+    clients.middle.close.side_effect = EOFError
+    paramiko_ssh_client.side_effect = [clients.origin, clients.middle, clients.target]
+    config: dict[str, typing.Any] = {
+        "origin": {"hostname": "192.0.2.1"},
+        "middle": {"hostname": "192.0.2.2", "proxyjump": "origin"},
+        host: {"hostname": host, "proxyjump": "middle"},
+    }
+    ssh = exec_helpers.SSHClient(
+        host=host,
+        auth=exec_helpers.SSHAuth(),
+        ssh_config=config,
+        ssh_auth_map={
+            "192.0.2.1": exec_helpers.SSHAuth(),
+            "192.0.2.2": exec_helpers.SSHAuth(),
+            host: exec_helpers.SSHAuth(),
+        },
+    )
+    clients.reset_mock()
+
+    ssh.close()
+
+    assert [call[0] for call in clients.mock_calls if call[0].endswith(".close")] == [
+        "target.close",
+        "middle.close",
+        "origin.close",
+    ]
+
+
 @pytest.mark.parametrize(("supplied_sock", "attempts"), ((False, 3), (True, 1)))
 def test_connect_retries(paramiko_ssh_client, ssh_auth_logger, supplied_sock, attempts):
     """A failed connection is retried, except on a supplied socket: the failed attempt has closed it."""

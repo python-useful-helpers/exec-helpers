@@ -506,6 +506,7 @@ class SSHClientBase(api.ExecHelper):
         "__conn_chain",
         "__connect_timeout",
         "__hostname",
+        "__jump_clients",
         "__keepalive_mode",
         "__keepalive_period",
         "__port",
@@ -555,6 +556,7 @@ class SSHClientBase(api.ExecHelper):
         self.__connect_timeout = connect_timeout
 
         self.__ssh: paramiko.SSHClient
+        self.__jump_clients: tuple[paramiko.SSHClient, ...] = ()
         self.__sftp: paramiko.SFTPClient | None = None
         self.__allow_agent = allow_ssh_agent
 
@@ -843,6 +845,8 @@ class SSHClientBase(api.ExecHelper):
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
+        The clients of the jump hosts are kept for `close`, since closing the last client does not close them.
+
         :return: Paramiko ssh connection object.
         :rtype: paramiko.SSHClient
         :raises ValueError: ProxyCommand found in a connection chain after the first host reached an.
@@ -851,11 +855,23 @@ class SSHClientBase(api.ExecHelper):
         """
         opened: list[paramiko.SSHClient] = []
         try:
-            return self.__connect_chain(opened)
+            client = self.__connect_chain(opened)
         except BaseException:
-            for client in reversed(opened):  # paramiko leaves the transports of a failed connect running
-                client.close()
+            for opened_client in reversed(opened):  # paramiko leaves the transports of a failed connect running
+                opened_client.close()
             raise
+        self.__jump_clients = tuple(opened[:-1])
+        return client
+
+    def __close_jump_clients(self) -> None:
+        """Close the clients of the jump hosts, the one nearest to the target first."""
+        clients, self.__jump_clients = self.__jump_clients, ()
+        for client in reversed(clients):
+            # noinspection PyBroadException
+            try:
+                client.close()
+            except Exception:  # the hosts nearer the origin are still closed
+                self.logger.exception("Could not close jump host connection")
 
     def __connect_chain(self, opened: list[paramiko.SSHClient]) -> paramiko.SSHClient:
         """Connect the hosts of the connection chain one by one.
@@ -949,7 +965,7 @@ class SSHClientBase(api.ExecHelper):
         raise paramiko.SSHException("SFTP connection failed")
 
     def close(self) -> None:
-        """Close SSH and SFTP sessions."""
+        """Close SSH and SFTP sessions, then the connections to the jump hosts."""
         with self.lock:
             # noinspection PyBroadException
             try:
@@ -963,6 +979,7 @@ class SSHClientBase(api.ExecHelper):
                         self.__sftp.close()
                     except Exception:
                         self.logger.exception("Could not close sftp connection")
+            self.__close_jump_clients()
 
     def __del__(self) -> None:
         """Destructor helper: close channel and threads BEFORE closing others.
@@ -975,6 +992,8 @@ class SSHClientBase(api.ExecHelper):
         except BaseException as e:  # noqa: BLE001  # pragma: no cover  # NOSONAR
             with contextlib.suppress(AttributeError):
                 self.logger.debug(f"Exception in {self!s} destructor call: {e}")
+        with contextlib.suppress(AttributeError):  # __init__ failed before the jump clients were set
+            self.__close_jump_clients()
         self.__sftp = None
 
     def __exit__(
