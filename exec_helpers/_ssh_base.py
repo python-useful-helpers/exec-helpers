@@ -1196,6 +1196,7 @@ class SSHClientBase(api.ExecHelper):
         width: int = 80,
         height: int = 24,
         timeout: OptionalTimeoutT = None,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> _SSHExecuteContext:
         """Get execution context manager.
@@ -1220,11 +1221,15 @@ class SSHClientBase(api.ExecHelper):
         :type height: int
         :param timeout: Timeout for **connection open**.
         :type timeout: int | float | None
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string of the context,
+            applied together with the instance rule.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         :return: Execute context.
         :rtype: _SSHExecuteContext
         .. versionadded:: 8.0.0
+        .. versionchanged:: 8.2.3 log_mask_re added.
         """
         return _SSHExecuteContext(
             transport=self._ssh_transport,
@@ -1239,7 +1244,7 @@ class SSHClientBase(api.ExecHelper):
             sudo_mode=self.sudo_mode,
             auth=self.auth,
             logger=self.logger,
-            log_mask_re=self.log_mask_re,
+            log_mask_re=(self.log_mask_re, log_mask_re),
             **kwargs,
         )
 
@@ -1830,6 +1835,7 @@ class SSHClientBase(api.ExecHelper):
                 open_stderr=open_stderr,
                 chroot_path=chroot_path,
                 chroot_exe=chroot_exe,
+                log_mask_re=log_mask_re,
                 timeout=timeout,
                 **kwargs,
             ) as async_result:
