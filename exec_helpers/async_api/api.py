@@ -85,7 +85,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         open_stdout: bool = True,
         open_stderr: bool = True,
         logger: logging.Logger,
-        log_mask_re: LogMaskReT = None,
+        log_mask_re: LogMaskReT | tuple[LogMaskReT, ...] = None,
         **kwargs: typing.Any,
     ) -> None:
         """Execute async context manager.
@@ -101,7 +101,8 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :param logger: Logger instance.
         :type logger: logging.Logger
         :param log_mask_re: Regex lookup rule to mask the command in the debug string.
-        :type log_mask_re: str | re.Pattern[str] | None
+            The rules of a tuple are applied one after another.
+        :type log_mask_re: str | re.Pattern[str] | tuple[str | re.Pattern[str] | None, ...] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         """
@@ -110,7 +111,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         self.__open_stdout = open_stdout
         self.__open_stderr = open_stderr
         self.__logger = logger
-        self.__log_mask_re = log_mask_re
+        self.__log_mask_re = log_mask_re if isinstance(log_mask_re, tuple) else (log_mask_re,)
         if kwargs:
             self.__logger.warning(f"Unexpected arguments: {kwargs!r}.", stack_info=True)
 
@@ -130,7 +131,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :return: Command without the masked parts.
         :rtype: str
         """
-        return _helpers.mask_command(self.__command.rstrip(), self.__log_mask_re)
+        return _helpers.mask_command(self.__command.rstrip(), *self.__log_mask_re)
 
     @property
     def command(self) -> str:
@@ -461,6 +462,7 @@ class ExecHelper(
         open_stderr: bool = True,
         chroot_path: str | None = None,
         chroot_exe: str | None = None,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> ExecuteContext:
         """Get execution context manager.
@@ -477,9 +479,13 @@ class ExecHelper(
         :type chroot_path: str | None
         :param chroot_exe: Chroot exe override.
         :type chroot_exe: str | None
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string of the context,
+            applied together with the instance rule.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         .. versionadded:: 8.0.0
+        .. versionchanged:: 8.1.4 log_mask_re added.
         """
 
     async def execute(
@@ -549,6 +555,7 @@ class ExecHelper(
             open_stderr=open_stderr,
             chroot_path=chroot_path,
             chroot_exe=chroot_exe,
+            log_mask_re=log_mask_re,
             **kwargs,
         ) as async_result:
             result: exec_result.ExecResult = await self._exec_command(

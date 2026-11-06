@@ -24,6 +24,7 @@ import copy
 import datetime as dt
 import getpass
 import logging
+import math
 import pathlib
 import shlex
 import stat
@@ -458,13 +459,20 @@ class SSHClientBase(api.ExecHelper):
     :type allow_ssh_agent: bool
     :param missing_host_key_policy: Missing host key policy class. See paramiko.MissingHostKeyPolicy for details.
     :type missing_host_key_policy: type[paramiko.MissingHostKeyPolicy]
-    :param connect_timeout: Timeout in seconds for the TCP connection, the SSH banner, the key exchange and the
-        authentication of every connection step, including hosts reached through `proxy_to`.
-        An authentication timeout is reported as an authentication failure. By default: None
-        (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s). A connection attempt
-        is retried 3 times with a 3 s pause, so a hung host takes up to 3 times the timeout plus 6 s to report.
+    :param connect_timeout: Timeout in seconds for each wait of a connection, on every host of the chain,
+        including hosts reached through `proxy_to`.
+        The waits are the TCP connection, the SSH banner with the key exchange, each authentication request,
+        and the channel opened through a jump host.
+        An authentication timeout is reported as an authentication failure.
+        By default: None (paramiko defaults: no TCP and key exchange limit, banner 15 s, authentication 30 s,
+        channel 3600 s).
+        The timeout does not limit the whole connection:
+        paramiko sends an authentication request per key and method,
+        and a host reached without a proxy tries every key of the credentials on a connection of its own.
+        Without `sock`, a connection failed with an SSH error other than an authentication failure
+        is attempted up to 3 times, with a 3 s pause.
     :type connect_timeout: float | None
-    :raises ValueError: connect_timeout is not positive.
+    :raises ValueError: connect_timeout is not positive or is NaN.
 
     .. note:: auth has priority over username/password/private_keys.
     .. note::
@@ -495,6 +503,7 @@ class SSHClientBase(api.ExecHelper):
         "__conn_chain",
         "__connect_timeout",
         "__hostname",
+        "__jump_clients",
         "__keepalive_mode",
         "__keepalive_period",
         "__port",
@@ -539,11 +548,12 @@ class SSHClientBase(api.ExecHelper):
         self.__verbose: bool = verbose
         self.__sock = sock
         self._missing_host_key_policy = missing_host_key_policy
-        if connect_timeout is not None and connect_timeout <= 0:
-            raise ValueError(f"connect_timeout should be positive, got {connect_timeout!r}")
+        if connect_timeout is not None and (math.isnan(connect_timeout) or connect_timeout <= 0):
+            raise ValueError(f"connect_timeout should be a positive number, got {connect_timeout!r}")
         self.__connect_timeout = connect_timeout
 
         self.__ssh: paramiko.SSHClient
+        self.__jump_clients: tuple[paramiko.SSHClient, ...] = ()
         self.__sftp: paramiko.SFTPClient | None = None
         self.__allow_agent = allow_ssh_agent
 
@@ -831,6 +841,8 @@ class SSHClientBase(api.ExecHelper):
     def __get_client(self) -> paramiko.SSHClient:
         """Connect using connection chain information.
 
+        The clients of the jump hosts are kept for `close`, since closing the last client does not close them.
+
         :return: Paramiko ssh connection object.
         :rtype: paramiko.SSHClient
         :raises ValueError: ProxyCommand found in a connection chain after the first host reached an.
@@ -839,11 +851,23 @@ class SSHClientBase(api.ExecHelper):
         """
         opened: list[paramiko.SSHClient] = []
         try:
-            return self.__connect_chain(opened)
+            client = self.__connect_chain(opened)
         except BaseException:
-            for client in reversed(opened):  # paramiko leaves the transports of a failed connect running
-                client.close()
+            for opened_client in reversed(opened):  # paramiko leaves the transports of a failed connect running
+                opened_client.close()
             raise
+        self.__jump_clients = tuple(opened[:-1])
+        return client
+
+    def __close_jump_clients(self) -> None:
+        """Close the clients of the jump hosts, the one nearest to the target first."""
+        clients, self.__jump_clients = self.__jump_clients, ()
+        for client in reversed(clients):
+            # noinspection PyBroadException
+            try:
+                client.close()
+            except Exception:  # noqa: PERF203  # the hosts nearer the origin are still closed
+                self.logger.exception("Could not close jump host connection")
 
     def __connect_chain(self, opened: list[paramiko.SSHClient]) -> paramiko.SSHClient:
         """Connect the hosts of the connection chain one by one.
@@ -886,6 +910,7 @@ class SSHClientBase(api.ExecHelper):
                     kind="direct-tcpip",
                     dest_addr=(config.hostname, config.port or 22),
                     src_addr=(config.proxyjump, 0),
+                    timeout=self.__connect_timeout,
                 )
                 auth.connect(
                     ssh,
@@ -904,14 +929,22 @@ class SSHClientBase(api.ExecHelper):
             raise RuntimeError("Unexpected state: Final host by configuration, but requested host is not reached")
         return last_ssh_client
 
-    def __connect_sftp(self) -> None:
-        """Open the SFTP channel, reconnecting the SSH session first if it was closed."""
+    def __connect_sftp(self) -> paramiko.SFTPClient | None:
+        """Open the SFTP channel, reconnecting the SSH session first if it was closed.
+
+        :return: The SFTP channel; None when the server refused it.
+        :rtype: paramiko.SFTPClient | None
+        :raises ConnectionError: SSH session was closed and the reconnect failed.
+        :raises paramiko.SSHException: SSH session was closed and the reconnect failed (the original exception).
+        """
         with self.lock:
-            transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
-            try:
-                self.__sftp = transport.open_sftp_client()
-            except paramiko.SSHException:
-                self.logger.warning("SFTP enable failed! SSH only is accessible.")
+            if self.__sftp is None:  # another thread may have opened it while this one waited for the lock
+                transport = self._ssh_transport  # a failed reconnect is not "SFTP unavailable": let it propagate
+                try:
+                    self.__sftp = transport.open_sftp_client()
+                except paramiko.SSHException:
+                    self.logger.warning("SFTP enable failed! SSH only is accessible.")
+            return self.__sftp
 
     @property
     def _sftp(self) -> paramiko.sftp_client.SFTPClient:
@@ -925,16 +958,15 @@ class SSHClientBase(api.ExecHelper):
         .. versionchanged:: 8.1.4 The SFTP channel is opened through the reconnecting transport getter,
             so a closed SSH session is restored instead of failing with `AttributeError`.
         """
-        if self.__sftp is not None:
-            return self.__sftp
+        if (sftp := self.__sftp) is not None:  # read once: `close` in another thread can reset it after the check
+            return sftp
         self.logger.debug("SFTP is not connected, try to connect...")
-        self.__connect_sftp()
-        if self.__sftp is not None:
-            return self.__sftp
+        if (sftp := self.__connect_sftp()) is not None:
+            return sftp
         raise paramiko.SSHException("SFTP connection failed")
 
     def close(self) -> None:
-        """Close SSH and SFTP sessions."""
+        """Close SSH and SFTP sessions, then the connections to the jump hosts."""
         with self.lock:
             # noinspection PyBroadException
             try:
@@ -948,6 +980,7 @@ class SSHClientBase(api.ExecHelper):
                         self.__sftp.close()
                     except Exception:
                         self.logger.exception("Could not close sftp connection")
+            self.__close_jump_clients()
 
     def __del__(self) -> None:
         """Destructor helper: close channel and threads BEFORE closing others.
@@ -960,6 +993,8 @@ class SSHClientBase(api.ExecHelper):
         except BaseException as e:  # noqa: BLE001  # pragma: no cover  # NOSONAR
             with contextlib.suppress(AttributeError):
                 self.logger.debug(f"Exception in {self!s} destructor call: {e}")
+        with contextlib.suppress(AttributeError):  # __init__ failed before the jump clients were set
+            self.__close_jump_clients()
         self.__sftp = None
 
     def __exit__(
@@ -1192,6 +1227,7 @@ class SSHClientBase(api.ExecHelper):
         width: int = 80,
         height: int = 24,
         timeout: OptionalTimeoutT = None,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> _SSHExecuteContext:
         """Get execution context manager.
@@ -1216,11 +1252,15 @@ class SSHClientBase(api.ExecHelper):
         :type height: int
         :param timeout: Timeout for **connection open**.
         :type timeout: int | float | None
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string of the context,
+            applied together with the instance rule.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         :return: Execute context.
         :rtype: _SSHExecuteContext
         .. versionadded:: 8.0.0
+        .. versionchanged:: 8.1.4 log_mask_re added.
         """
         return _SSHExecuteContext(
             transport=self._ssh_transport,
@@ -1235,7 +1275,7 @@ class SSHClientBase(api.ExecHelper):
             sudo_mode=self.sudo_mode,
             auth=self.auth,
             logger=self.logger,
-            log_mask_re=self.log_mask_re,
+            log_mask_re=(self.log_mask_re, log_mask_re),
             **kwargs,
         )
 
@@ -1631,6 +1671,7 @@ class SSHClientBase(api.ExecHelper):
             kind="direct-tcpip",
             dest_addr=(host_config.hostname, dest_port),
             src_addr=(self.hostname, 0),
+            timeout=self.__connect_timeout,
         )
 
         cls: type[Self] = self.__class__
@@ -1826,6 +1867,7 @@ class SSHClientBase(api.ExecHelper):
                 open_stderr=open_stderr,
                 chroot_path=chroot_path,
                 chroot_exe=chroot_exe,
+                log_mask_re=log_mask_re,
                 timeout=timeout,
                 **kwargs,
             ) as async_result:

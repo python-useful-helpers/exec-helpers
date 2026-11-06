@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import threading
 import typing
 from unittest import mock
 
@@ -592,3 +593,54 @@ def test_017_sftp_path_check_after_close_reconnect_failed(
         getattr(ssh, check)("/path")
 
     fake.sftp.lstat.assert_not_called()
+
+
+class WaitReportingLock:
+    """Reentrant lock that reports a thread which has to wait for it while another thread holds it."""
+
+    def __init__(self) -> None:
+        self.lock = threading.RLock()
+        self.contended = threading.Event()
+
+    def acquire(self) -> None:
+        if not self.lock.acquire(blocking=False):
+            self.contended.set()
+            self.lock.acquire()
+
+    def release(self) -> None:
+        self.lock.release()
+
+    def __enter__(self) -> None:
+        self.acquire()
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.release()
+
+
+def test_018_sftp_opened_once_by_concurrent_threads(
+    mocker,
+    paramiko_ssh_client,
+    ssh_auth_logger,
+    get_logger,
+):
+    """A thread which waited for the lock while another thread opened the SFTP channel uses that channel."""
+    fake = ClosableSSHClient()
+    paramiko_ssh_client.return_value = fake
+    ssh = exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(password=password))
+    lock = WaitReportingLock()
+    mocker.patch.object(exec_helpers.SSHClient, "lock", new_callable=mocker.PropertyMock, return_value=lock)
+    results: list[paramiko.SFTPClient] = []
+    other = threading.Thread(target=lambda: results.append(ssh._sftp), daemon=True)
+
+    def open_sftp_client() -> mock.Mock:
+        if fake.transport.open_sftp_client.call_count == 1:
+            other.start()
+            assert lock.contended.wait(timeout=5), "the other thread did not wait for the lock"
+        return fake.sftp
+
+    fake.transport.open_sftp_client.side_effect = open_sftp_client
+
+    assert ssh._sftp is fake.sftp
+    other.join(timeout=5)
+    assert results == [fake.sftp]
+    assert fake.transport.open_sftp_client.call_count == 1

@@ -148,7 +148,12 @@ def test_01_execute_through_host_no_creds(
     ssh.execute_through_host(target, command)
     connect: mock.MagicMock = paramiko_ssh_client().connect
     assert ssh_intermediate_channel.mock_calls == [
-        mock.call(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
+        mock.call(
+            dest_addr=(target, port),
+            kind="direct-tcpip",
+            src_addr=(host, 0),
+            timeout=None,
+        )
     ]
     connect.assert_has_calls(
         [
@@ -188,7 +193,12 @@ def test_02_execute_through_host_with_creds(
     )
     connect: mock.MagicMock = paramiko_ssh_client().connect
     assert ssh_intermediate_channel.mock_calls == [
-        mock.call(dest_addr=(target, port), kind="direct-tcpip", src_addr=(host, 0))
+        mock.call(
+            dest_addr=(target, port),
+            kind="direct-tcpip",
+            src_addr=(host, 0),
+            timeout=None,
+        )
     ]
     connect.assert_has_calls(
         [
