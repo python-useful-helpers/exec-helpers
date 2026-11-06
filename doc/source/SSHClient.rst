@@ -34,9 +34,11 @@ API: SSHClient and SSHAuth.
         :type keepalive: int | bool
         :param allow_ssh_agent: use SSH Agent if available
         :type allow_ssh_agent: bool
-        :param connect_timeout: timeout of the TCP connection, the SSH banner, the key exchange and the authentication,
-            applied to every connection step (a connection attempt is retried 3 times with a 3 s pause)
+        :param connect_timeout: timeout in seconds for each wait of a connection, on every host of the chain:
+            the TCP connection, the SSH banner with the key exchange, each authentication request
+            and the channel opened through a jump host. It does not limit the whole connection.
         :type connect_timeout: float | None
+        :raises ValueError: connect_timeout is not positive or is NaN
 
         .. note:: auth has priority over username/password/private_keys
         .. note::

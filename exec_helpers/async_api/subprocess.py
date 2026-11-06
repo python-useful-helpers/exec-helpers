@@ -419,6 +419,7 @@ class Subprocess(api.ExecHelper):
         cwd: CwdT = None,
         env: EnvT = None,
         env_patch: EnvT = None,
+        log_mask_re: LogMaskReT = None,
         **kwargs: typing.Any,
     ) -> _SubprocessExecuteContext:
         """Get execution context manager.
@@ -441,11 +442,15 @@ class Subprocess(api.ExecHelper):
         :type env: Mapping[str | bytes, str | bytes] | None
         :param env_patch: Defines the environment variables to ADD for the new process.
         :type env_patch: Mapping[str | bytes, str | bytes] | None
+        :param log_mask_re: Regex lookup rule to mask the command in the debug string of the context,
+            applied together with the instance rule.
+        :type log_mask_re: str | re.Pattern[str] | None
         :param kwargs: Additional parameters for call.
         :type kwargs: typing.Any
         :return: Execute context.
         :rtype: _SubprocessExecuteContext
         .. versionadded:: 8.0.0
+        .. versionchanged:: 8.1.4 log_mask_re added.
         """
         if env_patch is not None:
             # make mutable copy
@@ -460,7 +465,7 @@ class Subprocess(api.ExecHelper):
             env=env,
             use_shell=self.__shell,
             logger=self.logger,
-            log_mask_re=self.log_mask_re,
+            log_mask_re=(self.log_mask_re, log_mask_re),
             **kwargs,
         )
 
