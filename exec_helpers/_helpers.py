@@ -64,6 +64,7 @@ def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
     :param rules: Regex rules to mask.
     :type rules: str | re.Pattern
     :return: Source with all MATCHED groups replaced by '<*masked*>'.
+        Groups that did not participate in a match (other branch of `|`, optional group) are left alone.
     :rtype: str
     """
     masked: list[str] = []
@@ -73,6 +74,8 @@ def _mask_command(text: str, rules: str | re.Pattern[str]) -> str:
     for match in re.finditer(rules, text):
         for idx, _ in enumerate(match.groups(), start=1):
             start, end = match.span(idx)
+            if start == -1:  # `span` is (-1, -1) for a group that did not participate
+                continue
             masked.extend((text[prev:start], "<*masked*>"))
             prev = end
     masked.append(text[prev:])
