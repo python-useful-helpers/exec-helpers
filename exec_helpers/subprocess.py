@@ -422,7 +422,7 @@ class Subprocess(api.ExecHelper):
                 _, not_done = concurrent.futures.wait([stdout_future, stderr_future], timeout=1)
                 if not_done and async_result.interface.returncode:
                     self.logger.critical(
-                        f"Process {command!s} was closed with exit code {async_result.interface.returncode!s}, "
+                        f"Process {result.cmd!s} was closed with exit code {async_result.interface.returncode!s}, "
                         f"but FIFO buffers are still open"
                     )
                 result.set_timestamp()
