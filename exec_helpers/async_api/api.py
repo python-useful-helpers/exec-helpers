@@ -71,6 +71,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
 
     __slots__ = (
         "__command",
+        "__command_for_log",
         "__log_mask_re",
         "__logger",
         "__open_stderr",
@@ -82,6 +83,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         self,
         *,
         command: str,
+        command_for_log: str | None = None,
         stdin: bytes | None = None,
         open_stdout: bool = True,
         open_stderr: bool = True,
@@ -93,6 +95,9 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
 
         :param command: Command for execution (fully formatted).
         :type command: str
+        :param command_for_log: Command for the debug string with MaskedArg arguments hidden (fully formatted),
+            None if it is the same as `command`.
+        :type command_for_log: str | None
         :param stdin: Pass STDIN text to the process (fully formatted).
         :type stdin: bytes
         :param open_stdout: Open STDOUT stream for read.
@@ -108,8 +113,10 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :type kwargs: typing.Any
 
         .. versionchanged:: 8.2.3 log_mask_re accepts a tuple of rules.
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
         self.__command = command
+        self.__command_for_log = command if command_for_log is None else command_for_log
         self.__stdin = stdin
         self.__open_stdout = open_stdout
         self.__open_stderr = open_stderr
@@ -134,7 +141,7 @@ class ExecuteContext(contextlib.AbstractAsyncContextManager[api.ExecuteAsyncResu
         :return: Command without the masked parts.
         :rtype: str
         """
-        return _helpers.mask_command(self.__command.rstrip(), *self.__log_mask_re)
+        return _helpers.mask_command(self.__command_for_log.rstrip(), *self.__log_mask_re)
 
     @property
     def command(self) -> str:
@@ -357,10 +364,10 @@ class ExecHelper(
             self.__alock.release()
 
     def _command_to_string(self, command: CommandT) -> str:
-        """Convert the command to the string form used for execution and logs.
+        """Convert the command to the string form used for execution.
 
         :param command: Original command.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :return: Command as a single string.
         :rtype: str
         """
@@ -411,12 +418,15 @@ class ExecHelper(
         stdin: OptionalStdinT = None,
         log_stdout: bool = True,
         log_stderr: bool = True,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Command for execution.
         :type command: str
+        :param command_for_log: Command for the result with MaskedArg arguments hidden, None if same as `command`.
+        :type command_for_log: str | None
         :param async_result: execute_async result.
         :type async_result: ExecuteAsyncResult
         :param timeout: Timeout for command execution.
@@ -438,6 +448,8 @@ class ExecHelper(
         :rtype: ExecResult
         :raises OSError: Exception during process kill (and not regarding already closed process).
         :raises ExecHelperTimeoutError: Timeout exceeded.
+
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
 
     def _log_command_execute(
@@ -446,10 +458,14 @@ class ExecHelper(
         log_mask_re: LogMaskReT,
         log_level: int,
         chroot_path: str | None = None,
+        command_for_log: str | None = None,
         **_: typing.Any,
     ) -> None:
         """Log command execution."""
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(
+            cmd=command if command_for_log is None else command_for_log,
+            log_mask_re=log_mask_re,
+        )
         target_path: str | None = chroot_path if chroot_path is not None else self._chroot_path
         chroot_info: str = "" if not target_path or target_path == "/" else f" (with chroot to: {target_path!r})"
 
@@ -466,12 +482,16 @@ class ExecHelper(
         chroot_path: str | None = None,
         chroot_exe: str | None = None,
         log_mask_re: LogMaskReT = None,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> ExecuteContext:
         """Get execution context manager.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str
+        :param command_for_log: Command for the debug string of the context with secrets hidden,
+            None if it is the same as `command`.
+        :type command_for_log: str | None
         :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: Open STDOUT stream for read.
@@ -489,6 +509,7 @@ class ExecHelper(
         :type kwargs: typing.Any
         .. versionadded:: 8.0.0
         .. versionchanged:: 8.2.3 log_mask_re added.
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
 
     async def execute(
@@ -510,7 +531,7 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -541,11 +562,16 @@ class ExecHelper(
         .. versionchanged:: 7.0.0 Allow command as list of arguments. Command will be joined with components escaping.
         .. versionchanged:: 8.0.0 chroot path exposed.
         .. versionchanged:: 8.1.0 chroot_exe added.
+        .. versionchanged:: 8.3.0 Command arguments can be MaskedArg.
         """
         log_level: int = logging.INFO if verbose else logging.DEBUG
+        if not isinstance(command, str):
+            command = tuple(command)  # joined twice: for execution and for the log
         cmd = self._command_to_string(command)
+        cmd_for_log = _helpers.cmd_to_log_string(command)
         self._log_command_execute(
             command=cmd,
+            command_for_log=cmd_for_log,
             log_mask_re=log_mask_re,
             log_level=log_level,
             chroot_path=chroot_path,
@@ -553,6 +579,7 @@ class ExecHelper(
         )
         async with self.open_execute_context(
             cmd,
+            command_for_log=cmd_for_log,
             stdin=stdin,
             open_stdout=open_stdout,
             open_stderr=open_stderr,
@@ -563,6 +590,7 @@ class ExecHelper(
         ) as async_result:
             result: exec_result.ExecResult = await self._exec_command(
                 command=cmd,
+                command_for_log=cmd_for_log,
                 async_result=async_result,
                 timeout=timeout,
                 verbose=verbose,
@@ -595,7 +623,7 @@ class ExecHelper(
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -661,7 +689,7 @@ class ExecHelper(
         """Execute command and check for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -739,7 +767,7 @@ class ExecHelper(
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.

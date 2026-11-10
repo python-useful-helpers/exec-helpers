@@ -17,6 +17,7 @@
 import typing
 
 from . import async_api
+from ._helpers import MaskedArg
 from ._helpers import mask_command
 from ._ssh_helpers import HostsSSHConfigs
 from ._ssh_helpers import SSHConfig
@@ -50,6 +51,7 @@ __all__ = (
     "ExecResult",
     "ExitCodes",
     "HostsSSHConfigs",
+    "MaskedArg",
     "ParallelCallExceptionsError",
     "ParallelCallProcessError",
     "SSHAuth",

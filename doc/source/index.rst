@@ -13,6 +13,7 @@ Contents:
     SSHClient
     Subprocess
     ExecResult
+    MaskedArg
     exceptions
     proc_enums
 

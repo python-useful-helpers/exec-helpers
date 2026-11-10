@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import re
 import shlex
@@ -12,6 +13,7 @@ from exec_helpers import exceptions
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Mapping
+    from typing import Self
 
 
 class _ExceptionInfo(typing.Protocol):
@@ -96,17 +98,114 @@ def mask_command(text: str, *rules: str | re.Pattern[str] | None) -> str:
     return functools.reduce(_mask_command, (rule for rule in rules if rule is not None), text)
 
 
-def cmd_to_string(command: str | Iterable[str]) -> str:
+_MASK: typing.Final = "<*masked*>"
+# GNU long option names are alphanumerics and dashes, POSIX short ones a single alphanumeric.
+_OPTION_NAME: typing.Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]*")
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class MaskedArg:
+    """Command argument hidden from the logs, the result and the exceptions.
+
+    The process gets `arg`, everything else shows `arg_for_log`.
+    The masking happens per argument, before the command is joined, so shell quoting does not matter.
+    `log_mask_re` still applies to the joined command on top of it.
+
+    :param arg: Argument passed to the process.
+    :type arg: str
+    :param arg_for_log: Argument shown in the logs, ``ExecResult.cmd`` and the exceptions.
+    :type arg_for_log: str
+
+    >>> MaskedArg.secret("two secret words")
+    MaskedArg(arg_for_log='<*masked*>')
+    >>> MaskedArg.option("pass", "two secret words")
+    MaskedArg(arg_for_log='--pass=<*masked*>')
+    >>> MaskedArg.regex("user:p@ss", r":(.*)")
+    MaskedArg(arg_for_log='user:<*masked*>')
+
+    .. versionadded:: 8.3.0
+    """
+
+    arg: str = dataclasses.field(repr=False)
+    arg_for_log: str
+
+    @classmethod
+    def secret(cls, arg: str) -> Self:
+        """Hide the whole argument.
+
+        :param arg: Argument passed to the process.
+        :type arg: str
+        :return: Argument shown as '<*masked*>'.
+        :rtype: MaskedArg
+        """
+        return cls(arg, _MASK)
+
+    @classmethod
+    def option(cls, name: str, value: str) -> Self:
+        """Show the option name, hide its value, following the usual CLI conventions.
+
+        A long name gives the GNU form ``--name=value``.
+        A single character gives the POSIX form ``-nvalue``, the option and its value in one argument.
+        For the option and the value as separate arguments, use ``["--name", MaskedArg.secret(value)]``.
+
+        :param name: Option name without the leading dashes: ``pass``, ``p``.
+        :type name: str
+        :param value: Secret value.
+        :type value: str
+        :return: Argument shown as ``--name=<*masked*>`` or ``-n<*masked*>``.
+        :rtype: MaskedArg
+        :raises ValueError: The name is empty, starts with a dash or has characters other than alphanumerics and dashes.
+
+        >>> MaskedArg.option("p", "two secret words")
+        MaskedArg(arg_for_log='-p<*masked*>')
+        """
+        if not _OPTION_NAME.fullmatch(name):
+            raise ValueError(f"Option name is expected without leading dashes, as alphanumerics and dashes: {name!r}")
+        flag = f"-{name}" if len(name) == 1 else f"--{name}="
+        return cls(f"{flag}{value}", f"{flag}{_MASK}")
+
+    @classmethod
+    def regex(cls, arg: str, rule: str | re.Pattern[str]) -> Self:
+        """Hide the groups that a regex matches in this argument alone, like `log_mask_re`.
+
+        :param arg: Argument passed to the process.
+        :type arg: str
+        :param rule: Regex rule, all MATCHED groups are replaced by '<*masked*>'.
+        :type rule: str | re.Pattern[str]
+        :return: Argument shown with the matched groups masked.
+        :rtype: MaskedArg
+        """
+        return cls(arg, mask_command(arg, rule))
+
+
+def cmd_to_string(command: str | Iterable[str | MaskedArg]) -> str:
     """Convert command to string for usage with shell.
 
     :param command: Original command.
-    :type command: str | Iterable[str]
+    :type command: str | Iterable[str | MaskedArg]
     :return: Command as single string.
     :rtype: str
+
+    .. versionchanged:: 8.3.0 Accept MaskedArg arguments.
     """
     if isinstance(command, str):
         return command
-    return shlex.join(command)
+    return shlex.join(arg.arg if isinstance(arg, MaskedArg) else arg for arg in command)
+
+
+def cmd_to_log_string(command: str | Iterable[str | MaskedArg]) -> str:
+    """Convert command to string for the logs: MaskedArg arguments are hidden.
+
+    :param command: Original command.
+    :type command: str | Iterable[str | MaskedArg]
+    :return: Command as single string, before `log_mask_re` is applied.
+    :rtype: str
+
+    .. versionadded:: 8.3.0
+    """
+    if isinstance(command, str):
+        return command
+    return shlex.join(arg.arg_for_log if isinstance(arg, MaskedArg) else arg for arg in command)
 
 
 def chroot_command(command: str, chroot_path: str | None = None, chroot_exe: str | None = None) -> str:

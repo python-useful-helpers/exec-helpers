@@ -303,7 +303,7 @@ class Subprocess(api.ExecHelper):
         """Convert the command to the string form used for execution and logs.
 
         :param command: Original command.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :return: Command as a single string.
         :rtype: str
         :raises TypeError: Command is a string, but shell is disabled.
@@ -347,12 +347,15 @@ class Subprocess(api.ExecHelper):
         stdin: OptionalStdinT = None,
         log_stdout: bool = True,
         log_stderr: bool = True,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from a channel with timeout.
 
         :param command: Command for execution.
         :type command: str
+        :param command_for_log: Command for the result with MaskedArg arguments hidden, None if same as `command`.
+        :type command_for_log: str | None
         :param async_result: execute_async result.
         :type async_result: SubprocessExecuteAsyncResult
         :param timeout: Timeout for command execution.
@@ -375,6 +378,8 @@ class Subprocess(api.ExecHelper):
         :raises OSError: exception during process kill (and not regarding already closed process).
         :raises ExecHelperNoKillError: Process not dies on SIGTERM & SIGKILL.
         :raises ExecHelperTimeoutError: Timeout exceeded.
+
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
 
         async def poll_stdout() -> None:
@@ -386,7 +391,10 @@ class Subprocess(api.ExecHelper):
             await result.read_stderr(src=async_result.stderr, log=self.logger if log_stderr else None, verbose=verbose)
 
         # Store command with hidden data
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(
+            cmd=command if command_for_log is None else command_for_log,
+            log_mask_re=log_mask_re,
+        )
 
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
 
@@ -440,12 +448,16 @@ class Subprocess(api.ExecHelper):
         env: EnvT = None,
         env_patch: EnvT = None,
         log_mask_re: LogMaskReT = None,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> _SubprocessExecuteContext:
         """Get execution context manager.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str
+        :param command_for_log: Command for the debug string of the context with secrets hidden,
+            None if it is the same as `command`.
+        :type command_for_log: str | None
         :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: Open STDOUT stream for read.
@@ -471,6 +483,7 @@ class Subprocess(api.ExecHelper):
         :rtype: _SubprocessExecuteContext
         .. versionadded:: 8.0.0
         .. versionchanged:: 8.2.3 log_mask_re added.
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
         if env_patch is not None:
             # make mutable copy
@@ -478,6 +491,11 @@ class Subprocess(api.ExecHelper):
             env.update(env_patch)
         return _SubprocessExecuteContext(
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
+            command_for_log=(
+                None
+                if command_for_log is None
+                else f"{self._prepare_command(cmd=command_for_log, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n"
+            ),
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
             open_stdout=open_stdout,
             open_stderr=open_stderr,
@@ -511,7 +529,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -590,7 +608,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -669,7 +687,7 @@ class Subprocess(api.ExecHelper):
         """Execute command and check for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -756,7 +774,7 @@ class Subprocess(api.ExecHelper):
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
