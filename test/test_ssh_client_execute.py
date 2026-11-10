@@ -133,3 +133,22 @@ def test_execute_together_failed(make_ssh) -> None:
     assert exc.expected == (proc_enums.EXPECTED,)
     assert set(exc.results) == {(host, port), (host2, port)}
     assert set(exc.errors) == {(host2, port)}
+
+
+def test_execute_together_failed_masked(make_ssh) -> None:
+    """The command of the error is masked by the rules of every remote and of the call."""
+    remotes = [
+        make_ssh(fake_channel(stdout=(b"out\n",), exit_code=ec), hostname=name) for name, ec in ((host, 0), (host2, 1))
+    ]
+    remotes[0].log_mask_re = r"--a=(\S+)"
+    remotes[1].log_mask_re = r"--b=(\S+)"
+
+    with pytest.raises(exec_helpers.ParallelCallProcessError) as exc_info:
+        exec_helpers.SSHClient.execute_together(
+            remotes=remotes, command="cmd --a=1 --b=2 --c=3", log_mask_re=r"--c=(\S+)"
+        )
+
+    expected = "cmd --a=<*masked*> --b=<*masked*> --c=<*masked*>"
+    assert exc_info.value.cmd == expected
+    assert expected in str(exc_info.value)
+    assert "=1" not in str(exc_info.value)

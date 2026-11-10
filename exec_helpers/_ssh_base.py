@@ -1920,16 +1920,19 @@ class SSHClientBase(api.ExecHelper):
             except Exception as e:  # noqa: BLE001  # stored and reported to the caller
                 raised_exceptions[remote.hostname, remote.port] = e
 
+        # The rules of every remote apply: the exception is shared by all of them.
+        cmd_for_log: str = _helpers.mask_command(cmd.rstrip(), *(remote.log_mask_re for remote in futures), log_mask_re)
+
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptionsError(
-                command=cmd,
+                command=cmd_for_log,
                 exceptions=raised_exceptions,
                 errors=errors,
                 results=results,
                 expected=prep_expected,
             )
         if errors and raise_on_err:
-            raise exception_class(cmd, errors, results, expected=prep_expected)
+            raise exception_class(cmd_for_log, errors, results, expected=prep_expected)
         return results
 
     def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
