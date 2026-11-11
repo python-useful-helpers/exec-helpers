@@ -248,6 +248,7 @@ the process gets the real value, while the logs, `result.cmd` and the exceptions
 `result.cmd` will be equal to `mysql-setup '--pass=<*masked*>' --verbose` whatever the password contains.
 `MaskedArg.option` takes the name without dashes: a long name gives `--name=value`, a single character `-nvalue`.
 For an option and its value as separate arguments, use `["--pass", MaskedArg.secret(password)]`.
+`MaskedArg.key_value(key, value)` writes the key as given, without dashes: `dd if=...` is `MaskedArg.key_value("if", path)`.
 `MaskedArg.secret(value)` hides the whole argument, `MaskedArg.regex(arg, rule)` hides the groups `rule` matches in this argument alone.
 `log_mask_re` still applies on top.
 

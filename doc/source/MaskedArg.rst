@@ -35,6 +35,20 @@ API: MaskedArg
         :type arg: str
         :rtype: MaskedArg
 
+    .. py:classmethod:: key_value(key, value, *, sep="=")
+
+        Show the key, hide the value, written exactly as given: ``key_value("if", v)`` is shown as ``if=<*masked*>``.
+        No dashes are added, so it fits ``dd if=...``, ``make VAR=...`` or ``-Dname=...``.
+
+        :param key: Key as written on the command line, any dashes included.
+        :type key: str
+        :param value: Secret value.
+        :type value: str
+        :param sep: Separator between the key and the value inside the one argument.
+        :type sep: str
+        :rtype: MaskedArg
+        :raises ValueError: The key is empty.
+
     .. py:classmethod:: option(name, value)
 
         Show the option name, hide its value, following the usual CLI conventions.
@@ -42,6 +56,7 @@ API: MaskedArg
         A long name gives the GNU form ``--name=value``: ``option("pass", v)`` is shown as ``--pass=<*masked*>``.
         A single character gives the POSIX form ``-nvalue``: ``option("p", v)`` is shown as ``-p<*masked*>``.
         For the option and the value as separate arguments, use ``["--pass", MaskedArg.secret(v)]``.
+        For a key without dashes, such as ``dd if=...``, use ``key_value``.
 
         :param name: Option name without the leading dashes.
         :type name: str

@@ -118,6 +118,8 @@ class MaskedArg:
 
     >>> MaskedArg.secret("two secret words")
     MaskedArg(arg_for_log='<*masked*>')
+    >>> MaskedArg.key_value("if", "/secret/path")
+    MaskedArg(arg_for_log='if=<*masked*>')
     >>> MaskedArg.option("pass", "two secret words")
     MaskedArg(arg_for_log='--pass=<*masked*>')
     >>> MaskedArg.regex("user:p@ss", r":(.*)")
@@ -141,12 +143,36 @@ class MaskedArg:
         return cls(arg, _MASK)
 
     @classmethod
+    def key_value(cls, key: str, value: str, *, sep: str = "=") -> Self:
+        """Show the key, hide the value, written exactly as given: ``key=<*masked*>``.
+
+        No dashes are added, so it fits ``dd if=...``, ``make VAR=...`` or ``-Dname=...``.
+
+        :param key: Key as written on the command line, any dashes included.
+        :type key: str
+        :param value: Secret value.
+        :type value: str
+        :param sep: Separator between the key and the value inside the one argument.
+        :type sep: str
+        :return: Argument ``{key}{sep}{value}`` shown as ``{key}{sep}<*masked*>``.
+        :rtype: MaskedArg
+        :raises ValueError: The key is empty.
+
+        >>> MaskedArg.key_value("if", "/secret/path")
+        MaskedArg(arg_for_log='if=<*masked*>')
+        """
+        if not key:
+            raise ValueError("Key is expected to be non-empty")
+        return cls(f"{key}{sep}{value}", f"{key}{sep}{_MASK}")
+
+    @classmethod
     def option(cls, name: str, value: str) -> Self:
         """Show the option name, hide its value, following the usual CLI conventions.
 
         A long name gives the GNU form ``--name=value``.
         A single character gives the POSIX form ``-nvalue``, the option and its value in one argument.
         For the option and the value as separate arguments, use ``["--name", MaskedArg.secret(value)]``.
+        For a key without dashes, such as ``dd if=...``, use `key_value`.
 
         :param name: Option name without the leading dashes: ``pass``, ``p``.
         :type name: str
@@ -161,8 +187,9 @@ class MaskedArg:
         """
         if not _OPTION_NAME.fullmatch(name):
             raise ValueError(f"Option name is expected without leading dashes, as alphanumerics and dashes: {name!r}")
-        flag = f"-{name}" if len(name) == 1 else f"--{name}="
-        return cls(f"{flag}{value}", f"{flag}{_MASK}")
+        if len(name) == 1:
+            return cls.key_value(f"-{name}", value, sep="")
+        return cls.key_value(f"--{name}", value)
 
     @classmethod
     def regex(cls, arg: str, rule: str | re.Pattern[str]) -> Self:

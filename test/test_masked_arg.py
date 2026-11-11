@@ -61,7 +61,15 @@ def test_constructors() -> None:
     assert MaskedArg.option("pass", "s3cr3t") == MaskedArg("--pass=s3cr3t", f"--pass={MASK}")
     assert MaskedArg.option("db-pass", "s3cr3t") == MaskedArg("--db-pass=s3cr3t", f"--db-pass={MASK}")
     assert MaskedArg.option("p", "s3cr3t") == MaskedArg("-ps3cr3t", f"-p{MASK}")
+    assert MaskedArg.key_value("if", "s3cr3t") == MaskedArg("if=s3cr3t", f"if={MASK}")
+    assert MaskedArg.key_value("-Dtoken", "s3cr3t") == MaskedArg("-Dtoken=s3cr3t", f"-Dtoken={MASK}")
+    assert MaskedArg.key_value("VAR", "s3cr3t", sep=":") == MaskedArg("VAR:s3cr3t", f"VAR:{MASK}")
     assert MaskedArg.regex("user:s3cr3t@host", r":(\w+)@") == MaskedArg("user:s3cr3t@host", f"user:{MASK}@host")
+
+
+def test_key_value_empty_key() -> None:
+    with pytest.raises(ValueError, match="non-empty"):
+        MaskedArg.key_value("", "s3cr3t")
 
 
 @pytest.mark.parametrize("name", ["", "-p", "--pass", "pass=", "two words", "_x"])
