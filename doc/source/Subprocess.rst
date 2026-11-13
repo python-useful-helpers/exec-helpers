@@ -60,7 +60,7 @@ API: Subprocess
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -98,7 +98,7 @@ API: Subprocess
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -133,7 +133,7 @@ API: Subprocess
         Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -179,7 +179,7 @@ API: Subprocess
         Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.

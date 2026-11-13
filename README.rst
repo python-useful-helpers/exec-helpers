@@ -233,6 +233,25 @@ All regex matched groups will be replaced by `'<*masked*>'`.
 
 `result.cmd` will be equal to `AUTH='<*masked*>'; run command`
 
+`log_mask_re` matches the joined, shell-quoted command, so a value with spaces or quotes needs a regex aware of that quoting.
+For a command given as a list of arguments, a secret argument can be wrapped in `MaskedArg` instead:
+the process gets the real value, while the logs, `result.cmd` and the exceptions show the masked one.
+
+.. code-block:: python
+
+    from exec_helpers import MaskedArg
+
+    result: ExecResult = helper.execute(
+        ["mysql-setup", MaskedArg.option("pass", password), "--verbose"],
+    )
+
+`result.cmd` will be equal to `mysql-setup '--pass=<*masked*>' --verbose` whatever the password contains.
+`MaskedArg.option` takes the name without dashes: a long name gives `--name=value`, a single character `-nvalue`.
+For an option and its value as separate arguments, use `["--pass", MaskedArg.secret(password)]`.
+`MaskedArg.key_value(key, value)` writes the key as given, without dashes: `dd if=...` is `MaskedArg.key_value("if", path)`.
+`MaskedArg.secret(value)` hides the whole argument, `MaskedArg.regex(arg, rule)` hides the groups `rule` matches in this argument alone.
+`log_mask_re` still applies on top.
+
 ExecResult
 ----------
 

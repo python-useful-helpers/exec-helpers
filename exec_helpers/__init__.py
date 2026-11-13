@@ -40,6 +40,7 @@ __all__ = (
     "ExecResult",
     "ExitCodes",
     "HostsSSHConfigs",
+    "MaskedArg",
     "ParallelCallExceptionsError",
     "ParallelCallProcessError",
     "SSHAuth",
@@ -70,6 +71,7 @@ __lazy_load_parent_modules: dict[str, str] = {
     "ExecResult": "exec_result",
     "ExecHelper": "api",
     "mask_command": "_helpers",
+    "MaskedArg": "_helpers",
     # Exceptions
     "ExecHelperError": "exceptions",
     "ExecCalledProcessError": "exceptions",

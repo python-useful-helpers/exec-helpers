@@ -176,7 +176,7 @@ API: SSHClient and SSHAuth.
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -209,7 +209,7 @@ API: SSHClient and SSHAuth.
         Execute command and wait for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -242,7 +242,7 @@ API: SSHClient and SSHAuth.
         Execute command and check for return code.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -286,7 +286,7 @@ API: SSHClient and SSHAuth.
         Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param verbose: Produce log.info records for command call and output
         :type verbose: ``bool``
         :param timeout: Timeout for command execution.
@@ -360,7 +360,7 @@ API: SSHClient and SSHAuth.
         :param hostname: target hostname
         :type hostname: ``str``
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param auth: credentials for target machine
         :type auth: SSHAuth | None
         :param port: target port
@@ -404,7 +404,7 @@ API: SSHClient and SSHAuth.
         :param remotes: Connections to execute on
         :type remotes: Iterable[SSHClient]
         :param command: Command for execution
-        :type command: ``str | Iterable[str]``
+        :type command: ``str | Iterable[str | MaskedArg]``
         :param timeout: Timeout for command execution.
         :type timeout: ``int | float | None``
         :param expected: expected return codes (0 by default)

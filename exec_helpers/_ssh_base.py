@@ -1144,12 +1144,15 @@ class SSHClientBase(api.ExecHelper):
         stdin: OptionalStdinT = None,
         log_stdout: bool = True,
         log_stderr: bool = True,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> exec_result.ExecResult:
         """Get exit status from channel with timeout.
 
         :param command: Executed command (for logs).
         :type command: str
+        :param command_for_log: Command for the result with MaskedArg arguments hidden, None if same as `command`.
+        :type command_for_log: str | None
         :param async_result: execute_async result.
         :type async_result: SshExecuteAsyncResult
         :param timeout: Timeout before stop execution with TimeoutError.
@@ -1172,6 +1175,7 @@ class SSHClientBase(api.ExecHelper):
         :raises ExecHelperTimeoutError: Timeout exceeded.
 
         .. versionchanged:: 1.2.0 log_mask_re regex rule for masking cmd
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
 
         def poll_streams() -> None:
@@ -1193,7 +1197,10 @@ class SSHClientBase(api.ExecHelper):
             result.exit_code = async_result.interface.exit_status
 
         # channel.status_event.wait(timeout)
-        cmd_for_log: str = self._mask_command(cmd=command, log_mask_re=log_mask_re)
+        cmd_for_log: str = self._mask_command(
+            cmd=command if command_for_log is None else command_for_log,
+            log_mask_re=log_mask_re,
+        )
 
         # Store command with hidden data
         result = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
@@ -1234,12 +1241,16 @@ class SSHClientBase(api.ExecHelper):
         height: int = 24,
         timeout: OptionalTimeoutT = None,
         log_mask_re: LogMaskReT = None,
+        command_for_log: str | None = None,
         **kwargs: typing.Any,
     ) -> _SSHExecuteContext:
         """Get execution context manager.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str
+        :param command_for_log: Command for the debug string of the context with secrets hidden,
+            None if it is the same as `command`.
+        :type command_for_log: str | None
         :param stdin: Pass STDIN text to the process.
         :type stdin: bytes | str | bytearray | None
         :param open_stdout: Open STDOUT stream for read.
@@ -1267,10 +1278,16 @@ class SSHClientBase(api.ExecHelper):
         :rtype: _SSHExecuteContext
         .. versionadded:: 8.0.0
         .. versionchanged:: 8.2.3 log_mask_re added.
+        .. versionchanged:: 8.3.0 command_for_log added.
         """
         return _SSHExecuteContext(
             transport=self._ssh_transport,
             command=f"{self._prepare_command(cmd=command, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n",
+            command_for_log=(
+                None
+                if command_for_log is None
+                else f"{self._prepare_command(cmd=command_for_log, chroot_path=chroot_path, chroot_exe=chroot_exe)}\n"
+            ),
             stdin=None if stdin is None else self._string_bytes_bytearray_as_bytes(stdin),
             open_stdout=open_stdout,
             open_stderr=open_stderr,
@@ -1307,7 +1324,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1387,7 +1404,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and wait for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1464,7 +1481,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command and check for return code.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1551,7 +1568,7 @@ class SSHClientBase(api.ExecHelper):
         """Execute command expecting return code 0 and empty STDERR.
 
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param verbose: Produce log.info records for command call and output.
         :type verbose: bool
         :param timeout: Timeout for command execution.
@@ -1719,7 +1736,7 @@ class SSHClientBase(api.ExecHelper):
         :param hostname: Target hostname.
         :type hostname: str
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param auth: Credentials for target machine.
         :type auth: ssh_auth.SSHAuth | None
         :param port: Target port.
@@ -1809,7 +1826,7 @@ class SSHClientBase(api.ExecHelper):
         :param remotes: Connections to execute on.
         :type remotes: Iterable[SSHClientBase]
         :param command: Command for execution.
-        :type command: str | Iterable[str]
+        :type command: str | Iterable[str | MaskedArg]
         :param timeout: Timeout for command execution.
         :type timeout: int | float | None
         :param expected: Expected return codes (0 by default).
@@ -1855,9 +1872,10 @@ class SSHClientBase(api.ExecHelper):
             :raises ExecHelperTimeoutError: Timeout exceeded.
             """
             # pylint: disable=protected-access
-            cmd_for_log: str = remote._mask_command(cmd=cmd, log_mask_re=log_mask_re)
+            result_cmd: str = remote._mask_command(cmd=cmd_for_log, log_mask_re=log_mask_re)
             remote._log_command_execute(
                 command=cmd,
+                command_for_log=cmd_for_log,
                 log_mask_re=log_mask_re,
                 log_level=log_level,
                 chroot_path=chroot_path,
@@ -1868,6 +1886,7 @@ class SSHClientBase(api.ExecHelper):
 
             with remote.open_execute_context(
                 cmd,
+                command_for_log=cmd_for_log,
                 stdin=stdin,
                 open_stdout=open_stdout,
                 open_stderr=open_stderr,
@@ -1879,7 +1898,7 @@ class SSHClientBase(api.ExecHelper):
             ) as async_result:
                 done = async_result.interface.status_event.wait(timeout)
 
-                res = exec_result.ExecResult(cmd=cmd_for_log, stdin=stdin, started=async_result.started)
+                res = exec_result.ExecResult(cmd=result_cmd, stdin=stdin, started=async_result.started)
                 res.read_stdout(src=async_result.stdout)
                 res.read_stderr(src=async_result.stderr)
                 if done:
@@ -1894,7 +1913,10 @@ class SSHClientBase(api.ExecHelper):
 
         prep_expected: Sequence[ExitCodeT] = proc_enums.exit_codes_to_enums(expected)
         log_level: int = logging.INFO if verbose else logging.DEBUG
+        if not isinstance(command, str):
+            command = tuple(command)  # joined twice: for execution and for the log
         cmd = _helpers.cmd_to_string(command)
+        cmd_for_log = _helpers.cmd_to_log_string(command)
 
         results: dict[tuple[str, int], exec_result.ExecResult] = {}
         errors: dict[tuple[str, int], exec_result.ExecResult] = {}
@@ -1921,18 +1943,20 @@ class SSHClientBase(api.ExecHelper):
                 raised_exceptions[remote.hostname, remote.port] = e
 
         # The rules of every remote apply: the exception is shared by all of them.
-        cmd_for_log: str = _helpers.mask_command(cmd.rstrip(), *(remote.log_mask_re for remote in futures), log_mask_re)
+        masked_cmd: str = _helpers.mask_command(
+            cmd_for_log.rstrip(), *(remote.log_mask_re for remote in futures), log_mask_re
+        )
 
         if raised_exceptions:  # always raise
             raise exceptions.ParallelCallExceptionsError(
-                command=cmd_for_log,
+                command=masked_cmd,
                 exceptions=raised_exceptions,
                 errors=errors,
                 results=results,
                 expected=prep_expected,
             )
         if errors and raise_on_err:
-            raise exception_class(cmd_for_log, errors, results, expected=prep_expected)
+            raise exception_class(masked_cmd, errors, results, expected=prep_expected)
         return results
 
     def open(self, path: SupportPathT, mode: str = "r") -> paramiko.SFTPFile:
