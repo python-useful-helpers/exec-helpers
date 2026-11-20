@@ -34,7 +34,6 @@ email = "penguinolog@gmail.com"
 xml = []
 lxml = [ "lxml>=4.6.2" ]
 yaml = [ "pyyaml>=3.12" ]
-all_formats = [ "lxml>=4.6.2", "pyyaml>=3.12" ]
 all-formats = [ "lxml>=4.6.2", "pyyaml>=3.12" ]
 [project.urls]
 Documentation = "https://exec-helpers.readthedocs.io/"
