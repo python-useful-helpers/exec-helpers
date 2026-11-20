@@ -29,6 +29,6 @@ repos:
   - repo: https://github.com/tox-dev/pyproject-fmt
     # Use the sha / tag you want to point at
     # or use `pre-commit autoupdate` to get the latest version
-    rev: "v2.30.3"
+    rev: "v2.31.2"
     hooks:
       - id: pyproject-fmt

@@ -80,10 +80,10 @@ pylint = [
   "pylint>=4.1.3",
 ]
 pyproject-fmt = [
-  "pyproject-fmt>=2.30.3",
+  "pyproject-fmt>=2.31.2",
 ]
 pyrefly = [
-  "pyrefly>=1.4.0",
+  "pyrefly>=1.5.0",
   { include-group = "pytest" },
   { include-group = "types" },
 ]
@@ -256,8 +256,6 @@ default-docstring-type = "default"
 # After how many columns split arrays/dicts into multiple lines and wrap long strings;
 # use a trailing comma in arrays to force multiline format instead of lowering this value
 column_width = 120
-# Number of spaces for indentation
-indent = 2
 # Keep full version numbers (e.g., 1.0.0 instead of 1.0) in dependency specifiers
 keep_full_version = true
 # Automatically generate Python version classifiers based on requires-python
@@ -265,12 +263,6 @@ keep_full_version = true
 generate_python_version_classifiers = false
 # Table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
 table_format = "long"
-# List of tables to force expand regardless of table_format setting
-expand_tables = []
-# List of tables to force collapse regardless of table_format or expand_tables settings
-collapse_tables = []
-# List of key patterns to skip string wrapping (supports wildcards like *.parse or tool.bumpversion.*)
-skip_wrap_for_keys = []
 
 [tool.mypy]
 enable_error_code = [ "ignore-without-code" ]
