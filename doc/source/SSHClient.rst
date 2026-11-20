@@ -637,6 +637,10 @@ API: SSHClient and SSHAuth.
         :type sock: ``paramiko.ProxyCommand | paramiko.Channel | socket.socket | None``
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed.
+        :raises HostKeyMismatchError: The host key of the server differs from the one in the known hosts.
+            No other key is tried.
+
+        .. versionchanged:: 8.3.0 A host key mismatch raises HostKeyMismatchError.
 
 
 .. py:class::SSHAuthMapping(dict[str, SSHAuth])

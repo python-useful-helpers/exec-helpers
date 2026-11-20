@@ -647,3 +647,27 @@ def test_018_sftp_opened_once_by_concurrent_threads(
     other.join(timeout=5)
     assert results == [fake.sftp]
     assert fake.transport.open_sftp_client.call_count == 1
+
+
+def test_019_bad_host_key_not_hidden(
+    paramiko_ssh_client,
+    ssh_auth_logger,
+):
+    """A changed host key is raised at once, and still caught as an authentication failure."""
+    expected_key, offered_key = gen_private_keys(2)
+    connect = mock.Mock(side_effect=paramiko.BadHostKeyException(host, offered_key, expected_key))
+    ssh_inst = mock.Mock()
+    ssh_inst.attach_mock(connect, "connect")
+    paramiko_ssh_client.return_value = ssh_inst
+
+    with pytest.raises(paramiko.BadHostKeyException) as exc_info:
+        exec_helpers.SSHClient(host=host, auth=exec_helpers.SSHAuth(username=username, keys=gen_private_keys(2)))
+
+    assert isinstance(exc_info.value, exec_helpers.HostKeyMismatchError)
+    assert isinstance(exc_info.value, paramiko.AuthenticationException)
+    assert exc_info.value.hostname == host
+    assert exc_info.value.key is offered_key
+    assert exc_info.value.expected_key is expected_key
+    connect.assert_called_once()
+    ssh_inst.close.assert_called_with()
+    ssh_auth_logger.exception.assert_not_called()

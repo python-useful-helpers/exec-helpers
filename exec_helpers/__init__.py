@@ -39,6 +39,7 @@ __all__ = (
     "ExecHelperTimeoutError",
     "ExecResult",
     "ExitCodes",
+    "HostKeyMismatchError",
     "HostsSSHConfigs",
     "MaskedArg",
     "ParallelCallExceptionsError",
@@ -80,6 +81,7 @@ __lazy_load_parent_modules: dict[str, str] = {
     "ParallelCallProcessError": "exceptions",
     "ExecHelperNoKillError": "exceptions",
     "ExecHelperTimeoutError": "exceptions",
+    "HostKeyMismatchError": "ssh_auth",
 }
 
 _deprecated: dict[str, str] = {}

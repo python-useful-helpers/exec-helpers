@@ -214,3 +214,12 @@ class ExecHelperTimeoutProcessError(ExecCalledProcessError):
         expected return codes
 
         :rtype: list[int | ExitCodes]
+
+.. py:exception:: HostKeyMismatchError(paramiko.BadHostKeyException, paramiko.AuthenticationException)
+
+    The host key of the server differs from the one in the known hosts.
+
+    It is a ``paramiko.AuthenticationException`` as well:
+    a handler for authentication failures catches it, and ``SSHClient`` does not retry the connection.
+
+    .. versionadded:: 8.3.0

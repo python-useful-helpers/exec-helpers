@@ -471,7 +471,7 @@ class SSHClientBase(api.ExecHelper):
         paramiko sends an authentication request per key and method,
         and a host reached without a proxy tries every key of the credentials on a connection of its own.
         Without `sock`, a connection failed with an SSH error other than an authentication failure
-        is attempted up to 3 times, with a 3 s pause.
+        or a host key mismatch is attempted up to 3 times, with a 3 s pause.
     :type connect_timeout: float | None
     :raises ValueError: connect_timeout is not positive or is NaN.
 
@@ -498,6 +498,8 @@ class SSHClientBase(api.ExecHelper):
         the unknown host key warning; a key of another server is handled by the missing host key policy as before.
     .. versionchanged:: 8.2.3 connect_timeout also limits the channel opened through a jump host,
         and NaN is rejected.
+    .. versionchanged:: 8.3.0 A host key mismatch raises HostKeyMismatchError
+        instead of a generic authentication failure.
     """
 
     __slots__ = (

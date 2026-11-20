@@ -31,9 +31,24 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Sequence
 
-__all__ = ("SSHAuth",)
+__all__ = (
+    "HostKeyMismatchError",
+    "SSHAuth",
+)
 
 LOGGER = logging.getLogger(__name__)
+
+
+class HostKeyMismatchError(paramiko.BadHostKeyException, paramiko.AuthenticationException):
+    """The host key of the server differs from the one in the known hosts.
+
+    It is a :class:`paramiko.AuthenticationException` as well:
+    a handler for authentication failures catches it, and ``SSHClient`` does not retry the connection.
+
+    .. versionadded:: 8.3.0
+    """
+
+    __slots__ = ()
 
 
 class SSHAuth:
@@ -185,6 +200,8 @@ class SSHAuth:
         :type timeout: float | None
         :raises PasswordRequiredException: No password has been set, but required.
         :raises AuthenticationException: Authentication failed (an authentication timeout is reported the same way).
+        :raises HostKeyMismatchError: The host key of the server differs from the one in the known hosts.
+            The server offers the same host key whichever client key is used, so no other key is tried.
         :raises TimeoutError: TCP connection timeout.
         :raises paramiko.SSHException: Banner or key exchange timeout.
         :raises BaseException: Any other failure of a connection attempt; the client is closed first.
@@ -221,7 +238,10 @@ class SSHAuth:
                     raise
                 LOGGER.critical("Unexpected PasswordRequiredException, when password is set!")
                 raise
-            except (paramiko.AuthenticationException, paramiko.BadHostKeyException):
+            except paramiko.BadHostKeyException as exc:
+                client.close()
+                raise HostKeyMismatchError(exc.hostname, exc.key, exc.expected_key) from exc
+            except paramiko.AuthenticationException:
                 client.close()  # this also closes the supplied sock, so it can not be used for the next key
                 if sock is not None:
                     break

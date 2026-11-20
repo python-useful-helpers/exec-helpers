@@ -32,6 +32,7 @@ from .exceptions import ParallelCallProcessError
 from .exec_result import ExecResult
 from .proc_enums import ExitCodes
 from .ssh import SSHClient
+from .ssh_auth import HostKeyMismatchError
 from .ssh_auth import SSHAuth
 from .subprocess import Subprocess  # nosec  # Expected
 
@@ -50,6 +51,7 @@ __all__ = (
     "ExecHelperTimeoutError",
     "ExecResult",
     "ExitCodes",
+    "HostKeyMismatchError",
     "HostsSSHConfigs",
     "MaskedArg",
     "ParallelCallExceptionsError",
