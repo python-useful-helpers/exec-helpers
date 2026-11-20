@@ -52,6 +52,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Collection
     from collections.abc import Iterable
     from collections.abc import Sequence
+    from types import EllipsisType
 
     # noinspection PyPackageRequirements
     import logwrap
@@ -139,15 +140,14 @@ class LinesAccessProxy:
         """
         self._data: tuple[bytes, ...] = tuple(data)
 
-    # pylint: disable=undefined-variable
     def __getitem__(
         self,
-        item: int | slice | Iterable[int | slice | ellipsis],  # noqa: F821
+        item: int | slice | Iterable[int | slice | EllipsisType],
     ) -> str:
         """Access magic.
 
         :param item: Index.
-        :type item: int | slice | Iterable[int | slice | ellipsis]
+        :type item: int | slice | Iterable[int | slice | EllipsisType]
         :return: Joined selected lines.
         :rtype: str
         :raises TypeError: Unexpected key.

@@ -242,7 +242,7 @@ API: ExecResult
         Access magic.
 
         :param item: index
-        :type item: ``int | slice | Iterable[int | slice | ellipsis]``
+        :type item: ``int | slice | Iterable[int | slice | EllipsisType]``
         :return: Joined selected lines
         :rtype: ``str``
         :raises TypeError: Unexpected key
